@@ -18,21 +18,30 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    function isActiveUser() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE';
+    }
+
     // User collection access rules
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if (isAdmin() || request.auth.uid == userId) &&
+        request.resource.data.email is string &&
+        request.resource.data.status in ['PENDING', 'ACTIVE', 'DISABLED'];
       allow update: if isSignedIn() && (
         isAdmin() ||
         (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'permissions', 'assignedStores']))
       );
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() && userId != request.auth.uid;
     }
 
     // Admins metadata collection
     match /admins/{adminId} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn() && (adminId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
       allow write: if isAdmin();
     }
   }

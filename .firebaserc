@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "stockgileada"
+  },
+  "targets": {
+    "stockgileada": {
+      "hosting": {
+        "gileadapos": [
+          "gileadapos"
+        ]
+      }
+    }
+  }
+}

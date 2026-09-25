@@ -2,12 +2,18 @@
 export * from "./types/auth";
 
 
-export type UserRole = 
-  | "admin"
-  | "storekeeper_central"
-  | "pos_seller"
-  | "reseller_manager"
-  | "manufacturer_manager";
+export type AppRoleId =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "VENDEUR"
+  | "MAGASINIER"
+  | "RESPONSABLE_MAGASIN"
+  | "PRODUCTION"
+  | "COMPTABLE";
+
+export type AppPermission = string;
+
+export type UserRole = AppRoleId | "admin" | "storekeeper_central" | "pos_seller" | "reseller_manager" | "manufacturer_manager";
 
 export type Permission = 
   | "CREATE"
@@ -24,13 +30,35 @@ export type Permission =
   | "EXPORT_PDF";
 
 export interface UserProfile {
+  id: string;
   uid: string;
+  username: string;
   email: string;
   displayName: string;
   role: UserRole;
-  storeId?: string; // Assigned store for POS / Reseller / Manufacturer
+  roleId: AppRoleId;
+  firstName: string;
+  lastName: string;
+  storeId?: string;
+  storeIds: string[];
+  permissions: AppPermission[];
+  isActive: boolean;
   createdAt: number;
+  updatedAt?: number;
+  lastLoginAt?: number;
 }
+
+export type AppUser = UserProfile;
+
+export const ALL_PERMISSIONS: AppPermission[] = [
+  "dashboard.view", "products.view", "products.create", "products.edit",
+  "stock.view", "stock.create", "stock.edit", "stock.adjust",
+  "sales.view", "sales.create", "sales.edit", "sales.validate", "sales.cancel",
+  "transfers.view", "transfers.create", "transfers.approve", "transfers.ship",
+  "transfers.receive", "transfers.validate", "production.view", "production.create",
+  "production.validate", "reports.view", "reports.export", "audit.view",
+  "users.view", "users.create", "users.edit", "users.delete", "users.permissions"
+];
 
 // 1. Types de magasins
 export type StoreTypeCode = "CENTRAL_WAREHOUSE" | "POS" | "RESELLER" | "MANUFACTURER";

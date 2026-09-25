@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, AuthState, SignUpPayload, LoginPayload, ApiResponse } from "../types/auth";
 import { authService } from "../services/authService";
+import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 interface AuthContextType extends AuthState {
   signUp: (payload: SignUpPayload) => Promise<ApiResponse>;
@@ -20,35 +22,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    async function initSession() {
+    const unsubscribe = onAuthStateChanged(auth, async firebaseUser => {
       try {
-        const currentUser = await authService.restoreSession();
-        if (isMounted) {
-          if (currentUser) {
-            setUser(currentUser);
-            setToken(authService.getToken());
-          } else {
-            setUser(null);
-            setToken(null);
-          }
-        }
+        const currentUser = firebaseUser ? await authService.restoreSession() : null;
+        if (!isMounted) return;
+        setUser(currentUser);
+        setToken(authService.getToken());
       } catch (err) {
-        console.error("Session restoration failed:", err);
+        console.error("Firebase session restoration failed:", err);
         if (isMounted) {
           setUser(null);
           setToken(null);
         }
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
-    }
-
-    initSession();
+    });
 
     return () => {
       isMounted = false;
+      unsubscribe();
     };
   }, []);
 

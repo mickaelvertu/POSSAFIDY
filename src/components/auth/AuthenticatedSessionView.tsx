@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { authService } from "../../services/authService";
+import { AppRoleId, AppUser } from "../../types";
+import { User } from "../../types/auth";
+import { INITIAL_STORES } from "../../data/initialData";
+import UsersView from "../UsersView";
 import { 
   ShieldCheck, 
   LogOut, 
@@ -19,6 +24,28 @@ import {
   Layers
 } from "lucide-react";
 
+const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "PRODUCTION", "COMPTABLE"];
+
+function toAppUser(user: User): AppUser {
+  const roleId = APP_ROLES.includes(user.role as AppRoleId) ? user.role as AppRoleId : "VENDEUR";
+  return {
+    id: user.id,
+    uid: user.id,
+    username: user.email.split("@")[0],
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    displayName: `${user.firstName} ${user.lastName}`,
+    role: roleId,
+    roleId,
+    storeIds: user.assignedStores || [],
+    permissions: user.permissions || [],
+    isActive: user.status === "ACTIVE",
+    createdAt: Date.parse(user.createdAt),
+    updatedAt: Date.parse(user.updatedAt)
+  };
+}
+
 export default function AuthenticatedSessionView() {
   const { user, token, logout } = useAuth();
 
@@ -30,6 +57,71 @@ export default function AuthenticatedSessionView() {
     testedWithToken: boolean;
   } | null>(null);
   const [testLoading, setTestLoading] = useState(false);
+  const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
+  const [usersError, setUsersError] = useState<string | null>(null);
+
+  const canManageUsers = Boolean(user && (
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    user.permissions.includes("users.view")
+  ));
+
+  useEffect(() => {
+    if (!canManageUsers) return;
+    authService.listManagedUsers().then(response => {
+      if (response.success && response.data) {
+        setManagedUsers(response.data.users.map(toAppUser));
+      } else {
+        setUsersError(response.message);
+      }
+    }).catch(error => {
+      setUsersError(error instanceof Error ? error.message : "Impossible de charger les utilisateurs.");
+    });
+  }, [canManageUsers]);
+
+  const handleCreateManagedUser = async (newUser: AppUser) => {
+    const response = await authService.createManagedUser({
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      email: newUser.email,
+      role: newUser.roleId,
+      permissions: newUser.permissions,
+      assignedStores: newUser.storeIds,
+      status: newUser.isActive ? "ACTIVE" : "PENDING"
+    });
+    if (!response.success || !response.data) {
+      alert(response.message);
+      return;
+    }
+    setManagedUsers(current => [...current, toAppUser(response.data!.user)]);
+    alert(`Utilisateur créé. Mot de passe temporaire : ${response.data.temporaryPassword}`);
+  };
+
+  const handleUpdateManagedUser = async (updatedUser: AppUser) => {
+    const response = await authService.updateManagedUser(updatedUser.id, {
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      role: updatedUser.roleId,
+      permissions: updatedUser.permissions,
+      assignedStores: updatedUser.storeIds,
+      status: updatedUser.isActive ? "ACTIVE" : "DISABLED"
+    });
+    if (!response.success || !response.data) {
+      alert(response.message);
+      return;
+    }
+    setManagedUsers(current => current.map(item => item.id === updatedUser.id ? toAppUser(response.data!.user) : item));
+  };
+
+  const handleDeleteManagedUser = async (userId: string) => {
+    const response = await authService.deleteManagedUser(userId);
+    if (!response.success) {
+      alert(response.message);
+      return;
+    }
+    setManagedUsers(current => current.filter(item => item.id !== userId));
+  };
 
   const handleCopyToken = () => {
     if (token) {
@@ -144,6 +236,26 @@ export default function AuthenticatedSessionView() {
             <span>Session: ACTIVE (24h)</span>
           </div>
         </div>
+
+        {canManageUsers && (
+          <section className="space-y-3">
+            {usersError && (
+              <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-sm text-rose-200">
+                {usersError}
+              </div>
+            )}
+            {user && (
+              <UsersView
+                currentUser={toAppUser(user)}
+                users={managedUsers}
+                stores={INITIAL_STORES}
+                onUpdateUser={handleUpdateManagedUser}
+                onCreateUser={handleCreateManagedUser}
+                onDeleteUser={handleDeleteManagedUser}
+              />
+            )}
+          </section>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* User Profile Card */}

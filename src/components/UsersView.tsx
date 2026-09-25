@@ -10,8 +10,7 @@ import {
   ROLE_DEFINITIONS, 
   DEFAULT_ROLE_PERMISSIONS, 
   PERMISSION_GROUPS, 
-  hasPermission,
-  syncUserToFirestore
+  hasPermission
 } from "../services/authService";
 import { 
   Users, 
@@ -155,7 +154,6 @@ export default function UsersView({
       updatedAt: Date.now()
     };
     onUpdateUser(updated);
-    syncUserToFirestore(updated);
   };
 
   // Save Modal
@@ -168,15 +166,22 @@ export default function UsersView({
       alert("Le nom et le prénom sont obligatoires.");
       return;
     }
+    if (isCreating && !formEmail.trim()) {
+      alert("L'adresse email est obligatoire pour créer un compte réel.");
+      return;
+    }
 
     if (isCreating) {
       const newUser: AppUser = {
         id: `user-${Date.now()}`,
+        uid: `user-${Date.now()}`,
         username: formUsername.trim().toLowerCase(),
-        email: formEmail.trim() || undefined,
+        email: formEmail.trim(),
         firstName: formFirstName.trim(),
         lastName: formLastName.trim(),
+        displayName: `${formFirstName.trim()} ${formLastName.trim()}`,
         roleId: formRoleId,
+        role: formRoleId,
         isActive: formIsActive,
         storeIds: formStoreIds,
         permissions: formPermissions,
@@ -184,7 +189,6 @@ export default function UsersView({
         updatedAt: Date.now()
       };
       onCreateUser(newUser);
-      syncUserToFirestore(newUser);
     } else if (editingUser) {
       const updated: AppUser = {
         ...editingUser,
@@ -199,7 +203,6 @@ export default function UsersView({
         updatedAt: Date.now()
       };
       onUpdateUser(updated);
-      syncUserToFirestore(updated);
     }
 
     setSaveSuccessMsg("Compte utilisateur et permissions enregistrés avec succès !");

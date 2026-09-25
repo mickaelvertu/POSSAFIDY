@@ -32,6 +32,26 @@ export interface AuthenticatedRequest extends Request {
   token?: string;
 }
 
+const ALL_PERMISSIONS = [
+  "dashboard.view", "products.view", "products.create", "products.edit",
+  "stock.view", "stock.create", "stock.edit", "stock.adjust",
+  "sales.view", "sales.create", "sales.edit", "sales.validate", "sales.cancel",
+  "transfers.view", "transfers.create", "transfers.approve", "transfers.ship",
+  "transfers.receive", "transfers.validate", "production.view", "production.create",
+  "production.validate", "reports.view", "reports.export", "audit.view",
+  "users.view", "users.create", "users.edit", "users.delete", "users.permissions"
+];
+
+const ROLE_PERMISSIONS: Record<string, string[]> = {
+  SUPER_ADMIN: ALL_PERMISSIONS,
+  ADMIN: ALL_PERMISSIONS.filter(permission => permission !== "users.delete"),
+  VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit"],
+  MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
+  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "transfers.view", "transfers.create", "reports.view"],
+  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
+  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export"]
+};
+
 // Password hashing utility with PBKDF2 (100k rounds, sha512)
 export function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -71,8 +91,8 @@ const DEFAULT_TEST_USERS: StoredUser[] = [
     phone: "0340000000",
     passwordHash: hashPassword("Password123!"),
     status: "ACTIVE",
-    role: null,
-    permissions: [],
+    role: "SUPER_ADMIN",
+    permissions: ALL_PERMISSIONS,
     assignedStores: [],
     createdAt: new Date("2026-01-01T08:00:00Z").toISOString(),
     updatedAt: new Date("2026-01-01T08:00:00Z").toISOString()
@@ -133,6 +153,18 @@ class UserStore {
         this.users.set(testUser.email.toLowerCase(), testUser);
       }
     }
+
+    // A fresh install must have one usable administrator before self-service
+    // accounts can be approved. Existing legacy data is upgraded in place.
+    if (!Array.from(this.users.values()).some(user => user.status === "ACTIVE" && user.role === "SUPER_ADMIN")) {
+      const bootstrap = Array.from(this.users.values()).find(user => user.status === "ACTIVE");
+      if (bootstrap) {
+        bootstrap.role = "SUPER_ADMIN";
+        bootstrap.permissions = [...ALL_PERMISSIONS];
+        bootstrap.updatedAt = new Date().toISOString();
+        this.persist();
+      }
+    }
   }
 
   private persist() {
@@ -159,6 +191,31 @@ class UserStore {
     this.users.set(user.email.toLowerCase(), user);
     this.persist();
     return user;
+  }
+
+  update(id: string, changes: Partial<StoredUser>): StoredUser | undefined {
+    const user = this.findById(id);
+    if (!user) return undefined;
+    const previousEmail = user.email.toLowerCase();
+    Object.assign(user, changes, { updatedAt: new Date().toISOString() });
+    if (user.email.toLowerCase() !== previousEmail) {
+      this.users.delete(previousEmail);
+    }
+    this.users.set(user.email.toLowerCase(), user);
+    this.persist();
+    return user;
+  }
+
+  delete(id: string): boolean {
+    const user = this.findById(id);
+    if (!user) return false;
+    this.users.delete(user.email.toLowerCase());
+    this.persist();
+    return true;
+  }
+
+  list(): StoredUser[] {
+    return Array.from(this.users.values());
   }
 }
 
@@ -194,6 +251,12 @@ class SessionStore {
 
   invalidateSession(token: string): boolean {
     return this.sessions.delete(token);
+  }
+
+  invalidateUserSessions(userId: string): void {
+    for (const [token, session] of this.sessions.entries()) {
+      if (session.userId === userId) this.sessions.delete(token);
+    }
   }
 }
 
@@ -259,6 +322,32 @@ export function authMiddleware(req: AuthenticatedRequest, res: Response, next: N
   req.user = sanitizeUser(user);
   req.token = token;
   next();
+}
+
+function requirePermission(permission: string) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+    const user = req.user;
+    if (!user || (user.role !== "SUPER_ADMIN" && !user.permissions.includes(permission))) {
+      res.status(403).json({
+        success: false,
+        code: "FORBIDDEN",
+        message: "Vous n'avez pas la permission nécessaire pour cette opération."
+      });
+      return;
+    }
+    next();
+  };
+}
+
+function validationError(res: Response, message: string): void {
+  res.status(400).json({ success: false, code: "VALIDATION_ERROR", message });
+}
+
+function normalizeRolePermissions(role: string | null, permissions: unknown): string[] {
+  if (Array.isArray(permissions)) {
+    return permissions.filter((permission): permission is string => typeof permission === "string" && ALL_PERMISSIONS.includes(permission));
+  }
+  return role ? [...(ROLE_PERMISSIONS[role] || [])] : [];
 }
 
 export function createExpressApp() {
@@ -487,6 +576,109 @@ export function createExpressApp() {
         user: req.user
       }
     });
+  });
+
+  // Admin user management. All mutations are persisted in data-users.json and
+  // are protected by the same RBAC permissions exposed to the frontend.
+  app.get("/api/users", authMiddleware, requirePermission("users.view"), (_req: AuthenticatedRequest, res: Response): void => {
+    res.json({
+      success: true,
+      code: "USERS_LIST",
+      message: "Utilisateurs récupérés avec succès.",
+      data: { users: userStore.list().map(sanitizeUser) }
+    });
+  });
+
+  app.post("/api/users", authMiddleware, requirePermission("users.create"), (req: AuthenticatedRequest, res: Response): void => {
+    const { firstName, lastName, email, phone, role, permissions, assignedStores, status } = req.body || {};
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    if (typeof firstName !== "string" || firstName.trim().length < 2 || typeof lastName !== "string" || lastName.trim().length < 2) {
+      validationError(res, "Le prénom et le nom sont requis (minimum 2 caractères).");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || userStore.findByEmail(normalizedEmail)) {
+      res.status(409).json({ success: false, code: "EMAIL_ALREADY_EXISTS", message: "Une adresse email valide et unique est requise." });
+      return;
+    }
+    if (role !== null && role !== undefined && typeof role !== "string") {
+      validationError(res, "Le rôle est invalide.");
+      return;
+    }
+    const temporaryPassword = crypto.randomBytes(12).toString("base64url");
+    const now = new Date().toISOString();
+    const newUser: StoredUser = {
+      id: `USR-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: normalizedEmail,
+      phone: typeof phone === "string" ? phone.trim() : undefined,
+      passwordHash: hashPassword(temporaryPassword),
+      status: status === "ACTIVE" ? "ACTIVE" : "PENDING",
+      role: typeof role === "string" ? role : null,
+      permissions: normalizeRolePermissions(typeof role === "string" ? role : null, permissions),
+      assignedStores: Array.isArray(assignedStores) ? assignedStores.filter((storeId: unknown): storeId is string => typeof storeId === "string") : [],
+      createdAt: now,
+      updatedAt: now
+    };
+    userStore.create(newUser);
+    res.status(201).json({ success: true, code: "USER_CREATED", message: "Utilisateur créé avec succès.", data: { user: sanitizeUser(newUser), temporaryPassword } });
+  });
+
+  app.patch("/api/users/:id", authMiddleware, requirePermission("users.edit"), (req: AuthenticatedRequest, res: Response): void => {
+    const target = userStore.findById(req.params.id);
+    if (!target) {
+      res.status(404).json({ success: false, code: "USER_NOT_FOUND", message: "Utilisateur introuvable." });
+      return;
+    }
+    if (target.id === req.user?.id && req.body?.status === "DISABLED") {
+      res.status(400).json({ success: false, code: "SELF_DEACTIVATION", message: "Vous ne pouvez pas désactiver votre propre compte." });
+      return;
+    }
+    if (target.id === req.user?.id && (req.body?.role !== undefined || req.body?.permissions !== undefined)) {
+      res.status(400).json({ success: false, code: "SELF_PRIVILEGE_CHANGE", message: "Vous ne pouvez pas modifier vos propres privilèges." });
+      return;
+    }
+    if (req.user?.role !== "SUPER_ADMIN" && (req.body?.role === "SUPER_ADMIN" || (Array.isArray(req.body?.permissions) && req.body.permissions.includes("users.delete")))) {
+      res.status(403).json({ success: false, code: "PRIVILEGE_ESCALATION", message: "Seul un super administrateur peut attribuer ces privilèges." });
+      return;
+    }
+    const changes: Partial<StoredUser> = {};
+    for (const field of ["firstName", "lastName", "phone", "role", "status"] as const) {
+      if (req.body?.[field] !== undefined) changes[field] = req.body[field];
+    }
+    if (req.body?.email !== undefined) {
+      const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+      const other = userStore.findByEmail(email);
+      if (!email || (other && other.id !== target.id)) {
+        validationError(res, "L'adresse email est invalide ou déjà utilisée.");
+        return;
+      }
+      changes.email = email;
+    }
+    if (req.body?.assignedStores !== undefined) changes.assignedStores = Array.isArray(req.body.assignedStores) ? req.body.assignedStores : [];
+    if (req.body?.permissions !== undefined || req.body?.role !== undefined) {
+      changes.permissions = normalizeRolePermissions((changes.role as string | null | undefined) ?? target.role, req.body.permissions);
+    }
+    if (changes.status && !["PENDING", "ACTIVE", "DISABLED"].includes(changes.status)) {
+      validationError(res, "Le statut est invalide.");
+      return;
+    }
+    const updated = userStore.update(target.id, changes);
+    if (updated?.status === "DISABLED") sessionStore.invalidateUserSessions(updated.id);
+    res.json({ success: true, code: "USER_UPDATED", message: "Utilisateur mis à jour avec succès.", data: { user: updated && sanitizeUser(updated) } });
+  });
+
+  app.delete("/api/users/:id", authMiddleware, requirePermission("users.delete"), (req: AuthenticatedRequest, res: Response): void => {
+    if (req.params.id === req.user?.id) {
+      res.status(400).json({ success: false, code: "SELF_DELETION", message: "Vous ne pouvez pas supprimer votre propre compte." });
+      return;
+    }
+    if (!userStore.delete(req.params.id)) {
+      res.status(404).json({ success: false, code: "USER_NOT_FOUND", message: "Utilisateur introuvable." });
+      return;
+    }
+    sessionStore.invalidateUserSessions(req.params.id);
+    res.json({ success: true, code: "USER_DELETED", message: "Utilisateur supprimé avec succès." });
   });
 
   return app;
