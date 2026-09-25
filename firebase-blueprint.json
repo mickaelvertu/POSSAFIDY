@@ -1,0 +1,171 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with their designated role and store assignment",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "storekeeper_central", "pos_seller", "reseller_manager", "manufacturer_manager"] },
+        "storeId": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["email", "role", "createdAt"]
+    },
+    "Store": {
+      "title": "Store",
+      "description": "Store or warehouse location",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "store_type": { "type": "string", "enum": ["CENTRAL_WAREHOUSE", "POS", "RESELLER", "MANUFACTURER"] },
+        "location": { "type": "string" },
+        "manager_name": { "type": "string" },
+        "is_active": { "type": "boolean" },
+        "created_at": { "type": "integer" },
+        "updated_at": { "type": "integer" }
+      },
+      "required": ["code", "name", "store_type", "is_active", "created_at"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Article categories",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "is_active": { "type": "boolean" },
+        "created_at": { "type": "integer" },
+        "updated_at": { "type": "integer" }
+      },
+      "required": ["code", "name", "is_active", "created_at"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "Product or raw material item with multi-tier pricing",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "category_id": { "type": "string" },
+        "article_type": { "type": "string", "enum": ["RESALE", "RAW_MATERIAL"] },
+        "unit": { "type": "string" },
+        "prix_achat": { "type": "number" },
+        "prix_normal": { "type": "number" },
+        "prix_revendeur": { "type": "number" },
+        "prix_special": { "type": "number" },
+        "is_active": { "type": "boolean" },
+        "created_at": { "type": "integer" },
+        "updated_at": { "type": "integer" }
+      },
+      "required": ["code", "name", "article_type", "prix_normal", "prix_revendeur", "is_active", "created_at"]
+    },
+    "StoreStock": {
+      "title": "StoreStock",
+      "description": "Current quantity of an article in a specific store",
+      "type": "object",
+      "properties": {
+        "store_id": { "type": "string" },
+        "article_id": { "type": "string" },
+        "quantity": { "type": "number" },
+        "reserved_quantity": { "type": "number" },
+        "updated_at": { "type": "integer" }
+      },
+      "required": ["store_id", "article_id", "quantity", "updated_at"]
+    },
+    "StockTransfer": {
+      "title": "StockTransfer",
+      "description": "Inter-store transfer with multi-step validation cycle and discrepancy tracking",
+      "type": "object",
+      "properties": {
+        "transfer_number": { "type": "string" },
+        "type": { "type": "string" },
+        "source_store_id": { "type": "string" },
+        "destination_store_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["DRAFT", "APPROVED", "SHIPPED", "IN_TRANSIT", "RECEIVED", "VALIDATED", "DISCREPANCY", "CANCELLED"] },
+        "requested_by": { "type": "string" },
+        "requested_by_name": { "type": "string" },
+        "has_discrepancy": { "type": "boolean" },
+        "created_at": { "type": "integer" },
+        "updated_at": { "type": "integer" }
+      },
+      "required": ["transfer_number", "type", "source_store_id", "destination_store_id", "status", "created_at"]
+    },
+    "StockMovement": {
+      "title": "StockMovement",
+      "description": "Immutable ledger tracking all 14 types of stock movements",
+      "type": "object",
+      "properties": {
+        "store_id": { "type": "string" },
+        "article_id": { "type": "string" },
+        "movement_type": { "type": "string" },
+        "quantity": { "type": "number" },
+        "reference_type": { "type": "string" },
+        "reference_number": { "type": "string" },
+        "before_quantity": { "type": "number" },
+        "after_quantity": { "type": "number" },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "integer" }
+      },
+      "required": ["store_id", "article_id", "movement_type", "quantity", "before_quantity", "after_quantity", "created_at"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Store sales with 4-step checking and validation cycle",
+      "type": "object",
+      "properties": {
+        "sale_number": { "type": "string" },
+        "store_id": { "type": "string" },
+        "customer_name": { "type": "string" },
+        "status": { "type": "string", "enum": ["DRAFT", "CHECKING", "VERIFIED", "VALIDATED", "CANCELLED", "REFUNDED"] },
+        "seller_name": { "type": "string" },
+        "total": { "type": "number" },
+        "payment_method": { "type": "string" },
+        "created_at": { "type": "integer" }
+      },
+      "required": ["sale_number", "store_id", "status", "total", "created_at"]
+    },
+    "Production": {
+      "title": "Production",
+      "description": "Production batches consuming raw materials and producing finished goods",
+      "type": "object",
+      "properties": {
+        "production_number": { "type": "string" },
+        "manufacturer_store_id": { "type": "string" },
+        "status": { "type": "string" },
+        "created_at": { "type": "integer" }
+      },
+      "required": ["production_number", "manufacturer_store_id", "status", "created_at"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Security and trace audit log",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "user_name": { "type": "string" },
+        "device_id": { "type": "string" },
+        "action": { "type": "string" },
+        "entity_type": { "type": "string" },
+        "entity_id": { "type": "string" },
+        "created_at": { "type": "integer" }
+      },
+      "required": ["user_id", "user_name", "action", "entity_type", "entity_id", "created_at"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": { "schema": "User", "description": "User profiles" },
+    "stores/{storeId}": { "schema": "Store", "description": "Warehouse and store locations" },
+    "categories/{categoryId}": { "schema": "Category", "description": "Article categories" },
+    "articles/{articleId}": { "schema": "Article", "description": "Product catalog and raw materials" },
+    "stocks/{stockId}": { "schema": "StoreStock", "description": "Stock levels per store and article" },
+    "transfers/{transferId}": { "schema": "StockTransfer", "description": "Stock transfers" },
+    "movements/{movementId}": { "schema": "StockMovement", "description": "Stock movements ledger" },
+    "sales/{saleId}": { "schema": "Sale", "description": "Sales records" },
+    "productions/{productionId}": { "schema": "Production", "description": "Production and raw material consumptions" },
+    "audit_logs/{auditId}": { "schema": "AuditLog", "description": "System audit logs" }
+  }
+}

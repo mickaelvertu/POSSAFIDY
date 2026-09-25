@@ -1,0 +1,634 @@
+import { useState, FormEvent } from "react";
+import { 
+  Article, 
+  Category, 
+  ArticleTypeCode, 
+  UserProfile 
+} from "../types";
+import { 
+  Boxes, 
+  Plus, 
+  Tag, 
+  Search, 
+  Edit, 
+  PowerOff, 
+  CheckCircle2, 
+  X, 
+  Layers, 
+  DollarSign,
+  FolderPlus
+} from "lucide-react";
+
+interface CatalogViewProps {
+  articles: Article[];
+  categories: Category[];
+  currentUser: UserProfile;
+  onCreateArticle: (art: Article) => void;
+  onUpdateArticle: (art: Article) => void;
+  onToggleArticleStatus: (articleId: string) => void;
+  onCreateCategory: (cat: Category) => void;
+  onToggleCategoryStatus: (categoryId: string) => void;
+}
+
+export default function CatalogView({
+  articles,
+  categories,
+  currentUser,
+  onCreateArticle,
+  onUpdateArticle,
+  onToggleArticleStatus,
+  onCreateCategory,
+  onToggleCategoryStatus
+}: CatalogViewProps) {
+  const [activeTab, setActiveTab] = useState<"ARTICLES" | "CATEGORIES">("ARTICLES");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedType, setSelectedType] = useState<"ALL" | ArticleTypeCode>("ALL");
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+
+  // Article Modal
+  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [artCode, setArtCode] = useState("");
+  const [artName, setArtName] = useState("");
+  const [artCatId, setArtCatId] = useState(categories[0]?.id || "");
+  const [artType, setArtType] = useState<ArticleTypeCode>("RESALE");
+  const [artUnit, setArtUnit] = useState("Unité");
+  const [artPrixAchat, setArtPrixAchat] = useState(0);
+  const [artPrixNormal, setArtPrixNormal] = useState(0);
+  const [artPrixRevendeur, setArtPrixRevendeur] = useState(0);
+  const [artMinStock, setArtMinStock] = useState(10);
+
+  // Category Modal
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [catCode, setCatCode] = useState("");
+  const [catName, setCatName] = useState("");
+  const [catDesc, setCatDesc] = useState("");
+
+  const handleOpenNewArticle = () => {
+    setEditingArticle(null);
+    setArtCode("");
+    setArtName("");
+    setArtCatId(categories[0]?.id || "");
+    setArtType("RESALE");
+    setArtUnit("Unité");
+    setArtPrixAchat(0);
+    setArtPrixNormal(0);
+    setArtPrixRevendeur(0);
+    setArtMinStock(10);
+    setIsArticleModalOpen(true);
+  };
+
+  const handleOpenEditArticle = (art: Article) => {
+    setEditingArticle(art);
+    setArtCode(art.code);
+    setArtName(art.name);
+    setArtCatId(art.category_id);
+    setArtType(art.article_type);
+    setArtUnit(art.unit);
+    setArtPrixAchat(art.prix_achat);
+    setArtPrixNormal(art.prix_normal);
+    setArtPrixRevendeur(art.prix_revendeur);
+    setArtMinStock(art.min_alert_stock || 10);
+    setIsArticleModalOpen(true);
+  };
+
+  const handleSaveArticle = (e: FormEvent) => {
+    e.preventDefault();
+    if (!artCode || !artName) {
+      alert("Le code et la désignation sont requis.");
+      return;
+    }
+
+    if (editingArticle) {
+      const updated: Article = {
+        ...editingArticle,
+        code: artCode,
+        name: artName,
+        category_id: artCatId,
+        article_type: artType,
+        unit: artUnit,
+        prix_achat: Number(artPrixAchat),
+        prix_normal: Number(artPrixNormal),
+        prix_revendeur: Number(artPrixRevendeur),
+        min_alert_stock: Number(artMinStock),
+        updated_at: Date.now()
+      };
+      onUpdateArticle(updated);
+    } else {
+      const newArt: Article = {
+        id: `art-${Date.now()}`,
+        code: artCode,
+        name: artName,
+        category_id: artCatId,
+        article_type: artType,
+        unit: artUnit,
+        prix_achat: Number(artPrixAchat),
+        prix_normal: Number(artPrixNormal),
+        prix_revendeur: Number(artPrixRevendeur),
+        min_alert_stock: Number(artMinStock),
+        is_active: true,
+        created_at: Date.now(),
+        updated_at: Date.now()
+      };
+      onCreateArticle(newArt);
+    }
+
+    setIsArticleModalOpen(false);
+  };
+
+  const handleSaveCategory = (e: FormEvent) => {
+    e.preventDefault();
+    if (!catCode || !catName) return;
+
+    const newCat: Category = {
+      id: `cat-${Date.now()}`,
+      code: catCode,
+      name: catName,
+      description: catDesc,
+      is_active: true,
+      created_at: Date.now(),
+      updated_at: Date.now()
+    };
+
+    onCreateCategory(newCat);
+    setIsCategoryModalOpen(false);
+  };
+
+  const filteredArticles = articles.filter((a) => {
+    if (selectedType !== "ALL" && a.article_type !== selectedType) return false;
+    if (selectedCategory !== "ALL" && a.category_id !== selectedCategory) return false;
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      if (!a.code.toLowerCase().includes(q) && !a.name.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Header Banner */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Boxes className="h-5 w-5 text-purple-600" />
+            <h2 className="text-lg font-bold text-slate-900 font-serif">
+              Articles, Matières Premières & Catégories
+            </h2>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Section 1 : Classification RESALE / RAW_MATERIAL. Les articles restent dans l'historique et sont désactivés plutôt que supprimés.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-slate-300"
+          >
+            <FolderPlus className="h-4 w-4" />
+            Nouvelle Catégorie
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenNewArticle}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Nouvel Article
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs Switcher: Articles vs Categories */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("ARTICLES")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+            activeTab === "ARTICLES" ? "bg-purple-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          Articles du Catalogue ({articles.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("CATEGORIES")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+            activeTab === "CATEGORIES" ? "bg-purple-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          Catégories Administrables ({categories.length})
+        </button>
+      </div>
+
+      {/* ARTICLES TAB */}
+      {activeTab === "ARTICLES" && (
+        <div className="space-y-4">
+          
+          {/* Filters Bar */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap gap-3 items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold text-slate-600">Catégorie :</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="ALL">Toutes les Catégories</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg text-xs">
+              <button
+                type="button"
+                onClick={() => setSelectedType("ALL")}
+                className={`px-2.5 py-1 rounded font-bold transition ${selectedType === "ALL" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600"}`}
+              >
+                Tous
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedType("RESALE")}
+                className={`px-2.5 py-1 rounded font-bold transition ${selectedType === "RESALE" ? "bg-white text-emerald-800 shadow-xs" : "text-slate-600"}`}
+              >
+                RESALE (Revente)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedType("RAW_MATERIAL")}
+                className={`px-2.5 py-1 rounded font-bold transition ${selectedType === "RAW_MATERIAL" ? "bg-white text-purple-800 shadow-xs" : "text-slate-600"}`}
+              >
+                RAW_MATERIAL (Matière Première)
+              </button>
+            </div>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="h-4 w-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Rechercher code, nom..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+          </div>
+
+          {/* Articles Table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                    <th className="py-3 px-3">Réf / Code</th>
+                    <th className="py-3 px-3">Désignation</th>
+                    <th className="py-3 px-3">Catégorie</th>
+                    <th className="py-3 px-3">Classification</th>
+                    <th className="py-3 px-3">Conditionnement</th>
+                    <th className="py-3 px-3 text-right">Prix Achat</th>
+                    <th className="py-3 px-3 text-right">Prix Normal (POS)</th>
+                    <th className="py-3 px-3 text-right">Prix Revendeur</th>
+                    <th className="py-3 px-3 text-center">Statut</th>
+                    <th className="py-3 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredArticles.map((art) => (
+                    <tr key={art.id} className={`hover:bg-slate-50 ${!art.is_active ? "opacity-60 bg-slate-50/60" : ""}`}>
+                      <td className="py-2.5 px-3 font-mono font-bold text-blue-700">
+                        {art.code}
+                      </td>
+                      <td className="py-2.5 px-3 font-medium text-slate-900">
+                        {art.name}
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-500">
+                        {getCategoryName(art.category_id)}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          art.article_type === "RESALE" 
+                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200" 
+                            : "bg-purple-50 text-purple-800 border border-purple-200"
+                        }`}>
+                          {art.article_type}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-500 font-mono">
+                        {art.unit}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                        {art.prix_achat.toLocaleString("fr-FR")} Ar
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                        {art.prix_normal.toLocaleString("fr-FR")} Ar
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-700">
+                        {art.prix_revendeur.toLocaleString("fr-FR")} Ar
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          art.is_active ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
+                        }`}>
+                          {art.is_active ? "Actif" : "Désactivé"}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditArticle(art)}
+                            className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-100 cursor-pointer"
+                            title="Modifier"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onToggleArticleStatus(art.id)}
+                            className={`p-1 rounded cursor-pointer ${
+                              art.is_active ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"
+                            }`}
+                            title={art.is_active ? "Désactiver (Conserver historique)" : "Réactiver"}
+                          >
+                            <PowerOff className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CATEGORIES TAB */}
+      {activeTab === "CATEGORIES" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {categories.map((c) => (
+            <div key={c.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                    {c.code}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    c.is_active ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
+                  }`}>
+                    {c.is_active ? "Actif" : "Désactivé"}
+                  </span>
+                </div>
+                <h3 className="font-bold text-slate-900 text-sm mt-3">{c.name}</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  {c.description || "Aucune description renseignée."}
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                <span className="text-slate-400">
+                  {articles.filter(a => a.category_id === c.id).length} articles
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onToggleCategoryStatus(c.id)}
+                  className="text-amber-600 hover:text-amber-800 font-bold"
+                >
+                  {c.is_active ? "Désactiver" : "Réactiver"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ARTICLE CREATE / EDIT MODAL */}
+      {isArticleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-slate-200 text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="font-bold text-base text-slate-900">
+                {editingArticle ? `Modifier l'Article [${editingArticle.code}]` : "Créer un Nouvel Article"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsArticleModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveArticle} className="mt-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Code Réf (Métier) :</label>
+                  <input
+                    type="text"
+                    required
+                    value={artCode}
+                    onChange={(e) => setArtCode(e.target.value)}
+                    placeholder="Ex: HE-RAV-01, B-107..."
+                    className="w-full font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Classification :</label>
+                  <select
+                    value={artType}
+                    onChange={(e) => setArtType(e.target.value as ArticleTypeCode)}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold"
+                  >
+                    <option value="RESALE">RESALE (Article de Revente)</option>
+                    <option value="RAW_MATERIAL">RAW_MATERIAL (Matière Première)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Désignation complète :</label>
+                <input
+                  type="text"
+                  required
+                  value={artName}
+                  onChange={(e) => setArtName(e.target.value)}
+                  placeholder="Ex: Baume Katrafay 50ml, Huile Essentielle..."
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Catégorie :</label>
+                  <select
+                    value={artCatId}
+                    onChange={(e) => setArtCatId(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Conditionnement / Unité :</label>
+                  <input
+                    type="text"
+                    value={artUnit}
+                    onChange={(e) => setArtUnit(e.target.value)}
+                    placeholder="Flacon 10ml, Pot 50ml, Kg, Litre..."
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                  />
+                </div>
+              </div>
+
+              {/* Pricing Grids (Section 7) */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="font-bold text-slate-800 block mb-2">Grille Tarifaire (Ariary) :</span>
+                <div className="grid grid-cols-3 gap-2 font-mono">
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-sans">Prix d'Achat :</label>
+                    <input
+                      type="number"
+                      value={artPrixAchat}
+                      onChange={(e) => setArtPrixAchat(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-right font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-sans">Prix Normal (POS) :</label>
+                    <input
+                      type="number"
+                      value={artPrixNormal}
+                      onChange={(e) => setArtPrixNormal(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-right font-bold text-blue-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-sans">Prix Revendeur :</label>
+                    <input
+                      type="number"
+                      value={artPrixRevendeur}
+                      onChange={(e) => setArtPrixRevendeur(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-right font-bold text-amber-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Seuil Alerte Stock Bas :</label>
+                <input
+                  type="number"
+                  value={artMinStock}
+                  onChange={(e) => setArtMinStock(Number(e.target.value))}
+                  className="w-full font-mono bg-white border border-slate-300 rounded-lg p-2"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsArticleModalOpen(false)}
+                  className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs cursor-pointer"
+                >
+                  Enregistrer l'Article
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CATEGORY CREATE MODAL */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="font-bold text-base text-slate-900">Nouvelle Catégorie</h3>
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="mt-3 space-y-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Code Catégorie :</label>
+                <input
+                  type="text"
+                  required
+                  value={catCode}
+                  onChange={(e) => setCatCode(e.target.value)}
+                  placeholder="Ex: CAT-HUILES, CAT-ARGILES..."
+                  className="w-full font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nom de la Catégorie :</label>
+                <input
+                  type="text"
+                  required
+                  value={catName}
+                  onChange={(e) => setCatName(e.target.value)}
+                  placeholder="Ex: Huiles Essentielles Pures..."
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Description :</label>
+                <textarea
+                  rows={2}
+                  value={catDesc}
+                  onChange={(e) => setCatDesc(e.target.value)}
+                  placeholder="Description détaillée..."
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs"
+                >
+                  Créer la Catégorie
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

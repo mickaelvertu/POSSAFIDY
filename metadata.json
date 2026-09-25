@@ -1,0 +1,6 @@
+{
+  "name": "StockGileada",
+  "description": "StockGileada is a professional warehouse management system featuring secure authentication, role-based controls for storekeepers and admins, real-time transaction processing, dynamic price calculations, and financial analytics for inventory management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

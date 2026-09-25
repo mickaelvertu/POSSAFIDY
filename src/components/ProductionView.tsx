@@ -1,0 +1,581 @@
+import { useState, FormEvent } from "react";
+import { 
+  Production, 
+  ProductionConsumptionLine, 
+  ProductionOutputLine, 
+  Store, 
+  Article, 
+  StoreStock, 
+  UserProfile, 
+  StockTransfer 
+} from "../types";
+import { generateRef, getArticleStock } from "../services/stockService";
+import { 
+  Factory, 
+  Plus, 
+  CheckCircle2, 
+  ArrowRight, 
+  RotateCcw, 
+  X, 
+  Trash2, 
+  Boxes, 
+  Layers,
+  FlaskConical,
+  Sparkles,
+  ArrowRightLeft
+} from "lucide-react";
+
+interface ProductionViewProps {
+  productions: Production[];
+  stores: Store[];
+  articles: Article[];
+  stocks: StoreStock[];
+  currentUser: UserProfile;
+  onCreateProduction: (prod: Production) => void;
+  onInitiateReturn: (transfer: StockTransfer) => void;
+}
+
+export default function ProductionView({
+  productions,
+  stores,
+  articles,
+  stocks,
+  currentUser,
+  onCreateProduction,
+  onInitiateReturn
+}: ProductionViewProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+
+  // Manufacturer store
+  const manufStore = stores.find(s => s.store_type === "MANUFACTURER") || stores[0];
+  const centralStore = stores.find(s => s.store_type === "CENTRAL_WAREHOUSE") || stores[0];
+
+  const rawArticles = articles.filter(a => a.article_type === "RAW_MATERIAL");
+  const resaleArticles = articles.filter(a => a.article_type === "RESALE");
+
+  // Production Form State
+  const [consumptions, setConsumptions] = useState<Array<{ article_id: string; quantity: number }>>([
+    { article_id: rawArticles[0]?.id || "", quantity: 10 }
+  ]);
+  const [outputs, setOutputs] = useState<Array<{ article_id: string; quantity: number }>>([
+    { article_id: resaleArticles[0]?.id || "", quantity: 5 }
+  ]);
+  const [batchNote, setBatchNote] = useState("");
+
+  // Return Form State (Return unused raw materials to central warehouse)
+  const [returnArticleId, setReturnArticleId] = useState(rawArticles[0]?.id || "");
+  const [returnQuantity, setReturnQuantity] = useState(5);
+  const [returnReason, setReturnReason] = useState("Surplus de production non consommé");
+
+  const handleOpenProductionModal = () => {
+    setConsumptions([{ article_id: rawArticles[0]?.id || "", quantity: 10 }]);
+    setOutputs([{ article_id: resaleArticles[0]?.id || "", quantity: 5 }]);
+    setBatchNote("");
+    setIsModalOpen(true);
+  };
+
+  const handleAddConsumptionLine = () => {
+    setConsumptions([...consumptions, { article_id: rawArticles[0]?.id || "", quantity: 5 }]);
+  };
+
+  const handleAddOutputLine = () => {
+    setOutputs([...outputs, { article_id: resaleArticles[0]?.id || "", quantity: 5 }]);
+  };
+
+  const handleSubmitProduction = (e: FormEvent) => {
+    e.preventDefault();
+    if (consumptions.length === 0 || outputs.length === 0) {
+      alert("Veuillez renseigner au moins une matière première consommée et un produit fini fabriqué.");
+      return;
+    }
+
+    const prodNumber = generateRef("PRD", productions.length);
+
+    const consumptionLines: ProductionConsumptionLine[] = consumptions.map((c, idx) => {
+      const art = articles.find(a => a.id === c.article_id);
+      return {
+        id: `cons-${Date.now()}-${idx}`,
+        article_id: c.article_id,
+        article_code: art?.code || "MP",
+        article_name: art?.name || "Matière Première",
+        unit: art?.unit || "Kg",
+        quantity: Number(c.quantity)
+      };
+    });
+
+    const outputLines: ProductionOutputLine[] = outputs.map((o, idx) => {
+      const art = articles.find(a => a.id === o.article_id);
+      return {
+        id: `out-${Date.now()}-${idx}`,
+        article_id: o.article_id,
+        article_code: art?.code || "PF",
+        article_name: art?.name || "Produit Fini",
+        unit: art?.unit || "Unité",
+        quantity: Number(o.quantity)
+      };
+    });
+
+    const newProd: Production = {
+      id: `prod-${Date.now()}`,
+      production_number: prodNumber,
+      manufacturer_store_id: manufStore.id,
+      status: "COMPLETED",
+      consumptions: consumptionLines,
+      outputs: outputLines,
+      notes: batchNote || "Lot de fabrication standard",
+      created_by: currentUser.uid,
+      created_by_name: currentUser.displayName || currentUser.email,
+      validated_by: currentUser.uid,
+      validated_by_name: currentUser.displayName || currentUser.email,
+      created_at: Date.now(),
+      validated_at: Date.now()
+    };
+
+    onCreateProduction(newProd);
+    setIsModalOpen(false);
+  };
+
+  const handleSubmitReturn = (e: FormEvent) => {
+    e.preventDefault();
+    const art = articles.find(a => a.id === returnArticleId);
+    if (!art) return;
+
+    const trfNumber = generateRef("RET", 99);
+    const returnTransfer: StockTransfer = {
+      id: `trf-return-${Date.now()}`,
+      transfer_number: trfNumber,
+      type: "RETURN",
+      source_store_id: manufStore.id,
+      destination_store_id: centralStore.id,
+      status: "DRAFT",
+      requested_by: currentUser.uid,
+      requested_by_name: currentUser.displayName || currentUser.email,
+      lines: [
+        {
+          id: `ret-line-${Date.now()}`,
+          transfer_id: `trf-return-${Date.now()}`,
+          article_id: art.id,
+          article_code: art.code,
+          article_name: art.name,
+          unit: art.unit,
+          quantity_sent: Number(returnQuantity),
+          quantity_received: 0,
+          quantity_accepted: 0,
+          quantity_rejected: 0,
+          note: returnReason
+        }
+      ],
+      note: `Déclaration de retour de MP non consommée : ${returnReason}`,
+      has_discrepancy: false,
+      created_at: Date.now(),
+      updated_at: Date.now()
+    };
+
+    onInitiateReturn(returnTransfer);
+    setIsReturnModalOpen(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Header Banner */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Factory className="h-5 w-5 text-indigo-600" />
+            <h2 className="text-lg font-bold text-slate-900 font-serif">
+              Magasin de Production & Laboratoire
+            </h2>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Section 6 : Consommation validée de matières premières (diminution MP) et fabrication de produits finis (crédit PF).
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsReturnModalOpen(true)}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-slate-300"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Retour MP vers Dépôt Central
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenProductionModal}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Nouvel Ordre de Fabrication
+          </button>
+        </div>
+      </div>
+
+      {/* Principle Schema Banner (Section 6) */}
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-5 rounded-2xl shadow-xs">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-900/60 px-2 py-0.5 rounded border border-indigo-700">
+          Flux de Production GILEADA (Règle N°6)
+        </span>
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+          <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700">
+            <span className="text-indigo-400 font-bold block mb-1">1. ENTRÉE / STOCKAGE</span>
+            Dépôt Central → Transfert validé → Stock Matières Premières (Atelier).
+          </div>
+          <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700">
+            <span className="text-rose-400 font-bold block mb-1">2. CONSOMMATION IMMÉDIATE</span>
+            Diminue immédiatement le stock MP du laboratoire lors de la fabrication.
+          </div>
+          <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700">
+            <span className="text-emerald-400 font-bold block mb-1">3. SORTIE PRODUIT FINI</span>
+            Crédite le stock de produits finis (Articles de Revente) prêt à distribuer.
+          </div>
+        </div>
+      </div>
+
+      {/* Production History */}
+      <div className="space-y-4">
+        {productions.map((p) => (
+          <div key={p.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm font-black text-indigo-900 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+                  {p.production_number}
+                </span>
+                <span className="text-xs text-slate-500 font-mono">
+                  {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                </span>
+                <span className="text-xs font-semibold text-slate-600">
+                  Opérateur : {p.created_by_name}
+                </span>
+              </div>
+              <span className="bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-0.5 rounded-full border border-emerald-300">
+                {p.status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+              
+              {/* Consumed Raw Materials */}
+              <div className="p-3.5 bg-rose-50/50 rounded-xl border border-rose-200 text-xs">
+                <div className="font-bold text-rose-800 mb-2 flex items-center gap-1.5">
+                  <Layers className="h-4 w-4" />
+                  Matières Premières Consommées (Sortie de stock MP) :
+                </div>
+                <div className="space-y-1.5">
+                  {p.consumptions.map((c) => (
+                    <div key={c.id} className="flex justify-between items-center">
+                      <span className="font-medium text-slate-800">[{c.article_code}] {c.article_name}</span>
+                      <span className="font-mono font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
+                        -{c.quantity} {c.unit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Manufactured Finished Goods */}
+              <div className="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 text-xs">
+                <div className="font-bold text-emerald-800 mb-2 flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4" />
+                  Produits Finis Fabriqués (Entrée en stock Revente) :
+                </div>
+                <div className="space-y-1.5">
+                  {p.outputs.map((o) => (
+                    <div key={o.id} className="flex justify-between items-center">
+                      <span className="font-medium text-slate-800">[{o.article_code}] {o.article_name}</span>
+                      <span className="font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                        +{o.quantity} {o.unit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            <div className="mt-3 pt-2 border-t border-slate-100 text-xs text-slate-500 italic">
+              Observation : "{p.notes}"
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* NEW PRODUCTION MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 border border-slate-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="h-5 w-5 text-indigo-600" />
+                <h3 className="font-bold text-slate-900 text-base">Nouvel Ordre de Fabrication Laboratoire</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitProduction} className="mt-4 space-y-4 text-xs">
+              
+              {/* Consumptions Block */}
+              <div className="p-4 bg-rose-50/50 rounded-xl border border-rose-200">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="font-bold text-rose-900 flex items-center gap-1.5">
+                    <Layers className="h-4 w-4" />
+                    1. Matières Premières à consommer :
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddConsumptionLine}
+                    className="font-bold text-rose-700 hover:text-rose-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Ajouter MP
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {consumptions.map((c, idx) => {
+                    const stockAvail = getArticleStock(stocks, manufStore.id, c.article_id);
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <select
+                          value={c.article_id}
+                          onChange={(e) => {
+                            const newCons = [...consumptions];
+                            newCons[idx].article_id = e.target.value;
+                            setConsumptions(newCons);
+                          }}
+                          className="flex-1 bg-white border border-slate-300 rounded-lg p-2 font-medium"
+                        >
+                          {rawArticles.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              [{a.code}] {a.name} ({a.unit})
+                            </option>
+                          ))}
+                        </select>
+
+                        <div className="w-24">
+                          <input
+                            type="number"
+                            min="1"
+                            value={c.quantity}
+                            onChange={(e) => {
+                              const newCons = [...consumptions];
+                              newCons[idx].quantity = Math.max(1, Number(e.target.value));
+                              setConsumptions(newCons);
+                            }}
+                            className="w-full text-right font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                            placeholder="Qté consommée"
+                          />
+                        </div>
+
+                        <span className="text-[10px] text-slate-400 font-mono w-20 text-right">
+                          Stock labo: {stockAvail}
+                        </span>
+
+                        {consumptions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setConsumptions(consumptions.filter((_, i) => i !== idx))}
+                            className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Outputs Block */}
+              <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="font-bold text-emerald-900 flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4" />
+                    2. Produits Finis à fabriquer (Sortie) :
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddOutputLine}
+                    className="font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Ajouter Produit Fini
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {outputs.map((o, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <select
+                        value={o.article_id}
+                        onChange={(e) => {
+                          const newOuts = [...outputs];
+                          newOuts[idx].article_id = e.target.value;
+                          setOutputs(newOuts);
+                        }}
+                        className="flex-1 bg-white border border-slate-300 rounded-lg p-2 font-medium"
+                      >
+                        {resaleArticles.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            [{a.code}] {a.name} ({a.unit})
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="w-24">
+                        <input
+                          type="number"
+                          min="1"
+                          value={o.quantity}
+                          onChange={(e) => {
+                            const newOuts = [...outputs];
+                            newOuts[idx].quantity = Math.max(1, Number(e.target.value));
+                            setOutputs(newOuts);
+                          }}
+                          className="w-full text-right font-mono font-bold bg-white border border-slate-300 rounded-lg p-2 text-emerald-900"
+                          placeholder="Qté fabriquée"
+                        />
+                      </div>
+
+                      {outputs.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setOutputs(outputs.filter((_, i) => i !== idx))}
+                          className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Batch note */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  N° de Lot & Observations de laboratoire :
+                </label>
+                <input
+                  type="text"
+                  value={batchNote}
+                  onChange={(e) => setBatchNote(e.target.value)}
+                  placeholder="Ex: Lot de distillation cuve #2, rendement conforme..."
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                />
+              </div>
+
+              {/* Submit */}
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs cursor-pointer"
+                >
+                  Enregistrer & Valider la Production
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DECLARE RETURN OF UNUSED RAW MATERIAL (Section 6) */}
+      {isReturnModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="h-5 w-5 text-amber-600" />
+                <h3 className="font-bold text-base text-slate-900">
+                  Retour de Matières Premières Non Consommées
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReturnModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReturn} className="mt-3 space-y-3">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 leading-relaxed">
+                <strong>Règle Métier GILEADA :</strong> Le dépôt central ne sera recrédité qu'après contrôle et validation de la réception.
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Matière Première à retourner :
+                </label>
+                <select
+                  value={returnArticleId}
+                  onChange={(e) => setReturnArticleId(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium"
+                >
+                  {rawArticles.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      [{a.code}] {a.name} ({a.unit})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Quantité retournée :</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={returnQuantity}
+                  onChange={(e) => setReturnQuantity(Number(e.target.value))}
+                  className="w-full font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Motif du retour :</label>
+                <input
+                  type="text"
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsReturnModalOpen(false)}
+                  className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs"
+                >
+                  Déclarer le Retour (Workflow Contrôlé)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
