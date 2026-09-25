@@ -15,7 +15,14 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE' &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['ADMIN', 'SUPER_ADMIN']
+        )
+      );
     }
 
     function isActiveUser() {
@@ -28,7 +35,13 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
-      allow create: if (isAdmin() || request.auth.uid == userId) &&
+      allow create: if isAdmin() || (
+        request.auth.uid == userId &&
+        request.resource.data.status == 'PENDING' &&
+        request.resource.data.role == null &&
+        request.resource.data.permissions.size() == 0 &&
+        request.resource.data.assignedStores.size() == 0
+      ) &&
         request.resource.data.email is string &&
         request.resource.data.status in ['PENDING', 'ACTIVE', 'DISABLED'];
       allow update: if isSignedIn() && (

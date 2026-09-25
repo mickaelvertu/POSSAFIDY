@@ -97,6 +97,7 @@ export class AuthService {
     const profileSnapshot = await getDoc(profileRef);
     const adminSnapshot = await getDoc(doc(db, "admins", firebaseUser.uid));
     const profile = profileSnapshot.exists() ? profileSnapshot.data() : {};
+    const adminProfile = adminSnapshot.exists() ? adminSnapshot.data() : {};
     const isAdmin = adminSnapshot.exists();
     const now = new Date().toISOString();
     const user: User = {
@@ -106,7 +107,7 @@ export class AuthService {
       email: firebaseUser.email || String(profile.email || ""),
       phone: profile.phone,
       status: profile.status || "ACTIVE",
-      role: isAdmin ? "SUPER_ADMIN" : profile.role || null,
+      role: isAdmin ? adminProfile.role || profile.role || "ADMIN" : profile.role || null,
       permissions: isAdmin ? [...ALL_PERMISSIONS] : Array.isArray(profile.permissions) ? profile.permissions : [],
       assignedStores: Array.isArray(profile.assignedStores) ? profile.assignedStores : [],
       createdAt: profile.createdAt || now,
@@ -239,6 +240,16 @@ export class AuthService {
         createdAt: now,
         updatedAt: now
       });
+      if (payload.role === "ADMIN" || payload.role === "SUPER_ADMIN") {
+        await setDoc(doc(db, "admins", credential.user.uid), {
+          uid: credential.user.uid,
+          email,
+          role: payload.role,
+          active: true,
+          createdAt: now,
+          updatedAt: now
+        });
+      }
       await signOut(this.provisioningAuth);
       const user = await this.mapFirebaseUser({ ...credential.user, uid: credential.user.uid });
       return { success: true, code: "USER_CREATED", message: "Utilisateur créé avec succès.", data: { user, temporaryPassword } };
@@ -250,6 +261,20 @@ export class AuthService {
   async updateManagedUser(id: string, payload: Record<string, unknown>): Promise<ApiResponse<{ user: User }>> {
     try {
       await updateDoc(doc(db, "users", id), { ...payload, updatedAt: new Date().toISOString() });
+      const adminRef = doc(db, "admins", id);
+      if (payload.role === "ADMIN" || payload.role === "SUPER_ADMIN") {
+        const existingAdmin = await getDoc(adminRef);
+        await setDoc(adminRef, {
+          ...(existingAdmin.exists() ? existingAdmin.data() : {}),
+          uid: id,
+          email: String(payload.email || ""),
+          role: payload.role,
+          active: true,
+          updatedAt: new Date().toISOString()
+        });
+      } else if (payload.role !== undefined) {
+        await deleteDoc(adminRef);
+      }
       const snapshot = await getDoc(doc(db, "users", id));
       const data = snapshot.data() || {};
       const user = await this.mapFirebaseUser({ uid: id, email: data.email || "", displayName: null } as FirebaseUser);
