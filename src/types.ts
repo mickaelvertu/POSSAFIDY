@@ -1,4 +1,6 @@
 // GILEADA — Modèle de données & Règles métier
+export * from "./types/auth";
+
 
 export type UserRole = 
   | "admin"

@@ -1,10 +1,11 @@
 {
-  "projectId": "vtcplus-mg",
-  "appId": "1:64864717761:web:595da271f718432a1a7d40",
-  "apiKey": "AIzaSyAjCYBrBPeXYfX-_mv5eb2pKhzj_lmQdkQ",
-  "authDomain": "vtcplus-mg.firebaseapp.com",
+  "projectId": "stockgileada",
+  "appId": "1:870110897518:web:15c4006be9cc9255298d7f",
+  "apiKey": "AIzaSyA6iRLcLni3xKMN9WedNoOOyQqJ2rBwzwc",
+  "authDomain": "stockgileada.firebaseapp.com",
+  "databaseURL": "https://stockgileada-default-rtdb.firebaseio.com",
   "firestoreDatabaseId": "ai-studio-stockgileada-5c2d38b9-1b03-48e4-87ac-411c65868528",
-  "storageBucket": "vtcplus-mg.firebasestorage.app",
-  "messagingSenderId": "64864717761",
-  "measurementId": ""
+  "storageBucket": "stockgileada.firebasestorage.app",
+  "messagingSenderId": "870110897518",
+  "measurementId": "G-C98Q9SWGWC"
 }

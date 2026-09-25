@@ -800,44 +800,174 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   }
 ];
 
+import { DEFAULT_ROLE_PERMISSIONS } from "../services/authService";
+import { ALL_PERMISSIONS } from "../types";
+
 export const DEMO_USERS: UserProfile[] = [
   {
+    id: "user-admin",
     uid: "user-admin",
+    username: "safidy.admin",
     email: "admin@gileada.mg",
+    firstName: "Safidy",
+    lastName: "Miarintsoa",
     displayName: "Safidy Miarintsoa (Super Admin)",
-    role: "admin",
+    roleId: "SUPER_ADMIN",
+    role: "SUPER_ADMIN",
+    isActive: true,
+    storeIds: [], // All stores access
+    permissions: [...ALL_PERMISSIONS],
     createdAt: 1735689600000,
+    lastLoginAt: Date.now()
   },
   {
-    uid: "user-central-01",
-    email: "depot@gileada.mg",
-    displayName: "Rakoto Jean (Magasinier Dépôt Central)",
-    role: "storekeeper_central",
-    storeId: "store-central-01",
+    id: "user-ops-admin",
+    uid: "user-ops-admin",
+    username: "andry.ops",
+    email: "operations@gileada.mg",
+    firstName: "Andry",
+    lastName: "Rabe",
+    displayName: "Andry Rabe (Administrateur Opérations)",
+    roleId: "ADMIN",
+    role: "ADMIN",
+    isActive: true,
+    storeIds: [],
+    permissions: [...DEFAULT_ROLE_PERMISSIONS.ADMIN],
     createdAt: 1735689600000,
+    lastLoginAt: Date.now()
   },
   {
+    id: "user-pos-01",
     uid: "user-pos-01",
+    username: "rasoa.pos1",
     email: "pos.analakely@gileada.mg",
-    displayName: "Rasoa Hanta (Responsable POS Analakely)",
-    role: "pos_seller",
+    firstName: "Hanta",
+    lastName: "Rasoa",
+    displayName: "Rasoa Hanta (Vendeur POS Analakely)",
+    roleId: "VENDEUR",
+    role: "VENDEUR",
     storeId: "store-pos-01",
+    storeIds: ["store-pos-01"], // Restricted to POS Analakely
+    isActive: true,
+    permissions: [
+      "dashboard.view",
+      "products.view",
+      "stock.view",
+      "sales.view",
+      "sales.create",
+      "sales.edit",
+      "sales.validate"
+    ],
     createdAt: 1735689600000,
+    lastLoginAt: Date.now()
   },
   {
+    id: "user-pos-02",
+    uid: "user-pos-02",
+    username: "jean.pos2",
+    email: "pos.tamatave@gileada.mg",
+    firstName: "Jean",
+    lastName: "Nirina",
+    displayName: "Jean Nirina (Vendeur POS Tamatave - Sans droit validation)",
+    roleId: "VENDEUR",
+    role: "VENDEUR",
+    storeId: "store-pos-02",
+    storeIds: ["store-pos-02"], // Restricted to POS Tamatave
+    isActive: true,
+    // Note: Has sales.create but NO sales.validate, demonstrating granular permission check!
+    permissions: [
+      "dashboard.view",
+      "products.view",
+      "stock.view",
+      "sales.view",
+      "sales.create"
+    ],
+    createdAt: 1735689600000,
+    lastLoginAt: Date.now()
+  },
+  {
+    id: "user-central-01",
+    uid: "user-central-01",
+    username: "rakoto.depot",
+    email: "depot@gileada.mg",
+    firstName: "Jean",
+    lastName: "Rakoto",
+    displayName: "Rakoto Jean (Magasinier Dépôt Central)",
+    roleId: "MAGASINIER",
+    role: "MAGASINIER",
+    storeId: "store-central-01",
+    storeIds: ["store-central-01"],
+    isActive: true,
+    permissions: [...DEFAULT_ROLE_PERMISSIONS.MAGASINIER],
+    createdAt: 1735689600000,
+    lastLoginAt: Date.now()
+  },
+  {
+    id: "user-rev-01",
     uid: "user-rev-01",
+    username: "mamy.revendeur",
     email: "revendeur.majunga@gileada.mg",
-    displayName: "Mamy Lala (Gérant Revendeur Majunga)",
-    role: "reseller_manager",
+    firstName: "Mamy",
+    lastName: "Lala",
+    displayName: "Mamy Lala (Responsable Revendeur Majunga)",
+    roleId: "RESPONSABLE_MAGASIN",
+    role: "RESPONSABLE_MAGASIN",
     storeId: "store-rev-01",
+    storeIds: ["store-rev-01"],
+    isActive: true,
+    permissions: [...DEFAULT_ROLE_PERMISSIONS.RESPONSABLE_MAGASIN],
     createdAt: 1735689600000,
+    lastLoginAt: Date.now()
   },
   {
+    id: "user-manuf",
     uid: "user-manuf",
+    username: "dr.ranaivo",
     email: "laboratoire@gileada.mg",
+    firstName: "Ranaivo",
+    lastName: "Docteur",
     displayName: "Dr. Ranaivo (Chef Atelier Production)",
-    role: "manufacturer_manager",
+    roleId: "PRODUCTION",
+    role: "PRODUCTION",
     storeId: "store-manuf-01",
+    storeIds: ["store-manuf-01"],
+    isActive: true,
+    permissions: [...DEFAULT_ROLE_PERMISSIONS.PRODUCTION],
     createdAt: 1735689600000,
+    lastLoginAt: Date.now()
+  },
+  {
+    id: "user-comptable",
+    uid: "user-comptable",
+    username: "lalatiana.compta",
+    email: "compta@gileada.mg",
+    firstName: "Lalatiana",
+    lastName: "R.",
+    displayName: "Lalatiana R. (Comptable & Audit)",
+    roleId: "COMPTABLE",
+    role: "COMPTABLE",
+    storeIds: [],
+    isActive: true,
+    permissions: [...DEFAULT_ROLE_PERMISSIONS.COMPTABLE],
+    createdAt: 1735689600000,
+    lastLoginAt: Date.now()
+  },
+  {
+    id: "user-bloque",
+    uid: "user-bloque",
+    username: "paul.bloque",
+    email: "paul.bloque@gileada.mg",
+    firstName: "Paul",
+    lastName: "Inactif",
+    displayName: "Paul Inactif (Compte Désactivé / Bloqué)",
+    roleId: "VENDEUR",
+    role: "VENDEUR",
+    storeId: "store-pos-01",
+    storeIds: ["store-pos-01"],
+    isActive: false, // Inactive account demo
+    permissions: [],
+    createdAt: 1735689600000,
+    lastLoginAt: Date.now()
   }
 ];
+

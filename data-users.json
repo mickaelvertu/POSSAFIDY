@@ -1,0 +1,72 @@
+[
+  {
+    "id": "USR-001",
+    "firstName": "Jean",
+    "lastName": "Rakoto",
+    "email": "active@gileada.mg",
+    "phone": "0340000000",
+    "passwordHash": "e69769b585e31c8c15f38b52d0b1a2e1:556552610787621bdd367b86ced9eda67facb871e99740ade5c2f99a7c6da9b4f54281d4ce6dc98dfa223aef620b02ee9656de99c3c5c04360650c1e7bd4378f",
+    "status": "ACTIVE",
+    "role": null,
+    "permissions": [],
+    "assignedStores": [],
+    "createdAt": "2026-01-01T08:00:00.000Z",
+    "updatedAt": "2026-01-01T08:00:00.000Z"
+  },
+  {
+    "id": "USR-002",
+    "firstName": "Hanta",
+    "lastName": "Rasoa",
+    "email": "pending@gileada.mg",
+    "phone": "0320000000",
+    "passwordHash": "0cba1a93726dae1e254f536749497d6f:b02128c0f76bcb8c5890eaf189031c72724e74af00a0c396a5a513118473b547855f77fe1417c792966b147bc4fe9d3e89c0f67952159e7fd79bdfcee5110ff7",
+    "status": "PENDING",
+    "role": null,
+    "permissions": [],
+    "assignedStores": [],
+    "createdAt": "2026-01-02T09:00:00.000Z",
+    "updatedAt": "2026-01-02T09:00:00.000Z"
+  },
+  {
+    "id": "USR-003",
+    "firstName": "Andry",
+    "lastName": "Nirina",
+    "email": "disabled@gileada.mg",
+    "phone": "0330000000",
+    "passwordHash": "27a145696bc91dffd8b2cfef34b476aa:f612879384b338523952dc675d8176cfd0e5d7895278353c84f1b6206183fc699f32bc81fc24f685361156c39ed9ebfaf7136529c39dafa90efea87f46b9a994",
+    "status": "DISABLED",
+    "role": null,
+    "permissions": [],
+    "assignedStores": [],
+    "createdAt": "2026-01-03T10:00:00.000Z",
+    "updatedAt": "2026-01-03T10:00:00.000Z"
+  },
+  {
+    "id": "USR-504498",
+    "firstName": "Jean",
+    "lastName": "Rakoto",
+    "email": "testuser_1790320504341@example.com",
+    "phone": "0340000000",
+    "passwordHash": "868eb1694cf8dd2483a0bd8cd270056f:eab7b08568964a759b97726a355e9d37368f038760e31ee8e10f6ba09c16ed1d1b2da459c0a2bb1d092ae7fd5ec472b9fa5cac0fdc1074a43b9b77494e986954",
+    "status": "PENDING",
+    "role": null,
+    "permissions": [],
+    "assignedStores": [],
+    "createdAt": "2026-09-25T07:15:04.498Z",
+    "updatedAt": "2026-09-25T07:15:04.498Z"
+  },
+  {
+    "id": "USR-559628",
+    "firstName": "Nomena",
+    "lastName": "Razafy",
+    "email": "nomena@gileada.mg",
+    "phone": "0341234567",
+    "passwordHash": "d174e04ee07a5f9badd27a6fe00a6fae:07ddc6aeea831cf17277a6b4effbeba9d8aa58153e1383fcb2c2479513b5fd37bc302a80640b52cb7b273dd8aba5cf815ec530be8d9b68745e342de925c235eb",
+    "status": "PENDING",
+    "role": null,
+    "permissions": [],
+    "assignedStores": [],
+    "createdAt": "2026-09-25T07:15:59.628Z",
+    "updatedAt": "2026-09-25T07:15:59.628Z"
+  }
+]

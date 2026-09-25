@@ -2,16 +2,19 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "User profile with their designated role and store assignment",
+      "description": "User profile with their account status, role, permissions, and assigned stores",
       "type": "object",
       "properties": {
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
         "email": { "type": "string" },
-        "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin", "storekeeper_central", "pos_seller", "reseller_manager", "manufacturer_manager"] },
-        "storeId": { "type": "string" },
-        "createdAt": { "type": "integer" }
+        "phone": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "ACTIVE", "DISABLED"] },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
       },
-      "required": ["email", "role", "createdAt"]
+      "required": ["firstName", "lastName", "email", "status", "createdAt", "updatedAt"]
     },
     "Store": {
       "title": "Store",
