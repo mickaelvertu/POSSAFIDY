@@ -52,6 +52,7 @@ export default function StocksView({
 
   // Adjustment Modal
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [isDepositMode, setIsDepositMode] = useState(false);
   const [adjustStoreId, setAdjustStoreId] = useState(stores[0]?.id || "");
   const [adjustArticleId, setAdjustArticleId] = useState(articles[0]?.id || "");
   const [adjustNewQty, setAdjustNewQty] = useState(0);
@@ -65,13 +66,29 @@ export default function StocksView({
     setAdjustStoreId(sId);
     setAdjustArticleId(aId);
     setAdjustNewQty(getArticleStock(stocks, sId, aId));
+    setIsDepositMode(false);
     setAdjustReason("Inventaire physique périodique");
+    setIsAdjustModalOpen(true);
+  };
+
+  const handleOpenDepositModal = () => {
+    const sId = selectedStoreId !== "ALL" ? selectedStoreId : stores[0]?.id || "";
+    const aId = articles[0]?.id || "";
+    setAdjustStoreId(sId);
+    setAdjustArticleId(aId);
+    setAdjustNewQty(0);
+    setIsDepositMode(true);
+    setAdjustReason("Réception de marchandises");
     setIsAdjustModalOpen(true);
   };
 
   const handleConfirmAdjust = (e: FormEvent) => {
     e.preventDefault();
-    onAdjustStock(adjustStoreId, adjustArticleId, Number(adjustNewQty), adjustReason);
+    const currentStock = getArticleStock(stocks, adjustStoreId, adjustArticleId);
+    const targetQuantity = isDepositMode
+      ? currentStock + Number(adjustNewQty)
+      : Number(adjustNewQty);
+    onAdjustStock(adjustStoreId, adjustArticleId, targetQuantity, adjustReason);
     setIsAdjustModalOpen(false);
   };
 
@@ -124,11 +141,11 @@ export default function StocksView({
 
         <button
           type="button"
-          onClick={() => handleOpenAdjustModal()}
+          onClick={handleOpenDepositModal}
           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
         >
-          <SlidersHorizontal className="h-4 w-4" />
-          Ajustement d'Inventaire
+          <Plus className="h-4 w-4" />
+          Dépôt de stock
         </button>
       </div>
 
@@ -308,9 +325,9 @@ export default function StocksView({
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 text-xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-5 w-5 text-blue-600" />
+                  {isDepositMode ? <Plus className="h-5 w-5 text-blue-600" /> : <SlidersHorizontal className="h-5 w-5 text-blue-600" />}
                 <h3 className="font-bold text-base text-slate-900">
-                  Ajustement d'Inventaire Physique
+                  {isDepositMode ? "Dépôt de stock" : "Ajustement d'Inventaire Physique"}
                 </h3>
               </div>
               <button
@@ -358,11 +375,11 @@ export default function StocksView({
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Nouvelle Quantité Constatée (Comptage Physique) :
+                  {isDepositMode ? "Quantité à déposer :" : "Nouvelle Quantité Constatée (Comptage Physique) :"}
                 </label>
                 <input
                   type="number"
-                  min="0"
+                  min={isDepositMode ? "1" : "0"}
                   value={adjustNewQty}
                   onChange={(e) => setAdjustNewQty(Number(e.target.value))}
                   className="w-full font-mono font-bold text-base bg-white border border-slate-300 rounded-lg p-2 text-right"
@@ -371,7 +388,7 @@ export default function StocksView({
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Motif de l'ajustement (Obligatoire pour l'audit) :
+                  Motif du mouvement (Obligatoire pour l'audit) :
                 </label>
                 <input
                   type="text"
@@ -395,7 +412,7 @@ export default function StocksView({
                   type="submit"
                   className="px-5 py-2 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs cursor-pointer"
                 >
-                  Enregistrer l'Ajustement
+                  {isDepositMode ? "Enregistrer le dépôt" : "Enregistrer l'Ajustement"}
                 </button>
               </div>
 

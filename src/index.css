@@ -6,3 +6,12 @@
   --font-display: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
+
+@layer base {
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-slate-400);
+    font-weight: 400;
+    opacity: 1;
+  }
+}
