@@ -31,6 +31,13 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE';
     }
 
+    function hasPermission(permission) {
+      return isAdmin() || (
+        isActiveUser() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.hasAny([permission])
+      );
+    }
+
     // User collection access rules
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
@@ -56,6 +63,19 @@ service cloud.firestore {
       allow get: if isSignedIn() && (adminId == request.auth.uid || isAdmin());
       allow list: if isAdmin();
       allow write: if isAdmin();
+    }
+
+    // Inventory master data. Administrators seed and maintain stores; active
+    // users may read inventory, while stock adjustments require stock.adjust.
+    match /stores/{storeId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    match /stocks/{stockId} {
+      allow read: if isActiveUser();
+      allow create, update: if hasPermission('stock.adjust');
+      allow delete: if isAdmin();
     }
   }
 }

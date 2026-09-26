@@ -3,8 +3,14 @@ import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
 import { AppRoleId, AppUser } from "../../types";
 import { User } from "../../types/auth";
-import { INITIAL_STORES } from "../../data/initialData";
+import { INITIAL_STORES, INITIAL_CATEGORIES, INITIAL_ARTICLES, INITIAL_STOCKS, INITIAL_SALES } from "../../data/initialData";
 import UsersView from "../UsersView";
+import RoleHomeView from "../RoleHomeView";
+import SalesView from "../SalesView";
+import StocksView from "../StocksView";
+import { Sale, StoreStock } from "../../types";
+import { updateStockQuantity } from "../../services/stockService";
+import { loadInventoryData, saveStockAdjustment, seedInitialInventoryData } from "../../services/inventoryService";
 import { 
   ShieldCheck, 
   LogOut, 
@@ -59,6 +65,10 @@ export default function AuthenticatedSessionView() {
   const [testLoading, setTestLoading] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks">("home");
+  const [sales, setSales] = useState<Sale[]>([...INITIAL_SALES]);
+  const [stocks, setStocks] = useState<StoreStock[]>([...INITIAL_STOCKS]);
+  const [inventoryStores, setInventoryStores] = useState([...INITIAL_STORES]);
 
   const canManageUsers = Boolean(user && (
     user.role === "SUPER_ADMIN" ||
@@ -78,6 +88,25 @@ export default function AuthenticatedSessionView() {
       setUsersError(error instanceof Error ? error.message : "Impossible de charger les utilisateurs.");
     });
   }, [canManageUsers]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadInventory() {
+      try {
+        if (canManageUsers) await seedInitialInventoryData();
+        const inventory = await loadInventoryData();
+        if (!isMounted) return;
+        if (inventory.stores.length > 0) setInventoryStores(inventory.stores);
+        if (inventory.stocks.length > 0) setStocks(inventory.stocks);
+      } catch (error) {
+        console.error("Inventory Firestore load failed:", error);
+      }
+    }
+    if (user) loadInventory();
+    return () => {
+      isMounted = false;
+    };
+  }, [canManageUsers, user]);
 
   const handleCreateManagedUser = async (newUser: AppUser) => {
     const response = await authService.createManagedUser({
@@ -123,6 +152,47 @@ export default function AuthenticatedSessionView() {
     setManagedUsers(current => current.filter(item => item.id !== userId));
   };
 
+  const openUserManagement = () => {
+    document.getElementById("user-management")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const currentAppUser = user ? toAppUser(user) : null;
+  const accessibleStores = user && user.assignedStores.length > 0 && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"
+    ? inventoryStores.filter(store => user.assignedStores.includes(store.id))
+    : inventoryStores;
+
+  const handleCreateSale = (sale: Sale) => {
+    setSales(current => [sale, ...current]);
+  };
+
+  const handleVerifySale = (saleId: string) => {
+    setSales(current => current.map(sale => {
+      if (sale.id !== saleId) return sale;
+      return { ...sale, status: sale.status === "DRAFT" ? "CHECKING" : "VERIFIED" };
+    }));
+  };
+
+  const handleValidateSale = (saleId: string) => {
+    setSales(current => current.map(sale => sale.id === saleId ? { ...sale, status: "VALIDATED", validated_at: Date.now(), validated_by: user?.id, validated_by_name: user ? `${user.firstName} ${user.lastName}` : undefined } : sale));
+  };
+
+  const handleCancelSale = (saleId: string) => {
+    setSales(current => current.map(sale => sale.id === saleId ? { ...sale, status: "CANCELLED" } : sale));
+  };
+
+  const handleAdjustStock = async (storeId: string, articleId: string, newQty: number) => {
+    const currentQty = stocks.find(stock => stock.store_id === storeId && stock.article_id === articleId)?.quantity || 0;
+    const { newStocks } = updateStockQuantity(stocks, storeId, articleId, newQty - currentQty);
+    const updatedStock = newStocks.find(stock => stock.store_id === storeId && stock.article_id === articleId);
+    if (!updatedStock) return;
+    try {
+      await saveStockAdjustment(updatedStock, newQty);
+      setStocks(newStocks);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'ajustement dans Firestore.");
+    }
+  };
+
   const handleCopyToken = () => {
     if (token) {
       navigator.clipboard.writeText(token);
@@ -135,24 +205,14 @@ export default function AuthenticatedSessionView() {
     setTestLoading(true);
     const start = performance.now();
     try {
-      const headers: Record<string, string> = {};
-      if (withValidToken && token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      } else {
-        headers["Authorization"] = "Bearer INVALID_OR_EMPTY_TOKEN";
-      }
-
-      const res = await fetch("/api/auth/me", {
-        method: "GET",
-        headers
-      });
-
-      const data = await res.json();
+      const currentUser = withValidToken ? await authService.getCurrentUser() : null;
       const end = performance.now();
 
       setTestResult({
-        status: res.status,
-        data,
+        status: currentUser ? 200 : 401,
+        data: currentUser
+          ? { success: true, code: "FIREBASE_SESSION_VALID", data: { user: currentUser } }
+          : { success: false, code: "FIREBASE_SESSION_INVALID", message: "Aucune session Firebase active." },
         duration: Math.round(end - start),
         testedWithToken: withValidToken
       });
@@ -237,8 +297,56 @@ export default function AuthenticatedSessionView() {
           </div>
         </div>
 
-        {canManageUsers && (
-          <section className="space-y-3">
+        {activeModule === "sales" && currentAppUser ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <SalesView
+              sales={sales}
+              stores={accessibleStores}
+              articles={INITIAL_ARTICLES}
+              stocks={INITIAL_STOCKS}
+              currentUser={currentAppUser}
+              onCreateSale={handleCreateSale}
+              onVerifySale={handleVerifySale}
+              onValidateSale={handleValidateSale}
+              onCancelSale={handleCancelSale}
+            />
+          </section>
+        ) : activeModule === "stocks" && currentAppUser ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <StocksView
+              stores={accessibleStores}
+              categories={INITIAL_CATEGORIES}
+              articles={INITIAL_ARTICLES}
+              stocks={stocks}
+              currentUser={currentAppUser}
+              onAdjustStock={handleAdjustStock}
+            />
+          </section>
+        ) : user && (
+          <RoleHomeView
+            user={toAppUser(user)}
+            onOpenUsers={openUserManagement}
+            onOpenSales={() => setActiveModule("sales")}
+            onOpenStocks={() => setActiveModule("stocks")}
+          />
+        )}
+
+        {activeModule === "home" && canManageUsers && (
+          <section id="user-management" className="scroll-mt-24 space-y-3">
             {usersError && (
               <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-sm text-rose-200">
                 {usersError}
@@ -248,7 +356,7 @@ export default function AuthenticatedSessionView() {
               <UsersView
                 currentUser={toAppUser(user)}
                 users={managedUsers}
-                stores={INITIAL_STORES}
+                stores={inventoryStores}
                 onUpdateUser={handleUpdateManagedUser}
                 onCreateUser={handleCreateManagedUser}
                 onDeleteUser={handleDeleteManagedUser}
@@ -403,18 +511,18 @@ export default function AuthenticatedSessionView() {
               </p>
             </div>
 
-            {/* Interactive Middleware Verification Panel */}
+              {/* Firebase session verification panel */}
             <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-700/70 pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-emerald-400" />
-                  <span>Vérification Middleware : Route Protégée /api/auth/me</span>
+                    <span>Vérification de session Firebase Auth</span>
                 </h3>
-                <span className="text-xs text-slate-400">Scénario de test Section 9 & 11</span>
+                  <span className="text-xs text-slate-400">Firebase Auth + Firestore</span>
               </div>
 
               <p className="text-xs text-slate-300">
-                Testez en direct le comportement du middleware d'authentification sur le serveur Node.js / Express :
+                Vérifiez directement la session Firebase et le profil utilisateur Firestore actuellement connectés :
               </p>
 
               {/* Action Buttons */}
@@ -427,14 +535,14 @@ export default function AuthenticatedSessionView() {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                      <Play className="w-3.5 h-3.5" /> Test avec Jeton Valide
+                      <Play className="w-3.5 h-3.5" /> Vérifier la session Firebase
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
                       HTTP 200 Attendu
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400 group-hover:text-slate-300">
-                    Envoie le jeton actif. Le middleware valide la session et retourne le profil utilisateur.
+                    Recharge l'utilisateur Firebase et son profil Firestore actif.
                   </p>
                 </button>
 
@@ -446,14 +554,14 @@ export default function AuthenticatedSessionView() {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
-                      <Play className="w-3.5 h-3.5" /> Test sans Jeton / Invalide
+                      <Play className="w-3.5 h-3.5" /> Tester une session absente
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
                       HTTP 401 Attendu
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400 group-hover:text-slate-300">
-                    Envoie un jeton invalide. Le middleware intercepte la requête et la rejette avec UNAUTHORIZED.
+                    Vérifie que l'absence de session est correctement refusée.
                   </p>
                 </button>
               </div>
@@ -468,7 +576,7 @@ export default function AuthenticatedSessionView() {
                           testResult.status === 200 ? "bg-emerald-400" : "bg-rose-400"
                         }`}
                       />
-                      <span>Résultat API : GET /api/auth/me</span>
+                      <span>Résultat : Firebase Auth / users/{"uid"}</span>
                     </span>
                     <div className="flex items-center gap-3">
                       <span

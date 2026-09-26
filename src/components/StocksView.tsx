@@ -8,6 +8,7 @@ import {
   ArticleTypeCode 
 } from "../types";
 import { getArticleStock } from "../services/stockService";
+import SearchableSelect from "./SearchableSelect";
 import { 
   Boxes, 
   Search, 
@@ -137,35 +138,31 @@ export default function StocksView({
         {/* Store selector */}
         <div className="flex items-center gap-2">
           <label className="text-xs font-bold text-slate-600">Magasin :</label>
-          <select
+          <SearchableSelect
             value={selectedStoreId}
-            onChange={(e) => setSelectedStoreId(e.target.value)}
-            className="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ALL">Tous les Magasins (Consolidé)</option>
-            {stores.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} ({s.code} - {s.store_type})
-              </option>
-            ))}
-          </select>
+            options={stores.map(store => ({
+              value: store.id,
+              label: store.name,
+              description: `${store.code} · ${store.store_type}`
+            }))}
+            onChange={setSelectedStoreId}
+            placeholder="Saisir un magasin, code ou type..."
+            allLabel="Tous les Magasins (Consolidé)"
+            className="w-80 max-w-full"
+          />
         </div>
 
         {/* Category selector */}
         <div className="flex items-center gap-2">
           <label className="text-xs font-bold text-slate-600">Catégorie :</label>
-          <select
+          <SearchableSelect
             value={selectedCategoryId}
-            onChange={(e) => setSelectedCategoryId(e.target.value)}
-            className="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ALL">Toutes les Catégories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            options={categories.map(category => ({ value: category.id, label: category.name, description: category.code }))}
+            onChange={setSelectedCategoryId}
+            placeholder="Saisir une catégorie..."
+            allLabel="Toutes les Catégories"
+            className="w-72 max-w-full"
+          />
         </div>
 
         {/* Article Type */}
@@ -328,38 +325,30 @@ export default function StocksView({
             <form onSubmit={handleConfirmAdjust} className="mt-4 space-y-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Magasin :</label>
-                <select
+                <SearchableSelect
                   value={adjustStoreId}
-                  onChange={(e) => {
-                    setAdjustStoreId(e.target.value);
-                    setAdjustNewQty(getArticleStock(stocks, e.target.value, adjustArticleId));
+                  onChange={(storeId) => {
+                    setAdjustStoreId(storeId);
+                    setAdjustNewQty(getArticleStock(stocks, storeId, adjustArticleId));
                   }}
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium"
-                >
-                  {stores.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.store_type})
-                    </option>
-                  ))}
-                </select>
+                  options={stores.map(store => ({ value: store.id, label: store.name, description: `${store.code} · ${store.store_type}` }))}
+                  placeholder="Saisir un magasin..."
+                  className="w-full"
+                />
               </div>
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Article :</label>
-                <select
+                <SearchableSelect
                   value={adjustArticleId}
-                  onChange={(e) => {
-                    setAdjustArticleId(e.target.value);
-                    setAdjustNewQty(getArticleStock(stocks, adjustStoreId, e.target.value));
+                  onChange={(articleId) => {
+                    setAdjustArticleId(articleId);
+                    setAdjustNewQty(getArticleStock(stocks, adjustStoreId, articleId));
                   }}
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium"
-                >
-                  {articles.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      [{a.code}] {a.name}
-                    </option>
-                  ))}
-                </select>
+                  options={articles.map(article => ({ value: article.id, label: article.name, description: `${article.code} · ${article.unit}` }))}
+                  placeholder="Saisir un article..."
+                  className="w-full"
+                />
               </div>
 
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center font-mono">
