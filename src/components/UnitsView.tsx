@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Check, Plus, Ruler, X } from "lucide-react";
+import { Check, Plus, Ruler, Trash2, X } from "lucide-react";
 import { Article, UnitOfMeasure, UserProfile } from "../types";
 import DataManagementActions from "./DataManagementActions";
 
@@ -9,13 +9,14 @@ interface UnitsViewProps {
   currentUser: UserProfile;
   onCreateUnit: (unit: UnitOfMeasure) => Promise<void>;
   onToggleUnit: (unit: UnitOfMeasure) => Promise<void>;
+  onDeleteUnit: (unitId: string) => Promise<void>;
   onImportData: (data: UnitOfMeasure[]) => Promise<void>;
   onResetData: () => Promise<void>;
 }
 
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
 
-export default function UnitsView({ units, articles, currentUser, onCreateUnit, onToggleUnit, onImportData, onResetData }: UnitsViewProps) {
+export default function UnitsView({ units, articles, currentUser, onCreateUnit, onToggleUnit, onDeleteUnit, onImportData, onResetData }: UnitsViewProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -53,12 +54,26 @@ export default function UnitsView({ units, articles, currentUser, onCreateUnit, 
   };
 
   const handleToggleUnit = async (unit: UnitOfMeasure) => {
+    if (unit.is_active && !window.confirm(`Désactiver l'unité « ${unit.name} » ?`)) return;
     setSavingUnitId(unit.id);
     setError("");
     try {
       await onToggleUnit({ ...unit, is_active: !unit.is_active, updated_at: Date.now() });
     } catch (toggleError) {
       setError(toggleError instanceof Error ? toggleError.message : "Impossible de modifier cette unité.");
+    } finally {
+      setSavingUnitId(null);
+    }
+  };
+
+  const handleDeleteUnit = async (unit: UnitOfMeasure) => {
+    if (!window.confirm(`Supprimer définitivement l'unité « ${unit.name} » ?`)) return;
+    setSavingUnitId(unit.id);
+    setError("");
+    try {
+      await onDeleteUnit(unit.id);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Impossible de supprimer cette unité.");
     } finally {
       setSavingUnitId(null);
     }
@@ -105,7 +120,7 @@ export default function UnitsView({ units, articles, currentUser, onCreateUnit, 
                     <td className="px-4 py-3 font-semibold text-slate-900">{unit.name}</td>
                     <td className="px-4 py-3 text-slate-600">{usageCount}</td>
                     <td className="px-4 py-3"><span className={`inline-flex items-center gap-1 font-semibold ${unit.is_active ? "text-emerald-700" : "text-slate-500"}`}>{unit.is_active ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}{unit.is_active ? "Active" : "Inactive"}</span></td>
-                    <td className="px-4 py-3 text-right"><button type="button" disabled={isSaving || (unit.is_active && usageCount > 0)} title={unit.is_active && usageCount > 0 ? "Cette unité est utilisée par un article" : undefined} onClick={() => handleToggleUnit(unit)} className="rounded-md border border-slate-300 px-2.5 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">{isSaving ? "..." : unit.is_active ? "Désactiver" : "Réactiver"}</button></td>
+                    <td className="px-4 py-3 text-right"><div className="flex justify-end gap-2"><button type="button" disabled={isSaving || (unit.is_active && usageCount > 0)} title={unit.is_active && usageCount > 0 ? "Cette unité est utilisée par un article" : undefined} onClick={() => handleToggleUnit(unit)} className="rounded-md border border-slate-300 px-2.5 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">{isSaving ? "..." : unit.is_active ? "Désactiver" : "Réactiver"}</button><button type="button" disabled={isSaving || usageCount > 0} title={usageCount > 0 ? "Cette unité est utilisée par un article" : "Supprimer l'unité"} aria-label={`Supprimer ${unit.name}`} onClick={() => void handleDeleteUnit(unit)} className="rounded-md p-1.5 text-rose-500 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 className="h-4 w-4" /></button></div></td>
                   </tr>
                 );
               })}

@@ -87,6 +87,15 @@ export default function TransfersView({
   const [receiverGeneralNote, setReceiverGeneralNote] = useState("");
 
   const getStoreName = (id: string) => stores.find(s => s.id === id)?.name || id;
+  const centralStores = stores.filter(store => store.store_type === "CENTRAL_WAREHOUSE");
+  const primaryCentralStore = centralStores.find(store => store.code === "DEP-01") || centralStores[0];
+  const resellerStores = stores.filter(store => store.store_type === "RESELLER");
+  const getTransferArticles = (destinationStoreId: string) => {
+    const destination = stores.find(store => store.id === destinationStoreId);
+    return destination?.store_type === "POS" || destination?.store_type === "RESELLER"
+      ? articles.filter(article => article.article_type === "RESALE")
+      : articles;
+  };
 
   // Determine transfer type code automatically from source and destination
   const getTransferTypeCode = (srcId: string, dstId: string): TransferTypeCode => {
@@ -118,18 +127,21 @@ export default function TransfersView({
   });
 
   const handleOpenCreateModal = () => {
-    setSourceStoreId(stores[0]?.id || "");
-    setDestStoreId(stores[1]?.id || "");
-    setTransferLines([{ article_id: articles[0]?.id || "", quantity: 10 }]);
+    const sourceStoreId = primaryCentralStore?.id || stores[0]?.id || "";
+    const destinationStoreId = resellerStores[0]?.id || stores.find(store => store.id !== sourceStoreId)?.id || "";
+    setSourceStoreId(sourceStoreId);
+    setDestStoreId(destinationStoreId);
+    setTransferLines([{ article_id: getTransferArticles(destinationStoreId)[0]?.id || "", quantity: 10 }]);
     setTransferNote("");
     setIsCreateModalOpen(true);
   };
 
   const handleAddTransferLine = () => {
-    setTransferLines([...transferLines, { article_id: articles[0]?.id || "", quantity: 5 }]);
+    setTransferLines([...transferLines, { article_id: getTransferArticles(destStoreId)[0]?.id || "", quantity: 5 }]);
   };
 
   const handleRemoveTransferLine = (index: number) => {
+    if (!window.confirm("Supprimer cette ligne de transfert ?")) return;
     setTransferLines(transferLines.filter((_, idx) => idx !== index));
   };
 
@@ -141,6 +153,33 @@ export default function TransfersView({
     }
     if (transferLines.length === 0) {
       alert("Veuillez ajouter au moins une ligne d'article.");
+      return;
+    }
+
+    const destinationStore = stores.find(store => store.id === destStoreId);
+    const transferArticles = getTransferArticles(destStoreId);
+    if (destinationStore?.store_type === "POS" || destinationStore?.store_type === "RESELLER") {
+      const rawMaterialLine = transferLines.find(line => articles.find(article => article.id === line.article_id)?.article_type === "RAW_MATERIAL");
+      if (rawMaterialLine) {
+        alert("Les matières premières ne peuvent pas être transférées vers un point de vente ou un magasin revendeur.");
+        return;
+      }
+    }
+    if (transferLines.some(line => !transferArticles.some(article => article.id === line.article_id))) {
+      alert("L'article sélectionné n'est pas autorisé pour ce magasin destinataire.");
+      return;
+    }
+
+    const invalidLine = transferLines.find(line => {
+      const requestedQuantity = Number(line.quantity);
+      const availableQuantity = getArticleStock(stocks, sourceStoreId, line.article_id);
+      return !Number.isFinite(requestedQuantity) || requestedQuantity <= 0 || requestedQuantity > availableQuantity;
+    });
+    if (invalidLine) {
+      const article = articles.find(item => item.id === invalidLine.article_id);
+      const requestedQuantity = Number(invalidLine.quantity);
+      const availableQuantity = getArticleStock(stocks, sourceStoreId, invalidLine.article_id);
+      alert(`Stock insuffisant pour ${article?.name || "cet article"}. Demandé : ${requestedQuantity}. Disponible : ${availableQuantity}.`);
       return;
     }
 
@@ -298,8 +337,9 @@ export default function TransfersView({
             const totalAccepted = t.lines.reduce((acc, l) => acc + l.quantity_accepted, 0);
             const totalRejected = t.lines.reduce((acc, l) => acc + l.quantity_rejected, 0);
 
-            const isReceiver = currentUser.storeId === t.destination_store_id || currentUser.role === "admin";
-            const isShipper = currentUser.storeId === t.source_store_id || currentUser.role === "admin" || currentUser.role === "storekeeper_central";
+            const isReceiver = currentUser.roleId === "RESPONSABLE_MAGASIN"
+              && currentUser.storeIds.includes(t.destination_store_id)
+              && currentUser.uid !== t.requested_by;
 
             return (
               <div 
@@ -469,14 +509,14 @@ export default function TransfersView({
                     )}
 
                     {/* Step 3 -> 4 & 5: Reception control */}
-                    {t.status === "IN_TRANSIT" && canReceive && (
+                    {t.status === "IN_TRANSIT" && canReceive && isReceiver && (
                       <button
                         type="button"
                         onClick={() => handleOpenInspection(t)}
                         className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <FileCheck className="h-4 w-4" />
-                        Contrôler & Valider la Réception
+                        Réceptionner & Valider au Magasin
                       </button>
                     )}
 
@@ -546,7 +586,17 @@ export default function TransfersView({
                   </label>
                   <select
                     value={destStoreId}
-                    onChange={(e) => setDestStoreId(e.target.value)}
+                    onChange={(e) => {
+                      const nextDestinationStoreId = e.target.value;
+                      const firstAllowedArticle = getTransferArticles(nextDestinationStoreId)[0];
+                      setDestStoreId(nextDestinationStoreId);
+                      setTransferLines(lines => lines.map(line => ({
+                        ...line,
+                        article_id: getTransferArticles(nextDestinationStoreId).some(article => article.id === line.article_id)
+                          ? line.article_id
+                          : firstAllowedArticle?.id || ""
+                      })));
+                    }}
                     className="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   >
                     {stores.map((s) => (
@@ -592,7 +642,7 @@ export default function TransfersView({
                           }}
                           className="flex-1 text-xs bg-white border border-slate-300 rounded-lg p-2"
                         >
-                          {articles.map((a) => (
+                          {getTransferArticles(destStoreId).map((a) => (
                             <option key={a.id} value={a.id}>
                               [{a.code}] {a.name} ({a.unit})
                             </option>
@@ -625,6 +675,8 @@ export default function TransfersView({
                             type="button"
                             onClick={() => handleRemoveTransferLine(idx)}
                             className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"
+                            title="Supprimer la ligne"
+                            aria-label="Supprimer la ligne"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

@@ -63,11 +63,24 @@ export default function StocksView({
   const [adjustNewQty, setAdjustNewQty] = useState(0);
   const [adjustReason, setAdjustReason] = useState("Inventaire physique périodique");
 
+  const canStoreRawMaterials = (storeId: string) => {
+    const store = stores.find(item => item.id === storeId);
+    return store?.store_type !== "POS" && store?.store_type !== "RESELLER";
+  };
+
+  const isAdmin = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN";
+  const canManageStockForStore = (storeId: string) => isAdmin && stores.find(store => store.id === storeId)?.store_type === "CENTRAL_WAREHOUSE";
+  const centralStores = stores.filter(store => store.store_type === "CENTRAL_WAREHOUSE");
+  const primaryCentralStore = centralStores.find(store => store.code === "DEP-01") || centralStores[0];
+
+  const articlesForStore = (storeId: string) => articles.filter(article => canStoreRawMaterials(storeId) || article.article_type === "RESALE");
+
   const currentAdjustStock = getArticleStock(stocks, adjustStoreId, adjustArticleId);
 
   const handleOpenAdjustModal = (storeId?: string, articleId?: string) => {
-    const sId = storeId || (selectedStoreId !== "ALL" ? selectedStoreId : stores[0]?.id || "");
-    const aId = articleId || articles[0]?.id || "";
+    const sId = storeId || (selectedStoreId !== "ALL" ? selectedStoreId : primaryCentralStore?.id || "");
+    if (!canManageStockForStore(sId)) return;
+    const aId = articleId || articlesForStore(sId)[0]?.id || "";
     setAdjustStoreId(sId);
     setAdjustArticleId(aId);
     setAdjustNewQty(getArticleStock(stocks, sId, aId));
@@ -77,8 +90,11 @@ export default function StocksView({
   };
 
   const handleOpenDepositModal = () => {
-    const sId = selectedStoreId !== "ALL" ? selectedStoreId : stores[0]?.id || "";
-    const aId = articles[0]?.id || "";
+    const sId = selectedStoreId !== "ALL" && canManageStockForStore(selectedStoreId)
+      ? selectedStoreId
+      : primaryCentralStore?.id || "";
+    if (!canManageStockForStore(sId)) return;
+    const aId = articlesForStore(sId)[0]?.id || "";
     setAdjustStoreId(sId);
     setAdjustArticleId(aId);
     setAdjustNewQty(0);
@@ -102,7 +118,7 @@ export default function StocksView({
     // If a specific store is selected
     const targetStores = selectedStoreId === "ALL" ? stores : stores.filter(s => s.id === selectedStoreId);
 
-    return targetStores.map((store) => {
+    return targetStores.filter(store => canStoreRawMaterials(store.id) || art.article_type === "RESALE").map((store) => {
       const qty = getArticleStock(stocks, store.id, art.id);
       const isLow = qty <= (art.min_alert_stock || 10);
       return {
@@ -147,6 +163,7 @@ export default function StocksView({
         <button
           type="button"
           onClick={handleOpenDepositModal}
+          disabled={!isAdmin || centralStores.length === 0}
           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
         >
           <Plus className="h-4 w-4" />
@@ -311,7 +328,9 @@ export default function StocksView({
                       <button
                         type="button"
                         onClick={() => handleOpenAdjustModal(item.store.id, item.article.id)}
-                        className="text-blue-600 hover:text-blue-800 font-bold text-[11px]"
+                        disabled={!canManageStockForStore(item.store.id)}
+                        title={!canManageStockForStore(item.store.id) ? "Seul l'administrateur peut gérer le stock du dépôt central" : "Ajuster le stock"}
+                        className="text-blue-600 hover:text-blue-800 font-bold text-[11px] disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Ajuster
                       </button>
@@ -352,10 +371,12 @@ export default function StocksView({
                 <SearchableSelect
                   value={adjustStoreId}
                   onChange={(storeId) => {
+                    const firstAvailableArticle = articlesForStore(storeId)[0];
                     setAdjustStoreId(storeId);
-                    setAdjustNewQty(getArticleStock(stocks, storeId, adjustArticleId));
+                    setAdjustArticleId(firstAvailableArticle?.id || "");
+                    setAdjustNewQty(getArticleStock(stocks, storeId, firstAvailableArticle?.id || ""));
                   }}
-                  options={stores.map(store => ({ value: store.id, label: store.name, description: `${store.code} · ${store.store_type}` }))}
+                  options={centralStores.map(store => ({ value: store.id, label: store.name, description: `${store.code} · ${store.store_type}` }))}
                   placeholder="Saisir un magasin..."
                   className="w-full"
                 />
@@ -369,7 +390,7 @@ export default function StocksView({
                     setAdjustArticleId(articleId);
                     setAdjustNewQty(getArticleStock(stocks, adjustStoreId, articleId));
                   }}
-                  options={articles.map(article => ({ value: article.id, label: article.name, description: `${article.code} · ${article.unit}` }))}
+                  options={articlesForStore(adjustStoreId).map(article => ({ value: article.id, label: article.name, description: `${article.code} · ${article.unit}` }))}
                   placeholder="Saisir un article..."
                   className="w-full"
                 />

@@ -56,6 +56,7 @@ export default function SalesView({
 
   // New Sale Form
   const eligibleStores = stores.filter(s => s.store_type === "POS" || s.store_type === "RESELLER");
+  const saleArticles = articles.filter(article => article.is_active && article.article_type === "RESALE");
   const [selectedStoreId, setSelectedStoreId] = useState(eligibleStores[0]?.id || stores[0]?.id || "");
   const [customerName, setCustomerName] = useState("Client Comptoir");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -95,7 +96,11 @@ export default function SalesView({
     setSaleNotes("");
     
     // Default 1 line
-    const firstArt = articles.find(a => a.article_type === "RESALE") || articles[0];
+    const firstArt = saleArticles[0];
+    if (!firstArt) {
+      window.alert("Aucun article destiné à la revente n'est disponible dans ce magasin.");
+      return;
+    }
     const defaultPrice = getDefaultPriceForArticle(firstArt.id, storeId);
     setSaleLines([{
       article_id: firstArt.id,
@@ -117,12 +122,14 @@ export default function SalesView({
   };
 
   const handleAddLine = () => {
-    const art = articles.find(a => a.article_type === "RESALE") || articles[0];
+    const art = saleArticles[0];
+    if (!art) return;
     const p = getDefaultPriceForArticle(art.id, selectedStoreId);
     setSaleLines([...saleLines, { article_id: art.id, quantity: 1, unit_price: p, discount: 0 }]);
   };
 
   const handleRemoveLine = (idx: number) => {
+    if (!window.confirm("Supprimer cette ligne de vente ?")) return;
     setSaleLines(saleLines.filter((_, i) => i !== idx));
   };
 
@@ -484,7 +491,7 @@ export default function SalesView({
                           }}
                           className="flex-1 bg-white border border-slate-300 rounded-lg p-2"
                         >
-                          {articles.map((a) => (
+                          {saleArticles.map((a) => (
                             <option key={a.id} value={a.id}>
                               [{a.code}] {a.name} ({a.unit})
                             </option>
@@ -547,6 +554,8 @@ export default function SalesView({
                             type="button"
                             onClick={() => handleRemoveLine(idx)}
                             className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"
+                            title="Supprimer la ligne"
+                            aria-label="Supprimer la ligne"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

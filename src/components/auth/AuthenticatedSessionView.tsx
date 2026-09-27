@@ -35,7 +35,7 @@ import UnitsView from "../UnitsView";
 import ReportsView from "../ReportsView";
 import ReportViewer from "../ReportViewer";
 import { loadExpenses, saveExpense } from "../../services/expenseService";
-import { loadUnits, saveUnit } from "../../services/unitService";
+import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { 
   ShieldCheck, 
   LogOut, 
@@ -269,10 +269,18 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateTransfer = (transfer: StockTransfer) => {
+    if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
+      alert("Seul un administrateur peut créer un transfert de stock.");
+      return;
+    }
     setTransfers(current => [transfer, ...current]);
   };
 
   const handleApproveTransfer = (transferId: string) => {
+    if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
+      alert("Seul un administrateur peut approuver un transfert.");
+      return;
+    }
     const timestamp = Date.now();
     setTransfers(current => current.map(transfer => transfer.id === transferId && transfer.status === "DRAFT"
       ? { ...transfer, status: "APPROVED", approved_by: currentAppUser?.uid, approved_by_name: currentAppUser?.displayName, approved_at: timestamp, updated_at: timestamp }
@@ -280,6 +288,10 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleShipTransfer = (transferId: string) => {
+    if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
+      alert("Seul un administrateur peut expédier un transfert.");
+      return;
+    }
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "APPROVED") return;
     let updatedStocks = stocks;
@@ -301,6 +313,13 @@ export default function AuthenticatedSessionView() {
   const handleReceiveTransfer = (transferId: string, updatedLines: StockTransferLine[], receiverNote?: string) => {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "IN_TRANSIT") return;
+    const isAssignedReceiver = currentAppUser?.roleId === "RESPONSABLE_MAGASIN"
+      && currentAppUser.storeIds.includes(transfer.destination_store_id)
+      && currentAppUser.uid !== transfer.requested_by;
+    if (!isAssignedReceiver) {
+      alert("Seul le responsable du magasin destinataire, différent de l'initiateur, peut valider cette réception.");
+      return;
+    }
     if (updatedLines.some(line => line.quantity_received < 0 || line.quantity_received > line.quantity_sent || line.quantity_accepted < 0 || line.quantity_accepted > line.quantity_received)) {
       alert("Vérifiez les quantités reçues et acceptées : elles ne peuvent pas dépasser la quantité expédiée.");
       return;
@@ -338,6 +357,12 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleAdjustStock = async (storeId: string, articleId: string, newQty: number, reason: string, isDeposit = false) => {
+    const targetStore = inventoryStores.find(store => store.id === storeId);
+    const canManageCentralStock = (currentAppUser?.roleId === "ADMIN" || currentAppUser?.roleId === "SUPER_ADMIN") && targetStore?.store_type === "CENTRAL_WAREHOUSE";
+    if (!canManageCentralStock) {
+      alert("Le stock ne peut être créé ou ajusté que par un administrateur dans le dépôt central.");
+      return;
+    }
     const currentQty = stocks.find(stock => stock.store_id === storeId && stock.article_id === articleId)?.quantity || 0;
     const { newStocks, beforeQty, afterQty } = updateStockQuantity(stocks, storeId, articleId, newQty - currentQty);
     const updatedStock = newStocks.find(stock => stock.store_id === storeId && stock.article_id === articleId);
@@ -426,6 +451,16 @@ export default function AuthenticatedSessionView() {
     }
     await saveUnit(unit);
     setUnits(current => current.map(item => item.id === unit.id ? unit : item));
+  };
+
+  const handleDeleteUnit = async (unitId: string) => {
+    const unit = units.find(item => item.id === unitId);
+    if (!unit) return;
+    if (articles.some(article => article.unit.toLocaleLowerCase("fr-FR") === unit.name.toLocaleLowerCase("fr-FR"))) {
+      throw new Error("Cette unité est encore associée à un article et ne peut pas être supprimée.");
+    }
+    await deleteUnit(unitId);
+    setUnits(current => current.filter(item => item.id !== unitId));
   };
 
   const handleToggleCategoryStatus = async (categoryId: string) => {
@@ -732,7 +767,7 @@ export default function AuthenticatedSessionView() {
             >
               ← Retour à l'accueil
             </button>
-            <UnitsView units={units} articles={articles} currentUser={currentAppUser} onCreateUnit={handleCreateUnit} onToggleUnit={handleToggleUnit} onImportData={handleImportUnits} onResetData={handleResetUnits} />
+            <UnitsView units={units} articles={articles} currentUser={currentAppUser} onCreateUnit={handleCreateUnit} onToggleUnit={handleToggleUnit} onDeleteUnit={handleDeleteUnit} onImportData={handleImportUnits} onResetData={handleResetUnits} />
           </section>
         ) : activeModule === "catalog" && currentAppUser && canManageStores ? (
           <section className="space-y-4">
@@ -772,11 +807,11 @@ export default function AuthenticatedSessionView() {
               articles={articles.filter(article => article.is_active)}
               stocks={stocks}
               currentUser={currentAppUser}
-              canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.create")}
-              canApprove={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.approve")}
-              canShip={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.ship")}
-              canReceive={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.receive")}
-              canResolveDiscrepancy={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.validate")}
+              canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
+              canApprove={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
+              canShip={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
+              canReceive={currentAppUser.roleId === "RESPONSABLE_MAGASIN" || currentAppUser.permissions.includes("transfers.receive")}
+              canResolveDiscrepancy={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               onCreateTransfer={handleCreateTransfer}
               onApproveTransfer={handleApproveTransfer}
               onShipTransfer={handleShipTransfer}

@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, setDoc, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, setDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { Article, UnitOfMeasure } from "../types";
 
@@ -36,4 +36,8 @@ export async function loadUnits(articles: Article[]): Promise<UnitOfMeasure[]> {
 
 export async function saveUnit(unit: UnitOfMeasure): Promise<void> {
   await setDoc(doc(db, UNITS_COLLECTION, unit.id), unit);
+}
+
+export async function deleteUnit(unitId: string): Promise<void> {
+  await deleteDoc(doc(db, UNITS_COLLECTION, unitId));
 }
