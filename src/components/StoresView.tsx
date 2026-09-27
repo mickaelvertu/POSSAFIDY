@@ -15,6 +15,7 @@ import {
   Trash2,
   Store as StoreIcon
 } from "lucide-react";
+import DataManagementActions from "./DataManagementActions";
 
 interface StoresViewProps {
   stores: Store[];
@@ -24,6 +25,8 @@ interface StoresViewProps {
   onUpdateStore: (store: Store) => Promise<void>;
   onToggleStoreStatus: (storeId: string) => Promise<void>;
   onDeleteStore: (storeId: string) => Promise<void>;
+  onImportData: (data: Store[]) => Promise<void>;
+  onResetData: () => Promise<void>;
 }
 
 const STORE_CODE_PREFIXES: Record<StoreTypeCode, string> = {
@@ -50,7 +53,9 @@ export default function StoresView({
   onCreateStore,
   onUpdateStore,
   onToggleStoreStatus,
-  onDeleteStore
+  onDeleteStore,
+  onImportData,
+  onResetData
 }: StoresViewProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
@@ -178,14 +183,18 @@ export default function StoresView({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenNew}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          Nouveau Magasin / Site
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <DataManagementActions
+            data={stores}
+            label="magasins"
+            isAdmin={currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"}
+            onImport={onImportData}
+            onReset={onResetData}
+          />
+          <button type="button" onClick={handleOpenNew} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer">
+            <Plus className="h-4 w-4" /> Nouveau Magasin / Site
+          </button>
+        </div>
       </div>
 
       {/* Stores Grid */}

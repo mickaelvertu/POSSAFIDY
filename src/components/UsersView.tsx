@@ -31,6 +31,7 @@ import {
   Eye,
   AlertCircle
 } from "lucide-react";
+import DataManagementActions from "./DataManagementActions";
 
 interface UsersViewProps {
   currentUser: AppUser;
@@ -39,6 +40,8 @@ interface UsersViewProps {
   onUpdateUser: (updatedUser: AppUser) => void;
   onCreateUser: (newUser: AppUser) => void;
   onDeleteUser: (userId: string) => void;
+  onImportData: (data: AppUser[]) => Promise<void>;
+  onResetData: () => Promise<void>;
 }
 
 export default function UsersView({
@@ -47,7 +50,9 @@ export default function UsersView({
   stores,
   onUpdateUser,
   onCreateUser,
-  onDeleteUser
+  onDeleteUser,
+  onImportData,
+  onResetData
 }: UsersViewProps) {
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
   const [searchQuery, setSearchQuery] = useState("");
@@ -283,6 +288,13 @@ export default function UsersView({
         </div>
 
         <div className="flex items-center gap-3">
+          <DataManagementActions
+            data={users}
+            label="utilisateurs"
+            isAdmin={currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"}
+            onImport={onImportData}
+            onReset={onResetData}
+          />
           <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
             <button
               onClick={() => setActiveTab("users")}

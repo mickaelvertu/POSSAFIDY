@@ -20,6 +20,7 @@ import {
   UserRound,
   X
 } from "lucide-react";
+import DataManagementActions from "./DataManagementActions";
 
 interface ProcurementViewProps {
   suppliers: Supplier[];
@@ -32,6 +33,8 @@ interface ProcurementViewProps {
   onToggleSupplier: (supplier: Supplier) => Promise<void>;
   onReceivePurchase: (purchase: Purchase) => Promise<void>;
   onRecordPayment: (purchase: Purchase, payment: SupplierPayment) => Promise<void>;
+  onImportData: (data: Supplier[]) => Promise<void>;
+  onResetData: () => Promise<void>;
 }
 
 interface DraftLine {
@@ -66,7 +69,9 @@ export default function ProcurementView({
   onCreateSupplier,
   onToggleSupplier,
   onReceivePurchase,
-  onRecordPayment
+  onRecordPayment,
+  onImportData,
+  onResetData
 }: ProcurementViewProps) {
   const [activeTab, setActiveTab] = useState<"purchases" | "suppliers">("purchases");
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
@@ -271,7 +276,14 @@ export default function ProcurementView({
           </div>
           <p className="mt-1 text-xs text-slate-500">Réceptions en stock, factures fournisseurs et échéances de paiement.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <DataManagementActions
+            data={suppliers}
+            label="fournisseurs"
+            isAdmin={currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"}
+            onImport={onImportData}
+            onReset={onResetData}
+          />
           <button type="button" onClick={() => { setFormError(""); setIsSupplierModalOpen(true); }} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
             <UserRound className="h-4 w-4" /> Nouveau fournisseur
           </button>

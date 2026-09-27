@@ -1,17 +1,21 @@
 import { FormEvent, useState } from "react";
 import { Check, Plus, Ruler, X } from "lucide-react";
-import { Article, UnitOfMeasure } from "../types";
+import { Article, UnitOfMeasure, UserProfile } from "../types";
+import DataManagementActions from "./DataManagementActions";
 
 interface UnitsViewProps {
   units: UnitOfMeasure[];
   articles: Article[];
+  currentUser: UserProfile;
   onCreateUnit: (unit: UnitOfMeasure) => Promise<void>;
   onToggleUnit: (unit: UnitOfMeasure) => Promise<void>;
+  onImportData: (data: UnitOfMeasure[]) => Promise<void>;
+  onResetData: () => Promise<void>;
 }
 
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
 
-export default function UnitsView({ units, articles, onCreateUnit, onToggleUnit }: UnitsViewProps) {
+export default function UnitsView({ units, articles, currentUser, onCreateUnit, onToggleUnit, onImportData, onResetData }: UnitsViewProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -69,7 +73,16 @@ export default function UnitsView({ units, articles, onCreateUnit, onToggleUnit 
           <div className="flex items-center gap-2"><Ruler className="h-5 w-5 text-emerald-700" /><h2 className="text-lg font-bold">Unités de mesure</h2></div>
           <p className="mt-1 text-xs text-slate-500">Référentiel partagé pour les conditionnements et quantités des articles.</p>
         </div>
-        <div className="text-xs font-semibold text-slate-600">{activeCount} unité(s) active(s)</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <DataManagementActions
+            data={units}
+            label="unités"
+            isAdmin={currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"}
+            onImport={onImportData}
+            onReset={onResetData}
+          />
+          <div className="text-xs font-semibold text-slate-600">{activeCount} unité(s) active(s)</div>
+        </div>
       </header>
 
       <form onSubmit={handleCreateUnit} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-end">

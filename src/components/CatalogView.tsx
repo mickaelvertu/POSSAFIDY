@@ -19,6 +19,7 @@ import {
   DollarSign,
   FolderPlus
 } from "lucide-react";
+import DataManagementActions from "./DataManagementActions";
 
 interface CatalogViewProps {
   articles: Article[];
@@ -30,6 +31,8 @@ interface CatalogViewProps {
   onToggleArticleStatus: (articleId: string) => Promise<void>;
   onCreateCategory: (cat: Category) => Promise<void>;
   onToggleCategoryStatus: (categoryId: string) => Promise<void>;
+  onImportData: (data: { articles: Article[]; categories: Category[] }) => Promise<void>;
+  onResetData: () => Promise<void>;
 }
 
 export default function CatalogView({
@@ -41,7 +44,9 @@ export default function CatalogView({
   onUpdateArticle,
   onToggleArticleStatus,
   onCreateCategory,
-  onToggleCategoryStatus
+  onToggleCategoryStatus,
+  onImportData,
+  onResetData
 }: CatalogViewProps) {
   const [activeTab, setActiveTab] = useState<"ARTICLES" | "CATEGORIES">("ARTICLES");
   const [searchQuery, setSearchQuery] = useState("");
@@ -242,6 +247,13 @@ export default function CatalogView({
         </div>
 
         <div className="flex items-center gap-2">
+          <DataManagementActions
+            data={{ articles, categories }}
+            label="catalogue"
+            isAdmin={currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"}
+            onImport={onImportData}
+            onReset={onResetData}
+          />
           <button
             type="button"
             onClick={() => {

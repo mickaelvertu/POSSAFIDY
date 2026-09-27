@@ -435,6 +435,40 @@ export default function AuthenticatedSessionView() {
     await saveCategory(updated);
     setCategories(current => current.map(item => item.id === categoryId ? updated : item));
   };
+  
+  const handleImportCatalogData = async (data: { articles: Article[]; categories: Category[] }) => {
+    if (!data || !Array.isArray(data.articles) || !Array.isArray(data.categories)) {
+      throw new Error("Le fichier catalogue doit contenir les tableaux articles et catégories.");
+    }
+    await Promise.all([
+      ...data.articles.map(article => saveArticle(article)),
+      ...data.categories.map(category => saveCategory(category))
+    ]);
+    setArticles(data.articles);
+    setCategories(data.categories);
+  };
+  
+  const handleResetCatalogData = async () => {
+    await Promise.all([
+      ...INITIAL_ARTICLES.map(article => saveArticle(article)),
+      ...INITIAL_CATEGORIES.map(category => saveCategory(category))
+    ]);
+    setArticles([...INITIAL_ARTICLES]);
+    setCategories([...INITIAL_CATEGORIES]);
+  };
+  
+  const handleImportStores = async (data: Store[]) => {
+    if (!Array.isArray(data) || data.some(store => !store.id || !store.code || !store.name)) {
+      throw new Error("Le fichier magasins est invalide.");
+    }
+    await Promise.all(data.map(store => saveStore(store)));
+    setInventoryStores(data);
+  };
+  
+  const handleResetStores = async () => {
+    await Promise.all(INITIAL_STORES.map(store => saveStore(store)));
+    setInventoryStores([...INITIAL_STORES]);
+  };
 
   const handleCreateSupplier = async (supplier: Supplier) => {
     await saveSupplier(supplier);
@@ -445,11 +479,73 @@ export default function AuthenticatedSessionView() {
     await saveSupplier(supplier);
     setSuppliers(current => current.map(item => item.id === supplier.id ? supplier : item));
   };
+  
+  const handleImportSuppliers = async (data: Supplier[]) => {
+    if (!Array.isArray(data) || data.some(supplier => !supplier.id || !supplier.name)) {
+      throw new Error("Le fichier fournisseurs est invalide.");
+    }
+    await Promise.all(data.map(supplier => saveSupplier(supplier)));
+    setSuppliers(data);
+  };
+  
+  const handleResetSuppliers = async () => {
+    const resetSuppliers = suppliers.map(supplier => ({ ...supplier, is_active: false, updated_at: Date.now() }));
+    await Promise.all(resetSuppliers.map(supplier => saveSupplier(supplier)));
+    setSuppliers(resetSuppliers);
+  };
 
   const handleReceivePurchase = async (purchase: Purchase) => {
     const updatedStocks = await receivePurchase(purchase, stocks);
     setStocks(updatedStocks);
     setPurchases(current => [purchase, ...current]);
+  };
+  
+  const handleImportUnits = async (data: UnitOfMeasure[]) => {
+    if (!Array.isArray(data) || data.some(unit => !unit.id || !unit.name)) {
+      throw new Error("Le fichier unités est invalide.");
+    }
+    await Promise.all(data.map(unit => saveUnit(unit)));
+    setUnits([...data].sort((left, right) => left.name.localeCompare(right.name, "fr")));
+  };
+  
+  const handleResetUnits = async () => {
+    const resetUnits = units.map(unit => ({ ...unit, is_active: false, updated_at: Date.now() }));
+    await Promise.all(resetUnits.map(unit => saveUnit(unit)));
+    setUnits(resetUnits);
+  };
+  
+  const handleImportManagedUsers = async (data: AppUser[]) => {
+    if (!Array.isArray(data) || data.some(importedUser => !importedUser.id || !importedUser.email || !importedUser.roleId)) {
+      throw new Error("Le fichier utilisateurs est invalide.");
+    }
+    const currentIds = new Set(managedUsers.map(managedUser => managedUser.id));
+    if (data.some(importedUser => !currentIds.has(importedUser.id))) {
+      throw new Error("L'import des utilisateurs ne peut modifier que des comptes existants.");
+    }
+    const updatedUsers = await Promise.all(data.map(async importedUser => {
+      const response = await authService.updateManagedUser(importedUser.id, {
+        firstName: importedUser.firstName,
+        lastName: importedUser.lastName,
+        email: importedUser.email,
+        role: importedUser.roleId,
+        permissions: importedUser.permissions,
+        assignedStores: importedUser.storeIds,
+        status: importedUser.isActive ? "ACTIVE" : "DISABLED"
+      });
+      if (!response.success || !response.data) throw new Error(response.message);
+      return toAppUser(response.data.user);
+    }));
+    setManagedUsers(updatedUsers);
+  };
+  
+  const handleResetManagedUsers = async () => {
+    const resetUsers = await Promise.all(managedUsers.map(async managedUser => {
+      if (managedUser.id === user?.id) return managedUser;
+      const response = await authService.updateManagedUser(managedUser.id, { status: "DISABLED" });
+      if (!response.success || !response.data) throw new Error(response.message);
+      return toAppUser(response.data.user);
+    }));
+    setManagedUsers(resetUsers);
   };
 
   const handleRecordSupplierPayment = async (purchase: Purchase, payment: SupplierPayment) => {
@@ -623,6 +719,8 @@ export default function AuthenticatedSessionView() {
               onUpdateStore={handleUpdateStore}
               onToggleStoreStatus={handleToggleStoreStatus}
               onDeleteStore={handleDeleteStore}
+              onImportData={handleImportStores}
+              onResetData={handleResetStores}
             />
           </section>
         ) : activeModule === "units" && currentAppUser && canManageStores ? (
@@ -634,7 +732,7 @@ export default function AuthenticatedSessionView() {
             >
               ← Retour à l'accueil
             </button>
-            <UnitsView units={units} articles={articles} onCreateUnit={handleCreateUnit} onToggleUnit={handleToggleUnit} />
+            <UnitsView units={units} articles={articles} currentUser={currentAppUser} onCreateUnit={handleCreateUnit} onToggleUnit={handleToggleUnit} onImportData={handleImportUnits} onResetData={handleResetUnits} />
           </section>
         ) : activeModule === "catalog" && currentAppUser && canManageStores ? (
           <section className="space-y-4">
@@ -655,6 +753,8 @@ export default function AuthenticatedSessionView() {
               onToggleArticleStatus={handleToggleArticleStatus}
               onCreateCategory={handleCreateCategory}
               onToggleCategoryStatus={handleToggleCategoryStatus}
+              onImportData={handleImportCatalogData}
+              onResetData={handleResetCatalogData}
             />
           </section>
         ) : activeModule === "transfers" && currentAppUser && (currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.view")) ? (
@@ -763,6 +863,8 @@ export default function AuthenticatedSessionView() {
               onToggleSupplier={handleToggleSupplier}
               onReceivePurchase={handleReceivePurchase}
               onRecordPayment={handleRecordSupplierPayment}
+              onImportData={handleImportSuppliers}
+              onResetData={handleResetSuppliers}
             />
           </section>
         ) : activeModule === "expenses" && currentAppUser && (currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("expenses.view")) ? (
@@ -814,6 +916,8 @@ export default function AuthenticatedSessionView() {
                 onUpdateUser={handleUpdateManagedUser}
                 onCreateUser={handleCreateManagedUser}
                 onDeleteUser={handleDeleteManagedUser}
+                onImportData={handleImportManagedUsers}
+                onResetData={handleResetManagedUsers}
               />
             )}
           </section>
