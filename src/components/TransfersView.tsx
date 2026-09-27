@@ -42,6 +42,11 @@ interface TransfersViewProps {
     receiverNote?: string
   ) => void;
   onResolveDiscrepancy: (transferId: string, resolutionNote: string) => void;
+  canCreate: boolean;
+  canApprove: boolean;
+  canShip: boolean;
+  canReceive: boolean;
+  canResolveDiscrepancy: boolean;
 }
 
 export default function TransfersView({
@@ -54,7 +59,12 @@ export default function TransfersView({
   onApproveTransfer,
   onShipTransfer,
   onReceiveAndValidateTransfer,
-  onResolveDiscrepancy
+  onResolveDiscrepancy,
+  canCreate,
+  canApprove,
+  canShip,
+  canReceive,
+  canResolveDiscrepancy
 }: TransfersViewProps) {
   // UI states
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
@@ -194,7 +204,7 @@ export default function TransfersView({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-900">
       
       {/* Top Header & Workflow reminder banner */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -210,14 +220,14 @@ export default function TransfersView({
           </p>
         </div>
 
-        <button
+        {canCreate && <button
           type="button"
           onClick={handleOpenCreateModal}
           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           Nouveau Transfert
-        </button>
+        </button>}
       </div>
 
       {/* Workflow Steps Indicator Banner */}
@@ -377,7 +387,7 @@ export default function TransfersView({
                       {t.lines.map((l) => (
                         <tr key={l.id}>
                           <td className="py-1.5 px-2 font-mono font-bold text-blue-700">{l.article_code}</td>
-                          <td className="py-1.5 px-2 font-medium text-slate-800">{l.article_name}</td>
+                          <td className="py-1.5 px-2 font-medium text-slate-800">{l.article_name} <span className="text-slate-500">({l.unit})</span></td>
                           <td className="py-1.5 px-2 text-right font-mono font-bold">{l.quantity_sent}</td>
                           <td className="py-1.5 px-2 text-right font-mono font-semibold">{t.status === "DRAFT" || t.status === "APPROVED" || t.status === "IN_TRANSIT" ? "-" : l.quantity_received}</td>
                           <td className="py-1.5 px-2 text-right font-mono font-bold text-emerald-700">{t.status === "VALIDATED" || t.status === "DISCREPANCY" ? l.quantity_accepted : "-"}</td>
@@ -411,7 +421,7 @@ export default function TransfersView({
                       </div>
                     </div>
 
-                    {!t.discrepancy_resolved && (
+                    {!t.discrepancy_resolved && canResolveDiscrepancy && (
                       <button
                         type="button"
                         onClick={() => {
@@ -435,7 +445,7 @@ export default function TransfersView({
                   <div className="flex items-center gap-2">
                     
                     {/* Step 1 -> 2: Approve DRAFT */}
-                    {t.status === "DRAFT" && (
+                    {t.status === "DRAFT" && canApprove && (
                       <button
                         type="button"
                         onClick={() => onApproveTransfer(t.id)}
@@ -447,7 +457,7 @@ export default function TransfersView({
                     )}
 
                     {/* Step 2 -> 3: Ship APPROVED -> Sets IN_TRANSIT, deducts source stock */}
-                    {t.status === "APPROVED" && (
+                    {t.status === "APPROVED" && canShip && (
                       <button
                         type="button"
                         onClick={() => onShipTransfer(t.id)}
@@ -459,7 +469,7 @@ export default function TransfersView({
                     )}
 
                     {/* Step 3 -> 4 & 5: Reception control */}
-                    {t.status === "IN_TRANSIT" && (
+                    {t.status === "IN_TRANSIT" && canReceive && (
                       <button
                         type="button"
                         onClick={() => handleOpenInspection(t)}
@@ -570,6 +580,7 @@ export default function TransfersView({
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {transferLines.map((line, idx) => {
                     const currentStock = getArticleStock(stocks, sourceStoreId, line.article_id);
+                    const selectedArticle = articles.find(article => article.id === line.article_id);
                     return (
                       <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
                         <select
@@ -588,23 +599,25 @@ export default function TransfersView({
                           ))}
                         </select>
 
-                        <div className="w-24">
+                        <div className="flex w-32 shrink-0 items-center gap-1.5">
                           <input
                             type="number"
                             min="1"
+                            aria-label={`Quantité à transférer (${selectedArticle?.unit || "unité"})`}
                             value={line.quantity}
                             onChange={(e) => {
                               const newLines = [...transferLines];
                               newLines[idx].quantity = Math.max(1, Number(e.target.value));
                               setTransferLines(newLines);
                             }}
-                            className="w-full text-xs font-mono font-bold bg-white border border-slate-300 rounded-lg p-2 text-right"
+                            className="min-w-0 flex-1 text-xs font-mono font-bold bg-white border border-slate-300 rounded-lg p-2 text-right"
                             placeholder="Qté"
                           />
+                          <span className="max-w-16 truncate text-[10px] font-medium text-slate-600" title={selectedArticle?.unit}>{selectedArticle?.unit}</span>
                         </div>
 
-                        <span className="text-[10px] text-slate-400 font-mono w-16 text-right">
-                          Dispo: {currentStock}
+                        <span className="min-w-0 flex-1 text-right text-[10px] text-slate-500">
+                          Dispo: {currentStock} {selectedArticle?.unit}
                         </span>
 
                         {transferLines.length > 1 && (
@@ -706,7 +719,7 @@ export default function TransfersView({
                     {inspectionLines.map((line, idx) => (
                       <tr key={line.id} className="hover:bg-slate-50">
                         <td className="py-2 px-2 font-medium">
-                          <span className="font-mono text-blue-700 font-bold">[{line.article_code}]</span> {line.article_name}
+                          <span className="font-mono text-blue-700 font-bold">[{line.article_code}]</span> {line.article_name} <span className="text-slate-500">({line.unit})</span>
                         </td>
                         <td className="py-2 px-2 text-right font-mono font-bold text-slate-700">
                           {line.quantity_sent}

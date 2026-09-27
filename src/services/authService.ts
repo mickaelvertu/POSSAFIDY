@@ -37,7 +37,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
   RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "transfers.view", "transfers.create", "reports.view"],
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
-  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export"]
+  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"]
 };
 
 const permissionDefinition = (code: string) => ({
@@ -49,10 +49,12 @@ const permissionDefinition = (code: string) => ({
 export const PERMISSION_GROUPS = [
   { id: "dashboard", label: "Tableau de bord", description: "Accès aux indicateurs", permissions: ["dashboard.view"] },
   { id: "catalog", label: "Produits et stocks", description: "Catalogue et inventaire", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("products.") || permission.startsWith("stock.")) },
+  { id: "units", label: "Unités de mesure", description: "Gérer les unités des articles", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("units.")) },
   { id: "sales", label: "Ventes", description: "Cycle de vente", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("sales.")) },
   { id: "transfers", label: "Transferts", description: "Flux entre magasins", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("transfers.")) },
   { id: "production", label: "Production", description: "Ordres de production", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("production.")) },
   { id: "reporting", label: "Rapports et audit", description: "Analyse et traçabilité", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("reports.") || permission.startsWith("audit.")) },
+  { id: "expenses", label: "Dépenses", description: "Saisie et suivi des frais", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("expenses.")) },
   { id: "users", label: "Utilisateurs", description: "Administration des accès", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("users.")) }
 ].map(group => ({ ...group, permissions: group.permissions.map(permissionDefinition) }));
 

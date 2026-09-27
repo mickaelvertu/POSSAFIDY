@@ -7,11 +7,14 @@ import {
   Building2,
   ClipboardList,
   Factory,
+  HandCoins,
   KeyRound,
   PackageCheck,
   Receipt,
+  Ruler,
   ShieldCheck,
   ShoppingCart,
+  Truck,
   Users
 } from "lucide-react";
 
@@ -20,6 +23,14 @@ interface RoleHomeViewProps {
   onOpenUsers: () => void;
   onOpenSales: () => void;
   onOpenStocks: () => void;
+  onOpenProduction: () => void;
+  onOpenStores: () => void;
+  onOpenCatalog: () => void;
+  onOpenProcurement: () => void;
+  onOpenExpenses: () => void;
+  onOpenTransfers: () => void;
+  onOpenUnits: () => void;
+  onOpenReports: () => void;
 }
 
 const roleLabels: Record<string, string> = {
@@ -48,7 +59,12 @@ const accessCards = [
   { permission: "transfers.view", title: "Transferts", description: "Suivre les mouvements inter-magasins", icon: ArrowRightLeft, accent: "amber" },
   { permission: "production.view", title: "Production", description: "Suivre les fabrications et consommations", icon: Factory, accent: "indigo" },
   { permission: "reports.view", title: "Rapports", description: "Analyser les performances et les écarts", icon: BarChart3, accent: "violet" },
-  { permission: "users.view", title: "Utilisateurs", description: "Attribuer les rôles et les accès", icon: Users, accent: "rose", adminOnly: true }
+  { permission: "users.view", title: "Utilisateurs", description: "Attribuer les rôles et les accès", icon: Users, accent: "rose", adminOnly: true },
+  { permission: "stores.manage", title: "Magasins", description: "Créer et administrer les sites", icon: Building2, accent: "blue" },
+  { permission: "catalog.manage", title: "Articles & catégories", description: "Gérer les articles et leur classification", icon: PackageCheck, accent: "indigo" },
+  { permission: "procurement.manage", title: "Achats & fournisseurs", description: "Réceptionner les achats et suivre les échéances", icon: Truck, accent: "emerald" },
+  { permission: "expenses.view", title: "Dépenses & frais", description: "Suivre les loyers, factures et autres charges", icon: HandCoins, accent: "amber" },
+  { permission: "units.manage", title: "Unités de mesure", description: "Administrer les unités du catalogue", icon: Ruler, accent: "emerald" }
 ];
 
 const accentClasses: Record<string, string> = {
@@ -60,9 +76,14 @@ const accentClasses: Record<string, string> = {
   rose: "bg-rose-50 text-rose-700 border-rose-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenUnits, onOpenReports }: RoleHomeViewProps) {
   const role = user.role || "UNASSIGNED";
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   const availableCards = accessCards.filter(card => {
+    if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage") return isAdmin;
+    if (card.permission === "expenses.view" && isAdmin) return true;
+    if (card.permission === "transfers.view" && isAdmin) return true;
+    if (card.permission === "reports.view" && isAdmin) return true;
     if (card.adminOnly && !hasPermission(user, "users.view")) return false;
     return hasPermission(user, card.permission);
   });
@@ -120,12 +141,20 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isUsersCard = card.title === "Utilisateurs";
               const isSalesCard = card.permission === "sales.view";
               const isStockCard = card.permission === "stock.view";
-              const isActionable = isUsersCard || isSalesCard || isStockCard;
+              const isProductionCard = card.permission === "production.view";
+              const isStoresCard = card.permission === "stores.manage";
+              const isCatalogCard = card.permission === "catalog.manage";
+              const isProcurementCard = card.permission === "procurement.manage";
+              const isExpensesCard = card.permission === "expenses.view";
+              const isTransfersCard = card.permission === "transfers.view";
+              const isUnitsCard = card.permission === "units.manage";
+              const isReportsCard = card.permission === "reports.view";
+              const isActionable = isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isUnitsCard || isReportsCard;
               return (
                 <button
                   key={card.permission}
                   type="button"
-                  onClick={isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : undefined}
+                  onClick={isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isUnitsCard ? onOpenUnits : isReportsCard ? onOpenReports : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >

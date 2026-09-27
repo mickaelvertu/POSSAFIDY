@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { 
   ReportType, 
   GeneralFilters, 
@@ -15,7 +15,7 @@ import {
   StockMovementType,
   ArticleTypeCode
 } from "../types";
-import { filterItems } from "../services/stockService";
+import { filterReportData, getReportKpis } from "../services/reportService";
 import { 
   FileText, 
   Printer, 
@@ -101,6 +101,52 @@ export default function ReportsView({
     { type: "AUDIT_LOG", number: 13, title: "Journal d'audit", description: "Traçabilité des opérations sensibles, utilisateurs et appareils", icon: ShieldAlert, color: "text-slate-800 bg-slate-100 border-slate-300" }
   ];
 
+  const filters = useMemo<GeneralFilters>(() => ({
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    storeIds: selectedStoreIds,
+    statuses: selectedStatuses,
+    movementTypes: selectedMovementTypes,
+    categoryIds: selectedCategoryIds,
+    articleType,
+    searchRef: searchRef || undefined,
+    minQty,
+    maxQty,
+    customerName: customerName || undefined
+  }), [startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
+
+  const filteredData = useMemo(() => filterReportData({
+    articles,
+    stores,
+    stocks,
+    transfers,
+    movements,
+    sales,
+    productions,
+    auditLogs
+  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, filters]);
+  const kpiData = useMemo(() => ({
+    ...filteredData,
+    transfers: selectedReport === "RETURNS"
+      ? filteredData.transfers.filter(transfer => transfer.type === "RETURN")
+      : selectedReport === "RECEIPTS"
+        ? filteredData.transfers.filter(transfer => transfer.status === "RECEIVED" || transfer.status === "VALIDATED")
+        : selectedReport === "DISCREPANCIES"
+          ? filteredData.transfers.filter(transfer => transfer.has_discrepancy || transfer.status === "DISCREPANCY" || transfer.lines.some(line => line.quantity_rejected > 0))
+          : filteredData.transfers
+  }), [filteredData, selectedReport]);
+  const kpis = useMemo(() => getReportKpis(selectedReport, kpiData, categories, filters), [selectedReport, kpiData, categories, filters]);
+  const statusOptions = selectedReport.startsWith("SALES")
+    ? ["DRAFT", "CHECKING", "VERIFIED", "VALIDATED", "CANCELLED", "REFUNDED"]
+    : selectedReport === "PRODUCTION" || selectedReport === "RAW_MATERIAL_CONSUMPTION"
+      ? ["DRAFT", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
+      : ["TRANSFERS", "RECEIPTS", "DISCREPANCIES", "RETURNS"].includes(selectedReport)
+        ? ["DRAFT", "APPROVED", "IN_TRANSIT", "RECEIVED", "VALIDATED", "DISCREPANCY", "CANCELLED"]
+        : selectedReport === "AUDIT_LOG"
+          ? [...new Set(auditLogs.map(log => log.action))]
+          : [];
+  const movementTypeOptions = [...new Set(movements.map(movement => movement.movement_type))];
+
   // Helper toggle for multi-select
   const toggleStore = (id: string) => {
     if (selectedStoreIds.includes(id)) {
@@ -118,21 +164,15 @@ export default function ReportsView({
     }
   };
 
-  const handleLaunchReport = () => {
-    const filters: GeneralFilters = {
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      storeIds: selectedStoreIds,
-      statuses: selectedStatuses,
-      movementTypes: selectedMovementTypes,
-      categoryIds: selectedCategoryIds,
-      articleType: articleType,
-      searchRef: searchRef || undefined,
-      minQty: minQty !== undefined && !isNaN(minQty) ? minQty : undefined,
-      maxQty: maxQty !== undefined && !isNaN(maxQty) ? maxQty : undefined,
-      customerName: customerName || undefined
-    };
+  const toggleStatus = (status: string) => {
+    setSelectedStatuses(current => current.includes(status) ? current.filter(item => item !== status) : [...current, status]);
+  };
 
+  const toggleMovementType = (type: StockMovementType) => {
+    setSelectedMovementTypes(current => current.includes(type) ? current.filter(item => item !== type) : [...current, type]);
+  };
+
+  const handleLaunchReport = () => {
     onOpenReportViewer(selectedReport, filters);
   };
 
@@ -162,6 +202,15 @@ export default function ReportsView({
           Générer & Imprimer le Rapport Officiel
         </button>
       </div>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs du rapport filtré">
+        {kpis.map(kpi => (
+          <div key={kpi.label} className="rounded-lg border border-slate-200 bg-white p-4">
+            <p className="text-xs font-semibold text-slate-500">{kpi.label}</p>
+            <p className="mt-1 text-xl font-bold text-slate-900">{kpi.value}</p>
+          </div>
+        ))}
+      </section>
 
       {/* Grid of 13 Reports Selector */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -237,7 +286,7 @@ export default function ReportsView({
         {/* Row 1: Date Range, Article Type, Search Ref */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           
-          <div>
+          {statusOptions.length > 0 && <div>
             <label className="block font-bold text-slate-700 mb-1">Date Début :</label>
             <input
               type="date"
@@ -245,7 +294,7 @@ export default function ReportsView({
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
             />
-          </div>
+          </div>}
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">Date Fin :</label>
@@ -371,6 +420,29 @@ export default function ReportsView({
               className="w-full font-mono bg-slate-50 border border-slate-300 rounded-lg p-2"
             />
           </div>
+        </div>
+
+        <div className="space-y-4 border-t border-slate-200 pt-4">
+          <div>
+            <p className="mb-2 text-xs font-bold text-slate-700">Statuts inclus :</p>
+            <div className="flex flex-wrap gap-2">
+              {statusOptions.map(status => {
+                const isSelected = selectedStatuses.includes(status);
+                return <button key={status} type="button" aria-pressed={isSelected} onClick={() => toggleStatus(status)} className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold ${isSelected ? "border-emerald-700 bg-emerald-700 text-white" : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{status}</button>;
+              })}
+            </div>
+          </div>
+          {selectedReport === "STOCK_MOVEMENTS" && movementTypeOptions.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-bold text-slate-700">Types de mouvement :</p>
+              <div className="flex flex-wrap gap-2">
+                {movementTypeOptions.map(type => {
+                  const isSelected = selectedMovementTypes.includes(type);
+                  return <button key={type} type="button" aria-pressed={isSelected} onClick={() => toggleMovementType(type)} className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold ${isSelected ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{type}</button>;
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Button */}

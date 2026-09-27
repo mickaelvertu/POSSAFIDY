@@ -10,10 +10,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
     function isAdmin() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
@@ -63,6 +59,45 @@ service cloud.firestore {
       allow get: if isSignedIn() && (adminId == request.auth.uid || isAdmin());
       allow list: if isAdmin();
       allow write: if isAdmin();
+    }
+
+    match /inventoryMetadata/{documentId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /articles/{articleId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    match /units/{unitId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /suppliers/{supplierId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /purchases/{purchaseId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if hasPermission('expenses.view');
+      allow create: if hasPermission('expenses.create') &&
+        request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.amount is number && request.resource.data.amount > 0 &&
+        request.resource.data.description is string && request.resource.data.description.size() > 0;
+    }
+
+    match /movements/{movementId} {
+      allow read: if isActiveUser();
+      allow create: if hasPermission('stock.adjust');
     }
 
     // Inventory master data. Administrators seed and maintain stores; active

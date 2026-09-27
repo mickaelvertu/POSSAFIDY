@@ -3,7 +3,8 @@ import {
   Article, 
   Category, 
   ArticleTypeCode, 
-  UserProfile 
+  UserProfile,
+  UnitOfMeasure
 } from "../types";
 import { 
   Boxes, 
@@ -22,17 +23,19 @@ import {
 interface CatalogViewProps {
   articles: Article[];
   categories: Category[];
+  units: UnitOfMeasure[];
   currentUser: UserProfile;
-  onCreateArticle: (art: Article) => void;
-  onUpdateArticle: (art: Article) => void;
-  onToggleArticleStatus: (articleId: string) => void;
-  onCreateCategory: (cat: Category) => void;
-  onToggleCategoryStatus: (categoryId: string) => void;
+  onCreateArticle: (art: Article) => Promise<void>;
+  onUpdateArticle: (art: Article) => Promise<void>;
+  onToggleArticleStatus: (articleId: string) => Promise<void>;
+  onCreateCategory: (cat: Category) => Promise<void>;
+  onToggleCategoryStatus: (categoryId: string) => Promise<void>;
 }
 
 export default function CatalogView({
   articles,
   categories,
+  units,
   currentUser,
   onCreateArticle,
   onUpdateArticle,
@@ -52,25 +55,34 @@ export default function CatalogView({
   const [artName, setArtName] = useState("");
   const [artCatId, setArtCatId] = useState(categories[0]?.id || "");
   const [artType, setArtType] = useState<ArticleTypeCode>("RESALE");
-  const [artUnit, setArtUnit] = useState("Unité");
+  const [artUnit, setArtUnit] = useState("");
   const [artPrixAchat, setArtPrixAchat] = useState(0);
   const [artPrixNormal, setArtPrixNormal] = useState(0);
   const [artPrixRevendeur, setArtPrixRevendeur] = useState(0);
   const [artMinStock, setArtMinStock] = useState(10);
+  const [articleError, setArticleError] = useState("");
+  const [isSavingArticle, setIsSavingArticle] = useState(false);
 
   // Category Modal
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [catCode, setCatCode] = useState("");
   const [catName, setCatName] = useState("");
   const [catDesc, setCatDesc] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   const handleOpenNewArticle = () => {
+    setArticleError("");
     setEditingArticle(null);
     setArtCode("");
     setArtName("");
     setArtCatId(categories[0]?.id || "");
     setArtType("RESALE");
-    setArtUnit("Unité");
+    setArtUnit(
+      units.find(unit => unit.is_active && unit.name.toLocaleLowerCase("fr-FR") === "unité")?.name ||
+      units.find(unit => unit.is_active)?.name ||
+      ""
+    );
     setArtPrixAchat(0);
     setArtPrixNormal(0);
     setArtPrixRevendeur(0);
@@ -79,6 +91,7 @@ export default function CatalogView({
   };
 
   const handleOpenEditArticle = (art: Article) => {
+    setArticleError("");
     setEditingArticle(art);
     setArtCode(art.code);
     setArtName(art.name);
@@ -92,66 +105,111 @@ export default function CatalogView({
     setIsArticleModalOpen(true);
   };
 
-  const handleSaveArticle = (e: FormEvent) => {
+  const handleSaveArticle = async (e: FormEvent) => {
     e.preventDefault();
-    if (!artCode || !artName) {
-      alert("Le code et la désignation sont requis.");
+    const normalizedCode = artCode.trim().toUpperCase();
+    if (!normalizedCode || !artName.trim() || !artCatId) {
+      setArticleError("Le code, la désignation et la catégorie sont requis.");
+      return;
+    }
+    if (articles.some(article => article.id !== editingArticle?.id && article.code.trim().toUpperCase() === normalizedCode)) {
+      setArticleError("Ce code article est déjà utilisé.");
       return;
     }
 
-    if (editingArticle) {
-      const updated: Article = {
-        ...editingArticle,
-        code: artCode,
-        name: artName,
-        category_id: artCatId,
-        article_type: artType,
-        unit: artUnit,
-        prix_achat: Number(artPrixAchat),
-        prix_normal: Number(artPrixNormal),
-        prix_revendeur: Number(artPrixRevendeur),
-        min_alert_stock: Number(artMinStock),
-        updated_at: Date.now()
-      };
-      onUpdateArticle(updated);
-    } else {
-      const newArt: Article = {
-        id: `art-${Date.now()}`,
-        code: artCode,
-        name: artName,
-        category_id: artCatId,
-        article_type: artType,
-        unit: artUnit,
-        prix_achat: Number(artPrixAchat),
-        prix_normal: Number(artPrixNormal),
-        prix_revendeur: Number(artPrixRevendeur),
-        min_alert_stock: Number(artMinStock),
-        is_active: true,
-        created_at: Date.now(),
-        updated_at: Date.now()
-      };
-      onCreateArticle(newArt);
+    setIsSavingArticle(true);
+    setArticleError("");
+    try {
+      const timestamp = Date.now();
+      if (editingArticle) {
+        await onUpdateArticle({
+          ...editingArticle,
+          code: normalizedCode,
+          name: artName.trim(),
+          category_id: artCatId,
+          article_type: artType,
+          unit: artUnit.trim(),
+          prix_achat: Number(artPrixAchat),
+          prix_normal: Number(artPrixNormal),
+          prix_revendeur: Number(artPrixRevendeur),
+          min_alert_stock: Number(artMinStock),
+          updated_at: timestamp
+        });
+      } else {
+        await onCreateArticle({
+          id: `art-${crypto.randomUUID()}`,
+          code: normalizedCode,
+          name: artName.trim(),
+          category_id: artCatId,
+          article_type: artType,
+          unit: artUnit.trim(),
+          prix_achat: Number(artPrixAchat),
+          prix_normal: Number(artPrixNormal),
+          prix_revendeur: Number(artPrixRevendeur),
+          min_alert_stock: Number(artMinStock),
+          is_active: true,
+          created_at: timestamp,
+          updated_at: timestamp
+        });
+      }
+      setIsArticleModalOpen(false);
+    } catch (error) {
+      setArticleError(error instanceof Error ? error.message : "Impossible d'enregistrer l'article.");
+    } finally {
+      setIsSavingArticle(false);
     }
-
-    setIsArticleModalOpen(false);
   };
 
-  const handleSaveCategory = (e: FormEvent) => {
+  const handleSaveCategory = async (e: FormEvent) => {
     e.preventDefault();
-    if (!catCode || !catName) return;
+    const normalizedCode = catCode.trim().toUpperCase();
+    if (!normalizedCode || !catName.trim()) {
+      setCategoryError("Le code et le nom de la catégorie sont requis.");
+      return;
+    }
+    if (categories.some(category => category.code.trim().toUpperCase() === normalizedCode)) {
+      setCategoryError("Ce code catégorie est déjà utilisé.");
+      return;
+    }
 
-    const newCat: Category = {
-      id: `cat-${Date.now()}`,
-      code: catCode,
-      name: catName,
-      description: catDesc,
-      is_active: true,
-      created_at: Date.now(),
-      updated_at: Date.now()
-    };
+    setIsSavingCategory(true);
+    setCategoryError("");
+    try {
+      const timestamp = Date.now();
+      await onCreateCategory({
+        id: `cat-${crypto.randomUUID()}`,
+        code: normalizedCode,
+        name: catName.trim(),
+        description: catDesc.trim(),
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp
+      });
+      setIsCategoryModalOpen(false);
+      setCatCode("");
+      setCatName("");
+      setCatDesc("");
+    } catch (error) {
+      setCategoryError(error instanceof Error ? error.message : "Impossible d'enregistrer la catégorie.");
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
 
-    onCreateCategory(newCat);
-    setIsCategoryModalOpen(false);
+  const handleToggleArticleStatus = async (articleId: string) => {
+    try {
+      await onToggleArticleStatus(articleId);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible de modifier le statut de l'article.");
+    }
+  };
+
+  const handleToggleCategoryStatus = async (categoryId: string) => {
+    try {
+      await onToggleCategoryStatus(categoryId);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible de modifier le statut de la catégorie.");
+    }
   };
 
   const filteredArticles = articles.filter((a) => {
@@ -186,7 +244,10 @@ export default function CatalogView({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsCategoryModalOpen(true)}
+            onClick={() => {
+              setCategoryError("");
+              setIsCategoryModalOpen(true);
+            }}
             className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-slate-300"
           >
             <FolderPlus className="h-4 w-4" />
@@ -346,14 +407,16 @@ export default function CatalogView({
                           <button
                             type="button"
                             onClick={() => handleOpenEditArticle(art)}
-                            className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-100 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
                             title="Modifier"
+                            aria-label={`Modifier l'article ${art.name}`}
                           >
                             <Edit className="h-3.5 w-3.5" />
+                            <span>Modifier</span>
                           </button>
                           <button
                             type="button"
-                            onClick={() => onToggleArticleStatus(art.id)}
+                            onClick={() => void handleToggleArticleStatus(art.id)}
                             className={`p-1 rounded cursor-pointer ${
                               art.is_active ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"
                             }`}
@@ -400,7 +463,7 @@ export default function CatalogView({
                 </span>
                 <button
                   type="button"
-                  onClick={() => onToggleCategoryStatus(c.id)}
+                  onClick={() => void handleToggleCategoryStatus(c.id)}
                   className="text-amber-600 hover:text-amber-800 font-bold"
                 >
                   {c.is_active ? "Désactiver" : "Réactiver"}
@@ -414,7 +477,7 @@ export default function CatalogView({
       {/* ARTICLE CREATE / EDIT MODAL */}
       {isArticleModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-slate-200 text-xs">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-slate-200 text-xs text-slate-900">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-bold text-base text-slate-900">
                 {editingArticle ? `Modifier l'Article [${editingArticle.code}]` : "Créer un Nouvel Article"}
@@ -429,6 +492,7 @@ export default function CatalogView({
             </div>
 
             <form onSubmit={handleSaveArticle} className="mt-4 space-y-3">
+              {articleError && <p role="alert" className="rounded border border-red-200 bg-red-50 p-2 text-red-700">{articleError}</p>}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Code Réf (Métier) :</label>
@@ -438,7 +502,7 @@ export default function CatalogView({
                     value={artCode}
                     onChange={(e) => setArtCode(e.target.value)}
                     placeholder="Ex: HE-RAV-01, B-107..."
-                    className="w-full font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                    className="w-full font-mono font-bold text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                   />
                 </div>
                 <div>
@@ -446,7 +510,7 @@ export default function CatalogView({
                   <select
                     value={artType}
                     onChange={(e) => setArtType(e.target.value as ArticleTypeCode)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold"
+                    className="w-full text-slate-900 bg-white border border-slate-300 rounded-lg p-2 font-bold"
                   >
                     <option value="RESALE">RESALE (Article de Revente)</option>
                     <option value="RAW_MATERIAL">RAW_MATERIAL (Matière Première)</option>
@@ -462,7 +526,7 @@ export default function CatalogView({
                   value={artName}
                   onChange={(e) => setArtName(e.target.value)}
                   placeholder="Ex: Baume Katrafay 50ml, Huile Essentielle..."
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium"
+                  className="w-full text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2 font-medium"
                 />
               </div>
 
@@ -472,7 +536,7 @@ export default function CatalogView({
                   <select
                     value={artCatId}
                     onChange={(e) => setArtCatId(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                    className="w-full text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -483,13 +547,17 @@ export default function CatalogView({
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Conditionnement / Unité :</label>
-                  <input
-                    type="text"
+                  <select
                     value={artUnit}
                     onChange={(e) => setArtUnit(e.target.value)}
-                    placeholder="Flacon 10ml, Pot 50ml, Kg, Litre..."
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2"
-                  />
+                    required
+                    className="w-full text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
+                  >
+                    <option value="" disabled>Sélectionner une unité</option>
+                    {units.filter(unit => unit.is_active || unit.name === artUnit).map(unit => (
+                      <option key={unit.id} value={unit.name}>{unit.name}{unit.is_active ? "" : " (inactive)"}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -503,7 +571,7 @@ export default function CatalogView({
                       type="number"
                       value={artPrixAchat}
                       onChange={(e) => setArtPrixAchat(Number(e.target.value))}
-                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-right font-bold"
+                      className="w-full text-slate-900 bg-white border border-slate-300 rounded p-1.5 text-right font-bold"
                     />
                   </div>
                   <div>
@@ -512,7 +580,7 @@ export default function CatalogView({
                       type="number"
                       value={artPrixNormal}
                       onChange={(e) => setArtPrixNormal(Number(e.target.value))}
-                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-right font-bold text-blue-900"
+                      className="w-full text-blue-900 bg-white border border-slate-300 rounded p-1.5 text-right font-bold"
                     />
                   </div>
                   <div>
@@ -521,7 +589,7 @@ export default function CatalogView({
                       type="number"
                       value={artPrixRevendeur}
                       onChange={(e) => setArtPrixRevendeur(Number(e.target.value))}
-                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-right font-bold text-amber-800"
+                      className="w-full text-amber-800 bg-white border border-slate-300 rounded p-1.5 text-right font-bold"
                     />
                   </div>
                 </div>
@@ -533,7 +601,7 @@ export default function CatalogView({
                   type="number"
                   value={artMinStock}
                   onChange={(e) => setArtMinStock(Number(e.target.value))}
-                  className="w-full font-mono bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full font-mono text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 
@@ -547,9 +615,10 @@ export default function CatalogView({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs cursor-pointer"
+                  disabled={isSavingArticle || categories.length === 0}
+                  className="px-5 py-2 font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs cursor-pointer disabled:opacity-60"
                 >
-                  Enregistrer l'Article
+                  {isSavingArticle ? "Enregistrement..." : "Enregistrer l'Article"}
                 </button>
               </div>
 
@@ -561,7 +630,7 @@ export default function CatalogView({
       {/* CATEGORY CREATE MODAL */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 text-xs">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 text-xs text-slate-900">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-bold text-base text-slate-900">Nouvelle Catégorie</h3>
               <button
@@ -574,6 +643,7 @@ export default function CatalogView({
             </div>
 
             <form onSubmit={handleSaveCategory} className="mt-3 space-y-3">
+              {categoryError && <p role="alert" className="rounded border border-red-200 bg-red-50 p-2 text-red-700">{categoryError}</p>}
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Code Catégorie :</label>
                 <input
@@ -582,7 +652,7 @@ export default function CatalogView({
                   value={catCode}
                   onChange={(e) => setCatCode(e.target.value)}
                   placeholder="Ex: CAT-HUILES, CAT-ARGILES..."
-                  className="w-full font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full font-mono font-bold text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 
@@ -594,7 +664,7 @@ export default function CatalogView({
                   value={catName}
                   onChange={(e) => setCatName(e.target.value)}
                   placeholder="Ex: Huiles Essentielles Pures..."
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium"
+                  className="w-full text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2 font-medium"
                 />
               </div>
 
@@ -605,7 +675,7 @@ export default function CatalogView({
                   value={catDesc}
                   onChange={(e) => setCatDesc(e.target.value)}
                   placeholder="Description détaillée..."
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 
@@ -619,9 +689,10 @@ export default function CatalogView({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs"
+                  disabled={isSavingCategory}
+                  className="px-4 py-2 font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs disabled:opacity-60"
                 >
-                  Créer la Catégorie
+                  {isSavingCategory ? "Enregistrement..." : "Créer la Catégorie"}
                 </button>
               </div>
             </form>

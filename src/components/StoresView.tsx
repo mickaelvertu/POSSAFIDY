@@ -12,23 +12,45 @@ import {
   Boxes,
   ShoppingCart,
   Factory,
+  Trash2,
   Store as StoreIcon
 } from "lucide-react";
 
 interface StoresViewProps {
   stores: Store[];
+  users: UserProfile[];
   currentUser: UserProfile;
-  onCreateStore: (store: Store) => void;
-  onUpdateStore: (store: Store) => void;
-  onToggleStoreStatus: (storeId: string) => void;
+  onCreateStore: (store: Store) => Promise<void>;
+  onUpdateStore: (store: Store) => Promise<void>;
+  onToggleStoreStatus: (storeId: string) => Promise<void>;
+  onDeleteStore: (storeId: string) => Promise<void>;
+}
+
+const STORE_CODE_PREFIXES: Record<StoreTypeCode, string> = {
+  CENTRAL_WAREHOUSE: "DEP",
+  POS: "POS",
+  RESELLER: "REV",
+  MANUFACTURER: "PRD"
+};
+
+function generateStoreCode(storeType: StoreTypeCode, stores: Store[]): string {
+  const prefix = STORE_CODE_PREFIXES[storeType];
+  const pattern = new RegExp(`^${prefix}-(\\d+)$`, "i");
+  const highestSequence = stores.reduce((highest, store) => {
+    const match = store.code.match(pattern);
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+  return `${prefix}-${String(highestSequence + 1).padStart(2, "0")}`;
 }
 
 export default function StoresView({
   stores,
+  users,
   currentUser,
   onCreateStore,
   onUpdateStore,
-  onToggleStoreStatus
+  onToggleStoreStatus,
+  onDeleteStore
 }: StoresViewProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
@@ -36,15 +58,15 @@ export default function StoresView({
   const [name, setName] = useState("");
   const [storeType, setStoreType] = useState<StoreTypeCode>("POS");
   const [location, setLocation] = useState("");
-  const [managerName, setManagerName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const handleOpenNew = () => {
     setEditingStore(null);
-    setCode("");
+    setCode(generateStoreCode("POS", stores));
     setName("");
     setStoreType("POS");
     setLocation("");
-    setManagerName("");
     setIsModalOpen(true);
   };
 
@@ -54,41 +76,67 @@ export default function StoresView({
     setName(store.name);
     setStoreType(store.store_type);
     setLocation(store.location || "");
-    setManagerName(store.manager_name || "");
     setIsModalOpen(true);
   };
 
-  const handleSaveStore = (e: FormEvent) => {
+  const handleSaveStore = async (e: FormEvent) => {
     e.preventDefault();
     if (!code || !name) return;
 
-    if (editingStore) {
-      const updated: Store = {
-        ...editingStore,
-        code,
-        name,
-        store_type: storeType,
-        location,
-        manager_name: managerName,
-        updated_at: Date.now()
-      };
-      onUpdateStore(updated);
-    } else {
-      const newStore: Store = {
-        id: `store-${Date.now()}`,
-        code,
-        name,
-        store_type: storeType,
-        location,
-        manager_name: managerName,
-        is_active: true,
-        created_at: Date.now(),
-        updated_at: Date.now()
-      };
-      onCreateStore(newStore);
+    setIsSaving(true);
+    setSaveError("");
+    try {
+      if (editingStore) {
+        const updated: Store = {
+          ...editingStore,
+          code,
+          name,
+          store_type: storeType,
+          location,
+          updated_at: Date.now()
+        };
+        await onUpdateStore(updated);
+      } else {
+        const timestamp = Date.now();
+        const newStore: Store = {
+          id: `store-${timestamp}`,
+          code,
+          name,
+          store_type: storeType,
+          location,
+          is_active: true,
+          created_at: timestamp,
+          updated_at: timestamp
+        };
+        await onCreateStore(newStore);
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Impossible d'enregistrer le magasin.");
+    } finally {
+      setIsSaving(false);
     }
+  };
 
-    setIsModalOpen(false);
+  const handleToggleStoreStatus = async (storeId: string) => {
+    try {
+      await onToggleStoreStatus(storeId);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible de modifier le statut du magasin.");
+    }
+  };
+
+  const handleDeleteStore = async (store: Store) => {
+    const confirmed = window.confirm(
+      `Supprimer définitivement « ${store.name} » ? Ses stocks et affectations utilisateur seront supprimés. Les ventes et transferts historiques seront conservés.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await onDeleteStore(store.id);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible de supprimer le magasin.");
+    }
   };
 
   const getTypeBadge = (type: StoreTypeCode) => {
@@ -174,7 +222,7 @@ export default function StoresView({
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                  <span>Responsable : <strong>{store.manager_name || "Non assigné"}</strong></span>
+                  <span>Responsable : <strong>{users.filter(assignedUser => assignedUser.isActive && assignedUser.storeIds.includes(store.id)).map(assignedUser => `${assignedUser.firstName} ${assignedUser.lastName}`).join(", ") || "Non assigné"}</strong></span>
                 </div>
               </div>
             </div>
@@ -197,13 +245,24 @@ export default function StoresView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onToggleStoreStatus(store.id)}
+                  onClick={() => void handleToggleStoreStatus(store.id)}
                   className={`px-2 py-1 rounded text-[10px] font-bold cursor-pointer ${
                     store.is_active ? "text-amber-700 hover:bg-amber-50" : "text-emerald-700 hover:bg-emerald-50"
                   }`}
                 >
                   {store.is_active ? "Désactiver" : "Activer"}
                 </button>
+                {(currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN") && (
+                  <button
+                    type="button"
+                    title="Supprimer le magasin"
+                    aria-label={`Supprimer ${store.name}`}
+                    onClick={() => void handleDeleteStore(store)}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -214,7 +273,7 @@ export default function StoresView({
       {/* CREATE / EDIT MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 text-xs">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 text-xs text-slate-900">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-bold text-base text-slate-900">
                 {editingStore ? `Modifier le Magasin [${editingStore.code}]` : "Créer un Nouveau Site"}
@@ -229,6 +288,7 @@ export default function StoresView({
             </div>
 
             <form onSubmit={handleSaveStore} className="mt-4 space-y-3">
+              {saveError && <p role="alert" className="rounded border border-red-200 bg-red-50 p-2 text-red-700">{saveError}</p>}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Code Métier :</label>
@@ -236,17 +296,22 @@ export default function StoresView({
                     type="text"
                     required
                     value={code}
+                    readOnly={!editingStore}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="Ex: POS-03, REV-TAM..."
-                    className="w-full font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                    placeholder="Généré automatiquement"
+                    className="w-full font-mono font-bold text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                   />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Type de Magasin :</label>
                   <select
                     value={storeType}
-                    onChange={(e) => setStoreType(e.target.value as StoreTypeCode)}
-                    className="w-full font-bold bg-white border border-slate-300 rounded-lg p-2"
+                    onChange={(e) => {
+                      const nextType = e.target.value as StoreTypeCode;
+                      setStoreType(nextType);
+                      if (!editingStore) setCode(generateStoreCode(nextType, stores));
+                    }}
+                    className="w-full font-bold text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                   >
                     <option value="CENTRAL_WAREHOUSE">Dépôt Central</option>
                     <option value="POS">Point de Vente Normal (POS)</option>
@@ -264,7 +329,7 @@ export default function StoresView({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Boutique Gileada Tamatave..."
-                  className="w-full font-medium bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full font-medium text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 
@@ -275,18 +340,7 @@ export default function StoresView({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Ex: Bazar Be, Toamasina..."
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Nom du Responsable / Gérant :</label>
-                <input
-                  type="text"
-                  value={managerName}
-                  onChange={(e) => setManagerName(e.target.value)}
-                  placeholder="Ex: Rasoa Hanta..."
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 
@@ -300,9 +354,10 @@ export default function StoresView({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSaving}
                   className="px-5 py-2 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs cursor-pointer"
                 >
-                  Enregistrer le Magasin
+                  {isSaving ? "Enregistrement..." : "Enregistrer le Magasin"}
                 </button>
               </div>
 

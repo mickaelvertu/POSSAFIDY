@@ -1,16 +1,41 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
-import { AppRoleId, AppUser } from "../../types";
+import { AppRoleId, AppUser, Article, AuditLog, Category, Expense, GeneralFilters, Purchase, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
-import { INITIAL_STORES, INITIAL_CATEGORIES, INITIAL_ARTICLES, INITIAL_STOCKS, INITIAL_SALES } from "../../data/initialData";
+import { INITIAL_STORES, INITIAL_CATEGORIES, INITIAL_ARTICLES, INITIAL_STOCKS, INITIAL_SALES, INITIAL_PRODUCTIONS, INITIAL_TRANSFERS } from "../../data/initialData";
 import UsersView from "../UsersView";
 import RoleHomeView from "../RoleHomeView";
 import SalesView from "../SalesView";
 import StocksView from "../StocksView";
-import { Sale, StoreStock } from "../../types";
-import { updateStockQuantity } from "../../services/stockService";
-import { loadInventoryData, saveStockAdjustment, seedInitialInventoryData } from "../../services/inventoryService";
+import { Production, Sale, StockMovement, StockTransfer, Store, StoreStock } from "../../types";
+import { generateRef, updateStockQuantity } from "../../services/stockService";
+import {
+  deleteStore,
+  loadCatalogData,
+  loadInventoryData,
+  loadProcurementData,
+  receivePurchase,
+  recordSupplierPayment,
+  saveArticle,
+  saveCategory,
+  saveStockAdjustment,
+  saveStore,
+  saveSupplier,
+  seedInitialCatalogData,
+  seedInitialInventoryData
+} from "../../services/inventoryService";
+import StoresView from "../StoresView";
+import CatalogView from "../CatalogView";
+import ProductionView from "../ProductionView";
+import ProcurementView from "../ProcurementView";
+import ExpensesView from "../ExpensesView";
+import TransfersView from "../TransfersView";
+import UnitsView from "../UnitsView";
+import ReportsView from "../ReportsView";
+import ReportViewer from "../ReportViewer";
+import { loadExpenses, saveExpense } from "../../services/expenseService";
+import { loadUnits, saveUnit } from "../../services/unitService";
 import { 
   ShieldCheck, 
   LogOut, 
@@ -65,16 +90,27 @@ export default function AuthenticatedSessionView() {
   const [testLoading, setTestLoading] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks">("home");
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units">("home");
+  const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
   const [sales, setSales] = useState<Sale[]>([...INITIAL_SALES]);
+  const [productions, setProductions] = useState<Production[]>([...INITIAL_PRODUCTIONS]);
+  const [transfers, setTransfers] = useState<StockTransfer[]>([...INITIAL_TRANSFERS]);
   const [stocks, setStocks] = useState<StoreStock[]>([...INITIAL_STOCKS]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
   const [inventoryStores, setInventoryStores] = useState([...INITIAL_STORES]);
+  const [articles, setArticles] = useState<Article[]>([...INITIAL_ARTICLES]);
+  const [categories, setCategories] = useState<Category[]>([...INITIAL_CATEGORIES]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [units, setUnits] = useState<UnitOfMeasure[]>([]);
 
   const canManageUsers = Boolean(user && (
     user.role === "SUPER_ADMIN" ||
     user.role === "ADMIN" ||
     user.permissions.includes("users.view")
   ));
+  const canManageStores = Boolean(user && (user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
 
   useEffect(() => {
     if (!canManageUsers) return;
@@ -93,11 +129,26 @@ export default function AuthenticatedSessionView() {
     let isMounted = true;
     async function loadInventory() {
       try {
-        if (canManageUsers) await seedInitialInventoryData();
-        const inventory = await loadInventoryData();
+        if (canManageStores) {
+          await Promise.all([seedInitialInventoryData(), seedInitialCatalogData()]);
+        }
+        const [inventory, catalog, procurement] = await Promise.all([
+          loadInventoryData(),
+          loadCatalogData(),
+          canManageStores ? loadProcurementData() : Promise.resolve({ suppliers: [], purchases: [] })
+        ]);
+        const loadedUnits = canManageStores ? await loadUnits(catalog.articles) : [];
         if (!isMounted) return;
-        if (inventory.stores.length > 0) setInventoryStores(inventory.stores);
-        if (inventory.stocks.length > 0) setStocks(inventory.stocks);
+        setInventoryStores(inventory.stores);
+        setStocks(inventory.stocks);
+        setMovements(inventory.movements);
+        setArticles(catalog.articles);
+        setCategories(catalog.categories);
+        setUnits(loadedUnits);
+        if (canManageStores) {
+          setSuppliers(procurement.suppliers);
+          setPurchases(procurement.purchases);
+        }
       } catch (error) {
         console.error("Inventory Firestore load failed:", error);
       }
@@ -106,7 +157,28 @@ export default function AuthenticatedSessionView() {
     return () => {
       isMounted = false;
     };
-  }, [canManageUsers, user]);
+  }, [canManageStores, user]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const canViewExpenses = user && (
+      user.role === "ADMIN" ||
+      user.role === "SUPER_ADMIN" ||
+      user.permissions.includes("expenses.view")
+    );
+    if (!canViewExpenses) {
+      setExpenses([]);
+      return;
+    }
+    loadExpenses()
+      .then(loadedExpenses => {
+        if (isMounted) setExpenses(loadedExpenses);
+      })
+      .catch(error => console.error("Expense Firestore load failed:", error));
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const handleCreateManagedUser = async (newUser: AppUser) => {
     const response = await authService.createManagedUser({
@@ -180,17 +252,214 @@ export default function AuthenticatedSessionView() {
     setSales(current => current.map(sale => sale.id === saleId ? { ...sale, status: "CANCELLED" } : sale));
   };
 
-  const handleAdjustStock = async (storeId: string, articleId: string, newQty: number) => {
+  const handleCreateProduction = (production: Production) => {
+    let updatedStocks = stocks;
+    production.consumptions.forEach(line => {
+      updatedStocks = updateStockQuantity(updatedStocks, production.manufacturer_store_id, line.article_id, -line.quantity).newStocks;
+    });
+    production.outputs.forEach(line => {
+      updatedStocks = updateStockQuantity(updatedStocks, production.manufacturer_store_id, line.article_id, line.quantity).newStocks;
+    });
+    setStocks(updatedStocks);
+    setProductions(current => [production, ...current]);
+  };
+
+  const handleInitiateProductionReturn = (transfer: StockTransfer) => {
+    setTransfers(current => [transfer, ...current]);
+  };
+
+  const handleCreateTransfer = (transfer: StockTransfer) => {
+    setTransfers(current => [transfer, ...current]);
+  };
+
+  const handleApproveTransfer = (transferId: string) => {
+    const timestamp = Date.now();
+    setTransfers(current => current.map(transfer => transfer.id === transferId && transfer.status === "DRAFT"
+      ? { ...transfer, status: "APPROVED", approved_by: currentAppUser?.uid, approved_by_name: currentAppUser?.displayName, approved_at: timestamp, updated_at: timestamp }
+      : transfer));
+  };
+
+  const handleShipTransfer = (transferId: string) => {
+    const transfer = transfers.find(item => item.id === transferId);
+    if (!transfer || transfer.status !== "APPROVED") return;
+    let updatedStocks = stocks;
+    for (const line of transfer.lines) {
+      const available = updatedStocks.find(stock => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id)?.quantity || 0;
+      if (line.quantity_sent <= 0 || available < line.quantity_sent) {
+        alert(`Stock insuffisant pour ${line.article_name}. Disponible : ${available}.`);
+        return;
+      }
+      updatedStocks = updateStockQuantity(updatedStocks, transfer.source_store_id, line.article_id, -line.quantity_sent).newStocks;
+    }
+    const timestamp = Date.now();
+    setStocks(updatedStocks);
+    setTransfers(current => current.map(item => item.id === transferId
+      ? { ...item, status: "IN_TRANSIT", shipped_by: currentAppUser?.uid, shipped_by_name: currentAppUser?.displayName, shipped_at: timestamp, updated_at: timestamp }
+      : item));
+  };
+
+  const handleReceiveTransfer = (transferId: string, updatedLines: StockTransferLine[], receiverNote?: string) => {
+    const transfer = transfers.find(item => item.id === transferId);
+    if (!transfer || transfer.status !== "IN_TRANSIT") return;
+    if (updatedLines.some(line => line.quantity_received < 0 || line.quantity_received > line.quantity_sent || line.quantity_accepted < 0 || line.quantity_accepted > line.quantity_received)) {
+      alert("Vérifiez les quantités reçues et acceptées : elles ne peuvent pas dépasser la quantité expédiée.");
+      return;
+    }
+    let updatedStocks = stocks;
+    updatedLines.forEach(line => {
+      if (line.quantity_accepted > 0) {
+        updatedStocks = updateStockQuantity(updatedStocks, transfer.destination_store_id, line.article_id, line.quantity_accepted).newStocks;
+      }
+    });
+    const hasDiscrepancy = updatedLines.some(line => line.quantity_rejected > 0 || line.quantity_received !== line.quantity_sent);
+    const timestamp = Date.now();
+    setStocks(updatedStocks);
+    setTransfers(current => current.map(item => item.id === transferId ? {
+      ...item,
+      status: hasDiscrepancy ? "DISCREPANCY" : "VALIDATED",
+      lines: updatedLines,
+      received_by: currentAppUser?.uid,
+      received_by_name: currentAppUser?.displayName,
+      received_at: timestamp,
+      validated_by: currentAppUser?.uid,
+      validated_by_name: currentAppUser?.displayName,
+      validated_at: timestamp,
+      has_discrepancy: hasDiscrepancy,
+      note: receiverNote || item.note,
+      updated_at: timestamp
+    } : item));
+  };
+
+  const handleResolveTransferDiscrepancy = (transferId: string, resolutionNote: string) => {
+    const timestamp = Date.now();
+    setTransfers(current => current.map(transfer => transfer.id === transferId && transfer.status === "DISCREPANCY"
+      ? { ...transfer, discrepancy_resolved: true, discrepancy_resolution_note: resolutionNote, updated_at: timestamp }
+      : transfer));
+  };
+
+  const handleAdjustStock = async (storeId: string, articleId: string, newQty: number, reason: string, isDeposit = false) => {
     const currentQty = stocks.find(stock => stock.store_id === storeId && stock.article_id === articleId)?.quantity || 0;
-    const { newStocks } = updateStockQuantity(stocks, storeId, articleId, newQty - currentQty);
+    const { newStocks, beforeQty, afterQty } = updateStockQuantity(stocks, storeId, articleId, newQty - currentQty);
     const updatedStock = newStocks.find(stock => stock.store_id === storeId && stock.article_id === articleId);
     if (!updatedStock) return;
+    const timestamp = Date.now();
+    const movementId = `movement-${crypto.randomUUID()}`;
+    const movement: StockMovement = {
+      id: movementId,
+      store_id: storeId,
+      article_id: articleId,
+      movement_type: isDeposit ? "PURCHASE" : "INVENTORY_ADJUSTMENT",
+      quantity: afterQty - beforeQty,
+      reference_type: isDeposit ? "STOCK_DEPOSIT" : "INVENTORY_ADJUSTMENT",
+      reference_id: movementId,
+      reference_number: generateRef(isDeposit ? "DEP" : "ADJ", movements.length),
+      before_quantity: beforeQty,
+      after_quantity: afterQty,
+      created_by: currentAppUser?.uid || "",
+      created_by_name: currentAppUser?.displayName || currentAppUser?.email || "Utilisateur",
+      notes: reason,
+      created_at: timestamp
+    };
     try {
-      await saveStockAdjustment(updatedStock, newQty);
+      await saveStockAdjustment(updatedStock, afterQty, movement);
       setStocks(newStocks);
+      setMovements(current => [movement, ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'ajustement dans Firestore.");
     }
+  };
+
+  const handleCreateStore = async (store: Store) => {
+    await saveStore(store);
+    setInventoryStores(current => [...current, store]);
+  };
+
+  const handleUpdateStore = async (store: Store) => {
+    await saveStore(store);
+    setInventoryStores(current => current.map(item => item.id === store.id ? store : item));
+  };
+
+  const handleToggleStoreStatus = async (storeId: string) => {
+    const store = inventoryStores.find(item => item.id === storeId);
+    if (!store) return;
+    await handleUpdateStore({ ...store, is_active: !store.is_active, updated_at: Date.now() });
+  };
+
+  const handleDeleteStore = async (storeId: string) => {
+    await deleteStore(storeId);
+    setInventoryStores(current => current.filter(store => store.id !== storeId));
+    setStocks(current => current.filter(stock => stock.store_id !== storeId));
+    setManagedUsers(current => current.map(managedUser => ({
+      ...managedUser,
+      storeIds: managedUser.storeIds.filter(id => id !== storeId)
+    })));
+  };
+
+  const handleCreateArticle = async (article: Article) => {
+    await saveArticle(article);
+    setArticles(current => [...current, article]);
+  };
+
+  const handleUpdateArticle = async (article: Article) => {
+    await saveArticle(article);
+    setArticles(current => current.map(item => item.id === article.id ? article : item));
+  };
+
+  const handleToggleArticleStatus = async (articleId: string) => {
+    const article = articles.find(item => item.id === articleId);
+    if (article) await handleUpdateArticle({ ...article, is_active: !article.is_active, updated_at: Date.now() });
+  };
+
+  const handleCreateCategory = async (category: Category) => {
+    await saveCategory(category);
+    setCategories(current => [...current, category]);
+  };
+
+  const handleCreateUnit = async (unit: UnitOfMeasure) => {
+    await saveUnit(unit);
+    setUnits(current => [...current, unit].sort((left, right) => left.name.localeCompare(right.name, "fr")));
+  };
+
+  const handleToggleUnit = async (unit: UnitOfMeasure) => {
+    if (!unit.is_active && articles.some(article => article.unit.toLocaleLowerCase("fr-FR") === unit.name.toLocaleLowerCase("fr-FR"))) {
+      throw new Error("Cette unité est encore associée à un article et ne peut pas être désactivée.");
+    }
+    await saveUnit(unit);
+    setUnits(current => current.map(item => item.id === unit.id ? unit : item));
+  };
+
+  const handleToggleCategoryStatus = async (categoryId: string) => {
+    const category = categories.find(item => item.id === categoryId);
+    if (!category) return;
+    const updated = { ...category, is_active: !category.is_active, updated_at: Date.now() };
+    await saveCategory(updated);
+    setCategories(current => current.map(item => item.id === categoryId ? updated : item));
+  };
+
+  const handleCreateSupplier = async (supplier: Supplier) => {
+    await saveSupplier(supplier);
+    setSuppliers(current => [...current, supplier]);
+  };
+
+  const handleToggleSupplier = async (supplier: Supplier) => {
+    await saveSupplier(supplier);
+    setSuppliers(current => current.map(item => item.id === supplier.id ? supplier : item));
+  };
+
+  const handleReceivePurchase = async (purchase: Purchase) => {
+    const updatedStocks = await receivePurchase(purchase, stocks);
+    setStocks(updatedStocks);
+    setPurchases(current => [purchase, ...current]);
+  };
+
+  const handleRecordSupplierPayment = async (purchase: Purchase, payment: SupplierPayment) => {
+    const updatedPurchase = await recordSupplierPayment(purchase, payment);
+    setPurchases(current => current.map(item => item.id === purchase.id ? updatedPurchase : item));
+  };
+
+  const handleCreateExpense = async (expense: Expense) => {
+    await saveExpense(expense);
+    setExpenses(current => [expense, ...current].sort((left, right) => right.expense_date - left.expense_date));
   };
 
   const handleCopyToken = () => {
@@ -309,8 +578,8 @@ export default function AuthenticatedSessionView() {
             <SalesView
               sales={sales}
               stores={accessibleStores}
-              articles={INITIAL_ARTICLES}
-              stocks={INITIAL_STOCKS}
+              articles={articles}
+              stocks={stocks}
               currentUser={currentAppUser}
               onCreateSale={handleCreateSale}
               onVerifySale={handleVerifySale}
@@ -329,11 +598,188 @@ export default function AuthenticatedSessionView() {
             </button>
             <StocksView
               stores={accessibleStores}
-              categories={INITIAL_CATEGORIES}
-              articles={INITIAL_ARTICLES}
+              categories={categories}
+              articles={articles}
               stocks={stocks}
+              movements={movements}
               currentUser={currentAppUser}
               onAdjustStock={handleAdjustStock}
+            />
+          </section>
+        ) : activeModule === "stores" && currentAppUser && canManageStores ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <StoresView
+              stores={inventoryStores}
+              users={managedUsers}
+              currentUser={currentAppUser}
+              onCreateStore={handleCreateStore}
+              onUpdateStore={handleUpdateStore}
+              onToggleStoreStatus={handleToggleStoreStatus}
+              onDeleteStore={handleDeleteStore}
+            />
+          </section>
+        ) : activeModule === "units" && currentAppUser && canManageStores ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <UnitsView units={units} articles={articles} onCreateUnit={handleCreateUnit} onToggleUnit={handleToggleUnit} />
+          </section>
+        ) : activeModule === "catalog" && currentAppUser && canManageStores ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <CatalogView
+              articles={articles}
+              categories={categories}
+              units={units}
+              currentUser={currentAppUser}
+              onCreateArticle={handleCreateArticle}
+              onUpdateArticle={handleUpdateArticle}
+              onToggleArticleStatus={handleToggleArticleStatus}
+              onCreateCategory={handleCreateCategory}
+              onToggleCategoryStatus={handleToggleCategoryStatus}
+            />
+          </section>
+        ) : activeModule === "transfers" && currentAppUser && (currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.view")) ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <TransfersView
+              transfers={transfers}
+              stores={accessibleStores}
+              articles={articles.filter(article => article.is_active)}
+              stocks={stocks}
+              currentUser={currentAppUser}
+              canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.create")}
+              canApprove={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.approve")}
+              canShip={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.ship")}
+              canReceive={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.receive")}
+              canResolveDiscrepancy={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("transfers.validate")}
+              onCreateTransfer={handleCreateTransfer}
+              onApproveTransfer={handleApproveTransfer}
+              onShipTransfer={handleShipTransfer}
+              onReceiveAndValidateTransfer={handleReceiveTransfer}
+              onResolveDiscrepancy={handleResolveTransferDiscrepancy}
+            />
+          </section>
+        ) : activeModule === "reports" && currentAppUser && (currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("reports.view")) ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <ReportsView
+              stores={accessibleStores}
+              categories={categories}
+              articles={articles}
+              stocks={stocks}
+              transfers={transfers}
+              movements={movements}
+              sales={sales}
+              productions={productions}
+              auditLogs={[] as AuditLog[]}
+              currentUser={currentAppUser}
+              onOpenReportViewer={(type, filters) => setReportRequest({ type, filters })}
+            />
+            {reportRequest && (
+              <ReportViewer
+                reportType={reportRequest.type}
+                filters={reportRequest.filters}
+                stores={accessibleStores}
+                categories={categories}
+                articles={articles}
+                stocks={stocks}
+                transfers={transfers}
+                movements={movements}
+                sales={sales}
+                productions={productions}
+                auditLogs={[]}
+                currentUser={currentAppUser}
+                onClose={() => setReportRequest(null)}
+              />
+            )}
+          </section>
+        ) : activeModule === "production" && currentAppUser ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <ProductionView
+              productions={productions}
+              stores={accessibleStores}
+              articles={articles}
+              stocks={stocks}
+              currentUser={currentAppUser}
+              onCreateProduction={handleCreateProduction}
+              onInitiateReturn={handleInitiateProductionReturn}
+            />
+          </section>
+        ) : activeModule === "procurement" && currentAppUser && canManageStores ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <ProcurementView
+              suppliers={suppliers}
+              purchases={purchases}
+              stores={inventoryStores}
+              articles={articles}
+              stocks={stocks}
+              currentUser={currentAppUser}
+              onCreateSupplier={handleCreateSupplier}
+              onToggleSupplier={handleToggleSupplier}
+              onReceivePurchase={handleReceivePurchase}
+              onRecordPayment={handleRecordSupplierPayment}
+            />
+          </section>
+        ) : activeModule === "expenses" && currentAppUser && (currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("expenses.view")) ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <ExpensesView
+              expenses={expenses}
+              stores={accessibleStores}
+              currentUser={currentAppUser}
+              canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("expenses.create")}
+              onCreateExpense={handleCreateExpense}
             />
           </section>
         ) : user && (
@@ -342,6 +788,14 @@ export default function AuthenticatedSessionView() {
             onOpenUsers={openUserManagement}
             onOpenSales={() => setActiveModule("sales")}
             onOpenStocks={() => setActiveModule("stocks")}
+            onOpenProduction={() => setActiveModule("production")}
+            onOpenStores={() => setActiveModule("stores")}
+            onOpenCatalog={() => setActiveModule("catalog")}
+            onOpenProcurement={() => setActiveModule("procurement")}
+            onOpenExpenses={() => setActiveModule("expenses")}
+            onOpenTransfers={() => setActiveModule("transfers")}
+            onOpenUnits={() => setActiveModule("units")}
+            onOpenReports={() => setActiveModule("reports")}
           />
         )}
 

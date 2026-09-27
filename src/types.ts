@@ -57,7 +57,8 @@ export const ALL_PERMISSIONS: AppPermission[] = [
   "transfers.view", "transfers.create", "transfers.approve", "transfers.ship",
   "transfers.receive", "transfers.validate", "production.view", "production.create",
   "production.validate", "reports.view", "reports.export", "audit.view",
-  "users.view", "users.create", "users.edit", "users.delete", "users.permissions"
+  "users.view", "users.create", "users.edit", "users.delete", "users.permissions",
+  "expenses.view", "expenses.create", "units.manage"
 ];
 
 // 1. Types de magasins
@@ -69,7 +70,6 @@ export interface Store {
   name: string;
   store_type: StoreTypeCode;
   location?: string;
-  manager_name?: string;
   is_active: boolean;
   created_at: number;
   updated_at: number;
@@ -81,6 +81,26 @@ export interface Category {
   code: string; // Code métier UNIQUE
   name: string;
   description?: string;
+  is_active: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface UnitOfMeasure {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contact_name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
   is_active: boolean;
   created_at: number;
   updated_at: number;
@@ -102,6 +122,69 @@ export interface Article {
   prix_special?: number;
   min_alert_stock?: number;
   is_active: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export type PurchasePaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
+
+export interface PurchaseLine {
+  id: string;
+  article_id: string;
+  article_code: string;
+  article_name: string;
+  unit: string;
+  quantity: number;
+  unit_cost: number;
+  total: number;
+}
+
+export interface SupplierPayment {
+  id: string;
+  amount: number;
+  paid_at: number;
+  method: PaymentMethod;
+  reference?: string;
+}
+
+export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "OTHER";
+
+export interface Expense {
+  id: string;
+  expense_number: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  expense_date: number;
+  store_id?: string;
+  store_name?: string;
+  payee?: string;
+  payment_method: PaymentMethod;
+  payment_status: "PAID" | "PENDING";
+  reference?: string;
+  notes?: string;
+  created_by: string;
+  created_by_name: string;
+  created_at: number;
+}
+
+export interface Purchase {
+  id: string;
+  purchase_number: string;
+  supplier_id: string;
+  supplier_name: string;
+  store_id: string;
+  invoice_number: string;
+  lines: PurchaseLine[];
+  total: number;
+  amount_paid: number;
+  payment_status: PurchasePaymentStatus;
+  expected_payment_at: number;
+  payments: SupplierPayment[];
+  notes?: string;
+  received_by: string;
+  received_by_name: string;
+  received_at: number;
   created_at: number;
   updated_at: number;
 }

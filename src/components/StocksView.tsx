@@ -4,11 +4,13 @@ import {
   Category, 
   Article, 
   StoreStock, 
+  StockMovement,
   UserProfile, 
   ArticleTypeCode 
 } from "../types";
 import { getArticleStock } from "../services/stockService";
 import SearchableSelect from "./SearchableSelect";
+import MovementsView from "./MovementsView";
 import { 
   Boxes, 
   Search, 
@@ -27,12 +29,14 @@ interface StocksViewProps {
   categories: Category[];
   articles: Article[];
   stocks: StoreStock[];
+  movements: StockMovement[];
   currentUser: UserProfile;
   onAdjustStock: (
     storeId: string, 
     articleId: string, 
     newQty: number, 
-    reason: string
+    reason: string,
+    isDeposit: boolean
   ) => void;
 }
 
@@ -41,6 +45,7 @@ export default function StocksView({
   categories,
   articles,
   stocks,
+  movements,
   currentUser,
   onAdjustStock
 }: StocksViewProps) {
@@ -88,7 +93,7 @@ export default function StocksView({
     const targetQuantity = isDepositMode
       ? currentStock + Number(adjustNewQty)
       : Number(adjustNewQty);
-    onAdjustStock(adjustStoreId, adjustArticleId, targetQuantity, adjustReason);
+    onAdjustStock(adjustStoreId, adjustArticleId, targetQuantity, adjustReason, isDepositMode);
     setIsAdjustModalOpen(false);
   };
 
@@ -319,10 +324,12 @@ export default function StocksView({
         </div>
       </div>
 
+      <MovementsView movements={movements} stores={stores} articles={articles} />
+
       {/* INVENTORY ADJUSTMENT MODAL */}
       {isAdjustModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 text-xs">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 text-xs text-slate-900">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
                   {isDepositMode ? <Plus className="h-5 w-5 text-blue-600" /> : <SlidersHorizontal className="h-5 w-5 text-blue-600" />}
@@ -382,7 +389,7 @@ export default function StocksView({
                   min={isDepositMode ? "1" : "0"}
                   value={adjustNewQty}
                   onChange={(e) => setAdjustNewQty(Number(e.target.value))}
-                  className="w-full font-mono font-bold text-base bg-white border border-slate-300 rounded-lg p-2 text-right"
+                  className="w-full font-mono font-bold text-base text-slate-900 bg-white border border-slate-300 rounded-lg p-2 text-right"
                 />
               </div>
 
@@ -396,7 +403,7 @@ export default function StocksView({
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value)}
                   placeholder="Ex: Inventaire de fin de mois, bris accidentel, comptage..."
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 

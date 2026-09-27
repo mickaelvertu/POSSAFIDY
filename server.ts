@@ -39,7 +39,8 @@ const ALL_PERMISSIONS = [
   "transfers.view", "transfers.create", "transfers.approve", "transfers.ship",
   "transfers.receive", "transfers.validate", "production.view", "production.create",
   "production.validate", "reports.view", "reports.export", "audit.view",
-  "users.view", "users.create", "users.edit", "users.delete", "users.permissions"
+  "users.view", "users.create", "users.edit", "users.delete", "users.permissions",
+  "expenses.view", "expenses.create", "units.manage"
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -49,7 +50,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
   RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "transfers.view", "transfers.create", "reports.view"],
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
-  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export"]
+  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"]
 };
 
 // Password hashing utility with PBKDF2 (100k rounds, sha512)

@@ -305,7 +305,7 @@ export default function ProductionView({
       {/* NEW PRODUCTION MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 border border-slate-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 border border-slate-200 text-slate-900">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <FlaskConical className="h-5 w-5 text-indigo-600" />
@@ -369,7 +369,7 @@ export default function ProductionView({
                               newCons[idx].quantity = Math.max(1, Number(e.target.value));
                               setConsumptions(newCons);
                             }}
-                            className="w-full text-right font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                            className="w-full text-right font-mono font-bold text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                             placeholder="Qté consommée"
                           />
                         </div>
@@ -438,7 +438,7 @@ export default function ProductionView({
                             newOuts[idx].quantity = Math.max(1, Number(e.target.value));
                             setOutputs(newOuts);
                           }}
-                          className="w-full text-right font-mono font-bold bg-white border border-slate-300 rounded-lg p-2 text-emerald-900"
+                          className="w-full text-right font-mono font-bold text-emerald-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                           placeholder="Qté fabriquée"
                         />
                       </div>
@@ -467,7 +467,7 @@ export default function ProductionView({
                   value={batchNote}
                   onChange={(e) => setBatchNote(e.target.value)}
                   placeholder="Ex: Lot de distillation cuve #2, rendement conforme..."
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full text-slate-900 placeholder:text-slate-500 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 
@@ -496,7 +496,7 @@ export default function ProductionView({
       {/* DECLARE RETURN OF UNUSED RAW MATERIAL (Section 6) */}
       {isReturnModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 text-xs">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 text-xs text-slate-900">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <RotateCcw className="h-5 w-5 text-amber-600" />
@@ -542,7 +542,7 @@ export default function ProductionView({
                   min="1"
                   value={returnQuantity}
                   onChange={(e) => setReturnQuantity(Number(e.target.value))}
-                  className="w-full font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full font-mono font-bold text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 
@@ -552,7 +552,7 @@ export default function ProductionView({
                   type="text"
                   value={returnReason}
                   onChange={(e) => setReturnReason(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                 />
               </div>
 
