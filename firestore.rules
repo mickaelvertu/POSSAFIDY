@@ -97,7 +97,7 @@ service cloud.firestore {
 
     match /movements/{movementId} {
       allow read: if isActiveUser();
-      allow create: if hasPermission('stock.adjust');
+      allow create: if hasPermission('stock.adjust') || hasPermission('transfers.ship') || hasPermission('transfers.receive');
     }
 
     // Inventory master data. Administrators seed and maintain stores; active
@@ -109,7 +109,14 @@ service cloud.firestore {
 
     match /stocks/{stockId} {
       allow read: if isActiveUser();
-      allow create, update: if hasPermission('stock.adjust');
+      allow create, update: if hasPermission('stock.adjust') || hasPermission('transfers.ship') || hasPermission('transfers.receive');
+      allow delete: if isAdmin();
+    }
+
+    match /transfers/{transferId} {
+      allow read: if isActiveUser();
+      allow create: if hasPermission('transfers.create');
+      allow update: if hasPermission('transfers.create') || hasPermission('transfers.ship') || hasPermission('transfers.receive');
       allow delete: if isAdmin();
     }
   }

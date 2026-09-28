@@ -147,7 +147,7 @@ export interface SupplierPayment {
   reference?: string;
 }
 
-export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "OTHER";
+export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "FOOD" | "OTHER";
 
 export interface Expense {
   id: string;

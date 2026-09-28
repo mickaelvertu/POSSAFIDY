@@ -18,6 +18,7 @@ const CATEGORIES: Array<{ value: ExpenseCategory; label: string }> = [
   { value: "MAINTENANCE", label: "Entretien" },
   { value: "SUPPLIES", label: "Fournitures" },
   { value: "COMMUNICATION", label: "Communication" },
+  { value: "FOOD", label: "Nourriture" },
   { value: "OTHER", label: "Autres frais" }
 ];
 

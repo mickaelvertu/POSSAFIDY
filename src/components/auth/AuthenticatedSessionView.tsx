@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
 import { AppRoleId, AppUser, Article, AuditLog, Category, Expense, GeneralFilters, Purchase, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
-import { INITIAL_STORES, INITIAL_CATEGORIES, INITIAL_ARTICLES, INITIAL_STOCKS, INITIAL_SALES, INITIAL_PRODUCTIONS, INITIAL_TRANSFERS } from "../../data/initialData";
+import { INITIAL_STORES, INITIAL_CATEGORIES, INITIAL_ARTICLES, INITIAL_STOCKS, INITIAL_SALES, INITIAL_PRODUCTIONS } from "../../data/initialData";
 import UsersView from "../UsersView";
 import RoleHomeView from "../RoleHomeView";
 import SalesView from "../SalesView";
@@ -22,6 +22,8 @@ import {
   saveStockAdjustment,
   saveStore,
   saveSupplier,
+  saveTransfer,
+  saveTransferWithStockEffects,
   seedInitialCatalogData,
   seedInitialInventoryData
 } from "../../services/inventoryService";
@@ -94,7 +96,7 @@ export default function AuthenticatedSessionView() {
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
   const [sales, setSales] = useState<Sale[]>([...INITIAL_SALES]);
   const [productions, setProductions] = useState<Production[]>([...INITIAL_PRODUCTIONS]);
-  const [transfers, setTransfers] = useState<StockTransfer[]>([...INITIAL_TRANSFERS]);
+  const [transfers, setTransfers] = useState<StockTransfer[]>([]);
   const [stocks, setStocks] = useState<StoreStock[]>([...INITIAL_STOCKS]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [inventoryStores, setInventoryStores] = useState([...INITIAL_STORES]);
@@ -142,6 +144,7 @@ export default function AuthenticatedSessionView() {
         setInventoryStores(inventory.stores);
         setStocks(inventory.stocks);
         setMovements(inventory.movements);
+        setTransfers(inventory.transfers);
         setArticles(catalog.articles);
         setCategories(catalog.categories);
         setUnits(loadedUnits);
@@ -232,6 +235,12 @@ export default function AuthenticatedSessionView() {
   const accessibleStores = user && user.assignedStores.length > 0 && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"
     ? inventoryStores.filter(store => user.assignedStores.includes(store.id))
     : inventoryStores;
+  // Non-admin roles only see transfers involving one of their assigned stores.
+  const visibleTransfers = currentAppUser && currentAppUser.roleId !== "SUPER_ADMIN" && currentAppUser.roleId !== "ADMIN"
+    ? transfers.filter(transfer =>
+        currentAppUser.storeIds.includes(transfer.source_store_id) || currentAppUser.storeIds.includes(transfer.destination_store_id)
+      )
+    : transfers;
 
   const handleCreateSale = (sale: Sale) => {
     setSales(current => [sale, ...current]);
@@ -266,28 +275,49 @@ export default function AuthenticatedSessionView() {
 
   const handleInitiateProductionReturn = (transfer: StockTransfer) => {
     setTransfers(current => [transfer, ...current]);
+    saveTransfer(transfer).catch(error => {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer le retour de production dans Firestore.");
+    });
   };
 
-  const handleCreateTransfer = (transfer: StockTransfer) => {
+  const handleCreateTransfer = async (transfer: StockTransfer) => {
     if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
       alert("Seul un administrateur peut créer un transfert de stock.");
       return;
     }
-    setTransfers(current => [transfer, ...current]);
+    try {
+      await saveTransfer(transfer);
+      setTransfers(current => [transfer, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer le transfert dans Firestore.");
+    }
   };
 
-  const handleApproveTransfer = (transferId: string) => {
+  const handleApproveTransfer = async (transferId: string) => {
     if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
       alert("Seul un administrateur peut approuver un transfert.");
       return;
     }
+    const transfer = transfers.find(item => item.id === transferId);
+    if (!transfer || transfer.status !== "DRAFT") return;
     const timestamp = Date.now();
-    setTransfers(current => current.map(transfer => transfer.id === transferId && transfer.status === "DRAFT"
-      ? { ...transfer, status: "APPROVED", approved_by: currentAppUser?.uid, approved_by_name: currentAppUser?.displayName, approved_at: timestamp, updated_at: timestamp }
-      : transfer));
+    const updatedTransfer: StockTransfer = {
+      ...transfer,
+      status: "APPROVED",
+      approved_by: currentAppUser?.uid,
+      approved_by_name: currentAppUser?.displayName,
+      approved_at: timestamp,
+      updated_at: timestamp
+    };
+    try {
+      await saveTransfer(updatedTransfer);
+      setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'approbation du transfert dans Firestore.");
+    }
   };
 
-  const handleShipTransfer = (transferId: string) => {
+  const handleShipTransfer = async (transferId: string) => {
     if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
       alert("Seul un administrateur peut expédier un transfert.");
       return;
@@ -295,22 +325,54 @@ export default function AuthenticatedSessionView() {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "APPROVED") return;
     let updatedStocks = stocks;
+    const movements: StockMovement[] = [];
     for (const line of transfer.lines) {
       const available = updatedStocks.find(stock => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id)?.quantity || 0;
       if (line.quantity_sent <= 0 || available < line.quantity_sent) {
         alert(`Stock insuffisant pour ${line.article_name}. Disponible : ${available}.`);
         return;
       }
-      updatedStocks = updateStockQuantity(updatedStocks, transfer.source_store_id, line.article_id, -line.quantity_sent).newStocks;
+      const { newStocks, beforeQty, afterQty } = updateStockQuantity(updatedStocks, transfer.source_store_id, line.article_id, -line.quantity_sent);
+      updatedStocks = newStocks;
+      movements.push({
+        id: `movement-${transfer.id}-ship-${line.article_id}`,
+        store_id: transfer.source_store_id,
+        article_id: line.article_id,
+        movement_type: transfer.type,
+        quantity: -line.quantity_sent,
+        reference_type: "TRANSFER",
+        reference_id: transfer.id,
+        reference_number: transfer.transfer_number,
+        before_quantity: beforeQty,
+        after_quantity: afterQty,
+        created_by: currentAppUser?.uid || "",
+        created_by_name: currentAppUser?.displayName || currentAppUser?.email || "Utilisateur",
+        created_at: Date.now()
+      });
     }
     const timestamp = Date.now();
-    setStocks(updatedStocks);
-    setTransfers(current => current.map(item => item.id === transferId
-      ? { ...item, status: "IN_TRANSIT", shipped_by: currentAppUser?.uid, shipped_by_name: currentAppUser?.displayName, shipped_at: timestamp, updated_at: timestamp }
-      : item));
+    const updatedTransfer: StockTransfer = {
+      ...transfer,
+      status: "IN_TRANSIT",
+      shipped_by: currentAppUser?.uid,
+      shipped_by_name: currentAppUser?.displayName,
+      shipped_at: timestamp,
+      updated_at: timestamp
+    };
+    const changedStocks = updatedStocks.filter(stock =>
+      transfer.lines.some(line => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id)
+    );
+    try {
+      await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements);
+      setStocks(updatedStocks);
+      setMovements(current => [...movements, ...current]);
+      setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'expédition du transfert dans Firestore.");
+    }
   };
 
-  const handleReceiveTransfer = (transferId: string, updatedLines: StockTransferLine[], receiverNote?: string) => {
+  const handleReceiveTransfer = async (transferId: string, updatedLines: StockTransferLine[], receiverNote?: string) => {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "IN_TRANSIT") return;
     const isAssignedReceiver = currentAppUser?.roleId === "RESPONSABLE_MAGASIN"
@@ -325,16 +387,32 @@ export default function AuthenticatedSessionView() {
       return;
     }
     let updatedStocks = stocks;
+    const movements: StockMovement[] = [];
     updatedLines.forEach(line => {
       if (line.quantity_accepted > 0) {
-        updatedStocks = updateStockQuantity(updatedStocks, transfer.destination_store_id, line.article_id, line.quantity_accepted).newStocks;
+        const { newStocks, beforeQty, afterQty } = updateStockQuantity(updatedStocks, transfer.destination_store_id, line.article_id, line.quantity_accepted);
+        updatedStocks = newStocks;
+        movements.push({
+          id: `movement-${transfer.id}-receive-${line.article_id}`,
+          store_id: transfer.destination_store_id,
+          article_id: line.article_id,
+          movement_type: transfer.type,
+          quantity: line.quantity_accepted,
+          reference_type: "TRANSFER",
+          reference_id: transfer.id,
+          reference_number: transfer.transfer_number,
+          before_quantity: beforeQty,
+          after_quantity: afterQty,
+          created_by: currentAppUser?.uid || "",
+          created_by_name: currentAppUser?.displayName || currentAppUser?.email || "Utilisateur",
+          created_at: Date.now()
+        });
       }
     });
     const hasDiscrepancy = updatedLines.some(line => line.quantity_rejected > 0 || line.quantity_received !== line.quantity_sent);
     const timestamp = Date.now();
-    setStocks(updatedStocks);
-    setTransfers(current => current.map(item => item.id === transferId ? {
-      ...item,
+    const updatedTransfer: StockTransfer = {
+      ...transfer,
       status: hasDiscrepancy ? "DISCREPANCY" : "VALIDATED",
       lines: updatedLines,
       received_by: currentAppUser?.uid,
@@ -344,16 +422,37 @@ export default function AuthenticatedSessionView() {
       validated_by_name: currentAppUser?.displayName,
       validated_at: timestamp,
       has_discrepancy: hasDiscrepancy,
-      note: receiverNote || item.note,
+      note: receiverNote || transfer.note,
       updated_at: timestamp
-    } : item));
+    };
+    const changedStocks = updatedStocks.filter(stock =>
+      transfer.lines.some(line => stock.store_id === transfer.destination_store_id && stock.article_id === line.article_id)
+    );
+    try {
+      await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements);
+      setStocks(updatedStocks);
+      setMovements(current => [...movements, ...current]);
+      setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du transfert dans Firestore.");
+    }
   };
 
-  const handleResolveTransferDiscrepancy = (transferId: string, resolutionNote: string) => {
-    const timestamp = Date.now();
-    setTransfers(current => current.map(transfer => transfer.id === transferId && transfer.status === "DISCREPANCY"
-      ? { ...transfer, discrepancy_resolved: true, discrepancy_resolution_note: resolutionNote, updated_at: timestamp }
-      : transfer));
+  const handleResolveTransferDiscrepancy = async (transferId: string, resolutionNote: string) => {
+    const transfer = transfers.find(item => item.id === transferId);
+    if (!transfer || transfer.status !== "DISCREPANCY") return;
+    const updatedTransfer: StockTransfer = {
+      ...transfer,
+      discrepancy_resolved: true,
+      discrepancy_resolution_note: resolutionNote,
+      updated_at: Date.now()
+    };
+    try {
+      await saveTransfer(updatedTransfer);
+      setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la résolution de l'écart dans Firestore.");
+    }
   };
 
   const handleAdjustStock = async (storeId: string, articleId: string, newQty: number, reason: string, isDeposit = false) => {
@@ -802,7 +901,7 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <TransfersView
-              transfers={transfers}
+              transfers={visibleTransfers}
               stores={accessibleStores}
               articles={articles.filter(article => article.is_active)}
               stocks={stocks}
@@ -833,7 +932,7 @@ export default function AuthenticatedSessionView() {
               categories={categories}
               articles={articles}
               stocks={stocks}
-              transfers={transfers}
+              transfers={visibleTransfers}
               movements={movements}
               sales={sales}
               productions={productions}
@@ -849,7 +948,7 @@ export default function AuthenticatedSessionView() {
                 categories={categories}
                 articles={articles}
                 stocks={stocks}
-                transfers={transfers}
+                transfers={visibleTransfers}
                 movements={movements}
                 sales={sales}
                 productions={productions}

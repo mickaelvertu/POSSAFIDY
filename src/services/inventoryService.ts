@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_STORES, INITIAL_STOCKS } from "../data/initialData";
-import { Article, Category, Purchase, PurchaseLine, StockMovement, Store, StoreStock, Supplier, SupplierPayment } from "../types";
+import { Article, Category, Purchase, PurchaseLine, StockMovement, StockTransfer, Store, StoreStock, Supplier, SupplierPayment } from "../types";
 
 const STORES_COLLECTION = "stores";
 const STOCKS_COLLECTION = "stocks";
@@ -21,6 +21,7 @@ const CATEGORIES_COLLECTION = "categories";
 const SUPPLIERS_COLLECTION = "suppliers";
 const PURCHASES_COLLECTION = "purchases";
 const MOVEMENTS_COLLECTION = "movements";
+const TRANSFERS_COLLECTION = "transfers";
 const USERS_COLLECTION = "users";
 const INVENTORY_METADATA_COLLECTION = "inventoryMetadata";
 const INITIAL_SEED_MARKER_ID = "initial-data-seeded";
@@ -40,18 +41,37 @@ function omitUndefined<T>(value: T): T {
   return value;
 }
 
-export async function loadInventoryData(): Promise<{ stores: Store[]; stocks: StoreStock[]; movements: StockMovement[] }> {
-  const [storesSnapshot, stocksSnapshot, movementsSnapshot] = await Promise.all([
+export async function loadInventoryData(): Promise<{ stores: Store[]; stocks: StoreStock[]; movements: StockMovement[]; transfers: StockTransfer[] }> {
+  const [storesSnapshot, stocksSnapshot, movementsSnapshot, transfersSnapshot] = await Promise.all([
     getDocs(collection(db, STORES_COLLECTION)),
     getDocs(collection(db, STOCKS_COLLECTION)),
-    getDocs(collection(db, MOVEMENTS_COLLECTION))
+    getDocs(collection(db, MOVEMENTS_COLLECTION)),
+    getDocs(collection(db, TRANSFERS_COLLECTION))
   ]);
 
   return {
     stores: storesSnapshot.docs.map(snapshot => snapshot.data() as Store),
     stocks: stocksSnapshot.docs.map(snapshot => snapshot.data() as StoreStock),
-    movements: movementsSnapshot.docs.map(snapshot => snapshot.data() as StockMovement)
+    movements: movementsSnapshot.docs.map(snapshot => snapshot.data() as StockMovement),
+    transfers: transfersSnapshot.docs.map(snapshot => snapshot.data() as StockTransfer)
   };
+}
+
+export async function saveTransfer(transfer: StockTransfer): Promise<void> {
+  await setDoc(doc(db, TRANSFERS_COLLECTION, transfer.id), omitUndefined(transfer));
+}
+
+// Persists a transfer status change together with the stock/movement side effects it triggers (ship or receive).
+export async function saveTransferWithStockEffects(
+  transfer: StockTransfer,
+  updatedStocks: StoreStock[],
+  movements: StockMovement[]
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.set(doc(db, TRANSFERS_COLLECTION, transfer.id), omitUndefined(transfer));
+  updatedStocks.forEach(stock => batch.set(doc(db, STOCKS_COLLECTION, stock.id), omitUndefined(stock), { merge: true }));
+  movements.forEach(movement => batch.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement)));
+  await batch.commit();
 }
 
 export async function loadCatalogData(): Promise<{ articles: Article[]; categories: Category[] }> {
