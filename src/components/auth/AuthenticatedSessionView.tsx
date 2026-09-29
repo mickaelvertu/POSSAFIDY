@@ -36,6 +36,7 @@ import TransfersView from "../TransfersView";
 import UnitsView from "../UnitsView";
 import ReportsView from "../ReportsView";
 import ReportViewer from "../ReportViewer";
+import ThemeSwitcher from "../ThemeSwitcher";
 import { loadExpenses, saveExpense } from "../../services/expenseService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { 
@@ -106,6 +107,18 @@ export default function AuthenticatedSessionView() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [units, setUnits] = useState<UnitOfMeasure[]>([]);
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const canManageUsers = Boolean(user && (
     user.role === "SUPER_ADMIN" ||
@@ -688,6 +701,10 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateExpense = async (expense: Expense) => {
+    const isAdmin = currentAppUser?.roleId === "ADMIN" || currentAppUser?.roleId === "SUPER_ADMIN";
+    if (!isAdmin && (!expense.store_id || !currentAppUser?.storeIds.includes(expense.store_id))) {
+      throw new Error("Vous ne pouvez enregistrer une dépense que pour un magasin attribué à votre compte.");
+    }
     await saveExpense(expense);
     setExpenses(current => [expense, ...current].sort((left, right) => right.expense_date - left.expense_date));
   };
@@ -731,7 +748,7 @@ export default function AuthenticatedSessionView() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+    <div className="theme-app min-h-screen bg-slate-900 text-slate-100 flex flex-col">
       {/* Top Application Bar */}
       <header className="bg-slate-800/90 border-b border-slate-700/80 backdrop-blur sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -750,7 +767,12 @@ export default function AuthenticatedSessionView() {
         </div>
 
         {/* User preview and Logout button */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className={`hidden sm:inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${isOnline ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`} role="status">
+            <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-emerald-400" : "bg-amber-400"}`} />
+            {isOnline ? "En ligne" : "Hors connexion · synchro en attente"}
+          </div>
+          <ThemeSwitcher />
           <div className="hidden sm:flex flex-col text-right">
             <span className="text-xs font-semibold text-white">
               {user.firstName} {user.lastName}
@@ -772,7 +794,7 @@ export default function AuthenticatedSessionView() {
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Status Banner */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="theme-status p-4 sm:p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <CheckCircle2 className="w-6 h-6" />
@@ -1021,6 +1043,9 @@ export default function AuthenticatedSessionView() {
         ) : user && (
           <RoleHomeView
             user={toAppUser(user)}
+            stores={inventoryStores}
+            sales={sales}
+            expenses={expenses}
             onOpenUsers={openUserManagement}
             onOpenSales={() => setActiveModule("sales")}
             onOpenStocks={() => setActiveModule("stocks")}

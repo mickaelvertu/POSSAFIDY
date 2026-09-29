@@ -90,9 +90,10 @@ service cloud.firestore {
     match /expenses/{expenseId} {
       allow read: if hasPermission('expenses.view');
       allow create: if hasPermission('expenses.create') &&
+        (isAdmin() || (request.resource.data.store_id is string && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([request.resource.data.store_id]))) &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.amount is number && request.resource.data.amount > 0 &&
-        request.resource.data.description is string && request.resource.data.description.size() > 0;
+        request.resource.data.description is string;
     }
 
     match /movements/{movementId} {

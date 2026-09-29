@@ -422,7 +422,7 @@ export default function SalesView({
                   <select
                     value={selectedStoreId}
                     onChange={(e) => handleStoreChange(e.target.value)}
-                    className="w-full font-semibold bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500"
+                    className="w-full font-semibold text-slate-900 bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500"
                   >
                     {eligibleStores.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -442,7 +442,7 @@ export default function SalesView({
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Nom du client..."
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                    className="w-full text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                   />
                 </div>
 
@@ -451,7 +451,7 @@ export default function SalesView({
                   <select
                     value={customerType}
                     onChange={(e) => setCustomerType(e.target.value as any)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2"
+                    className="w-full text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                   >
                     <option value="PARTICULIER">Particulier</option>
                     <option value="REVENDEUR">Revendeur Agréé</option>
@@ -489,7 +489,7 @@ export default function SalesView({
                             newLines[idx].unit_price = getDefaultPriceForArticle(newArtId, selectedStoreId);
                             setSaleLines(newLines);
                           }}
-                          className="flex-1 bg-white border border-slate-300 rounded-lg p-2"
+                          className="flex-1 text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                         >
                           {saleArticles.map((a) => (
                             <option key={a.id} value={a.id}>
@@ -508,7 +508,7 @@ export default function SalesView({
                               newLines[idx].quantity = Math.max(1, Number(e.target.value));
                               setSaleLines(newLines);
                             }}
-                            className="w-full text-right font-mono font-bold bg-white border border-slate-300 rounded-lg p-2"
+                            className="w-full text-right font-mono font-bold text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                             placeholder="Qté"
                           />
                         </div>
@@ -522,7 +522,7 @@ export default function SalesView({
                               newLines[idx].unit_price = Number(e.target.value);
                               setSaleLines(newLines);
                             }}
-                            className="w-full text-right font-mono bg-white border border-slate-300 rounded-lg p-2"
+                            className="w-full text-right font-mono text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                             placeholder="PU"
                           />
                         </div>
@@ -575,7 +575,7 @@ export default function SalesView({
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                    className="w-full font-semibold bg-white border border-slate-300 rounded-lg p-2"
+                    className="w-full font-semibold text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                   >
                     <option value="CASH">Espèces (Ariary)</option>
                     <option value="MVOLA">MVola (Telma)</option>
@@ -591,7 +591,7 @@ export default function SalesView({
                       type="number"
                       value={amountPaid}
                       onChange={(e) => setAmountPaid(Number(e.target.value))}
-                      className="w-full font-mono font-bold text-base bg-white border border-slate-300 rounded-lg p-2"
+                      className="w-full font-mono font-bold text-base text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                     />
                   </div>
 

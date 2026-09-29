@@ -56,6 +56,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
   const [monthFilter, setMonthFilter] = useState("");
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const canUseGlobalExpense = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN";
 
   const visibleExpenses = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("fr-FR");
@@ -80,8 +81,12 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
     event.preventDefault();
     const numericAmount = Number(amount);
     const selectedStore = stores.find(store => store.id === storeId);
-    if (!description.trim() || !Number.isFinite(numericAmount) || numericAmount <= 0 || !expenseDate) {
-      setFormError("Renseignez un motif, un montant positif et une date valide.");
+    if (!canUseGlobalExpense && (!selectedStore || !currentUser.storeIds.includes(selectedStore.id))) {
+      setFormError("Sélectionnez un magasin qui est attribué à votre compte.");
+      return;
+    }
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !expenseDate) {
+      setFormError("Renseignez un montant positif et une date valide.");
       return;
     }
 
@@ -181,9 +186,9 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-xs font-semibold text-slate-700">Catégorie<select value={category} onChange={event => setCategory(event.target.value as ExpenseCategory)} className={inputClass}>{CATEGORIES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Montant (Ar)<input required type="number" min="1" step="any" value={amount} onChange={event => setAmount(event.target.value)} placeholder="0" className={inputClass} /></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Motif / description<input required value={description} onChange={event => setDescription(event.target.value)} placeholder="Ex. Loyer du magasin pour septembre" className={inputClass} /></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Motif / description (facultatif)<input value={description} onChange={event => setDescription(event.target.value)} placeholder="Facultatif" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Date<input required type="date" value={expenseDate} onChange={event => setExpenseDate(event.target.value)} className={inputClass} /></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}><option value="">Tous magasins / siège</option>{stores.filter(store => store.is_active).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense && <option value="">Tous magasins / siège</option>}{stores.filter(store => store.is_active).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Bénéficiaire / fournisseur<input value={payee} onChange={event => setPayee(event.target.value)} placeholder="Nom du bailleur ou prestataire" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Mode de paiement<select value={paymentMethod} onChange={event => setPaymentMethod(event.target.value as PaymentMethod)} className={inputClass}>{PAYMENT_METHODS.map(method => <option key={method.value} value={method.value}>{method.label}</option>)}</select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Statut<select value={paymentStatus} onChange={event => setPaymentStatus(event.target.value as Expense["payment_status"])} className={inputClass}><option value="PAID">Payée</option><option value="PENDING">À payer</option></select></label>

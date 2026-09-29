@@ -2,6 +2,7 @@ import { useState } from "react";
 import LoginForm from "./LoginForm";
 import SignUpForm from "./SignUpForm";
 import { ShieldCheck, Lock, UserPlus, LogIn } from "lucide-react";
+import ThemeSwitcher from "../ThemeSwitcher";
 
 export default function AuthPortal() {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
@@ -17,13 +18,16 @@ export default function AuthPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+    <div className="theme-portal min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Brand Header */}
       <div className="w-full max-w-md text-center mb-8 relative z-10">
+        <div className="mb-4 flex justify-center">
+          <ThemeSwitcher />
+        </div>
         <div className="inline-flex items-center justify-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mb-4">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
           <span className="text-xs font-semibold tracking-wider uppercase">

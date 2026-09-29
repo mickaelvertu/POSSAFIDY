@@ -1,20 +1,25 @@
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import AuthPortal from "./components/auth/AuthPortal";
 import AuthenticatedSessionView from "./components/auth/AuthenticatedSessionView";
-import { Loader2 } from "lucide-react";
+import { ThemeProvider } from "./context/ThemeContext";
 
 function AuthApp() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-slate-200">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-          <p className="text-sm font-medium tracking-wide text-slate-300">
-            Vérification de la session GILEADA...
-          </p>
+      <div className="session-loading min-h-screen bg-slate-900 flex flex-col items-center justify-center text-slate-200">
+        <div className="session-loader" aria-label="Chargement de la session GILEADA" role="status">
+          <div className="slice" />
+          <div className="slice" />
+          <div className="slice" />
+          <div className="slice" />
+          <div className="slice" />
+          <div className="slice" />
         </div>
+        <p className="mt-5 text-sm font-medium tracking-wide text-slate-300">
+          Chargement de la session GILEADA...
+        </p>
       </div>
     );
   }
@@ -28,8 +33,10 @@ function AuthApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AuthApp />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AuthApp />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
