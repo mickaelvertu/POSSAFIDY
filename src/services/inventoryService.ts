@@ -5,13 +5,12 @@ import {
   getDoc,
   getDocs,
   query,
+  runTransaction,
   setDoc,
-  updateDoc,
   where,
   writeBatch
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_STORES, INITIAL_STOCKS } from "../data/initialData";
 import { Article, Category, Purchase, PurchaseLine, StockMovement, StockTransfer, Store, StoreStock, Supplier, SupplierPayment } from "../types";
 
 const STORES_COLLECTION = "stores";
@@ -23,9 +22,6 @@ const PURCHASES_COLLECTION = "purchases";
 const MOVEMENTS_COLLECTION = "movements";
 const TRANSFERS_COLLECTION = "transfers";
 const USERS_COLLECTION = "users";
-const INVENTORY_METADATA_COLLECTION = "inventoryMetadata";
-const INITIAL_SEED_MARKER_ID = "initial-data-seeded";
-const CATALOG_SEED_MARKER_ID = "initial-catalog-seeded";
 
 function omitUndefined<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -41,19 +37,29 @@ function omitUndefined<T>(value: T): T {
   return value;
 }
 
-export async function loadInventoryData(): Promise<{ stores: Store[]; stocks: StoreStock[]; movements: StockMovement[]; transfers: StockTransfer[] }> {
-  const [storesSnapshot, stocksSnapshot, movementsSnapshot, transfersSnapshot] = await Promise.all([
+export async function loadInventoryData(storeIds?: string[]): Promise<{ stores: Store[]; stocks: StoreStock[]; movements: StockMovement[]; transfers: StockTransfer[] }> {
+  const restricted = storeIds !== undefined;
+  const loadRestricted = async <T>(collectionName: string, field: string): Promise<T[]> => {
+    if (!restricted) return (await getDocs(collection(db, collectionName))).docs.map(item => item.data() as T);
+    if (storeIds.length === 0) return [];
+    const snapshots = await Promise.all(storeIds.map(storeId =>
+      getDocs(query(collection(db, collectionName), where(field, "==", storeId)))
+    ));
+    return [...new Map(snapshots.flatMap(snapshot => snapshot.docs).map(item => [item.id, item.data() as T])).values()];
+  };
+  const [storesSnapshot, stocks, movements, sourceTransfers, destinationTransfers] = await Promise.all([
     getDocs(collection(db, STORES_COLLECTION)),
-    getDocs(collection(db, STOCKS_COLLECTION)),
-    getDocs(collection(db, MOVEMENTS_COLLECTION)),
-    getDocs(collection(db, TRANSFERS_COLLECTION))
+    loadRestricted<StoreStock>(STOCKS_COLLECTION, "store_id"),
+    loadRestricted<StockMovement>(MOVEMENTS_COLLECTION, "store_id"),
+    loadRestricted<StockTransfer>(TRANSFERS_COLLECTION, "source_store_id"),
+    restricted ? loadRestricted<StockTransfer>(TRANSFERS_COLLECTION, "destination_store_id") : Promise.resolve([])
   ]);
 
   return {
     stores: storesSnapshot.docs.map(snapshot => snapshot.data() as Store),
-    stocks: stocksSnapshot.docs.map(snapshot => snapshot.data() as StoreStock),
-    movements: movementsSnapshot.docs.map(snapshot => snapshot.data() as StockMovement),
-    transfers: transfersSnapshot.docs.map(snapshot => snapshot.data() as StockTransfer)
+    stocks,
+    movements,
+    transfers: [...new Map([...sourceTransfers, ...destinationTransfers].map(item => [item.id, item])).values()]
   };
 }
 
@@ -66,12 +72,53 @@ export async function saveTransferWithStockEffects(
   transfer: StockTransfer,
   updatedStocks: StoreStock[],
   movements: StockMovement[]
-): Promise<void> {
-  const batch = writeBatch(db);
-  batch.set(doc(db, TRANSFERS_COLLECTION, transfer.id), omitUndefined(transfer));
-  updatedStocks.forEach(stock => batch.set(doc(db, STOCKS_COLLECTION, stock.id), omitUndefined(stock), { merge: true }));
-  movements.forEach(movement => batch.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement)));
-  await batch.commit();
+): Promise<{ stocks: StoreStock[]; movements: StockMovement[] }> {
+  const persistedStocks: StoreStock[] = [];
+  const persistedMovements: StockMovement[] = [];
+  const groupedMovements = new Map<string, StockMovement>();
+  movements.forEach(movement => {
+    const key = `${movement.store_id}:${movement.article_id}`;
+    const existing = groupedMovements.get(key);
+    groupedMovements.set(key, existing
+      ? { ...existing, quantity: existing.quantity + movement.quantity }
+      : movement);
+  });
+  await runTransaction(db, async transaction => {
+    const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
+    const transferSnapshot = await transaction.get(transferRef);
+    if (!transferSnapshot.exists()) throw new Error("Transfert introuvable.");
+    const currentTransfer = transferSnapshot.data() as StockTransfer;
+    const validTransition = currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT"
+      || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status);
+    if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");
+
+    const targets = [...groupedMovements.values()].map(movement => {
+      const fallback = updatedStocks.find(stock => stock.store_id === movement.store_id && stock.article_id === movement.article_id);
+      return { movement, fallback, reference: doc(db, STOCKS_COLLECTION, fallback?.id || `stock-${movement.store_id}-${movement.article_id}`) };
+    });
+    const stockSnapshots = await Promise.all(targets.map(target => transaction.get(target.reference)));
+    targets.forEach((target, index) => {
+      const current = stockSnapshots[index].exists() ? stockSnapshots[index].data() as StoreStock : undefined;
+      const before = current?.quantity || 0;
+      const after = before + target.movement.quantity;
+      if (after < 0) throw new Error(`Stock insuffisant pour l'article ${target.movement.article_id}. Disponible : ${before}.`);
+      const stock: StoreStock = {
+        id: current?.id || target.reference.id,
+        store_id: target.movement.store_id,
+        article_id: target.movement.article_id,
+        quantity: after,
+        reserved_quantity: current?.reserved_quantity || 0,
+        updated_at: transfer.updated_at
+      };
+      const movement = { ...target.movement, before_quantity: before, after_quantity: after };
+      persistedStocks.push(stock);
+      persistedMovements.push(movement);
+      transaction.set(target.reference, omitUndefined(stock));
+      transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
+    });
+    transaction.set(transferRef, omitUndefined(transfer));
+  });
+  return { stocks: persistedStocks, movements: persistedMovements };
 }
 
 export async function loadCatalogData(): Promise<{ articles: Article[]; categories: Category[] }> {
@@ -84,25 +131,6 @@ export async function loadCatalogData(): Promise<{ articles: Article[]; categori
     articles: articlesSnapshot.docs.map(snapshot => snapshot.data() as Article),
     categories: categoriesSnapshot.docs.map(snapshot => snapshot.data() as Category)
   };
-}
-
-export async function seedInitialCatalogData(): Promise<void> {
-  const [articlesSnapshot, categoriesSnapshot, seedMarker] = await Promise.all([
-    getDocs(collection(db, ARTICLES_COLLECTION)),
-    getDocs(collection(db, CATEGORIES_COLLECTION)),
-    getDoc(doc(db, INVENTORY_METADATA_COLLECTION, CATALOG_SEED_MARKER_ID))
-  ]);
-  if (seedMarker.exists()) return;
-
-  const batch = writeBatch(db);
-  if (articlesSnapshot.empty) {
-    INITIAL_ARTICLES.forEach(article => batch.set(doc(db, ARTICLES_COLLECTION, article.id), article));
-  }
-  if (categoriesSnapshot.empty) {
-    INITIAL_CATEGORIES.forEach(category => batch.set(doc(db, CATEGORIES_COLLECTION, category.id), category));
-  }
-  batch.set(doc(db, INVENTORY_METADATA_COLLECTION, CATALOG_SEED_MARKER_ID), { seeded_at: Date.now() });
-  await batch.commit();
 }
 
 export async function saveArticle(article: Article): Promise<void> {
@@ -152,96 +180,81 @@ export async function receivePurchase(purchase: Purchase, stocks: StoreStock[]):
     throw new Error("Une réception ne peut pas contenir plus de 249 articles différents.");
   }
 
-  const updatedStocks = [...stocks];
-  const batch = writeBatch(db);
-  batch.set(doc(db, PURCHASES_COLLECTION, purchase.id), omitUndefined(purchase));
-
-  for (const [articleId, lines] of groupedLines) {
-    const quantity = lines.reduce((sum, line) => sum + line.quantity, 0);
-    const existingIndex = updatedStocks.findIndex(stock => stock.store_id === purchase.store_id && stock.article_id === articleId);
-    const existingStock = updatedStocks[existingIndex];
-    const updatedStock: StoreStock = existingStock
-      ? { ...existingStock, quantity: existingStock.quantity + quantity, updated_at: purchase.received_at }
-      : {
-          id: `stock-${purchase.store_id}-${articleId}`,
-          store_id: purchase.store_id,
-          article_id: articleId,
-          quantity,
-          reserved_quantity: 0,
-          updated_at: purchase.received_at
-        };
-
-    if (existingIndex >= 0) updatedStocks[existingIndex] = updatedStock;
-    else updatedStocks.push(updatedStock);
-    batch.set(doc(db, STOCKS_COLLECTION, updatedStock.id), omitUndefined(updatedStock));
-
-    const firstLine = lines[0];
-    const beforeQuantity = existingStock?.quantity || 0;
-    const movement: StockMovement = {
-      id: `movement-${purchase.id}-${articleId}`,
-      store_id: purchase.store_id,
-      article_id: articleId,
-      movement_type: "PURCHASE",
-      quantity,
-      reference_type: "PURCHASE",
-      reference_id: purchase.id,
-      reference_number: purchase.purchase_number,
-      before_quantity: beforeQuantity,
-      after_quantity: beforeQuantity + quantity,
-      created_by: purchase.received_by,
-      created_by_name: purchase.received_by_name,
-      notes: `Réception fournisseur ${purchase.supplier_name} · ${firstLine.article_code}`,
-      created_at: purchase.received_at
+  const targets = [...groupedLines].map(([articleId, lines]) => {
+    const known = stocks.find(stock => stock.store_id === purchase.store_id && stock.article_id === articleId);
+    return {
+      articleId,
+      lines,
+      quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+      reference: doc(db, STOCKS_COLLECTION, known?.id || `stock-${purchase.store_id}-${articleId}`)
     };
-    batch.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
-  }
-
-  await batch.commit();
-  return updatedStocks;
+  });
+  const persistedStocks: StoreStock[] = [];
+  await runTransaction(db, async transaction => {
+    const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
+    const purchaseSnapshot = await transaction.get(purchaseRef);
+    if (purchaseSnapshot.exists()) throw new Error("Cette réception fournisseur existe déjà.");
+    const stockSnapshots = await Promise.all(targets.map(target => transaction.get(target.reference)));
+    targets.forEach((target, index) => {
+      const existing = stockSnapshots[index].exists() ? stockSnapshots[index].data() as StoreStock : undefined;
+      const beforeQuantity = existing?.quantity || 0;
+      if (!Number.isFinite(target.quantity) || target.quantity <= 0) throw new Error("Les quantités reçues doivent être positives.");
+      const updatedStock: StoreStock = {
+        id: existing?.id || target.reference.id,
+        store_id: purchase.store_id,
+        article_id: target.articleId,
+        quantity: beforeQuantity + target.quantity,
+        reserved_quantity: existing?.reserved_quantity || 0,
+        updated_at: purchase.received_at
+      };
+      const movement: StockMovement = {
+        id: `movement-${purchase.id}-${target.articleId}`,
+        store_id: purchase.store_id,
+        article_id: target.articleId,
+        movement_type: "PURCHASE",
+        quantity: target.quantity,
+        reference_type: "PURCHASE",
+        reference_id: purchase.id,
+        reference_number: purchase.purchase_number,
+        before_quantity: beforeQuantity,
+        after_quantity: updatedStock.quantity,
+        created_by: purchase.received_by,
+        created_by_name: purchase.received_by_name,
+        notes: `Réception fournisseur ${purchase.supplier_name} · ${target.lines[0].article_code}`,
+        created_at: purchase.received_at
+      };
+      persistedStocks.push(updatedStock);
+      transaction.set(target.reference, omitUndefined(updatedStock));
+      transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
+    });
+    transaction.set(purchaseRef, omitUndefined(purchase));
+  });
+  return stocks.map(stock => persistedStocks.find(updated => updated.id === stock.id) || stock)
+    .concat(persistedStocks.filter(updated => !stocks.some(stock => stock.id === updated.id)));
 }
 
 export async function recordSupplierPayment(purchase: Purchase, payment: SupplierPayment): Promise<Purchase> {
-  const amountPaid = purchase.amount_paid + payment.amount;
-  const updatedPurchase: Purchase = {
-    ...purchase,
-    amount_paid: amountPaid,
-    payment_status: amountPaid >= purchase.total ? "PAID" : "PARTIAL",
-    payments: [...purchase.payments, omitUndefined(payment)],
-    updated_at: payment.paid_at
-  };
-  await updateDoc(doc(db, PURCHASES_COLLECTION, purchase.id), omitUndefined({
-    amount_paid: updatedPurchase.amount_paid,
-    payment_status: updatedPurchase.payment_status,
-    payments: updatedPurchase.payments,
-    updated_at: updatedPurchase.updated_at
-  }));
+  if (!Number.isFinite(payment.amount) || payment.amount <= 0) throw new Error("Le montant du paiement doit être positif.");
+  let updatedPurchase: Purchase | undefined;
+  await runTransaction(db, async transaction => {
+    const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
+    const snapshot = await transaction.get(purchaseRef);
+    if (!snapshot.exists()) throw new Error("Achat fournisseur introuvable.");
+    const current = snapshot.data() as Purchase;
+    if (current.payments.some(item => item.id === payment.id)) throw new Error("Ce paiement existe déjà.");
+    const amountPaid = current.amount_paid + payment.amount;
+    if (amountPaid > current.total) throw new Error("Le paiement dépasse le solde de la facture.");
+    updatedPurchase = {
+      ...current,
+      amount_paid: amountPaid,
+      payment_status: amountPaid >= current.total ? "PAID" : "PARTIAL",
+      payments: [...current.payments, omitUndefined(payment)],
+      updated_at: payment.paid_at
+    };
+    transaction.set(purchaseRef, omitUndefined(updatedPurchase));
+  });
+  if (!updatedPurchase) throw new Error("Le paiement n'a pas pu être enregistré.");
   return updatedPurchase;
-}
-
-export async function seedInitialInventoryData(): Promise<void> {
-  const [currentStores, currentStocks, seedMarker] = await Promise.all([
-    getDocs(collection(db, STORES_COLLECTION)),
-    getDocs(collection(db, STOCKS_COLLECTION)),
-    getDoc(doc(db, INVENTORY_METADATA_COLLECTION, INITIAL_SEED_MARKER_ID))
-  ]);
-  if (seedMarker.exists()) return;
-
-  const batch = writeBatch(db);
-
-  if (currentStores.empty) {
-    INITIAL_STORES.forEach(store => {
-      batch.set(doc(db, STORES_COLLECTION, store.id), store);
-    });
-  }
-
-  if (currentStocks.empty) {
-    INITIAL_STOCKS.forEach(stock => {
-      batch.set(doc(db, STOCKS_COLLECTION, stock.id), stock);
-    });
-  }
-
-  batch.set(doc(db, INVENTORY_METADATA_COLLECTION, INITIAL_SEED_MARKER_ID), { seeded_at: Date.now() });
-  await batch.commit();
 }
 
 export async function saveStore(store: Store): Promise<void> {

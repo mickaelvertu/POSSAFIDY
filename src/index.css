@@ -1,6 +1,38 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+@media print {
+  @page { margin: 15mm; }
+
+  /* Keep only the document and its ancestors in the print layout. */
+  body:has(.printable-document) *:has(.printable-document) {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+  body:has(.printable-document) *:has(.printable-document) > :not(:has(.printable-document)):not(.printable-document) {
+    display: none !important;
+  }
+  .printable-document {
+    overflow: visible !important;
+    padding: 0 !important;
+    color: #0f172a !important;
+    background: white !important;
+  }
+  .printable-document thead { display: table-header-group; }
+  .printable-document tr, .printable-document img { break-inside: avoid; }
+}
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", sans-serif;

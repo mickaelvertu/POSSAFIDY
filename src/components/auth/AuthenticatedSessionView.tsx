@@ -3,7 +3,6 @@ import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
 import { AppRoleId, AppUser, Article, AuditLog, Category, Expense, GeneralFilters, Purchase, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
-import { INITIAL_STORES, INITIAL_CATEGORIES, INITIAL_ARTICLES, INITIAL_STOCKS, INITIAL_SALES, INITIAL_PRODUCTIONS } from "../../data/initialData";
 import UsersView from "../UsersView";
 import RoleHomeView from "../RoleHomeView";
 import SalesView from "../SalesView";
@@ -24,9 +23,8 @@ import {
   saveSupplier,
   saveTransfer,
   saveTransferWithStockEffects,
-  seedInitialCatalogData,
-  seedInitialInventoryData
 } from "../../services/inventoryService";
+import { advanceSale, cancelSale, createProduction, createSale, loadOperationalData, validateSale } from "../../services/operationsService";
 import StoresView from "../StoresView";
 import CatalogView from "../CatalogView";
 import ProductionView from "../ProductionView";
@@ -46,16 +44,7 @@ import {
   Mail, 
   Phone, 
   Calendar, 
-  Key, 
-  CheckCircle2, 
-  Copy, 
-  Check, 
-  Terminal, 
-  Play, 
-  AlertTriangle,
-  Building,
-  Shield,
-  Layers
+  Shield
 } from "lucide-react";
 
 const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "PRODUCTION", "COMPTABLE"];
@@ -81,32 +70,25 @@ function toAppUser(user: User): AppUser {
 }
 
 export default function AuthenticatedSessionView() {
-  const { user, token, logout } = useAuth();
-
-  const [copiedToken, setCopiedToken] = useState(false);
-  const [testResult, setTestResult] = useState<{
-    status: number;
-    data: any;
-    duration: number;
-    testedWithToken: boolean;
-  } | null>(null);
-  const [testLoading, setTestLoading] = useState(false);
+  const { user, logout } = useAuth();
+  const [showProfile, setShowProfile] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
   const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units">("home");
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
-  const [sales, setSales] = useState<Sale[]>([...INITIAL_SALES]);
-  const [productions, setProductions] = useState<Production[]>([...INITIAL_PRODUCTIONS]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [productions, setProductions] = useState<Production[]>([]);
   const [transfers, setTransfers] = useState<StockTransfer[]>([]);
-  const [stocks, setStocks] = useState<StoreStock[]>([...INITIAL_STOCKS]);
+  const [stocks, setStocks] = useState<StoreStock[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [inventoryStores, setInventoryStores] = useState([...INITIAL_STORES]);
-  const [articles, setArticles] = useState<Article[]>([...INITIAL_ARTICLES]);
-  const [categories, setCategories] = useState<Category[]>([...INITIAL_CATEGORIES]);
+  const [inventoryStores, setInventoryStores] = useState<Store[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [units, setUnits] = useState<UnitOfMeasure[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
 
   useEffect(() => {
@@ -144,13 +126,17 @@ export default function AuthenticatedSessionView() {
     let isMounted = true;
     async function loadInventory() {
       try {
-        if (canManageStores) {
-          await Promise.all([seedInitialInventoryData(), seedInitialCatalogData()]);
-        }
-        const [inventory, catalog, procurement] = await Promise.all([
-          loadInventoryData(),
+        const [inventory, catalog, procurement, operations] = await Promise.all([
+          loadInventoryData(canManageStores ? undefined : user?.assignedStores),
           loadCatalogData(),
-          canManageStores ? loadProcurementData() : Promise.resolve({ suppliers: [], purchases: [] })
+          canManageStores ? loadProcurementData() : Promise.resolve({ suppliers: [], purchases: [] }),
+          loadOperationalData({
+            sales: canManageStores || Boolean(user?.permissions.includes("sales.view")),
+            productions: canManageStores || Boolean(user?.permissions.includes("production.view")),
+            audit: true,
+            storeIds: canManageStores ? undefined : user?.assignedStores,
+            userId: user?.id || ""
+          })
         ]);
         const loadedUnits = canManageStores ? await loadUnits(catalog.articles) : [];
         if (!isMounted) return;
@@ -160,6 +146,9 @@ export default function AuthenticatedSessionView() {
         setTransfers(inventory.transfers);
         setArticles(catalog.articles);
         setCategories(catalog.categories);
+        setSales(operations.sales);
+        setProductions(operations.productions);
+        setAuditLogs(operations.auditLogs);
         setUnits(loadedUnits);
         if (canManageStores) {
           setSuppliers(procurement.suppliers);
@@ -186,7 +175,7 @@ export default function AuthenticatedSessionView() {
       setExpenses([]);
       return;
     }
-    loadExpenses()
+    loadExpenses(canManageStores ? undefined : user?.assignedStores)
       .then(loadedExpenses => {
         if (isMounted) setExpenses(loadedExpenses);
       })
@@ -194,7 +183,7 @@ export default function AuthenticatedSessionView() {
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [canManageStores, user]);
 
   const handleCreateManagedUser = async (newUser: AppUser) => {
     const response = await authService.createManagedUser({
@@ -215,6 +204,17 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleUpdateManagedUser = async (updatedUser: AppUser) => {
+    if (updatedUser.id === user?.id) {
+      alert("Pour votre sécurité, un administrateur ne peut pas modifier son propre rôle, son statut ou ses permissions.");
+      return;
+    }
+    const existingUser = managedUsers.find(item => item.id === updatedUser.id);
+    const activeSuperAdmins = managedUsers.filter(item => item.roleId === "SUPER_ADMIN" && item.isActive);
+    if (existingUser?.roleId === "SUPER_ADMIN" && activeSuperAdmins.length <= 1 &&
+      (updatedUser.roleId !== "SUPER_ADMIN" || !updatedUser.isActive)) {
+      alert("Le dernier super administrateur actif ne peut pas être désactivé ou rétrogradé.");
+      return;
+    }
     const response = await authService.updateManagedUser(updatedUser.id, {
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
@@ -237,7 +237,9 @@ export default function AuthenticatedSessionView() {
       alert(response.message);
       return;
     }
-    setManagedUsers(current => current.filter(item => item.id !== userId));
+    setManagedUsers(current => current.map(item => item.id === userId
+      ? { ...item, isActive: false, permissions: [], storeIds: [] }
+      : item));
   };
 
   const openUserManagement = () => {
@@ -255,35 +257,71 @@ export default function AuthenticatedSessionView() {
       )
     : transfers;
 
-  const handleCreateSale = (sale: Sale) => {
-    setSales(current => [sale, ...current]);
+  const handleCreateSale = async (sale: Sale) => {
+    try {
+      const entry = await createSale(sale);
+      setSales(current => [sale, ...current]);
+      setAuditLogs(current => [entry, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la vente.");
+      return false;
+    }
   };
 
-  const handleVerifySale = (saleId: string) => {
-    setSales(current => current.map(sale => {
-      if (sale.id !== saleId) return sale;
-      return { ...sale, status: sale.status === "DRAFT" ? "CHECKING" : "VERIFIED" };
-    }));
+  const handleVerifySale = async (saleId: string) => {
+    const sale = sales.find(item => item.id === saleId);
+    if (!sale || !currentAppUser) return;
+    const nextStatus = sale.status === "DRAFT" ? "CHECKING" : "VERIFIED";
+    try {
+      const result = await advanceSale(sale, nextStatus, currentAppUser.uid, currentAppUser.displayName);
+      setSales(current => current.map(item => item.id === saleId ? result.sale : item));
+      setAuditLogs(current => [result.auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible de modifier la vente.");
+    }
   };
 
-  const handleValidateSale = (saleId: string) => {
-    setSales(current => current.map(sale => sale.id === saleId ? { ...sale, status: "VALIDATED", validated_at: Date.now(), validated_by: user?.id, validated_by_name: user ? `${user.firstName} ${user.lastName}` : undefined } : sale));
+  const handleValidateSale = async (saleId: string) => {
+    const sale = sales.find(item => item.id === saleId);
+    if (!sale || !currentAppUser) return;
+    try {
+      const result = await validateSale(sale, stocks, currentAppUser.uid, currentAppUser.displayName);
+      setSales(current => current.map(item => item.id === saleId ? result.sale : item));
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
+      setAuditLogs(current => [result.auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible de valider la vente.");
+    }
   };
 
-  const handleCancelSale = (saleId: string) => {
-    setSales(current => current.map(sale => sale.id === saleId ? { ...sale, status: "CANCELLED" } : sale));
+  const handleCancelSale = async (saleId: string) => {
+    const sale = sales.find(item => item.id === saleId);
+    if (!sale || !currentAppUser) return;
+    try {
+      const result = await cancelSale(sale, currentAppUser.uid, currentAppUser.displayName);
+      setSales(current => current.map(item => item.id === saleId ? result.sale : item));
+      setAuditLogs(current => [result.auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'annuler la vente.");
+    }
   };
 
-  const handleCreateProduction = (production: Production) => {
-    let updatedStocks = stocks;
-    production.consumptions.forEach(line => {
-      updatedStocks = updateStockQuantity(updatedStocks, production.manufacturer_store_id, line.article_id, -line.quantity).newStocks;
-    });
-    production.outputs.forEach(line => {
-      updatedStocks = updateStockQuantity(updatedStocks, production.manufacturer_store_id, line.article_id, line.quantity).newStocks;
-    });
-    setStocks(updatedStocks);
-    setProductions(current => [production, ...current]);
+  const handleCreateProduction = async (production: Production) => {
+    try {
+      const result = await createProduction(production, stocks);
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
+      setProductions(current => [production, ...current]);
+      setAuditLogs(current => [result.auditLog, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la production.");
+      return false;
+    }
   };
 
   const handleInitiateProductionReturn = (transfer: StockTransfer) => {
@@ -376,9 +414,10 @@ export default function AuthenticatedSessionView() {
       transfer.lines.some(line => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id)
     );
     try {
-      await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements);
-      setStocks(updatedStocks);
-      setMovements(current => [...movements, ...current]);
+      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements);
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'expédition du transfert dans Firestore.");
@@ -442,9 +481,10 @@ export default function AuthenticatedSessionView() {
       transfer.lines.some(line => stock.store_id === transfer.destination_store_id && stock.article_id === line.article_id)
     );
     try {
-      await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements);
-      setStocks(updatedStocks);
-      setMovements(current => [...movements, ...current]);
+      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements);
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du transfert dans Firestore.");
@@ -596,12 +636,12 @@ export default function AuthenticatedSessionView() {
   };
   
   const handleResetCatalogData = async () => {
-    await Promise.all([
-      ...INITIAL_ARTICLES.map(article => saveArticle(article)),
-      ...INITIAL_CATEGORIES.map(category => saveCategory(category))
-    ]);
-    setArticles([...INITIAL_ARTICLES]);
-    setCategories([...INITIAL_CATEGORIES]);
+    const timestamp = Date.now();
+    const resetArticles = articles.map(article => ({ ...article, is_active: false, updated_at: timestamp }));
+    const resetCategories = categories.map(category => ({ ...category, is_active: false, updated_at: timestamp }));
+    await Promise.all([...resetArticles.map(saveArticle), ...resetCategories.map(saveCategory)]);
+    setArticles(resetArticles);
+    setCategories(resetCategories);
   };
   
   const handleImportStores = async (data: Store[]) => {
@@ -613,8 +653,7 @@ export default function AuthenticatedSessionView() {
   };
   
   const handleResetStores = async () => {
-    await Promise.all(INITIAL_STORES.map(store => saveStore(store)));
-    setInventoryStores([...INITIAL_STORES]);
+    throw new Error("La réinitialisation globale des magasins est désactivée en production. Désactivez les magasins individuellement.");
   };
 
   const handleCreateSupplier = async (supplier: Supplier) => {
@@ -709,42 +748,6 @@ export default function AuthenticatedSessionView() {
     setExpenses(current => [expense, ...current].sort((left, right) => right.expense_date - left.expense_date));
   };
 
-  const handleCopyToken = () => {
-    if (token) {
-      navigator.clipboard.writeText(token);
-      setCopiedToken(true);
-      setTimeout(() => setCopiedToken(false), 2000);
-    }
-  };
-
-  const testProtectedRoute = async (withValidToken: boolean) => {
-    setTestLoading(true);
-    const start = performance.now();
-    try {
-      const currentUser = withValidToken ? await authService.getCurrentUser() : null;
-      const end = performance.now();
-
-      setTestResult({
-        status: currentUser ? 200 : 401,
-        data: currentUser
-          ? { success: true, code: "FIREBASE_SESSION_VALID", data: { user: currentUser } }
-          : { success: false, code: "FIREBASE_SESSION_INVALID", message: "Aucune session Firebase active." },
-        duration: Math.round(end - start),
-        testedWithToken: withValidToken
-      });
-    } catch (err) {
-      const end = performance.now();
-      setTestResult({
-        status: 0,
-        data: { error: err instanceof Error ? err.message : "Erreur réseau" },
-        duration: Math.round(end - start),
-        testedWithToken: withValidToken
-      });
-    } finally {
-      setTestLoading(false);
-    }
-  };
-
   if (!user) return null;
 
   return (
@@ -752,17 +755,11 @@ export default function AuthenticatedSessionView() {
       {/* Top Application Bar */}
       <header className="bg-slate-800/90 border-b border-slate-700/80 backdrop-blur sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
+          <img src="/branding/gileada-icon.png" alt="" className="h-9 w-9 rounded-lg bg-white p-1 object-contain" />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-tight text-white text-base">GILEADA</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
-                BLOC AUTHENTIFICATION
-              </span>
             </div>
-            <p className="text-xs text-slate-400">Session utilisateur active & vérifiée</p>
           </div>
         </div>
 
@@ -773,13 +770,15 @@ export default function AuthenticatedSessionView() {
             {isOnline ? "En ligne" : "Hors connexion · synchro en attente"}
           </div>
           <ThemeSwitcher />
-          <div className="hidden sm:flex flex-col text-right">
-            <span className="text-xs font-semibold text-white">
-              {user.firstName} {user.lastName}
-            </span>
-            <span className="text-[11px] text-slate-400">{user.email}</span>
-          </div>
-
+          <button
+            type="button"
+            onClick={() => setShowProfile(current => !current)}
+            aria-expanded={showProfile}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700"
+          >
+            <UserIcon className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{showProfile ? "Masquer le profil" : "Mon profil"}</span>
+          </button>
           <button
             type="button"
             onClick={() => logout()}
@@ -793,31 +792,6 @@ export default function AuthenticatedSessionView() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {/* Status Banner */}
-        <div className="theme-status p-4 sm:p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <span>Authentification Réussie</span>
-                <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
-                  {user.status}
-                </span>
-              </h2>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Le compte est actif. Le jeton de session est valide et prêt pour sécuriser les futurs modules métier.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs text-slate-400 shrink-0 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-700/60 font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Session: ACTIVE (24h)</span>
-          </div>
-        </div>
-
         {activeModule === "sales" && currentAppUser ? (
           <section className="space-y-4">
             <button
@@ -958,7 +932,7 @@ export default function AuthenticatedSessionView() {
               movements={movements}
               sales={sales}
               productions={productions}
-              auditLogs={[] as AuditLog[]}
+              auditLogs={auditLogs}
               currentUser={currentAppUser}
               onOpenReportViewer={(type, filters) => setReportRequest({ type, filters })}
             />
@@ -974,7 +948,7 @@ export default function AuthenticatedSessionView() {
                 movements={movements}
                 sales={sales}
                 productions={productions}
-                auditLogs={[]}
+                auditLogs={auditLogs}
                 currentUser={currentAppUser}
                 onClose={() => setReportRequest(null)}
               />
@@ -1082,9 +1056,8 @@ export default function AuthenticatedSessionView() {
           </section>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* User Profile Card */}
-          <div className="lg:col-span-1 bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-5">
+        {showProfile && (
+          <section className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-5" aria-label="Profil utilisateur">
             <div className="flex items-center justify-between border-b border-slate-700/70 pb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <UserIcon className="w-4 h-4 text-emerald-400" />
@@ -1180,158 +1153,8 @@ export default function AuthenticatedSessionView() {
                 </p>
               </div>
             </div>
-          </div>
-
-          {/* Middleware and Session Verification Testing Center */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Session Token Details */}
-            <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-700/70 pb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Key className="w-4 h-4 text-emerald-400" />
-                  <span>Jeton de Session Actif (Bearer Token)</span>
-                </h3>
-                <span className="text-[11px] text-emerald-400 font-mono">Format 256-bit crypto</span>
-              </div>
-
-              <div className="relative">
-                <div className="font-mono text-xs text-emerald-300 bg-slate-950 p-3.5 rounded-xl border border-slate-700/80 break-all select-all flex items-center justify-between gap-3">
-                  <span className="truncate">{token || "Aucun jeton actif"}</span>
-                  {token && (
-                    <button
-                      type="button"
-                      onClick={handleCopyToken}
-                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-sans shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border border-slate-600"
-                    >
-                      {copiedToken ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-emerald-400">Copié</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copier</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Ce jeton est stocké de manière sécurisée et transmis dans l'en-tête{" "}
-                <code className="bg-slate-900 px-1 py-0.5 rounded text-slate-300 font-mono">
-                  Authorization: Bearer &lt;token&gt;
-                </code>{" "}
-                pour chaque requête protégée.
-              </p>
-            </div>
-
-              {/* Firebase session verification panel */}
-            <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-700/70 pb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-emerald-400" />
-                    <span>Vérification de session Firebase Auth</span>
-                </h3>
-                  <span className="text-xs text-slate-400">Firebase Auth + Firestore</span>
-              </div>
-
-              <p className="text-xs text-slate-300">
-                Vérifiez directement la session Firebase et le profil utilisateur Firestore actuellement connectés :
-              </p>
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => testProtectedRoute(true)}
-                  disabled={testLoading}
-                  className="p-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-left transition-all cursor-pointer group disabled:opacity-50"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                      <Play className="w-3.5 h-3.5" /> Vérifier la session Firebase
-                    </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                      HTTP 200 Attendu
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 group-hover:text-slate-300">
-                    Recharge l'utilisateur Firebase et son profil Firestore actif.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => testProtectedRoute(false)}
-                  disabled={testLoading}
-                  className="p-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-left transition-all cursor-pointer group disabled:opacity-50"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
-                      <Play className="w-3.5 h-3.5" /> Tester une session absente
-                    </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
-                      HTTP 401 Attendu
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 group-hover:text-slate-300">
-                    Vérifie que l'absence de session est correctement refusée.
-                  </p>
-                </button>
-              </div>
-
-              {/* Test Response Console */}
-              {testResult && (
-                <div className="mt-4 p-4 rounded-xl bg-slate-950 border border-slate-700/80 font-mono text-xs space-y-2 animate-in fade-in">
-                  <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-2">
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={`w-2.5 h-2.5 rounded-full ${
-                          testResult.status === 200 ? "bg-emerald-400" : "bg-rose-400"
-                        }`}
-                      />
-                      <span>Résultat : Firebase Auth / users/{"uid"}</span>
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`font-bold px-2 py-0.5 rounded ${
-                          testResult.status === 200
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : "bg-rose-500/20 text-rose-400"
-                        }`}
-                      >
-                        Status: {testResult.status} {testResult.status === 200 ? "OK" : "Unauthorized"}
-                      </span>
-                      <span className="text-[11px] text-slate-500">{testResult.duration}ms</span>
-                    </div>
-                  </div>
-
-                  <pre className="text-slate-300 overflow-x-auto text-[11px] leading-relaxed pt-1">
-                    {JSON.stringify(testResult.data, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-
-            {/* Architecture Modular Notice */}
-            <div className="p-4 bg-slate-800/40 border border-slate-700/60 rounded-2xl flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                <Layers className="w-4 h-4" />
-              </div>
-              <div className="text-xs text-slate-300 space-y-1">
-                <span className="font-bold text-white block">
-                  Conformité de l'Architecture Modulaire GILEADA
-                </span>
-                <p className="text-slate-400 leading-relaxed">
-                  Le bloc d'authentification est totalement autonome et étanche. Aucun module métier (Stock, Ventes, POS, Transferts, Production, Rapports) n'a été altéré ou prématurément instancié. Dès que l'administrateur configurera les rôles et affectations de magasins, les modules pourront être montés directement sur cette fondation sécurisée.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          </section>
+        )}
       </main>
     </div>
   );

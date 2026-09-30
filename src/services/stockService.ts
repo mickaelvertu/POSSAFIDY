@@ -14,11 +14,12 @@ import {
   SaleStatus
 } from "../types";
 
-// Helper for generating sequential human-readable codes
 export function generateRef(prefix: string, count: number): string {
-  const year = new Date().getFullYear();
-  const num = String(count + 1).padStart(4, "0");
-  return `${prefix}-${year}-${num}`;
+  void count;
+  const now = new Date();
+  const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("");
+  const time = [String(now.getHours()).padStart(2, "0"), String(now.getMinutes()).padStart(2, "0"), String(now.getSeconds()).padStart(2, "0")].join("");
+  return `${prefix}-${date}-${time}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
 }
 
 // Check stock balance for a store & article

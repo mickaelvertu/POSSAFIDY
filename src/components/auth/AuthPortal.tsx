@@ -1,7 +1,7 @@
 import { useState } from "react";
 import LoginForm from "./LoginForm";
 import SignUpForm from "./SignUpForm";
-import { ShieldCheck, Lock, UserPlus, LogIn } from "lucide-react";
+import { UserPlus, LogIn } from "lucide-react";
 import ThemeSwitcher from "../ThemeSwitcher";
 
 export default function AuthPortal() {
@@ -28,18 +28,9 @@ export default function AuthPortal() {
         <div className="mb-4 flex justify-center">
           <ThemeSwitcher />
         </div>
-        <div className="inline-flex items-center justify-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mb-4">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-semibold tracking-wider uppercase">
-            Système Central GILEADA
-          </span>
-        </div>
         <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
-          GILEADA
+          <img src="/branding/gileada-logo.png" alt="GILEADA" className="mx-auto w-60 rounded-xl bg-white p-3" />
         </h1>
-        <p className="mt-2 text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
-          Gestion intégrée multi-magasins, contrôle des flux et sécurité applicative
-        </p>
       </div>
 
       {/* Main Auth Card */}
@@ -85,16 +76,6 @@ export default function AuthPortal() {
         </div>
       </div>
 
-      {/* Footer Info */}
-      <div className="w-full max-w-md text-center mt-8 text-xs text-slate-500 relative z-10 space-y-1">
-        <p className="flex items-center justify-center gap-1.5">
-          <Lock className="w-3.5 h-3.5 text-slate-400" />
-          <span>Bloc Authentification & Sécurité GILEADA</span>
-        </p>
-        <p className="text-[11px] text-slate-600">
-          Chiffrement des mots de passe &middot; Contrôle strict des statuts &middot; Jetons de session sécurisés
-        </p>
-      </div>
     </div>
   );
 }

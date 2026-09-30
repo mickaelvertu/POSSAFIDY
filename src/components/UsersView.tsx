@@ -77,7 +77,9 @@ export default function UsersView({
   const [formPermissions, setFormPermissions] = useState<AppPermission[]>([]);
 
   // Permissions of current user
-  const canCreate = hasPermission(currentUser, "users.create");
+  // Account creation stays self-service through Firebase Auth. Creating Auth users
+  // from a browser admin session can leave orphaned credentials after a partial failure.
+  const canCreate = false;
   const canEdit = hasPermission(currentUser, "users.edit");
   const canDelete = hasPermission(currentUser, "users.delete");
   const canManagePerms = hasPermission(currentUser, "users.permissions");
@@ -330,19 +332,6 @@ export default function UsersView({
         </div>
       </div>
 
-      {/* Notice info banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-        <div className="text-xs text-blue-900 space-y-1">
-          <span className="font-semibold text-blue-950">Règle de sécurité GILEADA (Role ≠ Permission) :</span>
-          <p>
-            Le rôle attribue un profil initial de permissions. L'administrateur peut ensuite activer ou désactiver 
-            individuellement n'importe quelle permission avec des boutons <strong>ON/OFF</strong>. De plus, 
-            les utilisateurs de type vendeur ne peuvent accéder qu'au magasin qui leur est expressément attribué.
-          </p>
-        </div>
-      </div>
-
       {activeTab === "users" ? (
         <>
           {/* Filters Bar */}
@@ -411,7 +400,7 @@ export default function UsersView({
                     <th className="px-4 py-3.5">Rôle</th>
                     <th className="px-4 py-3.5">Magasins Attribués</th>
                     <th className="px-4 py-3.5 text-center">Statut (ON/OFF)</th>
-                    <th className="px-4 py-3.5">Permissions Actives</th>
+                    <th className="px-4 py-3.5">Autorisations</th>
                     <th className="px-4 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -563,12 +552,12 @@ export default function UsersView({
                               {canDelete && !isCurrentUser && user.roleId !== "SUPER_ADMIN" && (
                                 <button
                                   onClick={() => {
-                                    if (confirm(`Confirmez-vous la suppression du compte de ${user.firstName} ${user.lastName} ?`)) {
+                                    if (confirm(`Confirmez-vous la désactivation du compte de ${user.firstName} ${user.lastName} ?`)) {
                                       onDeleteUser(user.id);
                                     }
                                   }}
                                   className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition"
-                                  title="Supprimer l'utilisateur"
+                                  title="Désactiver l'utilisateur"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>

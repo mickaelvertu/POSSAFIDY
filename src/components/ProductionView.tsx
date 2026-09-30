@@ -31,7 +31,7 @@ interface ProductionViewProps {
   articles: Article[];
   stocks: StoreStock[];
   currentUser: UserProfile;
-  onCreateProduction: (prod: Production) => void;
+  onCreateProduction: (prod: Production) => Promise<boolean>;
   onInitiateReturn: (transfer: StockTransfer) => void;
 }
 
@@ -83,7 +83,7 @@ export default function ProductionView({
     setOutputs([...outputs, { article_id: resaleArticles[0]?.id || "", quantity: 5 }]);
   };
 
-  const handleSubmitProduction = (e: FormEvent) => {
+  const handleSubmitProduction = async (e: FormEvent) => {
     e.preventDefault();
     if (consumptions.length === 0 || outputs.length === 0) {
       alert("Veuillez renseigner au moins une matière première consommée et un produit fini fabriqué.");
@@ -132,8 +132,7 @@ export default function ProductionView({
       validated_at: Date.now()
     };
 
-    onCreateProduction(newProd);
-    setIsModalOpen(false);
+    if (await onCreateProduction(newProd)) setIsModalOpen(false);
   };
 
   const handleSubmitReturn = (e: FormEvent) => {

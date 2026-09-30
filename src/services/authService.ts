@@ -97,10 +97,10 @@ export class AuthService {
   private async mapFirebaseUser(firebaseUser: FirebaseUser): Promise<User> {
     const profileRef = doc(db, "users", firebaseUser.uid);
     const profileSnapshot = await getDoc(profileRef);
-    const adminSnapshot = await getDoc(doc(db, "admins", firebaseUser.uid));
-    const profile = profileSnapshot.exists() ? profileSnapshot.data() : {};
-    const adminProfile = adminSnapshot.exists() ? adminSnapshot.data() : {};
-    const isAdmin = adminSnapshot.exists();
+    if (!profileSnapshot.exists()) {
+      throw new Error("Profil utilisateur introuvable. Contactez un administrateur.");
+    }
+    const profile = profileSnapshot.data();
     const now = new Date().toISOString();
     const user: User = {
       id: firebaseUser.uid,
@@ -108,16 +108,13 @@ export class AuthService {
       lastName: String(profile.lastName || firebaseUser.displayName?.split(" ").slice(1).join(" ") || ""),
       email: firebaseUser.email || String(profile.email || ""),
       phone: profile.phone,
-      status: profile.status || "ACTIVE",
-      role: isAdmin ? adminProfile.role || profile.role || "ADMIN" : profile.role || null,
-      permissions: isAdmin ? [...ALL_PERMISSIONS] : Array.isArray(profile.permissions) ? profile.permissions : [],
+      status: profile.status || "PENDING",
+      role: profile.role || null,
+      permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
       assignedStores: Array.isArray(profile.assignedStores) ? profile.assignedStores : [],
       createdAt: profile.createdAt || now,
       updatedAt: profile.updatedAt || now
     };
-    if (!profileSnapshot.exists()) {
-      await setDoc(profileRef, user);
-    }
     return user;
   }
 
@@ -242,16 +239,6 @@ export class AuthService {
         createdAt: now,
         updatedAt: now
       });
-      if (payload.role === "ADMIN" || payload.role === "SUPER_ADMIN") {
-        await setDoc(doc(db, "admins", credential.user.uid), {
-          uid: credential.user.uid,
-          email,
-          role: payload.role,
-          active: true,
-          createdAt: now,
-          updatedAt: now
-        });
-      }
       await signOut(this.provisioningAuth);
       const user = await this.mapFirebaseUser({ ...credential.user, uid: credential.user.uid });
       return { success: true, code: "USER_CREATED", message: "Utilisateur créé avec succès.", data: { user, temporaryPassword } };
@@ -263,20 +250,6 @@ export class AuthService {
   async updateManagedUser(id: string, payload: Record<string, unknown>): Promise<ApiResponse<{ user: User }>> {
     try {
       await updateDoc(doc(db, "users", id), { ...payload, updatedAt: new Date().toISOString() });
-      const adminRef = doc(db, "admins", id);
-      if (payload.role === "ADMIN" || payload.role === "SUPER_ADMIN") {
-        const existingAdmin = await getDoc(adminRef);
-        await setDoc(adminRef, {
-          ...(existingAdmin.exists() ? existingAdmin.data() : {}),
-          uid: id,
-          email: String(payload.email || ""),
-          role: payload.role,
-          active: true,
-          updatedAt: new Date().toISOString()
-        });
-      } else if (payload.role !== undefined) {
-        await deleteDoc(adminRef);
-      }
       const snapshot = await getDoc(doc(db, "users", id));
       const data = snapshot.data() || {};
       const user = await this.mapFirebaseUser({ uid: id, email: data.email || "", displayName: null } as FirebaseUser);
@@ -288,8 +261,15 @@ export class AuthService {
 
   async deleteManagedUser(id: string): Promise<ApiResponse> {
     try {
-      await deleteDoc(doc(db, "users", id));
-      return { success: true, code: "USER_DELETED", message: "Utilisateur supprimé avec succès." };
+      await updateDoc(doc(db, "users", id), {
+        status: "DISABLED",
+        permissions: [],
+        assignedStores: [],
+        updatedAt: new Date().toISOString()
+      });
+      const adminRef = doc(db, "admins", id);
+      if ((await getDoc(adminRef)).exists()) await deleteDoc(adminRef);
+      return { success: true, code: "USER_DISABLED", message: "Utilisateur désactivé avec succès." };
     } catch (err) {
       return this.errorResponse(err);
     }

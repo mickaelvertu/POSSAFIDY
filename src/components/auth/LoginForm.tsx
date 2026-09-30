@@ -1,6 +1,8 @@
 import { useState, FormEvent } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, Clock, ShieldX, KeyRound } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, Clock, ShieldX } from "lucide-react";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../../firebase";
 
 interface LoginFormProps {
   onSwitchToSignUp: () => void;
@@ -15,6 +17,7 @@ export default function LoginForm({ onSwitchToSignUp, prefillEmail = "" }: Login
   const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -70,11 +73,24 @@ export default function LoginForm({ onSwitchToSignUp, prefillEmail = "" }: Login
     }
   };
 
-  const setTestAccount = (testEmail: string, testPass: string) => {
-    setEmail(testEmail);
-    setPassword(testPass);
+  const handlePasswordReset = async () => {
+    const normalizedEmail = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setErrorCode("VALIDATION_ERROR");
+      setErrorMessage("Saisissez d'abord une adresse email valide.");
+      return;
+    }
+    setResetLoading(true);
     setErrorCode(null);
     setErrorMessage(null);
+    try {
+      await sendPasswordResetEmail(auth, normalizedEmail);
+      window.alert("Si cette adresse correspond à un compte, un email de réinitialisation a été envoyé.");
+    } catch {
+      window.alert("Si cette adresse correspond à un compte, un email de réinitialisation a été envoyé.");
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -146,9 +162,12 @@ export default function LoginForm({ onSwitchToSignUp, prefillEmail = "" }: Login
 
         {/* Password Field */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-            Mot de passe
-          </label>
+          <div className="mb-1.5 flex items-center justify-between gap-3">
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Mot de passe</label>
+            <button type="button" disabled={loading || resetLoading} onClick={() => void handlePasswordReset()} className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 disabled:opacity-50">
+              {resetLoading ? "Envoi..." : "Mot de passe oublié ?"}
+            </button>
+          </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
               <Lock className="w-4 h-4" />
@@ -204,56 +223,6 @@ export default function LoginForm({ onSwitchToSignUp, prefillEmail = "" }: Login
         </p>
       </div>
 
-      {/* Testing Scenarios Helper Cards */}
-      <div className="mt-6 p-3.5 bg-slate-100/70 border border-slate-200 rounded-xl">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2.5">
-          <KeyRound className="w-3.5 h-3.5 text-slate-500" />
-          <span>Comptes de test (cliquez pour tester les scénarios) :</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {/* Active test account */}
-          <button
-            type="button"
-            onClick={() => setTestAccount("active@gileada.mg", "Password123!")}
-            className="text-left p-2 rounded-lg bg-white border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-all text-xs cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-semibold text-slate-800">Actif</span>
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-            </div>
-            <p className="text-[11px] text-slate-500 truncate">active@gileada.mg</p>
-            <p className="text-[10px] text-emerald-700 font-mono mt-0.5">Accès autorisé</p>
-          </button>
-
-          {/* Pending test account */}
-          <button
-            type="button"
-            onClick={() => setTestAccount("pending@gileada.mg", "Password123!")}
-            className="text-left p-2 rounded-lg bg-white border border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 transition-all text-xs cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-semibold text-slate-800">En attente</span>
-              <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
-            </div>
-            <p className="text-[11px] text-slate-500 truncate">pending@gileada.mg</p>
-            <p className="text-[10px] text-amber-700 font-mono mt-0.5">ACCOUNT_PENDING</p>
-          </button>
-
-          {/* Disabled test account */}
-          <button
-            type="button"
-            onClick={() => setTestAccount("disabled@gileada.mg", "Password123!")}
-            className="text-left p-2 rounded-lg bg-white border border-slate-200 hover:border-rose-500 hover:bg-rose-50/40 transition-all text-xs cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-semibold text-slate-800">Désactivé</span>
-              <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />
-            </div>
-            <p className="text-[11px] text-slate-500 truncate">disabled@gileada.mg</p>
-            <p className="text-[10px] text-rose-700 font-mono mt-0.5">ACCOUNT_DISABLED</p>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

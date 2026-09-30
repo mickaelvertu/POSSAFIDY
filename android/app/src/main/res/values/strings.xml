@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GILEADA</string>
+    <string name="title_activity_main">GILEADA</string>
+    <string name="package_name">mg.gileada.pos</string>
+    <string name="custom_url_scheme">mg.gileada.pos</string>
+</resources>

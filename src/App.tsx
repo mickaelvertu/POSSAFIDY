@@ -9,7 +9,7 @@ function AuthApp() {
   if (isLoading) {
     return (
       <div className="session-loading min-h-screen bg-slate-900 flex flex-col items-center justify-center text-slate-200">
-        <div className="session-loader" aria-label="Chargement de la session GILEADA" role="status">
+        <div className="session-loader" aria-label="Chargement" role="status">
           <div className="slice" />
           <div className="slice" />
           <div className="slice" />
@@ -18,7 +18,7 @@ function AuthApp() {
           <div className="slice" />
         </div>
         <p className="mt-5 text-sm font-medium tracking-wide text-slate-300">
-          Chargement de la session GILEADA...
+          Chargement
         </p>
       </div>
     );

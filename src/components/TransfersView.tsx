@@ -1,4 +1,5 @@
 import { useState, FormEvent } from "react";
+import DeliveryNote from "./DeliveryNote";
 import { 
   StockTransfer, 
   StockTransferLine, 
@@ -67,6 +68,7 @@ export default function TransfersView({
   canResolveDiscrepancy
 }: TransfersViewProps) {
   // UI states
+  const [deliveryTransfer, setDeliveryTransfer] = useState<StockTransfer | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -484,6 +486,11 @@ export default function TransfersView({
 
                   <div className="flex items-center gap-2">
                     
+                    {["IN_TRANSIT", "RECEIVED", "VALIDATED", "DISCREPANCY"].includes(t.status) && (
+                      <button type="button" onClick={() => setDeliveryTransfer(t)} className="rounded-lg border border-emerald-700 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                        Bon de livraison
+                      </button>
+                    )}
                     {/* Step 1 -> 2: Approve DRAFT */}
                     {t.status === "DRAFT" && canApprove && (
                       <button
@@ -935,6 +942,7 @@ export default function TransfersView({
         </div>
       )}
 
+      {deliveryTransfer && <DeliveryNote transfer={deliveryTransfer} stores={stores} onClose={() => setDeliveryTransfer(null)} />}
     </div>
   );
 }

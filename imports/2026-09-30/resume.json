@@ -1,0 +1,12 @@
+{
+  "magasins": 27,
+  "fournisseurs": 53,
+  "unites": 6,
+  "articles": 140,
+  "categoriesSource": 17,
+  "categoriesSortie": 18,
+  "articlesSansUnite": 38,
+  "articlesSansCategorie": 5,
+  "prixAchatAbsents": 81,
+  "stocks": 0
+}

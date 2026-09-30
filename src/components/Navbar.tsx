@@ -51,19 +51,11 @@ export default function Navbar({
           
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-900 text-white flex items-center justify-center font-serif font-black text-xl shadow-md tracking-tight">
-              G
-            </div>
+            <img src="/branding/gileada-icon.png" alt="" className="h-10 w-10 rounded-lg bg-white p-1 object-contain" />
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black text-slate-900 tracking-tight font-serif">GILEADA</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">
-                  Système Multi-Sites
-                </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
-                Articles • Magasins • Flux • Ventes • Production & Rapports
-              </p>
             </div>
           </div>
 

@@ -303,11 +303,6 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             </div>
           </div>
 
-          {/* Notice about status PENDING */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-500 leading-relaxed">
-            <span className="font-semibold text-slate-700">Règle de sécurité GILEADA :</span> Tout nouveau compte est créé avec le statut <span className="font-mono text-amber-700 font-bold">PENDING</span> sans rôle ni magasin assigné. Une validation préalable par l'administration est obligatoire avant toute connexion.
-          </div>
-
           {/* Submit button */}
           <button
             type="submit"

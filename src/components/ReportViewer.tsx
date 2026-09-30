@@ -260,14 +260,14 @@ export default function ReportViewer({
         </div>
 
         {/* Printable Paper Canvas */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-10 text-slate-800 bg-white" id="printable-report-area">
+        <div className="printable-document flex-1 overflow-y-auto p-6 sm:p-10 text-slate-800 bg-white" id="printable-report-area">
           
           {/* Header standard GILEADA */}
           <div className="border-b-2 border-slate-900 pb-5 mb-6">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-black tracking-tight text-blue-900 font-serif">GILEADA</span>
+                  <img src="/branding/gileada-logo.png" alt="GILEADA" className="h-20 w-44 object-contain" />
                   <span className="text-xs font-mono font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">MADAGASCAR</span>
                 </div>
                 <p className="text-xs font-medium text-slate-600 mt-1">

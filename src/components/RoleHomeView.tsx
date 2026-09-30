@@ -5,10 +5,8 @@ import {
   BarChart3,
   Boxes,
   Building2,
-  ClipboardList,
   Factory,
   HandCoins,
-  KeyRound,
   PackageCheck,
   Receipt,
   Ruler,
@@ -120,18 +118,10 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-3 text-xs text-slate-300 sm:grid-cols-3">
-          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
-            <KeyRound className="h-4 w-4 text-emerald-300" />
-            <span>{user.permissions.length} permissions actives</span>
-          </div>
+        <div className="mt-6 flex text-xs text-slate-300">
           <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
             <Building2 className="h-4 w-4 text-blue-300" />
             <span>{user.storeIds.length ? `${user.storeIds.length} magasin(s) assigné(s)` : "Tous les magasins"}</span>
-          </div>
-          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
-            <ClipboardList className="h-4 w-4 text-amber-300" />
-            <span>Compte Firebase actif</span>
           </div>
         </div>
       </div>
@@ -179,7 +169,6 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Vos espaces de travail</h2>
-              <p className="text-xs text-slate-500">Les modules affichés suivent les permissions de votre compte.</p>
             </div>
             <Receipt className="hidden h-5 w-5 text-slate-400 sm:block" />
           </div>

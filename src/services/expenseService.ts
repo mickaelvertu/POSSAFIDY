@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { Expense } from "../types";
 
@@ -9,10 +9,13 @@ function omitUndefined<T>(value: T): T {
   return Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)) as T;
 }
 
-export async function loadExpenses(): Promise<Expense[]> {
-  const snapshot = await getDocs(collection(db, EXPENSES_COLLECTION));
-  return snapshot.docs
-    .map(item => item.data() as Expense)
+export async function loadExpenses(storeIds?: string[]): Promise<Expense[]> {
+  const rows = storeIds === undefined
+    ? (await getDocs(collection(db, EXPENSES_COLLECTION))).docs.map(item => item.data() as Expense)
+    : (await Promise.all(storeIds.map(storeId =>
+        getDocs(query(collection(db, EXPENSES_COLLECTION), where("store_id", "==", storeId)))
+      ))).flatMap(snapshot => snapshot.docs.map(item => item.data() as Expense));
+  return [...new Map(rows.map(item => [item.id, item])).values()]
     .sort((left, right) => right.expense_date - left.expense_date);
 }
 

@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "exportedAt": "2026-09-30T04:58:30.702Z",
+  "data": [
+    {
+      "id": "UNIT-mtnwcsi6awf",
+      "name": "Piece",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "id": "UNIT-mtnwcsi6awf",
+        "name": "Piece",
+        "symbol": "pcs"
+      }
+    },
+    {
+      "id": "UNIT-mu17wypgvjc",
+      "name": "Kilo",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "id": "UNIT-mu17wypgvjc",
+        "name": "Kilo",
+        "symbol": "Kg"
+      }
+    },
+    {
+      "id": "UNIT-mue5l1y6v5s",
+      "name": "Kapoaka",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "id": "UNIT-mue5l1y6v5s",
+        "name": "Kapoaka",
+        "symbol": "kp"
+      }
+    },
+    {
+      "id": "UNIT-mue5pl6f4tl",
+      "name": "litre",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "id": "UNIT-mue5pl6f4tl",
+        "name": "litre",
+        "symbol": "L"
+      }
+    },
+    {
+      "id": "UNIT-mue5q7jzgjy",
+      "name": "Millilitre",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "id": "UNIT-mue5q7jzgjy",
+        "name": "Millilitre",
+        "symbol": "ml"
+      }
+    },
+    {
+      "id": "UNIT-mue5r78ngaa",
+      "name": "Gramme",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "id": "UNIT-mue5r78ngaa",
+        "name": "Gramme",
+        "symbol": "g"
+      }
+    }
+  ]
+}

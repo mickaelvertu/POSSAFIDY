@@ -11,14 +11,18 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (
-          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE' &&
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE' && (
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['ADMIN', 'SUPER_ADMIN']
-        )
       );
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE' &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SUPER_ADMIN';
     }
 
     function isActiveUser() {
@@ -34,31 +38,43 @@ service cloud.firestore {
       );
     }
 
+    function hasStoreAccess(storeId) {
+      return isAdmin() || (
+        isActiveUser() && storeId is string &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([storeId])
+      );
+    }
+
     // User collection access rules
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
-      allow create: if isAdmin() || (
-        request.auth.uid == userId &&
-        request.resource.data.status == 'PENDING' &&
-        request.resource.data.role == null &&
-        request.resource.data.permissions.size() == 0 &&
-        request.resource.data.assignedStores.size() == 0
+      allow create: if (
+        isSuperAdmin() ||
+        (isAdmin() && !(request.resource.data.role in ['ADMIN', 'SUPER_ADMIN'])) ||
+        (
+          request.auth.uid == userId &&
+          request.resource.data.status == 'PENDING' &&
+          request.resource.data.role == null &&
+          request.resource.data.permissions.size() == 0 &&
+          request.resource.data.assignedStores.size() == 0
+        )
       ) &&
         request.resource.data.email is string &&
         request.resource.data.status in ['PENDING', 'ACTIVE', 'DISABLED'];
       allow update: if isSignedIn() && (
-        isAdmin() ||
+        isSuperAdmin() ||
+        (isAdmin() && !(resource.data.role in ['ADMIN', 'SUPER_ADMIN']) && !(request.resource.data.role in ['ADMIN', 'SUPER_ADMIN'])) ||
         (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'permissions', 'assignedStores']))
       );
-      allow delete: if isAdmin() && userId != request.auth.uid;
+      allow delete: if false;
     }
 
     // Admins metadata collection
     match /admins/{adminId} {
       allow get: if isSignedIn() && (adminId == request.auth.uid || isAdmin());
       allow list: if isAdmin();
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
     match /inventoryMetadata/{documentId} {
@@ -88,7 +104,7 @@ service cloud.firestore {
     }
 
     match /expenses/{expenseId} {
-      allow read: if hasPermission('expenses.view');
+      allow read: if hasPermission('expenses.view') && hasStoreAccess(resource.data.store_id);
       allow create: if hasPermission('expenses.create') &&
         (isAdmin() || (request.resource.data.store_id is string && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([request.resource.data.store_id]))) &&
         request.resource.data.created_by == request.auth.uid &&
@@ -97,8 +113,56 @@ service cloud.firestore {
     }
 
     match /movements/{movementId} {
-      allow read: if isActiveUser();
-      allow create: if hasPermission('stock.adjust') || hasPermission('transfers.ship') || hasPermission('transfers.receive');
+      allow read: if isActiveUser() && hasStoreAccess(resource.data.store_id);
+      allow create: if hasStoreAccess(request.resource.data.store_id) && (
+        hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
+        hasPermission('transfers.receive') || hasPermission('sales.validate') ||
+        hasPermission('production.create') || hasPermission('production.validate')
+      );
+    }
+
+    match /sales/{saleId} {
+      allow read: if hasPermission('sales.view') && hasStoreAccess(resource.data.store_id);
+      allow create: if hasPermission('sales.create') &&
+        request.resource.data.seller_id == request.auth.uid &&
+        request.resource.data.status == 'DRAFT' &&
+        request.resource.data.lines is list && request.resource.data.lines.size() > 0 &&
+        request.resource.data.total is number && request.resource.data.total >= 0 &&
+        hasStoreAccess(request.resource.data.store_id);
+      allow update: if (hasPermission('sales.edit') || hasPermission('sales.validate')) &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.store_id == resource.data.store_id &&
+        request.resource.data.seller_id == resource.data.seller_id &&
+        request.resource.data.created_at == resource.data.created_at &&
+        request.resource.data.lines == resource.data.lines &&
+        request.resource.data.subtotal == resource.data.subtotal &&
+        request.resource.data.discount == resource.data.discount &&
+        request.resource.data.tax == resource.data.tax &&
+        request.resource.data.total == resource.data.total &&
+        request.resource.data.amount_paid == resource.data.amount_paid &&
+        request.resource.data.payment_method == resource.data.payment_method &&
+        (
+          (resource.data.status == 'DRAFT' && request.resource.data.status in ['CHECKING', 'CANCELLED']) ||
+          (resource.data.status == 'CHECKING' && request.resource.data.status in ['VERIFIED', 'CANCELLED']) ||
+          (resource.data.status == 'VERIFIED' && request.resource.data.status in ['VALIDATED', 'CANCELLED'])
+        ) &&
+        (request.resource.data.status != 'VALIDATED' || request.resource.data.validated_by == request.auth.uid);
+    }
+
+    match /productions/{productionId} {
+      allow read: if hasPermission('production.view') && hasStoreAccess(resource.data.manufacturer_store_id);
+      allow create: if (hasPermission('production.create') || hasPermission('production.validate')) &&
+        request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.consumptions is list && request.resource.data.consumptions.size() > 0 &&
+        request.resource.data.outputs is list && request.resource.data.outputs.size() > 0 &&
+        hasStoreAccess(request.resource.data.manufacturer_store_id);
+    }
+
+    match /auditLogs/{auditId} {
+      allow read: if isAdmin() || (
+        isActiveUser() && resource.data.user_id == request.auth.uid
+      );
+      allow create: if isActiveUser() && request.resource.data.user_id == request.auth.uid;
     }
 
     // Inventory master data. Administrators seed and maintain stores; active
@@ -109,15 +173,43 @@ service cloud.firestore {
     }
 
     match /stocks/{stockId} {
-      allow read: if isActiveUser();
-      allow create, update: if hasPermission('stock.adjust') || hasPermission('transfers.ship') || hasPermission('transfers.receive');
+      allow read: if isActiveUser() && hasStoreAccess(resource.data.store_id);
+      allow create: if hasStoreAccess(request.resource.data.store_id) &&
+        request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
+          hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
+          hasPermission('transfers.receive') || hasPermission('sales.validate') ||
+          hasPermission('production.create') || hasPermission('production.validate')
+        );
+      allow update: if hasStoreAccess(resource.data.store_id) &&
+        request.resource.data.store_id == resource.data.store_id &&
+        request.resource.data.article_id == resource.data.article_id &&
+        request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
+          hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
+          hasPermission('transfers.receive') || hasPermission('sales.validate') ||
+          hasPermission('production.create') || hasPermission('production.validate')
+        );
       allow delete: if isAdmin();
     }
 
     match /transfers/{transferId} {
-      allow read: if isActiveUser();
-      allow create: if hasPermission('transfers.create');
-      allow update: if hasPermission('transfers.create') || hasPermission('transfers.ship') || hasPermission('transfers.receive');
+      allow read: if isActiveUser() && (
+        hasStoreAccess(resource.data.source_store_id) || hasStoreAccess(resource.data.destination_store_id)
+      );
+      allow create: if hasPermission('transfers.create') &&
+        request.resource.data.requested_by == request.auth.uid &&
+        hasStoreAccess(request.resource.data.source_store_id) &&
+        request.resource.data.status == 'DRAFT';
+      allow update: if (hasPermission('transfers.approve') || hasPermission('transfers.ship') || hasPermission('transfers.receive')) &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.source_store_id == resource.data.source_store_id &&
+        request.resource.data.destination_store_id == resource.data.destination_store_id &&
+        request.resource.data.created_at == resource.data.created_at &&
+        (
+          (resource.data.status == 'DRAFT' && request.resource.data.status == 'APPROVED') ||
+          (resource.data.status == 'APPROVED' && request.resource.data.status == 'IN_TRANSIT') ||
+          (resource.data.status == 'IN_TRANSIT' && request.resource.data.status in ['VALIDATED', 'DISCREPANCY']) ||
+          (resource.data.status == 'DISCREPANCY' && request.resource.data.status == 'DISCREPANCY')
+        );
       allow delete: if isAdmin();
     }
   }

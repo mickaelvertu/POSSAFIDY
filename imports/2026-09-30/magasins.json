@@ -1,0 +1,494 @@
+{
+  "version": 1,
+  "exportedAt": "2026-09-30T04:58:30.702Z",
+  "data": [
+    {
+      "id": "depot_central",
+      "name": "Centre Dépôt",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "depot_central",
+      "store_type": "CENTRAL_WAREHOUSE",
+      "location": "Dépôt central",
+      "legacy_source": {
+        "id": "depot_central",
+        "name": "Centre Dépôt",
+        "type": "depot",
+        "mode": "depot",
+        "address": "Dépôt central",
+        "color": "#f59e0b",
+        "isDepot": "1"
+      }
+    },
+    {
+      "id": "STORE-mtlecwvptim",
+      "name": "Mahajanga",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlecwvptim",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlecwvptim",
+        "name": "Mahajanga",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "phone": "311111111111",
+        "color": "#153a8a"
+      }
+    },
+    {
+      "id": "STORE-mtled2l6vwk",
+      "name": "Maman Shinning Tamatave",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtled2l6vwk",
+      "store_type": "RESELLER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtled2l6vwk",
+        "name": "Maman Shinning Tamatave",
+        "type": "revendeur",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtled7u46be",
+      "name": "Antsahabe",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtled7u46be",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtled7u46be",
+        "name": "Antsahabe",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtledd31hw7",
+      "name": "Rex",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtledd31hw7",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtledd31hw7",
+        "name": "Rex",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtledl1083g",
+      "name": "Analakely 401",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtledl1083g",
+      "store_type": "RESELLER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtledl1083g",
+        "name": "Analakely 401",
+        "type": "revendeur",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtleds9xyzb",
+      "name": "Mahamasina",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtleds9xyzb",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtleds9xyzb",
+        "name": "Mahamasina",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlee3d9tgk",
+      "name": "Soanierana",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlee3d9tgk",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlee3d9tgk",
+        "name": "Soanierana",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlefuo6n1e",
+      "name": "Antaninandro",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlefuo6n1e",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlefuo6n1e",
+        "name": "Antaninandro",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlehzcvqi7",
+      "name": "Anosy",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlehzcvqi7",
+      "store_type": "RESELLER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlehzcvqi7",
+        "name": "Anosy",
+        "type": "revendeur",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtleiey01au",
+      "name": "Ankazomanga",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtleiey01au",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtleiey01au",
+        "name": "Ankazomanga",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtleivnxb2y",
+      "name": "Analamahintsy",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtleivnxb2y",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtleivnxb2y",
+        "name": "Analamahintsy",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "0",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlej4m5ac4",
+      "name": "Andranomena",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlej4m5ac4",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlej4m5ac4",
+        "name": "Andranomena",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlejgdqxdw",
+      "name": "Talatamaty",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlejgdqxdw",
+      "store_type": "RESELLER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlejgdqxdw",
+        "name": "Talatamaty",
+        "type": "revendeur",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlejmydpvr",
+      "name": "Ivato",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlejmydpvr",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlejmydpvr",
+        "name": "Ivato",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlek9slqqk",
+      "name": "Akoor Digue",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlek9slqqk",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlek9slqqk",
+        "name": "Akoor Digue",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlel4ivk2h",
+      "name": "Ampandrana",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlel4ivk2h",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlel4ivk2h",
+        "name": "Ampandrana",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlelvbp6lf",
+      "name": "Antsirabe",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlelvbp6lf",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlelvbp6lf",
+        "name": "Antsirabe",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlem8f9kkz",
+      "name": "Moramanga",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlem8f9kkz",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlem8f9kkz",
+        "name": "Moramanga",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlemj08809",
+      "name": "Imeritsiatosika",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlemj08809",
+      "store_type": "RESELLER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlemj08809",
+        "name": "Imeritsiatosika",
+        "type": "revendeur",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtlenurpp9v",
+      "name": "Ankadidratombo",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtlenurpp9v",
+      "store_type": "RESELLER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtlenurpp9v",
+        "name": "Ankadidratombo",
+        "type": "revendeur",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtnwgb0fzxe",
+      "name": "Mr Guy",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtnwgb0fzxe",
+      "store_type": "RESELLER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtnwgb0fzxe",
+        "name": "Mr Guy",
+        "type": "revendeur",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mtnx324hoan",
+      "name": "Production",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mtnx324hoan",
+      "store_type": "MANUFACTURER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mtnx324hoan",
+        "name": "Production",
+        "type": "manufacture",
+        "mode": "production",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mu17pyiszu1",
+      "name": "Mr Jean Yves Antsirabe",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mu17pyiszu1",
+      "store_type": "RESELLER",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mu17pyiszu1",
+        "name": "Mr Jean Yves Antsirabe",
+        "type": "revendeur",
+        "mode": "sale",
+        "wholesale": "1",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mu70iv9k7jd",
+      "name": "Meteo Ampasapito",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mu70iv9k7jd",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mu70iv9k7jd",
+        "name": "Meteo Ampasapito",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "0",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mu7yndfetr8",
+      "name": "Mr Ony Mission",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mu7yndfetr8",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mu7yndfetr8",
+        "name": "Mr Ony Mission",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "0",
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "STORE-mu8d2zob96b",
+      "name": "Mr Ismael Commercial",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "code": "STORE-mu8d2zob96b",
+      "store_type": "POS",
+      "location": "",
+      "legacy_source": {
+        "id": "STORE-mu8d2zob96b",
+        "name": "Mr Ismael Commercial",
+        "type": "retail",
+        "mode": "sale",
+        "wholesale": "0",
+        "color": "#2563eb"
+      }
+    }
+  ]
+}
