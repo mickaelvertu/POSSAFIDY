@@ -16,6 +16,7 @@ import {
   Store as StoreIcon
 } from "lucide-react";
 import DataManagementActions from "./DataManagementActions";
+import { createSequentialId } from "../services/idService";
 
 interface StoresViewProps {
   stores: Store[];
@@ -104,7 +105,7 @@ export default function StoresView({
       } else {
         const timestamp = Date.now();
         const newStore: Store = {
-          id: `store-${timestamp}`,
+          id: await createSequentialId("MAG", stores.map(store => store.id)),
           code,
           name,
           store_type: storeType,

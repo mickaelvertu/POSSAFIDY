@@ -1,387 +1,387 @@
 {
   "version": 1,
-  "exportedAt": "2026-09-30T04:58:30.702Z",
+  "exportedAt": "2026-10-01T19:20:41.650Z",
   "data": [
     {
-      "id": "ART-mtnwcsi6zt1",
+      "id": "article-resale-aloe-miel",
       "name": "ALOE MIEL",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi60ud",
+      "id": "article-resale-aloe-noni",
       "name": "ALOE NONI",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi6dsd",
+      "id": "article-resale-aloe-pur",
       "name": "ALOE PUR",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi68xg",
+      "id": "article-resale-ananambo",
       "name": "ANANAMBO",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7ttd",
+      "id": "article-resale-anjarasoa",
       "name": "ANJARASOA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7dv1",
+      "id": "article-resale-argile-jaune",
       "name": "ARGILE JAUNE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7167",
+      "id": "article-resale-argile-rouge",
       "name": "ARGILE ROUGE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7i46",
+      "id": "article-resale-argile-verte",
       "name": "ARGILE VERTE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7vnn",
+      "id": "article-resale-baobab",
       "name": "BAOBAB",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7y0f",
+      "id": "article-resale-baume-anti-virus",
       "name": "Baume ANTI VIRUS",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi73fr",
+      "id": "article-resale-baume-anti-cellulites",
       "name": "Baume Anti cellulites",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi71nj",
+      "id": "article-resale-baume-alavonto",
       "name": "Baume ALAVONTO",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7vqe",
+      "id": "article-resale-baume-champion",
       "name": "Baume CHAMPION",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7a3l",
+      "id": "article-resale-baume-cypres",
       "name": "Baume Cyprès",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi734k",
+      "id": "article-resale-baume-katrafay",
       "name": "Baume KATRAFAY",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi72it",
+      "id": "article-resale-baume-memoire",
       "name": "Baume MEMOIRE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7h8a",
+      "id": "article-resale-baume-radriaka",
       "name": "Baume RADRIAKA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi765t",
+      "id": "article-resale-baume-ramiazina",
       "name": "Baume RAMIAZINA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7k9a",
+      "id": "article-resale-baume-ravintsara",
       "name": "Baume RAVINTSARA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7sdb",
+      "id": "article-resale-beroberoka",
       "name": "BEROBEROKA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi79f1",
+      "id": "article-resale-beurre-de-karite",
       "name": "BEURRE DE KARITE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7apt",
+      "id": "article-resale-bois-de-rose",
       "name": "BOIS DE ROSE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7xkc",
+      "id": "article-resale-calcium-masy",
       "name": "CALCIUM MASY",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7v0t",
+      "id": "article-resale-cataplasme",
       "name": "CATAPLASME",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7sop",
+      "id": "article-resale-circulation",
       "name": "CIRCULATION",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7gry",
+      "id": "article-resale-corofar-gm",
       "name": "COROFAR GM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi74l9",
+      "id": "article-resale-creme-coiffante",
       "name": "CREME COIFFANTE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7wsh",
+      "id": "article-resale-derma-g",
       "name": "DERMA-G",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi747b",
+      "id": "article-resale-desmofar-gm",
       "name": "DESMOFAR GM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7qim",
+      "id": "article-resale-detox",
       "name": "DETOX",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi72eo",
+      "id": "article-resale-eau-micellaire-pm",
       "name": "EAU MICELLAIRE PM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7kr2",
+      "id": "article-resale-fanazava",
       "name": "FANAZAVA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi75h3",
+      "id": "article-resale-fandravagodro",
       "name": "FANDRAVAGODRO",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7e8e",
+      "id": "article-resale-fanjatony",
       "name": "FANJATONY",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7c6h",
+      "id": "article-resale-g-articulation",
       "name": "G-ARTICULATION",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7j12",
+      "id": "article-resale-he-cypres",
       "name": "HE CYPRES",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7w13",
+      "id": "article-resale-he-geranium",
       "name": "HE GERANIUM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi7t9z",
+      "id": "article-resale-he-girofle",
       "name": "HE GIROFLE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8t1k",
+      "id": "article-resale-he-helichryse",
       "name": "HE HELICHRYSE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi80hm",
+      "id": "article-resale-he-katrafay",
       "name": "HE KATRAFAY",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8t51",
+      "id": "article-resale-he-menthe",
       "name": "HE MENTHE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8ofk",
+      "id": "article-resale-he-saro",
       "name": "HE SARO",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi83fu",
+      "id": "article-resale-hodipotsy",
       "name": "HODIPOTSY",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi83v2",
+      "id": "article-resale-kinana",
       "name": "KINANA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8x8r",
+      "id": "article-resale-komima",
       "name": "KOMIMA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8pvu",
+      "id": "article-resale-komima-cancer",
       "name": "KOMIMA CANCER",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8bv7",
+      "id": "article-resale-lotion-intime",
       "name": "LOTION INTIME",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8c2e",
+      "id": "article-resale-madeglucyl",
       "name": "MADEGLUCYL",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8jzw",
+      "id": "article-resale-madetoxyl",
       "name": "MADETOXYL",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi86y0",
+      "id": "article-resale-madetussyl",
       "name": "MADETUSSYL",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8sy6",
+      "id": "article-resale-masy-pagyl",
       "name": "MASY PAGYL",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8t8v",
+      "id": "article-resale-miel",
       "name": "MIEL",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8tau",
+      "id": "article-resale-madetonyl",
       "name": "MADETONYL",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8n5s",
+      "id": "article-resale-noni",
       "name": "NONI",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8dif",
+      "id": "article-resale-oac",
       "name": "OAC",
       "points": [
         "Catégorie absente",
@@ -389,7 +389,7 @@
       ]
     },
     {
-      "id": "ART-mtnwcsi8p1s",
+      "id": "article-resale-ody-vato",
       "name": "ODY VATO",
       "points": [
         "Catégorie absente",
@@ -397,7 +397,7 @@
       ]
     },
     {
-      "id": "ART-mtnwcsi8rnz",
+      "id": "article-resale-ofa",
       "name": "OFA",
       "points": [
         "Catégorie absente",
@@ -405,7 +405,7 @@
       ]
     },
     {
-      "id": "ART-mtnwcsi8wie",
+      "id": "article-resale-ofm",
       "name": "OFM",
       "points": [
         "Catégorie absente",
@@ -413,590 +413,417 @@
       ]
     },
     {
-      "id": "ART-mtnwcsi8fc4",
+      "id": "article-resale-omega-3-gm",
       "name": "OMEGA 3 GM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi8pte",
+      "id": "article-resale-omega-3-pm",
       "name": "OMEGA 3 PM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi90ts",
+      "id": "article-resale-omega-diabete",
       "name": "OMEGA DIABETE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9ue9",
+      "id": "article-resale-protofar-gm",
       "name": "PROTOFAR GM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9y9b",
+      "id": "article-resale-protofar-pm",
       "name": "PROTOFAR PM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9f2m",
+      "id": "article-resale-revitalisant",
       "name": "REVITALISANT",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9ytd",
+      "id": "article-resale-savlah",
       "name": "SAVLAH",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9lp6",
+      "id": "article-resale-savon-anti-acne",
       "name": "SAVON ANTI ACNE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9fkm",
+      "id": "article-resale-savon-aminci",
       "name": "SAVON AMINCI",
       "points": [
-        "Prix d'achat absent : valeur technique 0, à vérifier",
-        "Code partagé S-1506 : identifiant d'origine utilisé, à vérifier"
+        "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9vm6",
+      "id": "article-resale-savon-anti-rides",
       "name": "SAVON ANTI RIDES",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi95sd",
+      "id": "article-resale-savon-manazava",
       "name": "SAVON MANAZAVA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9uwq",
+      "id": "article-resale-savon-repousse",
       "name": "SAVON REPOUSSE",
       "points": [
-        "Prix d'achat absent : valeur technique 0, à vérifier",
-        "Code partagé S-1506 : identifiant d'origine utilisé, à vérifier"
+        "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi94wy",
+      "id": "article-resale-savon-vahona",
       "name": "SAVON VAHONA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9tef",
+      "id": "article-resale-spiruline",
       "name": "SPIRULINE",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9zjm",
+      "id": "article-resale-tanjaka",
       "name": "TANJAKA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9ptr",
+      "id": "article-resale-tanjaka-plus",
       "name": "TANJAKA PLUS",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9g43",
+      "id": "article-resale-the-beroberoka",
       "name": "THE BEROBEROKA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi955j",
+      "id": "article-resale-the-hibiscus",
       "name": "THE HIBISCUS",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9wn6",
+      "id": "article-resale-the-stevia",
       "name": "THE STEVIA",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9q8u",
+      "id": "article-resale-vinaigre-gm",
       "name": "VINAIGRE GM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsi9cwt",
+      "id": "article-resale-vinaigre-pm",
       "name": "VINAIGRE PM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsiafuk",
+      "id": "article-resale-voamboatavo-gm",
       "name": "VOAMBOATAVO GM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mtnwcsiallr",
+      "id": "article-resale-voamboatavo-pm",
       "name": "VOAMBOATAVO PM",
       "points": [
         "Prix d'achat absent : valeur technique 0, à vérifier"
       ]
     },
     {
-      "id": "ART-mu17xw8eche",
-      "name": "Beroka",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mu5nctq116s",
+      "id": "article-resale-ashvagandha",
       "name": "ASHVAGANDHA",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu5neewhvwf",
+      "id": "article-resale-beroka-fakany",
       "name": "BEROKA FAKANY",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu5nfpq1pze",
+      "id": "article-resale-he-radriaka",
       "name": "HE RADRIAKA",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu5nglhv723",
+      "id": "article-resale-rois-des-herbes",
       "name": "ROIS DES HERBES",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j3ext2qf",
+      "id": "article-resale-alben-cp",
       "name": "ALBEN CP",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j57qbyjx",
+      "id": "article-resale-gudichi",
       "name": "GUDICHI",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j5yehi2b",
+      "id": "article-resale-predni-50g",
       "name": "PREDNI 50G",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j6i6zwry",
+      "id": "article-resale-injection",
       "name": "INJECTION",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j6welo35",
+      "id": "article-resale-ampi-inj",
       "name": "AMPI INJ",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j7dne4rr",
+      "id": "article-resale-diclo",
       "name": "DICLO",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j815afc9",
+      "id": "article-resale-kapikachu",
       "name": "KAPIKACHU",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j8fwf0ki",
+      "id": "article-resale-karela",
       "name": "KARELA",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6j9hcocbt",
+      "id": "article-resale-magasine",
       "name": "MAGASINE",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6ja3e2959",
+      "id": "article-resale-mrg",
       "name": "MRG",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6jb8lkxmh",
+      "id": "article-resale-punarnava",
       "name": "PUNARNAVA",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6jcoevtsv",
+      "id": "article-resale-spray",
       "name": "SPRAY",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6jpk5kkfh",
+      "id": "article-resale-atropine",
       "name": "ATROPINE",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6jv67ckkx",
+      "id": "article-resale-toxo",
       "name": "TOXO",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6kzrtmn2c",
+      "id": "article-resale-alben-sp",
       "name": "ALBEN SP",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6nvcyn57n",
+      "id": "article-resale-he-eucaluptus",
       "name": "HE EUCALUPTUS",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6ouz19rfq",
+      "id": "article-resale-hepatite-b",
       "name": "HEPATITE B",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6ovhijx19",
+      "id": "article-resale-vitamine-c",
       "name": "VITAMINE C",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6p4yek197",
+      "id": "article-resale-glycemie",
       "name": "GLYCEMIE",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6p75g0srh",
+      "id": "article-resale-hcg",
       "name": "HCG",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6pars5lr9",
+      "id": "article-resale-st",
       "name": "ST",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6pibsmxmh",
+      "id": "article-resale-arina",
       "name": "ARINA",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6vkhf2cjm",
+      "id": "article-resale-palu",
       "name": "PALU",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6xb3k65j4",
+      "id": "article-resale-paraceta-500mg",
       "name": "PARACETA 500MG",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6xdqnjvmd",
+      "id": "article-resale-chlorpheniramine",
       "name": "CHLORPHENIRAMINE",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6xj70mix7",
+      "id": "article-resale-the-olive",
       "name": "THE OLIVE",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu6xokdjbx0",
+      "id": "article-resale-fievre-typho",
       "name": "FIEVRE TYPHO",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu7xnu0s3q6",
+      "id": "article-resale-dexa",
       "name": "DEXA",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu7xq7697j4",
+      "id": "article-resale-seringue",
       "name": "SERINGUE",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu8a4tykoi3",
+      "id": "article-raw-material-sakamalaho",
       "name": "Sakamalaho",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mu8adk3ip10",
+      "id": "article-raw-material-ambre-500ml-02",
       "name": "AMBRE 500ML",
       "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     },
     {
-      "id": "ART-mue5elke6tm",
-      "name": "Sakamalaho",
-      "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue5ih52of1",
+      "id": "article-raw-material-tongolo",
       "name": "TONGOLO",
       "points": [
         "Catégorie absente",
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue629dd5yp",
-      "name": "cannel",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7ba9v9vn",
-      "name": "AMBRE 500ML",
-      "points": [
-        "Unité de vente absente ou introuvable : à compléter",
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7pn9kf2l",
-      "name": "AMBRE 250ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7qv49tie",
-      "name": "AMBRE 125ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7rq3jyqp",
-      "name": "AMBRE 100ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7uiloqff",
-      "name": "AMBRE 50ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7vkwu7hm",
-      "name": "CRISTAL 500ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7wap38oz",
-      "name": "CRISTAL 250ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7x8utf4h",
-      "name": "CRISTAL 125ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue7zdfpgq3",
-      "name": "CRISTAL 100ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue800i9fry",
-      "name": "CRISTAL 50ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue81ku5uec",
-      "name": "Bouteille 10ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue87gxb2m6",
-      "name": "POT 50ML BLANC",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue88cwektn",
-      "name": "POT ALU 50G",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue89lfyjyd",
-      "name": "POT COSMETIQUE 50G",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue8agd2vi0",
-      "name": "POT ALU 200ML",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
-      ]
-    },
-    {
-      "id": "ART-mue8basukpd",
-      "name": "POT BLANC 30G",
-      "points": [
-        "Code absent : identifiant d'origine utilisé"
+        "Unité de vente absente ou introuvable : à compléter"
       ]
     }
   ]

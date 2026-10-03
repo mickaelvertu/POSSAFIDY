@@ -20,6 +20,7 @@ import {
   FolderPlus
 } from "lucide-react";
 import DataManagementActions from "./DataManagementActions";
+import { createSequentialId } from "../services/idService";
 
 interface CatalogViewProps {
   articles: Article[];
@@ -142,7 +143,7 @@ export default function CatalogView({
         });
       } else {
         await onCreateArticle({
-          id: `art-${crypto.randomUUID()}`,
+          id: await createSequentialId("ART", articles.map(article => article.id)),
           code: normalizedCode,
           name: artName.trim(),
           category_id: artCatId,
@@ -182,7 +183,7 @@ export default function CatalogView({
     try {
       const timestamp = Date.now();
       await onCreateCategory({
-        id: `cat-${crypto.randomUUID()}`,
+        id: await createSequentialId("CAT", categories.map(category => category.id)),
         code: normalizedCode,
         name: catName.trim(),
         description: catDesc.trim(),
@@ -309,7 +310,7 @@ export default function CatalogView({
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-purple-500"
+                className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-purple-500"
               >
                 <option value="ALL">Toutes les Catégories</option>
                 {categories.map((c) => (

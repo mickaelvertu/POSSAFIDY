@@ -18,6 +18,7 @@ import {
   updateDoc
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { createSequentialId } from "./idService";
 import firebaseConfig from "../../firebase-applet-config.json";
 
 export const ROLE_DEFINITIONS: Record<AppRoleId, { id: AppRoleId; name: string; description: string; bgLight: string }> = {
@@ -104,6 +105,7 @@ export class AuthService {
     const now = new Date().toISOString();
     const user: User = {
       id: firebaseUser.uid,
+      code: typeof profile.code === "string" ? profile.code : undefined,
       firstName: String(profile.firstName || firebaseUser.displayName?.split(" ")[0] || "Utilisateur"),
       lastName: String(profile.lastName || firebaseUser.displayName?.split(" ").slice(1).join(" ") || ""),
       email: firebaseUser.email || String(profile.email || ""),
@@ -225,10 +227,13 @@ export class AuthService {
     try {
       const email = String(payload.email || "").trim().toLowerCase();
       const temporaryPassword = crypto.randomUUID().replaceAll("-", "").slice(0, 16) + "A1!";
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const code = await createSequentialId("UTI", usersSnapshot.docs.map(userDoc => String(userDoc.data().code || "")));
       const credential = await createUserWithEmailAndPassword(this.provisioningAuth, email, temporaryPassword);
       const now = new Date().toISOString();
       await setDoc(doc(db, "users", credential.user.uid), {
         uid: credential.user.uid,
+        code,
         email,
         firstName: payload.firstName,
         lastName: payload.lastName,
@@ -249,8 +254,15 @@ export class AuthService {
 
   async updateManagedUser(id: string, payload: Record<string, unknown>): Promise<ApiResponse<{ user: User }>> {
     try {
-      await updateDoc(doc(db, "users", id), { ...payload, updatedAt: new Date().toISOString() });
-      const snapshot = await getDoc(doc(db, "users", id));
+      const userRef = doc(db, "users", id);
+      const currentProfile = await getDoc(userRef);
+      const updatePayload = { ...payload };
+      if (!currentProfile.data()?.code && payload.status === "ACTIVE") {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        updatePayload.code = await createSequentialId("UTI", usersSnapshot.docs.map(userDoc => String(userDoc.data().code || "")));
+      }
+      await updateDoc(userRef, { ...updatePayload, updatedAt: new Date().toISOString() });
+      const snapshot = await getDoc(userRef);
       const data = snapshot.data() || {};
       const user = await this.mapFirebaseUser({ uid: id, email: data.email || "", displayName: null } as FirebaseUser);
       return { success: true, code: "USER_UPDATED", message: "Utilisateur mis à jour avec succès.", data: { user } };

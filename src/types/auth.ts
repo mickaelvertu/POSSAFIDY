@@ -2,6 +2,7 @@ export type UserStatus = "PENDING" | "ACTIVE" | "DISABLED";
 
 export interface User {
   id: string;
+  code?: string;
   firstName: string;
   lastName: string;
   email: string;

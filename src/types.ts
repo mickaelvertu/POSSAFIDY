@@ -32,6 +32,7 @@ export type Permission =
 export interface UserProfile {
   id: string;
   uid: string;
+  code?: string;
   username: string;
   email: string;
   displayName: string;
@@ -65,7 +66,7 @@ export const ALL_PERMISSIONS: AppPermission[] = [
 export type StoreTypeCode = "CENTRAL_WAREHOUSE" | "POS" | "RESELLER" | "MANUFACTURER";
 
 export interface Store {
-  id: string; // UUID PK immuable
+  id: string; // ID technique séquentiel, stable après création
   code: string; // Code métier modifiable par admin (ex: DEP-01, POS-ANA)
   name: string;
   store_type: StoreTypeCode;
@@ -77,7 +78,7 @@ export interface Store {
 
 // 2. Catégories administrables
 export interface Category {
-  id: string; // UUID PK
+  id: string; // ID technique séquentiel, stable après création
   code: string; // Code métier UNIQUE
   name: string;
   description?: string;
@@ -110,7 +111,7 @@ export interface Supplier {
 export type ArticleTypeCode = "RESALE" | "RAW_MATERIAL";
 
 export interface Article {
-  id: string; // UUID PK
+  id: string; // ID technique séquentiel, stable après création
   code: string; // Code métier UNIQUE (ex: A-001)
   name: string;
   category_id: string;
@@ -230,6 +231,7 @@ export interface StockTransferLine {
   quantity_received: number;
   quantity_accepted: number;
   quantity_rejected: number; // Discrepancy / manquants / avaries
+  source_stock_floor?: number;
   note?: string;
 }
 

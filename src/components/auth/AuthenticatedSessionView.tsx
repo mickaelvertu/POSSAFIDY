@@ -54,6 +54,7 @@ function toAppUser(user: User): AppUser {
   return {
     id: user.id,
     uid: user.id,
+    code: user.code,
     username: user.email.split("@")[0],
     email: user.email,
     firstName: user.firstName,
@@ -379,8 +380,9 @@ export default function AuthenticatedSessionView() {
     const movements: StockMovement[] = [];
     for (const line of transfer.lines) {
       const available = updatedStocks.find(stock => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id)?.quantity || 0;
-      if (line.quantity_sent <= 0 || available < line.quantity_sent) {
-        alert(`Stock insuffisant pour ${line.article_name}. Disponible : ${available}.`);
+      const sourceStockFloor = line.source_stock_floor ?? (transfer.type.startsWith("CENTRAL_TO_") ? available * 0.15 : 0);
+      if (line.quantity_sent <= 0 || available - line.quantity_sent < sourceStockFloor) {
+        alert(`Stock insuffisant ou réserve centrale de 15 % à préserver pour ${line.article_name}. Disponible : ${available}, réserve : ${sourceStockFloor}.`);
         return;
       }
       const { newStocks, beforeQty, afterQty } = updateStockQuantity(updatedStocks, transfer.source_store_id, line.article_id, -line.quantity_sent);
@@ -782,10 +784,12 @@ export default function AuthenticatedSessionView() {
           <button
             type="button"
             onClick={() => logout()}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 hover:text-rose-200 text-xs font-semibold transition-all cursor-pointer"
+            aria-label="Déconnexion"
+            title="Déconnexion"
+            className="inline-flex items-center gap-2 rounded-lg bg-rose-500/10 px-2 py-2 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 border border-rose-500/30 cursor-pointer sm:px-3.5 sm:py-1.5"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Déconnexion</span>
+            <span className="hidden sm:inline">Déconnexion</span>
           </button>
         </div>
       </header>

@@ -1,0 +1,901 @@
+{
+  "version": 1,
+  "exportedAt": "2026-10-02T05:12:46.944Z",
+  "data": [
+    {
+      "created_at": 1790744310702,
+      "is_active": true,
+      "address": "AMBILOBE",
+      "legacy_source": {
+        "id": "SUP-mu5nlfgdraj",
+        "address": "AMBILOBE",
+        "phone": "328010213",
+        "name": "TSARASOA",
+        "note": "CAJOUX 26500ar KG"
+      },
+      "id": "FOU-001",
+      "name": "TSARASOA",
+      "updated_at": 1790744310702,
+      "phone": "328010213",
+      "email": ""
+    },
+    {
+      "address": "TANA",
+      "legacy_source": {
+        "id": "SUP-mu5notmdfau",
+        "address": "TANA",
+        "note": "SAVLAH 2500AR PC",
+        "phone": "348546653",
+        "name": "FABY"
+      },
+      "id": "FOU-002",
+      "updated_at": 1790744310702,
+      "name": "FABY",
+      "created_at": 1790744310702,
+      "is_active": true,
+      "phone": "348546653",
+      "email": ""
+    },
+    {
+      "id": "FOU-003",
+      "is_active": true,
+      "updated_at": 1790744310702,
+      "name": "MR ZO",
+      "legacy_source": {
+        "phone": "341032038",
+        "note": "HODIPOTSY 40000AR L",
+        "id": "SUP-mu5nv04ewea",
+        "address": "TANA",
+        "name": "MR ZO"
+      },
+      "created_at": 1790744310702,
+      "address": "TANA",
+      "phone": "341032038",
+      "email": ""
+    },
+    {
+      "name": "NAVALONA",
+      "updated_at": 1790744310702,
+      "id": "FOU-004",
+      "is_active": true,
+      "address": "AMBOSITRA",
+      "phone": "389000461",
+      "email": "",
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "name": "NAVALONA",
+        "phone": "389000461",
+        "note": "MORINGA 18000AR KG",
+        "id": "SUP-mu5nwol1a5h",
+        "address": "AMBOSITRA"
+      }
+    },
+    {
+      "email": "",
+      "phone": "340598255",
+      "name": "HERY",
+      "is_active": true,
+      "address": "TANA",
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "note": "BEROKA 3500AR KG",
+        "address": "TANA",
+        "phone": "340598255",
+        "name": "HERY",
+        "id": "SUP-mu5o5rwdrwk"
+      },
+      "created_at": 1790744310702,
+      "id": "FOU-005"
+    },
+    {
+      "legacy_source": {
+        "phone": "343275976",
+        "note": "BEROKA 3500AR KG",
+        "id": "SUP-mu5o9w31x5l",
+        "name": "JIMMY"
+      },
+      "email": "",
+      "created_at": 1790744310702,
+      "phone": "343275976",
+      "is_active": true,
+      "name": "JIMMY",
+      "updated_at": 1790744310702,
+      "id": "FOU-006",
+      "address": ""
+    },
+    {
+      "id": "FOU-007",
+      "legacy_source": {
+        "name": "NARCISSE",
+        "phone": "347041454",
+        "id": "SUP-mu5oam5xwny",
+        "note": "BEROKA 3500AR KG"
+      },
+      "created_at": 1790744310702,
+      "name": "NARCISSE",
+      "address": "",
+      "updated_at": 1790744310702,
+      "phone": "347041454",
+      "is_active": true,
+      "email": ""
+    },
+    {
+      "legacy_source": {
+        "note": "BEROKA 3500AR KG",
+        "phone": "345631025",
+        "id": "SUP-mu5obhelw2f",
+        "name": "NAINA"
+      },
+      "is_active": true,
+      "name": "NAINA",
+      "updated_at": 1790744310702,
+      "id": "FOU-008",
+      "phone": "345631025",
+      "email": "",
+      "created_at": 1790744310702,
+      "address": ""
+    },
+    {
+      "legacy_source": {
+        "phone": "343524842",
+        "note": "REVITALISANT 30000AR L",
+        "id": "SUP-mu5od8p9le7",
+        "address": "TANA",
+        "name": "PAUL"
+      },
+      "email": "",
+      "phone": "343524842",
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "is_active": true,
+      "name": "PAUL",
+      "address": "TANA",
+      "id": "FOU-009"
+    },
+    {
+      "updated_at": 1790744310702,
+      "address": "TANA",
+      "is_active": true,
+      "name": "MARCEL",
+      "email": "",
+      "phone": "384474667",
+      "id": "FOU-010",
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "note": "REVITALISANT 30000AR L",
+        "name": "MARCEL",
+        "phone": "384474667",
+        "id": "SUP-mu5oedud8dx",
+        "address": "TANA"
+      }
+    },
+    {
+      "updated_at": 1790744310702,
+      "address": "TANA",
+      "email": "",
+      "is_active": true,
+      "phone": "384189770",
+      "name": "DAFY",
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "note": "MIEL 15000AR L",
+        "name": "DAFY",
+        "phone": "384189770",
+        "id": "SUP-mu5ofv4dlew",
+        "address": "TANA"
+      },
+      "id": "FOU-011"
+    },
+    {
+      "id": "FOU-012",
+      "legacy_source": {
+        "phone": "345766715",
+        "id": "SUP-mu5ohde55no",
+        "note": "KINANA 30000AR L",
+        "name": "LOVA",
+        "address": "TANA"
+      },
+      "updated_at": 1790744310702,
+      "name": "LOVA",
+      "is_active": true,
+      "phone": "345766715",
+      "email": "",
+      "address": "TANA",
+      "created_at": 1790744310702
+    },
+    {
+      "id": "FOU-013",
+      "legacy_source": {
+        "name": "LOVA",
+        "address": "TANA",
+        "phone": "345766715",
+        "id": "SUP-mu5oiista2k",
+        "note": "BOIS DE ROSE 10000AR KP"
+      },
+      "address": "TANA",
+      "created_at": 1790744310702,
+      "is_active": true,
+      "updated_at": 1790744310702,
+      "phone": "345766715",
+      "name": "LOVA",
+      "email": ""
+    },
+    {
+      "legacy_source": {
+        "id": "SUP-mu5ojc3x9sq",
+        "note": "CURCUMA 16000AR KG",
+        "phone": "345766715",
+        "address": "TANA",
+        "name": "LOVA"
+      },
+      "email": "",
+      "name": "LOVA",
+      "phone": "345766715",
+      "updated_at": 1790744310702,
+      "address": "TANA",
+      "created_at": 1790744310702,
+      "is_active": true,
+      "id": "FOU-014"
+    },
+    {
+      "address": "TULEAR",
+      "updated_at": 1790744310702,
+      "name": "THEOPHYLE",
+      "id": "FOU-015",
+      "created_at": 1790744310702,
+      "phone": "346660539",
+      "is_active": true,
+      "email": "",
+      "legacy_source": {
+        "note": "BAOBAB 30000AR KG",
+        "name": "THEOPHYLE",
+        "phone": "346660539",
+        "address": "TULEAR",
+        "id": "SUP-mu5okwqtbm5"
+      }
+    },
+    {
+      "is_active": true,
+      "updated_at": 1790744310702,
+      "created_at": 1790744310702,
+      "name": "NAVALONA",
+      "legacy_source": {
+        "id": "SUP-mu5ombbh9bc",
+        "phone": "389000461",
+        "name": "NAVALONA",
+        "note": "SPIRULINE 72000AR KG",
+        "address": "AMBOSITRA"
+      },
+      "id": "FOU-016",
+      "address": "AMBOSITRA",
+      "email": "",
+      "phone": "389000461"
+    },
+    {
+      "legacy_source": {
+        "name": "MIRANA",
+        "address": "TANA",
+        "note": "CAJOUX 27500AR KG",
+        "id": "SUP-mu6t2gh5xl2",
+        "phone": "336445970"
+      },
+      "email": "",
+      "phone": "336445970",
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "id": "FOU-017",
+      "is_active": true,
+      "name": "MIRANA",
+      "address": "TANA"
+    },
+    {
+      "email": "",
+      "name": "FREDERICO",
+      "phone": "340155437",
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "phone": "340155437",
+        "address": "TANA",
+        "note": "CAJOUX 32000AR KG",
+        "id": "SUP-mu6t8ic1vu8",
+        "name": "FREDERICO"
+      },
+      "address": "TANA",
+      "is_active": true,
+      "updated_at": 1790744310702,
+      "id": "FOU-018"
+    },
+    {
+      "address": "TANA",
+      "created_at": 1790744310702,
+      "name": "MARCEL",
+      "id": "FOU-019",
+      "email": "",
+      "legacy_source": {
+        "address": "TANA",
+        "name": "MARCEL",
+        "id": "SUP-mu6td98a5nf",
+        "phone": "384474667",
+        "note": "COURGE 2000AR KP"
+      },
+      "phone": "384474667",
+      "is_active": true,
+      "updated_at": 1790744310702
+    },
+    {
+      "legacy_source": {
+        "note": "COURGE 2000AR KP",
+        "address": "TANA",
+        "name": "PAUL",
+        "id": "SUP-mu6te2yxsow",
+        "phone": "343524842"
+      },
+      "id": "FOU-020",
+      "phone": "343524842",
+      "email": "",
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "name": "PAUL",
+      "is_active": true,
+      "address": "TANA"
+    },
+    {
+      "address": "TANA",
+      "legacy_source": {
+        "name": "SAHOLY",
+        "note": "COURGE 2000AR KP",
+        "address": "TANA",
+        "id": "SUP-mu6tfzshdzl",
+        "phone": "344780492"
+      },
+      "created_at": 1790744310702,
+      "is_active": true,
+      "name": "SAHOLY",
+      "email": "",
+      "phone": "344780492",
+      "id": "FOU-021",
+      "updated_at": 1790744310702
+    },
+    {
+      "legacy_source": {
+        "name": "SANDRA",
+        "id": "SUP-mu6tiaxly2j",
+        "phone": "381252928",
+        "note": "COURGE 2000AR KP",
+        "address": "TANA"
+      },
+      "is_active": true,
+      "address": "TANA",
+      "created_at": 1790744310702,
+      "name": "SANDRA",
+      "email": "",
+      "phone": "381252928",
+      "id": "FOU-022",
+      "updated_at": 1790744310702
+    },
+    {
+      "phone": "341067295",
+      "email": "",
+      "is_active": true,
+      "id": "FOU-023",
+      "legacy_source": {
+        "name": "JEANNE",
+        "note": "COURGE 2000AR KP",
+        "address": "TANA",
+        "id": "SUP-mu6tjipelaz",
+        "phone": "341067295"
+      },
+      "updated_at": 1790744310702,
+      "created_at": 1790744310702,
+      "name": "JEANNE",
+      "address": "TANA"
+    },
+    {
+      "legacy_source": {
+        "note": "COURGE 2000AR KP",
+        "name": "JUSTIN",
+        "id": "SUP-mu6tkyrdth5",
+        "address": "TANA",
+        "phone": "343515385"
+      },
+      "name": "JUSTIN",
+      "email": "",
+      "phone": "343515385",
+      "updated_at": 1790744310702,
+      "is_active": true,
+      "address": "TANA",
+      "id": "FOU-024",
+      "created_at": 1790744310702
+    },
+    {
+      "updated_at": 1790744310702,
+      "is_active": true,
+      "id": "FOU-025",
+      "address": "TANA",
+      "legacy_source": {
+        "note": "COURGE 2000AR KP",
+        "name": "HARY",
+        "id": "SUP-mu6tlzoaceg",
+        "address": "TANA",
+        "phone": "344259652"
+      },
+      "name": "HARY",
+      "created_at": 1790744310702,
+      "email": "",
+      "phone": "344259652"
+    },
+    {
+      "email": "",
+      "created_at": 1790744310702,
+      "phone": "340324889",
+      "address": "TANA",
+      "id": "FOU-026",
+      "name": "M.ZO",
+      "legacy_source": {
+        "phone": "340324889",
+        "name": "M.ZO",
+        "id": "SUP-mu6tnisp9hg",
+        "address": "TANA",
+        "note": "SESAM 6500AR KG"
+      },
+      "updated_at": 1790744310702,
+      "is_active": true
+    },
+    {
+      "legacy_source": {
+        "name": "FENOSOA",
+        "id": "SUP-mu6tq3w9vrm",
+        "phone": "387016511",
+        "note": "HYDROLAT GERANIUM 5000AR L",
+        "address": "TANA"
+      },
+      "email": "",
+      "phone": "387016511",
+      "updated_at": 1790744310702,
+      "address": "TANA",
+      "id": "FOU-027",
+      "created_at": 1790744310702,
+      "name": "FENOSOA",
+      "is_active": true
+    },
+    {
+      "id": "FOU-028",
+      "address": "TANA",
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702,
+      "name": "FALIANJA",
+      "phone": "349855290",
+      "legacy_source": {
+        "id": "SUP-mu6u0x1lxml",
+        "address": "TANA",
+        "note": "HYDROLAT RAVINTSARA 2000AR",
+        "name": "FALIANJA",
+        "phone": "349855290"
+      },
+      "email": "",
+      "is_active": true
+    },
+    {
+      "legacy_source": {
+        "phone": "384579186",
+        "address": "TANA",
+        "name": "NIAINA",
+        "note": "NONI 5000AR L",
+        "id": "SUP-mu6u4l7d7m8"
+      },
+      "is_active": true,
+      "name": "NIAINA",
+      "email": "",
+      "phone": "384579186",
+      "updated_at": 1790744310702,
+      "id": "FOU-029",
+      "address": "TANA",
+      "created_at": 1790744310702
+    },
+    {
+      "created_at": 1790744310702,
+      "id": "FOU-030",
+      "is_active": true,
+      "name": "HARY",
+      "legacy_source": {
+        "address": "TANA",
+        "id": "SUP-mu6u67tlmpy",
+        "note": "DESME 3000AR KG",
+        "name": "HARY",
+        "phone": "344259652"
+      },
+      "address": "TANA",
+      "phone": "344259652",
+      "email": "",
+      "updated_at": 1790744310702
+    },
+    {
+      "email": "",
+      "address": "",
+      "name": "LOVA",
+      "legacy_source": {
+        "note": "ARGILE 6000AR KG",
+        "phone": "345766715",
+        "name": "LOVA",
+        "id": "SUP-mu6u71zdrax"
+      },
+      "updated_at": 1790744310702,
+      "phone": "345766715",
+      "id": "FOU-031",
+      "is_active": true,
+      "created_at": 1790744310702
+    },
+    {
+      "updated_at": 1790744310702,
+      "address": "ARIVONIMAMO",
+      "email": "",
+      "phone": "341501834",
+      "name": "NAIVO",
+      "is_active": true,
+      "legacy_source": {
+        "phone": "341501834",
+        "address": "ARIVONIMAMO",
+        "name": "NAIVO",
+        "note": "VAHONA 700AR PC",
+        "id": "SUP-mu6u9n15xhw"
+      },
+      "created_at": 1790744310702,
+      "id": "FOU-032"
+    },
+    {
+      "address": "TANA",
+      "email": "",
+      "phone": "349101331",
+      "updated_at": 1790744310702,
+      "is_active": true,
+      "created_at": 1790744310702,
+      "id": "FOU-033",
+      "legacy_source": {
+        "name": "DANIEL",
+        "address": "TANA",
+        "id": "SUP-mu6ue1wpert",
+        "phone": "349101331",
+        "note": "CIRE D'ABEILLE 26000AR"
+      },
+      "name": "DANIEL"
+    },
+    {
+      "legacy_source": {
+        "address": "TANA",
+        "name": "BENJA",
+        "note": "ARGILE JAUNE 2000AR PC",
+        "id": "SUP-mu6ugch5ykt",
+        "phone": "340337888"
+      },
+      "email": "",
+      "name": "BENJA",
+      "phone": "340337888",
+      "updated_at": 1790744310702,
+      "address": "TANA",
+      "created_at": 1790744310702,
+      "is_active": true,
+      "id": "FOU-034"
+    },
+    {
+      "legacy_source": {
+        "note": "ANJARASOA 7000AR L",
+        "name": "ANNIE",
+        "id": "SUP-mu6ujyapyl9",
+        "address": "TANA",
+        "phone": "346450549"
+      },
+      "created_at": 1790744310702,
+      "name": "ANNIE",
+      "address": "TANA",
+      "is_active": true,
+      "email": "",
+      "phone": "346450549",
+      "id": "FOU-035",
+      "updated_at": 1790744310702
+    },
+    {
+      "name": "LAHATRA",
+      "updated_at": 1790744310702,
+      "is_active": true,
+      "legacy_source": {
+        "address": "TANA",
+        "note": "KALONJY 27000AR PC",
+        "name": "LAHATRA",
+        "phone": "344268606",
+        "id": "SUP-mu6uv45tz1o"
+      },
+      "address": "TANA",
+      "email": "",
+      "phone": "344268606",
+      "id": "FOU-036",
+      "created_at": 1790744310702
+    },
+    {
+      "email": "",
+      "name": "HERIZO",
+      "phone": "386154065",
+      "updated_at": 1790744310702,
+      "address": "TANA",
+      "id": "FOU-037",
+      "legacy_source": {
+        "name": "HERIZO",
+        "address": "TANA",
+        "id": "SUP-mu6uwjz0sdj",
+        "phone": "386154065",
+        "note": "KARIMBOLA 15000AR KG"
+      },
+      "is_active": true,
+      "created_at": 1790744310702
+    },
+    {
+      "is_active": true,
+      "created_at": 1790744310702,
+      "id": "FOU-038",
+      "phone": "346120978",
+      "email": "",
+      "name": "GASTON",
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "phone": "346120978",
+        "id": "SUP-mu6xasmn72j",
+        "note": "HUILE ESSENTIEL",
+        "name": "GASTON",
+        "address": "TANA"
+      },
+      "address": "TANA"
+    },
+    {
+      "email": "",
+      "name": "MANA",
+      "phone": "342561500",
+      "created_at": 1790744310702,
+      "address": "TANA",
+      "is_active": true,
+      "updated_at": 1790744310702,
+      "id": "FOU-039",
+      "legacy_source": {
+        "id": "SUP-mu6yij4g55s",
+        "note": "MASY",
+        "name": "MANA",
+        "phone": "342561500",
+        "address": "TANA"
+      }
+    },
+    {
+      "name": "MAMAN SHININE",
+      "created_at": 1790744310702,
+      "email": "",
+      "legacy_source": {
+        "address": "TAMATAVE",
+        "phone": "340411849",
+        "name": "MAMAN SHININE",
+        "id": "SUP-mu6znktcwu2",
+        "note": "TSUNAMI 2700AR PC"
+      },
+      "phone": "340411849",
+      "updated_at": 1790744310702,
+      "address": "TAMATAVE",
+      "id": "FOU-040",
+      "is_active": true
+    },
+    {
+      "id": "FOU-041",
+      "updated_at": 1790744310702,
+      "name": "PLASTIMA",
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "phone": "342046210",
+        "id": "SUP-mu70kfj46zz",
+        "address": "TANA",
+        "note": "FLACONS",
+        "name": "PLASTIMA"
+      },
+      "is_active": true,
+      "address": "TANA",
+      "phone": "342046210",
+      "email": ""
+    },
+    {
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "name": "SFOI",
+        "address": "TANA",
+        "id": "SUP-mu70mxqgxe3",
+        "note": "PET 500ML",
+        "phone": "207646397"
+      },
+      "email": "",
+      "phone": "207646397",
+      "address": "TANA",
+      "id": "FOU-042",
+      "name": "SFOI",
+      "updated_at": 1790744310702,
+      "is_active": true
+    },
+    {
+      "name": "PACKIT.MG",
+      "id": "FOU-043",
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "id": "SUP-mu70o64b7sx",
+        "address": "TANA",
+        "phone": "384677373",
+        "name": "PACKIT.MG",
+        "note": "DOYPACK"
+      },
+      "address": "TANA",
+      "phone": "384677373",
+      "email": "",
+      "is_active": true,
+      "updated_at": 1790744310702
+    },
+    {
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "id": "SUP-mu70prlk3is",
+        "phone": "348155219",
+        "note": "POT",
+        "name": "ANGELLA",
+        "address": "TANA"
+      },
+      "email": "",
+      "phone": "348155219",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "name": "ANGELLA",
+      "id": "FOU-044"
+    },
+    {
+      "is_active": true,
+      "created_at": 1790744310702,
+      "address": "Ambilobe",
+      "legacy_source": {
+        "phone": "340363103",
+        "id": "SUP-mu70rdbmkfr",
+        "address": "Ambilobe",
+        "note": "CAJOUX 25000AR KG",
+        "name": "DEZY"
+      },
+      "name": "DEZY",
+      "id": "FOU-045",
+      "email": "",
+      "updated_at": 1790744310702,
+      "phone": "340363103"
+    },
+    {
+      "address": "ARIVONIMAMO",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "note": "VINAIGRE 4500AR L",
+        "id": "SUP-mu70spkoo8e",
+        "name": "ANDRIANINA",
+        "address": "ARIVONIMAMO",
+        "phone": "346493980"
+      },
+      "updated_at": 1790744310702,
+      "email": "",
+      "id": "FOU-046",
+      "phone": "346493980",
+      "name": "ANDRIANINA"
+    },
+    {
+      "email": "",
+      "phone": "345600019",
+      "address": "TANA",
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "name": "ABDOUL",
+        "id": "SUP-mu7153hs9sb",
+        "address": "TANA",
+        "note": "BEURRE KARITE 69000AR KG",
+        "phone": "345600019"
+      },
+      "name": "ABDOUL",
+      "id": "FOU-047",
+      "is_active": true,
+      "created_at": 1790744310702
+    },
+    {
+      "legacy_source": {
+        "name": "RADO",
+        "address": "TANA",
+        "id": "SUP-mu718ay1e56",
+        "note": "STEVIA",
+        "phone": "348432660"
+      },
+      "updated_at": 1790744310702,
+      "email": "",
+      "phone": "348432660",
+      "id": "FOU-048",
+      "name": "RADO",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702
+    },
+    {
+      "id": "FOU-049",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "address": "TANA",
+      "updated_at": 1790744310702,
+      "legacy_source": {
+        "name": "NAJMI",
+        "note": "PRODUIT PHARMACIE",
+        "id": "SUP-mu71ape8wsx",
+        "address": "TANA",
+        "phone": "340786520"
+      },
+      "name": "NAJMI",
+      "phone": "340786520",
+      "email": ""
+    },
+    {
+      "updated_at": 1790744310702,
+      "name": "TSIKY MEDICAL",
+      "legacy_source": {
+        "phone": "341449932",
+        "id": "SUP-mu71bnagp6i",
+        "name": "TSIKY MEDICAL",
+        "address": "TANA",
+        "note": "KIT MEDICAL"
+      },
+      "email": "",
+      "is_active": true,
+      "id": "FOU-050",
+      "phone": "341449932",
+      "created_at": 1790744310702,
+      "address": "TANA"
+    },
+    {
+      "id": "FOU-051",
+      "is_active": true,
+      "updated_at": 1790744310702,
+      "name": "SARAH",
+      "created_at": 1790744310702,
+      "legacy_source": {
+        "id": "SUP-mu71ctgzbaq",
+        "phone": "387783381",
+        "note": "SESAM 6000AR KG",
+        "address": "387783381",
+        "name": "SARAH"
+      },
+      "address": "387783381",
+      "phone": "387783381",
+      "email": ""
+    },
+    {
+      "id": "FOU-052",
+      "updated_at": 1790744310702,
+      "address": "TANA",
+      "phone": "",
+      "legacy_source": {
+        "id": "SUP-mue37sa2kw5",
+        "note": "CANNEL 20000AR KG",
+        "address": "TANA",
+        "name": "ANALAKELY"
+      },
+      "email": "",
+      "is_active": true,
+      "name": "ANALAKELY",
+      "created_at": 1790744310702
+    },
+    {
+      "updated_at": 1790744310702,
+      "address": "TANA",
+      "is_active": true,
+      "name": "TSENA ANOSIBE",
+      "email": "",
+      "id": "FOU-053",
+      "phone": "",
+      "legacy_source": {
+        "address": "TANA",
+        "note": "TONGOLO,SAKAMALAHO,MENAKA ,SACHETS PROTO,RONONO",
+        "name": "TSENA ANOSIBE",
+        "id": "SUP-mue43jaqgwr"
+      },
+      "created_at": 1790744310702
+    }
+  ]
+}

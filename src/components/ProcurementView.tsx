@@ -21,6 +21,7 @@ import {
   X
 } from "lucide-react";
 import DataManagementActions from "./DataManagementActions";
+import { createSequentialId } from "../services/idService";
 
 interface ProcurementViewProps {
   suppliers: Supplier[];
@@ -143,7 +144,7 @@ export default function ProcurementView({
     try {
       const timestamp = Date.now();
       await onCreateSupplier({
-        id: `supplier-${crypto.randomUUID()}`,
+        id: await createSequentialId("FOU", suppliers.map(supplier => supplier.id)),
         name: supplierName.trim(),
         contact_name: supplierContact.trim() || undefined,
         phone: supplierPhone.trim() || undefined,

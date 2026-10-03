@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AppUser, Expense, Sale, Store } from "../types";
 import { hasPermission } from "../services/authService";
 import {
@@ -13,7 +14,8 @@ import {
   ShieldCheck,
   ShoppingCart,
   Truck,
-  Users
+  Users,
+  X
 } from "lucide-react";
 
 interface RoleHomeViewProps {
@@ -78,6 +80,7 @@ const accentClasses: Record<string, string> = {
 };
 
 export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenUnits, onOpenReports, stores, sales, expenses }: RoleHomeViewProps) {
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const role = user.role || "UNASSIGNED";
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   const pointOfSales = stores.filter(store => store.store_type === "POS" && store.is_active);
@@ -87,6 +90,13 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
     return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
   };
   const money = (amount: number) => `${amount.toLocaleString("fr-FR")} Ar`;
+  const storeTypeLabel = (store: Store) => store.store_type === "POS"
+    ? "Point de vente"
+    : store.store_type === "RESELLER"
+      ? "Revendeur"
+      : store.store_type === "CENTRAL_WAREHOUSE"
+        ? "Dépôt central"
+        : "Production";
   const availableCards = accessCards.filter(card => {
     if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage") return isAdmin;
     if (card.permission === "expenses.view" && isAdmin) return true;
@@ -144,7 +154,20 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                 .filter(expense => expense.store_id === store.id && isToday(expense.expense_date))
                 .reduce((total, expense) => total + expense.amount, 0);
               return (
-                <article key={store.id} className="min-w-[285px] snap-start rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:min-w-[320px]">
+                <article
+                  key={store.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Afficher les informations du magasin ${store.name}`}
+                  onClick={() => setSelectedStore(store)}
+                  onKeyDown={event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedStore(store);
+                    }
+                  }}
+                  className="min-w-[285px] snap-start cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:min-w-[320px]"
+                >
                   <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
                     <div>
                       <p className="text-sm font-black text-slate-900">{store.name}</p>
@@ -215,6 +238,66 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
           Votre compte est actif, mais aucun rôle métier ne lui a encore été attribué. Un administrateur doit configurer vos permissions.
         </div>
       )}
+
+      {selectedStore && (() => {
+        const storeSales = sales.filter(sale => sale.store_id === selectedStore.id && sale.status === "VALIDATED" && isToday(sale.created_at));
+        const storeExpenses = expenses.filter(expense => expense.store_id === selectedStore.id && isToday(expense.expense_date));
+        const dailySales = storeSales.reduce((total, sale) => total + sale.total, 0);
+        const dailyExpenses = storeExpenses.reduce((total, expense) => total + expense.amount, 0);
+        const latestSales = [...storeSales].sort((left, right) => right.created_at - left.created_at).slice(0, 5);
+        const latestExpenses = [...storeExpenses].sort((left, right) => right.expense_date - left.expense_date).slice(0, 5);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setSelectedStore(null)}>
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="store-detail-title"
+              className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl sm:max-w-xl sm:rounded-2xl sm:p-6"
+              onClick={event => event.stopPropagation()}
+            >
+              <header className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><Building2 className="h-5 w-5" /></span>
+                  <div className="min-w-0">
+                    <h2 id="store-detail-title" className="truncate text-lg font-black text-slate-900">{selectedStore.name}</h2>
+                    <p className="mt-1 break-all font-mono text-xs text-slate-500">{selectedStore.code} · {storeTypeLabel(selectedStore)}</p>
+                    <p className="mt-1 text-xs text-slate-500">{selectedStore.location || "Adresse non renseignée"}</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setSelectedStore(null)} aria-label="Fermer les informations du magasin" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+              </header>
+
+              <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-xl bg-emerald-50 p-3"><dt className="text-emerald-800">CA validé</dt><dd className="mt-1 font-black text-emerald-900">{money(dailySales)}</dd></div>
+                <div className="rounded-xl bg-rose-50 p-3"><dt className="text-rose-800">Dépenses</dt><dd className="mt-1 font-black text-rose-900">{money(dailyExpenses)}</dd></div>
+                <div className="rounded-xl bg-slate-100 p-3"><dt className="text-slate-600">Net du jour</dt><dd className="mt-1 font-black text-slate-900">{money(dailySales - dailyExpenses)}</dd></div>
+              </dl>
+
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <section>
+                  <h3 className="mb-2 text-sm font-bold text-slate-900">Ventes du jour <span className="text-xs font-medium text-slate-500">({storeSales.length})</span></h3>
+                  {latestSales.length ? <ul className="divide-y divide-slate-100">{latestSales.map(sale => (
+                    <li key={sale.id} className="flex items-center justify-between gap-3 py-2 text-xs">
+                      <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{sale.sale_number}</span><span className="text-slate-500">{sale.customer_name} · {new Date(sale.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span></span>
+                      <span className="shrink-0 font-mono font-bold text-emerald-700">{money(sale.total)}</span>
+                    </li>
+                  ))}</ul> : <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Aucune vente validée aujourd’hui.</p>}
+                </section>
+                <section>
+                  <h3 className="mb-2 text-sm font-bold text-slate-900">Dépenses du jour <span className="text-xs font-medium text-slate-500">({storeExpenses.length})</span></h3>
+                  {latestExpenses.length ? <ul className="divide-y divide-slate-100">{latestExpenses.map(expense => (
+                    <li key={expense.id} className="flex items-center justify-between gap-3 py-2 text-xs">
+                      <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{expense.description || expense.category}</span><span className="text-slate-500">{new Date(expense.expense_date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · {expense.payment_status === "PAID" ? "Payée" : "En attente"}</span></span>
+                      <span className="shrink-0 font-mono font-bold text-rose-700">{money(expense.amount)}</span>
+                    </li>
+                  ))}</ul> : <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Aucune dépense aujourd’hui.</p>}
+                </section>
+              </div>
+            </section>
+          </div>
+        );
+      })()}
     </section>
   );
 }

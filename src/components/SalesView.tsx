@@ -102,20 +102,12 @@ export default function SalesView({
     setArticleSearch("");
     setMobileSaleStep("PRODUCTS");
     
-    // Default 1 line
-    const firstArt = saleArticles[0];
-    if (!firstArt) {
+    if (saleArticles.length === 0) {
       window.alert("Aucun article destiné à la revente n'est disponible dans ce magasin.");
       return;
     }
-    const defaultPrice = getDefaultPriceForArticle(firstArt.id, storeId);
-    setSaleLines([{
-      article_id: firstArt.id,
-      quantity: 1,
-      unit_price: defaultPrice,
-      discount: 0
-    }]);
-    setAmountPaid(defaultPrice);
+    setSaleLines([]);
+    setAmountPaid(0);
     setIsModalOpen(true);
   };
 
@@ -129,13 +121,28 @@ export default function SalesView({
   };
 
   const handleAddLine = () => {
-    const art = saleArticles[0];
-    if (!art) return;
+    const art = saleArticles.find(article => {
+      const available = getArticleStock(stocks, selectedStoreId, article.id);
+      const inCart = saleLines
+        .filter(line => line.article_id === article.id)
+        .reduce((quantity, line) => quantity + line.quantity, 0);
+      return available > inCart;
+    });
+    if (!art) {
+      window.alert("Aucun article supplémentaire n'est disponible dans ce magasin.");
+      return;
+    }
     const p = getDefaultPriceForArticle(art.id, selectedStoreId);
     setSaleLines([...saleLines, { article_id: art.id, quantity: 1, unit_price: p, discount: 0 }]);
   };
 
   const handleAddArticle = (articleId: string) => {
+    const available = getArticleStock(stocks, selectedStoreId, articleId);
+    const alreadyInCart = saleLines
+      .filter(line => line.article_id === articleId)
+      .reduce((quantity, line) => quantity + line.quantity, 0);
+    if (alreadyInCart >= available) return;
+
     setSaleLines(lines => {
       const existingIndex = lines.findIndex(line => line.article_id === articleId);
       if (existingIndex >= 0) {
@@ -169,11 +176,24 @@ export default function SalesView({
   const totalDiscount = saleLines.reduce((acc, l) => acc + l.discount, 0);
   const netTotal = Math.max(0, subtotal - totalDiscount);
   const changeReturned = Math.max(0, amountPaid - netTotal);
+  const stockIssues = [...saleLines.reduce((quantities, line) => {
+    quantities.set(line.article_id, (quantities.get(line.article_id) || 0) + line.quantity);
+    return quantities;
+  }, new Map<string, number>())].flatMap(([articleId, quantity]) => {
+    const available = getArticleStock(stocks, selectedStoreId, articleId);
+    if (quantity <= available) return [];
+    const article = articles.find(item => item.id === articleId);
+    return [{ name: article?.name || "Article", quantity, available }];
+  });
 
   const handleSubmitSale = async (e: FormEvent) => {
     e.preventDefault();
     if (saleLines.length === 0) {
       alert("Veuillez ajouter au moins un article.");
+      return;
+    }
+    if (stockIssues.length > 0) {
+      alert(stockIssues.map(issue => `Stock insuffisant pour ${issue.name}. Demandé : ${issue.quantity}. Disponible : ${issue.available}.`).join("\n"));
       return;
     }
 
@@ -234,6 +254,13 @@ export default function SalesView({
   const filteredSaleArticles = saleArticles.filter(article => {
     const query = articleSearch.trim().toLowerCase();
     return !query || article.name.toLowerCase().includes(query) || article.code.toLowerCase().includes(query);
+  });
+  const availableSaleArticles = saleArticles.filter(article => {
+    const available = getArticleStock(stocks, selectedStoreId, article.id);
+    const inCart = saleLines
+      .filter(line => line.article_id === article.id)
+      .reduce((quantity, line) => quantity + line.quantity, 0);
+    return available > inCart;
   });
 
   return (
@@ -450,7 +477,7 @@ export default function SalesView({
 
               <div className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 md:hidden">
                 {(["PRODUCTS", "CART", "PAYMENT"] as const).map((step, index) => (
-                  <button key={step} type="button" onClick={() => setMobileSaleStep(step)} className={`rounded-lg px-2 py-2 text-[11px] font-bold ${mobileSaleStep === step ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500"}`}>
+                  <button key={step} type="button" onClick={() => setMobileSaleStep(step)} disabled={step === "CART" && saleLines.length === 0 || step === "PAYMENT" && (saleLines.length === 0 || stockIssues.length > 0)} className={`rounded-lg px-2 py-2 text-[11px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${mobileSaleStep === step ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500"}`}>
                     {index + 1}. {step === "PRODUCTS" ? "Articles" : step === "CART" ? `Panier (${saleLines.length})` : "Paiement"}
                   </button>
                 ))}
@@ -475,35 +502,47 @@ export default function SalesView({
                   </div>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
+                <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5" dir="rtl">
+                  <div dir="ltr">
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="font-bold text-slate-900">Catalogue</h4>
-                    <span className="text-xs text-slate-500">{filteredSaleArticles.length} article(s)</span>
+                    <span className="text-xs text-slate-500">{availableSaleArticles.length} disponible(s) / {saleArticles.length}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 lg:grid-cols-4 lg:gap-3">
+                  {availableSaleArticles.length === 0 && (
+                    <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                      Aucun article en stock dans ce magasin. Le stock doit être réapprovisionné avant une vente.
+                    </p>
+                  )}
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                     {filteredSaleArticles.map(article => {
                       const stock = getArticleStock(stocks, selectedStoreId, article.id);
+                      const inCart = saleLines
+                        .filter(line => line.article_id === article.id)
+                        .reduce((quantity, line) => quantity + line.quantity, 0);
                       const price = getDefaultPriceForArticle(article.id, selectedStoreId);
                       return (
-                        <button key={article.id} type="button" onClick={() => handleAddArticle(article.id)} disabled={stock <= 0} className="group min-w-0 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 lg:rounded-2xl lg:p-3">
-                          <div className="flex items-start justify-between gap-1">
-                            <div className="hidden h-8 w-8 place-items-center rounded-lg bg-emerald-50 text-emerald-700 sm:grid"><Package className="h-4 w-4" /></div>
-                            <span className={`rounded-full px-1.5 py-1 text-[9px] font-bold lg:px-2 lg:text-[10px] ${stock > 5 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>Stock {stock}</span>
-                          </div>
-                          <p className="mt-2 line-clamp-2 min-h-8 text-[11px] font-bold leading-4 text-slate-900 lg:mt-3 lg:min-h-10 lg:text-sm">{article.name}</p>
-                          <p className="mt-1 truncate text-[8px] font-medium uppercase tracking-wide text-slate-400 lg:text-[10px]">{article.code} · {article.unit}</p>
-                          <div className="mt-2 flex items-center justify-between gap-1 lg:mt-3">
-                            <span className="truncate font-mono text-[10px] font-black text-emerald-700 lg:text-xs">{price.toLocaleString("fr-FR")} Ar</span>
-                            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-900 text-white group-hover:bg-emerald-600 lg:h-8 lg:w-8"><Plus className="h-3 w-3 lg:h-4 lg:w-4" /></span>
-                          </div>
+                        <button key={article.id} type="button" onClick={() => handleAddArticle(article.id)} disabled={stock <= inCart} className="group flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50/30 disabled:cursor-not-allowed disabled:opacity-50">
+                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-700"><Package className="h-4 w-4" /></span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="truncate text-sm font-bold text-slate-900">{article.name}</span>
+                              <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${stock > 5 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>Stock {stock}</span>
+                            </span>
+                            <span className="mt-1 flex items-center justify-between gap-2">
+                              <span className="truncate text-[10px] font-medium uppercase text-slate-400">{article.code} · {article.unit}</span>
+                              <span className="shrink-0 font-mono text-xs font-black text-emerald-700">{price.toLocaleString("fr-FR")} Ar</span>
+                            </span>
+                          </span>
+                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-900 text-white transition group-hover:bg-emerald-600"><Plus className="h-4 w-4" /></span>
                         </button>
                       );
                     })}
                   </div>
                   {filteredSaleArticles.length === 0 && <div className="py-12 text-center text-sm text-slate-500">Aucun article trouvé.</div>}
+                  </div>
                 </div>
                 <div className="shrink-0 border-t border-slate-200 bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] md:hidden">
-                  <button type="button" onClick={() => setMobileSaleStep("CART")} className="flex w-full items-center justify-between rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white">
+                  <button type="button" onClick={() => setMobileSaleStep("CART")} disabled={saleLines.length === 0} className="flex w-full items-center justify-between rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400">
                     <span>Voir le panier · {saleLines.length}</span><span>{netTotal.toLocaleString("fr-FR")} Ar</span>
                   </button>
                 </div>
@@ -513,9 +552,10 @@ export default function SalesView({
                 <div className={`${mobileSaleStep === "PAYMENT" ? "hidden" : "block"} min-h-0 flex-1 overflow-y-auto p-4 md:p-5`}>
                   <div className="mb-4 flex items-center justify-between">
                     <div><h4 className="font-black text-slate-900">Panier</h4><p className="text-xs text-slate-500">{saleLines.length} ligne(s)</p></div>
-                    <button type="button" onClick={handleAddLine} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">+ Ligne libre</button>
+                    <button type="button" onClick={handleAddLine} disabled={availableSaleArticles.length === 0} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">+ Article en stock</button>
                   </div>
                   <div className="space-y-3">
+                    {saleLines.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">Panier vide. Sélectionnez un article disponible dans le catalogue.</p>}
                     {saleLines.map((line, idx) => {
                       const article = articles.find(item => item.id === line.article_id);
                       const lineTotal = Math.max(0, line.quantity * line.unit_price - line.discount);
@@ -585,14 +625,19 @@ export default function SalesView({
 
                 <div className="shrink-0 border-t border-slate-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-5">
                   {mobileSaleStep === "PRODUCTS" ? (
-                    <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} className="hidden w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white md:flex"><span>Suivant · Résumer l'achat</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
+                    <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0} className="hidden w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:flex"><span>Suivant · Résumer l'achat</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
                   ) : mobileSaleStep === "CART" ? (
-                    <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white md:hidden"><span>Continuer vers le paiement</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
+                    <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0 || stockIssues.length > 0} className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:hidden"><span>Continuer vers le paiement</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
                   ) : (
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => setMobileSaleStep("PRODUCTS")} className="rounded-xl border border-slate-300 px-4 py-3 font-bold text-slate-700 hover:bg-slate-50">Retour</button>
-                      <button type="submit" className="flex-1 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700">Enregistrer la vente (DRAFT)</button>
+                      <button type="button" onClick={() => setMobileSaleStep("CART")} className="rounded-xl border border-slate-300 px-4 py-3 font-bold text-slate-700 hover:bg-slate-50">Retour au panier</button>
+                      <button type="submit" disabled={saleLines.length === 0 || stockIssues.length > 0} className="flex-1 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none">Enregistrer la vente (DRAFT)</button>
                     </div>
+                  )}
+                  {mobileSaleStep === "PAYMENT" && stockIssues.length > 0 && (
+                    <p role="alert" className="mt-2 text-xs font-semibold text-rose-600">
+                      Stock insuffisant : {stockIssues.map(issue => `${issue.name} (${issue.available}/${issue.quantity})`).join(", ")}
+                    </p>
                   )}
                 </div>
               </aside>

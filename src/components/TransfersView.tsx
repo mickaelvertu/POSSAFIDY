@@ -50,6 +50,27 @@ interface TransfersViewProps {
   canResolveDiscrepancy: boolean;
 }
 
+interface StoreAllocation {
+  store: Store;
+  currentStock: number;
+  quantity: number;
+}
+
+interface StockDistributionPlan {
+  article: Article;
+  centralStock: number;
+  securityStock: number;
+  pendingStock: number;
+  distributableStock: number;
+  allocations: StoreAllocation[];
+}
+
+const getQuantityStep = (unit: string) => (/piece|unité|unite/i.test(unit) ? 1 : 0.01);
+
+const formatQuantity = (quantity: number, unit: string) => quantity.toLocaleString("fr-FR", {
+  maximumFractionDigits: getQuantityStep(unit) === 1 ? 0 : 2
+});
+
 export default function TransfersView({
   transfers,
   stores,
@@ -72,6 +93,9 @@ export default function TransfersView({
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
+  const [distributionArticleId, setDistributionArticleId] = useState(articles.find(article => article.article_type === "RESALE")?.id || "");
+  const [distributionPlan, setDistributionPlan] = useState<StockDistributionPlan | null>(null);
   const [inspectingTransfer, setInspectingTransfer] = useState<StockTransfer | null>(null);
   const [resolvingTransfer, setResolvingTransfer] = useState<StockTransfer | null>(null);
   const [discrepancyNote, setDiscrepancyNote] = useState("");
@@ -113,6 +137,104 @@ export default function TransfersView({
       return "MANUFACTURER_TO_STORE";
     }
     return "STORE_TO_STORE";
+  };
+
+  const calculateStockDistribution = (articleId: string): StockDistributionPlan | null => {
+    if (!primaryCentralStore) return null;
+    const article = articles.find(item => item.id === articleId);
+    const pointOfSales = stores.filter(store => store.store_type === "POS" && store.is_active);
+    if (!article || pointOfSales.length === 0) return null;
+
+    const centralStock = getArticleStock(stocks, primaryCentralStore.id, articleId);
+    const securityStock = centralStock * 0.15;
+    const pendingStock = transfers
+      .filter(transfer => transfer.source_store_id === primaryCentralStore.id && ["DRAFT", "APPROVED"].includes(transfer.status))
+      .flatMap(transfer => transfer.lines)
+      .filter(line => line.article_id === articleId)
+      .reduce((total, line) => total + line.quantity_sent, 0);
+    const quantityStep = getQuantityStep(article.unit);
+    const rawDistributableStock = Math.max(0, centralStock - securityStock - pendingStock);
+    const distributableStock = Math.floor(rawDistributableStock / quantityStep + 1e-9) * quantityStep;
+    const orderedStores = pointOfSales
+      .map(store => ({ store, currentStock: getArticleStock(stocks, store.id, articleId), quantity: 0 }))
+      .sort((left, right) => left.currentStock - right.currentStock);
+
+    let remaining = distributableStock;
+    let balancedStores = 1;
+    while (balancedStores < orderedStores.length && remaining > 0) {
+      const gap = orderedStores[balancedStores].currentStock - orderedStores[balancedStores - 1].currentStock;
+      const stockToLevel = gap * balancedStores;
+      if (stockToLevel > remaining) break;
+      remaining -= stockToLevel;
+      balancedStores += 1;
+    }
+
+    const targetStock = orderedStores[balancedStores - 1].currentStock + remaining / balancedStores;
+    for (const allocation of orderedStores) {
+      allocation.quantity = Math.floor(Math.max(0, targetStock - allocation.currentStock) / quantityStep + 1e-9) * quantityStep;
+    }
+    let unallocatedStock = distributableStock - orderedStores.reduce((total, allocation) => total + allocation.quantity, 0);
+    const leastStockedFirst = [...orderedStores].sort((left, right) =>
+      left.currentStock + left.quantity - right.currentStock - right.quantity
+    );
+    for (const allocation of leastStockedFirst) {
+      if (unallocatedStock + 1e-9 < quantityStep) break;
+      allocation.quantity += quantityStep;
+      unallocatedStock -= quantityStep;
+    }
+
+    return {
+      article,
+      centralStock,
+      securityStock,
+      pendingStock,
+      distributableStock,
+      allocations: orderedStores.filter(allocation => allocation.quantity > 0)
+    };
+  };
+
+  const handleCreateDistributionDrafts = () => {
+    const plan = calculateStockDistribution(distributionArticleId);
+    if (!plan || plan.allocations.length === 0) {
+      alert("Aucun stock disponible à répartir après la réserve de sécurité et les transferts en attente.");
+      return;
+    }
+
+    const timestamp = Date.now();
+    for (const [index, allocation] of plan.allocations.entries()) {
+      const transferId = `trf-${crypto.randomUUID()}`;
+      const transfer: StockTransfer = {
+        id: transferId,
+        transfer_number: generateRef("TRF", transfers.length + index),
+        type: "CENTRAL_TO_POS",
+        source_store_id: primaryCentralStore!.id,
+        destination_store_id: allocation.store.id,
+        status: "DRAFT",
+        requested_by: currentUser.uid,
+        requested_by_name: currentUser.displayName || currentUser.email,
+        lines: [{
+          id: `line-${crypto.randomUUID()}`,
+          transfer_id: transferId,
+          article_id: plan.article.id,
+          article_code: plan.article.code,
+          article_name: plan.article.name,
+          unit: plan.article.unit,
+          quantity_sent: allocation.quantity,
+          quantity_received: 0,
+          quantity_accepted: 0,
+          quantity_rejected: 0,
+          source_stock_floor: plan.securityStock
+        }],
+        note: "Répartition sur demande, équilibrée selon le stock de chaque point de vente.",
+        has_discrepancy: false,
+        created_at: timestamp,
+        updated_at: timestamp
+      };
+      onCreateTransfer(transfer);
+    }
+
+    setIsDistributionModalOpen(false);
+    setDistributionPlan(null);
   };
 
   // Filter transfers
@@ -175,13 +297,37 @@ export default function TransfersView({
     const invalidLine = transferLines.find(line => {
       const requestedQuantity = Number(line.quantity);
       const availableQuantity = getArticleStock(stocks, sourceStoreId, line.article_id);
-      return !Number.isFinite(requestedQuantity) || requestedQuantity <= 0 || requestedQuantity > availableQuantity;
+      const sourceStore = stores.find(store => store.id === sourceStoreId);
+      if (sourceStore?.store_type !== "CENTRAL_WAREHOUSE") {
+        return !Number.isFinite(requestedQuantity) || requestedQuantity <= 0 || requestedQuantity > availableQuantity;
+      }
+      const requestedForArticle = transferLines
+        .filter(item => item.article_id === line.article_id)
+        .reduce((total, item) => total + Number(item.quantity), 0);
+      const pendingForArticle = transfers
+        .filter(transfer => transfer.source_store_id === sourceStoreId && ["DRAFT", "APPROVED"].includes(transfer.status))
+        .flatMap(transfer => transfer.lines)
+        .filter(item => item.article_id === line.article_id)
+        .reduce((total, item) => total + item.quantity_sent, 0);
+      const availableAfterReserve = availableQuantity * 0.85 - pendingForArticle;
+      return !Number.isFinite(requestedQuantity) || requestedQuantity <= 0 || requestedForArticle > availableAfterReserve;
     });
     if (invalidLine) {
       const article = articles.find(item => item.id === invalidLine.article_id);
       const requestedQuantity = Number(invalidLine.quantity);
       const availableQuantity = getArticleStock(stocks, sourceStoreId, invalidLine.article_id);
-      alert(`Stock insuffisant pour ${article?.name || "cet article"}. Demandé : ${requestedQuantity}. Disponible : ${availableQuantity}.`);
+      const sourceStore = stores.find(store => store.id === sourceStoreId);
+      const pendingForArticle = sourceStore?.store_type === "CENTRAL_WAREHOUSE"
+        ? transfers
+          .filter(transfer => transfer.source_store_id === sourceStoreId && ["DRAFT", "APPROVED"].includes(transfer.status))
+          .flatMap(transfer => transfer.lines)
+          .filter(item => item.article_id === invalidLine.article_id)
+          .reduce((total, item) => total + item.quantity_sent, 0)
+        : 0;
+      const dispatchable = sourceStore?.store_type === "CENTRAL_WAREHOUSE"
+        ? Math.max(0, availableQuantity * 0.85 - pendingForArticle)
+        : availableQuantity;
+      alert(`Stock insuffisant pour ${article?.name || "cet article"}. Demandé : ${requestedQuantity}. Répartissable : ${dispatchable}.`);
       return;
     }
 
@@ -201,6 +347,9 @@ export default function TransfersView({
         quantity_received: 0,
         quantity_accepted: 0,
         quantity_rejected: 0,
+        source_stock_floor: stores.find(store => store.id === sourceStoreId)?.store_type === "CENTRAL_WAREHOUSE"
+          ? getArticleStock(stocks, sourceStoreId, line.article_id) * 0.15
+          : undefined,
       };
     });
 
@@ -261,14 +410,32 @@ export default function TransfersView({
           </p>
         </div>
 
-        {canCreate && <button
-          type="button"
-          onClick={handleOpenCreateModal}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          Nouveau Transfert
-        </button>}
+        {canCreate && (
+          <div className="flex flex-wrap gap-2">
+            {primaryCentralStore && stores.some(store => store.store_type === "POS" && store.is_active) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDistributionArticleId(articles.find(article => article.article_type === "RESALE")?.id || "");
+                  setDistributionPlan(null);
+                  setIsDistributionModalOpen(true);
+                }}
+                className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Répartition sur demande
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              Nouveau Transfert
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Workflow Steps Indicator Banner */}
@@ -547,6 +714,98 @@ export default function TransfersView({
           </div>
         )}
       </div>
+
+      {/* ON-DEMAND STOCK DISTRIBUTION MODAL */}
+      {isDistributionModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base">Répartition sur demande</h3>
+                <p className="text-xs text-slate-500 mt-1">Le calcul favorise les points de vente les moins approvisionnés.</p>
+              </div>
+              <button type="button" onClick={() => setIsDistributionModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1" aria-label="Fermer">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="distribution-article">Article à répartir</label>
+                <select
+                  id="distribution-article"
+                  value={distributionArticleId}
+                  onChange={event => {
+                    setDistributionArticleId(event.target.value);
+                    setDistributionPlan(null);
+                  }}
+                  className="w-full text-xs bg-white border border-slate-300 rounded-lg p-2.5"
+                >
+                  {articles.filter(article => article.article_type === "RESALE").map(article => (
+                    <option key={article.id} value={article.id}>[{article.code}] {article.name} ({article.unit})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
+                La réserve de sécurité de 15 % reste au dépôt central. Les transferts déjà en brouillon ou approuvés sont déduits avant le calcul.
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDistributionPlan(calculateStockDistribution(distributionArticleId))}
+                disabled={!distributionArticleId}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-900 disabled:opacity-50 text-white rounded-lg text-xs font-semibold"
+              >
+                Calculer la répartition
+              </button>
+
+              {distributionPlan && (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
+                    <span>Stock central : <strong>{formatQuantity(distributionPlan.centralStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
+                    <span>Réserve 15 % : <strong>{formatQuantity(distributionPlan.securityStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
+                    <span>Déjà engagé : <strong>{formatQuantity(distributionPlan.pendingStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
+                    <span>À répartir : <strong>{formatQuantity(distributionPlan.distributableStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-600">
+                        <tr><th className="px-3 py-2">Point de vente</th><th className="px-3 py-2 text-right">Stock actuel</th><th className="px-3 py-2 text-right">À transférer</th><th className="px-3 py-2 text-right">Après transfert</th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {distributionPlan.allocations.map(allocation => (
+                          <tr key={allocation.store.id}>
+                            <td className="px-3 py-2 font-medium text-slate-800">{allocation.store.name}</td>
+                            <td className="px-3 py-2 text-right">{formatQuantity(allocation.currentStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</td>
+                            <td className="px-3 py-2 text-right font-semibold text-emerald-800">{formatQuantity(allocation.quantity, distributionPlan.article.unit)} {distributionPlan.article.unit}</td>
+                            <td className="px-3 py-2 text-right">{formatQuantity(allocation.currentStock + allocation.quantity, distributionPlan.article.unit)} {distributionPlan.article.unit}</td>
+                          </tr>
+                        ))}
+                        {distributionPlan.allocations.length === 0 && (
+                          <tr><td colSpan={4} className="px-3 py-6 text-center text-slate-500">Aucun stock disponible après réserve et transferts en attente.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsDistributionModalOpen(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Fermer</button>
+                <button
+                  type="button"
+                  onClick={handleCreateDistributionDrafts}
+                  disabled={!distributionPlan?.allocations.length}
+                  className="px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 rounded-xl"
+                >
+                  Créer les transferts brouillons
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CREATE TRANSFER MODAL */}
       {isCreateModalOpen && (

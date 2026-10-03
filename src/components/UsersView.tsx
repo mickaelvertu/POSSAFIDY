@@ -59,6 +59,7 @@ export default function UsersView({
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("ALL");
   const [selectedStoreFilter, setSelectedStoreFilter] = useState<string>("ALL");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("ALL");
+  const [expandedStoreUsers, setExpandedStoreUsers] = useState<Set<string>>(() => new Set());
 
   // Edit / Create Modal State
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
@@ -416,6 +417,8 @@ export default function UsersView({
                       const roleMeta = ROLE_DEFINITIONS[user.roleId] || ROLE_DEFINITIONS.VENDEUR;
                       const isCurrentUser = user.id === currentUser.id;
                       const assignedStores = stores.filter(s => (user.storeIds || []).includes(s.id));
+                      const isStoreListExpanded = expandedStoreUsers.has(user.id);
+                      const visibleStores = isStoreListExpanded ? assignedStores : assignedStores.slice(0, 3);
                       const defaultPerms = DEFAULT_ROLE_PERMISSIONS[user.roleId] || [];
                       const isCustomPerms = user.permissions.length !== defaultPerms.length || 
                         !user.permissions.every(p => defaultPerms.includes(p));
@@ -447,6 +450,8 @@ export default function UsersView({
                                   )}
                                 </div>
                                 <div className="text-xs text-slate-500 flex items-center gap-2">
+                                  {user.code && <span className="font-mono font-semibold text-slate-700">{user.code}</span>}
+                                  {user.code && <span>•</span>}
                                   <span>@{user.username}</span>
                                   {user.email && (
                                     <>
@@ -475,16 +480,30 @@ export default function UsersView({
                               </span>
                             ) : assignedStores.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
-                                {assignedStores.map(st => (
+                                {visibleStores.map(st => (
                                   <span 
                                     key={st.id} 
                                     className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200"
                                     title={st.name}
                                   >
                                     <Building2 className="w-3 h-3 text-slate-400" />
-                                    {st.code}
+                                    {st.name}
                                   </span>
                                 ))}
+                                {assignedStores.length > 3 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedStoreUsers(previous => {
+                                      const next = new Set(previous);
+                                      if (next.has(user.id)) next.delete(user.id);
+                                      else next.add(user.id);
+                                      return next;
+                                    })}
+                                    className="text-xs font-medium text-blue-700 hover:text-blue-900 px-1.5 py-0.5"
+                                  >
+                                    {isStoreListExpanded ? "Voir moins" : `Voir plus (+${assignedStores.length - 3})`}
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
