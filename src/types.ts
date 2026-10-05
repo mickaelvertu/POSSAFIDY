@@ -449,18 +449,56 @@ export type EmployeeContractType = "CDI" | "CDD" | "TEMPORARY" | "INTERN" | "DAI
 
 export interface Employee {
   id: string;
-  code: string;
+  code?: string;
   first_name: string;
   last_name: string;
   position: string;
+  user_id?: string;
+  application_status?: "PENDING" | "APPROVED" | "REJECTED";
   store_id?: string;
   phone?: string;
   email?: string;
-  hire_date: number;
-  contract_type: EmployeeContractType;
+  hire_date?: number;
+  contract_type?: EmployeeContractType;
   salary?: number;
   notes?: string;
   is_active: boolean;
   created_at: number;
   updated_at: number;
+}
+
+export interface SalaryAdvance {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  amount: number;
+  advance_date: number;
+  payment_method: PaymentMethod;
+  reason?: string;
+  status: "OUTSTANDING" | "DEDUCTED";
+  payslip_id?: string;
+  created_at: number;
+  updated_at: number;
+  created_by: string;
+}
+
+export interface Payslip {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  employee_code?: string;
+  employee_position: string;
+  period: string;
+  base_salary: number;
+  bonuses: number;
+  deductions: number;
+  advances_deducted?: number;
+  advance_ids?: string[];
+  net_salary: number;
+  payment_status: "PENDING" | "PAID";
+  payment_date?: number;
+  payment_method?: PaymentMethod;
+  created_at: number;
+  updated_at: number;
+  created_by: string;
 }

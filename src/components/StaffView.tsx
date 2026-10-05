@@ -1,10 +1,11 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Pencil, Plus, Search, UserCheck, UserX, Users } from "lucide-react";
+import { Banknote, Pencil, Plus, Search, UserCheck, UserX, Users } from "lucide-react";
 import { Employee, EmployeeContractType, Store } from "../types";
 
 interface StaffViewProps {
   employees: Employee[];
   stores: Store[];
+  onOpenPayroll: () => void;
   onSaveEmployee: (employee: Employee, isNew: boolean) => Promise<void>;
 }
 
@@ -41,7 +42,7 @@ const emptyForm = (): FormState => ({
   hireDate: dateInputValue(Date.now()), contractType: "CDI", salary: "", notes: ""
 });
 
-export default function StaffView({ employees, stores, onSaveEmployee }: StaffViewProps) {
+export default function StaffView({ employees, stores, onOpenPayroll, onSaveEmployee }: StaffViewProps) {
   const [editing, setEditing] = useState<Employee | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -57,7 +58,7 @@ export default function StaffView({ employees, stores, onSaveEmployee }: StaffVi
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
     return employees.filter(employee =>
-      (showInactive || employee.is_active) &&
+      (showInactive || employee.is_active || employee.application_status === "PENDING") &&
       (!storeFilter || employee.store_id === storeFilter) &&
       (!term || `${employee.first_name} ${employee.last_name} ${employee.position} ${employee.code} ${employee.phone || ""}`.toLowerCase().includes(term))
     );
@@ -82,8 +83,8 @@ export default function StaffView({ employees, stores, onSaveEmployee }: StaffVi
       storeId: employee.store_id || "",
       phone: employee.phone || "",
       email: employee.email || "",
-      hireDate: dateInputValue(employee.hire_date),
-      contractType: employee.contract_type,
+      hireDate: dateInputValue(employee.hire_date || Date.now()),
+      contractType: employee.contract_type || "CDI",
       salary: employee.salary !== undefined ? String(employee.salary) : "",
       notes: employee.notes || ""
     });
@@ -143,7 +144,12 @@ export default function StaffView({ employees, stores, onSaveEmployee }: StaffVi
   };
 
   const toggleActive = (employee: Employee) => {
-    void persist({ ...employee, is_active: !employee.is_active, updated_at: Date.now() }, false);
+    void persist({
+      ...employee,
+      is_active: !employee.is_active,
+      application_status: !employee.is_active && employee.application_status === "PENDING" ? "APPROVED" : employee.application_status,
+      updated_at: Date.now()
+    }, false);
   };
 
   return (
@@ -155,6 +161,9 @@ export default function StaffView({ employees, stores, onSaveEmployee }: StaffVi
         </div>
         <button type="button" onClick={openCreate} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
           <Plus className="h-4 w-4" />Nouvel employé
+        </button>
+        <button type="button" onClick={onOpenPayroll} className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-slate-900 px-4 py-2 text-sm font-semibold text-emerald-300 hover:bg-slate-800">
+          <Banknote className="h-4 w-4" />Fiches de paie
         </button>
       </div>
 
@@ -209,7 +218,7 @@ export default function StaffView({ employees, stores, onSaveEmployee }: StaffVi
             {stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}
           </select>
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-            <input type="checkbox" checked={showInactive} onChange={event => setShowInactive(event.target.checked)} />Afficher les inactifs
+            <input type="checkbox" checked={showInactive} onChange={event => setShowInactive(event.target.checked)} />Afficher aussi les inactifs
           </label>
         </div>
 
@@ -224,11 +233,11 @@ export default function StaffView({ employees, stores, onSaveEmployee }: StaffVi
             <tbody className="divide-y divide-slate-100">
               {visible.map(employee => (
                 <tr key={employee.id} className={employee.is_active ? "" : "opacity-50"}>
-                  <td className="px-3 py-2"><div className="font-semibold text-slate-900">{employee.last_name} {employee.first_name}</div><div className="text-slate-500">{employee.code} · depuis le {new Date(employee.hire_date).toLocaleDateString("fr-FR")}</div></td>
+                  <td className="px-3 py-2"><div className="font-semibold text-slate-900">{employee.last_name} {employee.first_name}</div><div className="text-slate-500">{employee.code || "Profil créé par le personnel"}{employee.hire_date ? ` · depuis le ${new Date(employee.hire_date).toLocaleDateString("fr-FR")}` : ""}</div>{employee.application_status === "PENDING" && <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">En attente de validation</span>}</td>
                   <td className="px-3 py-2">{employee.position}</td>
                   <td className="px-3 py-2">{storeName(employee.store_id)}</td>
                   <td className="px-3 py-2">{employee.phone || "—"}<div className="text-slate-500">{employee.email}</div></td>
-                  <td className="px-3 py-2">{CONTRACTS.find(contract => contract.value === employee.contract_type)?.label}</td>
+                  <td className="px-3 py-2">{CONTRACTS.find(contract => contract.value === employee.contract_type)?.label || "—"}</td>
                   <td className="px-3 py-2 text-right">{employee.salary !== undefined ? money(employee.salary) : "—"}</td>
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-1">

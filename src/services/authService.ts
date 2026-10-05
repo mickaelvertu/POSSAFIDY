@@ -3,6 +3,7 @@ import { ALL_PERMISSIONS, AppPermission, AppRoleId, AppUser } from "../types";
 import { initializeApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   getAuth,
   signInWithEmailAndPassword,
   signOut,
@@ -15,7 +16,8 @@ import {
   getDoc,
   getDocs,
   setDoc,
-  updateDoc
+  updateDoc,
+  writeBatch
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { createSequentialId } from "./idService";
@@ -133,10 +135,16 @@ export class AuthService {
   }
 
   async signUp(payload: SignUpPayload): Promise<ApiResponse> {
+    let createdUser: FirebaseUser | null = null;
     try {
       const credential = await this.withTimeout(createUserWithEmailAndPassword(auth, payload.email.trim(), payload.password));
+      createdUser = credential.user;
       const now = new Date().toISOString();
-      await this.withTimeout(setDoc(doc(db, "users", credential.user.uid), {
+      const createdAt = Date.now();
+      const userRef = doc(db, "users", credential.user.uid);
+      const employeeRef = doc(db, "employees", credential.user.uid);
+      const batch = writeBatch(db);
+      batch.set(userRef, {
         uid: credential.user.uid,
         email: payload.email.trim().toLowerCase(),
         firstName: payload.firstName.trim(),
@@ -148,13 +156,39 @@ export class AuthService {
         assignedStores: [],
         createdAt: now,
         updatedAt: now
-      }));
-      await signOut(auth);
-      this.setStoredToken(null);
-      return { success: true, code: "ACCOUNT_CREATED", message: "Votre compte a été créé et est en attente de validation." };
+      });
+      batch.set(employeeRef, {
+        id: credential.user.uid,
+        user_id: credential.user.uid,
+        first_name: payload.firstName.trim(),
+        last_name: payload.lastName.trim(),
+        position: payload.position.trim(),
+        email: payload.email.trim().toLowerCase(),
+        ...(payload.phone?.trim() ? { phone: payload.phone.trim() } : {}),
+        application_status: "PENDING",
+        is_active: false,
+        created_at: createdAt,
+        updated_at: createdAt
+      });
+      await this.withTimeout(batch.commit());
     } catch (err) {
+      if (createdUser) {
+        try {
+          await deleteUser(createdUser);
+        } catch (cleanupError) {
+          console.error("Failed to clean up Firebase account after registration failed:", cleanupError);
+        }
+      }
       return this.errorResponse(err);
     }
+
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Failed to sign out after successful registration:", err);
+    }
+    this.setStoredToken(null);
+    return { success: true, code: "ACCOUNT_CREATED", message: "Votre compte et votre fiche de personnel ont été créés et sont en attente de validation." };
   }
 
   async login(payload: LoginPayload): Promise<ApiResponse<{ token: string; user: User }>> {

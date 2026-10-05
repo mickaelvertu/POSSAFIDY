@@ -11,6 +11,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [position, setPosition] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +43,11 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     }
     if (lastName.trim().length < 2) {
       setErrorMessage("Le nom doit comporter au moins 2 caractères.");
+      return false;
+    }
+
+    if (!position.trim()) {
+      setErrorMessage("Le poste est obligatoire.");
       return false;
     }
 
@@ -89,6 +95,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
       const res = await signUp({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
+        position: position.trim(),
         email: email.trim(),
         phone: phone.trim() ? phone.trim() : undefined,
         password
@@ -131,7 +138,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
               {successMessage}
             </p>
             <p className="mt-2 text-xs text-emerald-700/80">
-              Votre compte est actuellement configuré avec le statut <span className="font-semibold uppercase tracking-wider">PENDING</span>. Un administrateur système doit approuver votre accès et vous assigner un rôle et un magasin avant que vous puissiez vous connecter.
+              Votre compte et votre fiche de personnel sont en attente de validation. Un administrateur doit approuver votre accès et vous assigner un rôle et un magasin avant que vous puissiez vous connecter.
             </p>
           </div>
           <button
@@ -201,6 +208,21 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                 />
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Poste <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              placeholder="Ex. Vendeur, magasinier, comptable"
+              disabled={loading}
+              className="w-full px-3.5 py-2 bg-slate-50 hover:bg-slate-100/50 focus:bg-white text-slate-900 placeholder-slate-400 border border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 rounded-lg text-sm transition-all outline-none disabled:opacity-60"
+              required
+            />
           </div>
 
           {/* Email */}

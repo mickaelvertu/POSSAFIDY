@@ -1,73 +1,72 @@
 import {
-  onDisconnect,
-  onValue,
-  push,
-  ref,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
   serverTimestamp,
-  set
-} from "firebase/database";
-import { realtimeDb } from "../firebase";
+  setDoc,
+  Timestamp,
+  updateDoc
+} from "firebase/firestore";
+import { db } from "../firebase";
+
+const USER_CONNECTIONS = "userConnections";
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
+export interface UserConnection {
+  id: string;
+  user_id: string;
+  connected_at: number | Timestamp;
+  heartbeat_at: number | Timestamp;
+}
 
 export function trackUserPresence(userId: string): () => void {
-  const connectedRef = ref(realtimeDb, ".info/connected");
-  let activeConnectionRef: ReturnType<typeof push> | null = null;
-  let isConnected = false;
+  const connectionRef = doc(collection(db, USER_CONNECTIONS));
   let isTracking = true;
+  let heartbeatId: number | undefined;
 
-  const unsubscribe = onValue(connectedRef, snapshot => {
-    if (!isTracking) return;
-
-    const connected = snapshot.val() === true;
-    if (!connected) {
-      isConnected = false;
-      activeConnectionRef = null;
-      return;
-    }
-
-    if (isConnected) return;
-    isConnected = true;
-
-    const connectionRef = push(ref(realtimeDb, `presence/${userId}/connections`));
-    activeConnectionRef = connectionRef;
-
-    void (async () => {
-      try {
-        await onDisconnect(connectionRef).set({
-          online: false,
-          disconnectedAt: serverTimestamp()
-        });
-        if (!isTracking || activeConnectionRef !== connectionRef) return;
-
-        await set(connectionRef, {
-          online: true,
-          connectedAt: serverTimestamp()
-        });
-      } catch (error) {
-        console.error("Failed to update Firebase user presence:", error);
+  void (async () => {
+    try {
+      await setDoc(connectionRef, {
+        user_id: userId,
+        connected_at: serverTimestamp(),
+        heartbeat_at: serverTimestamp()
+      });
+      if (!isTracking) {
+        await deleteDoc(connectionRef);
+        return;
       }
-    })();
-  }, error => {
-    console.error("Failed to observe Firebase Realtime Database connection:", error);
-  });
+
+      heartbeatId = window.setInterval(() => {
+        if (!isTracking) return;
+        void updateDoc(connectionRef, { heartbeat_at: serverTimestamp() }).catch(error => {
+          console.error("Failed to update Firebase user presence heartbeat:", error);
+        });
+      }, HEARTBEAT_INTERVAL_MS);
+    } catch (error) {
+      console.error("Failed to create Firebase user presence record:", error);
+    }
+  })();
 
   return () => {
     isTracking = false;
-    unsubscribe();
-
-    if (activeConnectionRef) {
-      const connectionRef = activeConnectionRef;
-      activeConnectionRef = null;
-      void (async () => {
-        try {
-          await onDisconnect(connectionRef).cancel();
-          await set(connectionRef, {
-            online: false,
-            disconnectedAt: serverTimestamp()
-          });
-        } catch (error) {
-          console.error("Failed to close Firebase user presence record:", error);
-        }
-      })();
-    }
+    if (heartbeatId !== undefined) window.clearInterval(heartbeatId);
+    void deleteDoc(connectionRef).catch(error => {
+      console.error("Failed to close Firebase user presence record:", error);
+    });
   };
+}
+
+export function subscribeUserConnections(
+  onConnections: (connections: UserConnection[]) => void,
+  onError: (error: Error) => void
+): () => void {
+  return onSnapshot(
+    collection(db, USER_CONNECTIONS),
+    snapshot => onConnections(snapshot.docs.map(item => ({
+      id: item.id,
+      ...item.data()
+    }) as UserConnection)),
+    onError
+  );
 }

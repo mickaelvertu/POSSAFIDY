@@ -6,6 +6,7 @@ import {
   BarChart3,
   Boxes,
   Building2,
+  ClipboardList,
   Factory,
   HandCoins,
   PackageCheck,
@@ -33,6 +34,7 @@ interface RoleHomeViewProps {
   onOpenUnits: () => void;
   onOpenStaff: () => void;
   onOpenReports: () => void;
+  onOpenAudit: () => void;
   stores: Store[];
   sales: Sale[];
   expenses: Expense[];
@@ -64,6 +66,7 @@ const accessCards = [
   { permission: "transfers.view", title: "Transferts", description: "Suivre les mouvements inter-magasins", icon: ArrowRightLeft, accent: "amber" },
   { permission: "production.view", title: "Production", description: "Suivre les fabrications et consommations", icon: Factory, accent: "indigo" },
   { permission: "reports.view", title: "Rapports", description: "Analyser les performances et les écarts", icon: BarChart3, accent: "violet" },
+  { permission: "audit.view", title: "Audit & connexions", description: "Consulter les actions et l’état de connexion des utilisateurs", icon: ClipboardList, accent: "rose", adminOnly: true },
   { permission: "users.view", title: "Utilisateurs", description: "Attribuer les rôles et les accès", icon: Users, accent: "rose", adminOnly: true },
   { permission: "stores.manage", title: "Magasins", description: "Créer et administrer les sites", icon: Building2, accent: "blue" },
   { permission: "catalog.manage", title: "Articles & catégories", description: "Gérer les articles et leur classification", icon: PackageCheck, accent: "indigo" },
@@ -82,8 +85,9 @@ const accentClasses: Record<string, string> = {
   rose: "bg-rose-50 text-rose-700 border-rose-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenUnits, onOpenStaff, onOpenReports, stores, sales, expenses }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, stores, sales, expenses }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const role = user.role || "UNASSIGNED";
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   const pointOfSales = stores.filter(store => store.store_type === "POS" && store.is_active);
@@ -106,6 +110,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
     if (card.permission === "transfers.view" && isAdmin) return true;
     if (card.permission === "reports.view" && isAdmin) return true;
     if (card.adminOnly && !hasPermission(user, "users.view")) return false;
+    if (card.permission === "audit.view" && !isAdmin) return false;
     return hasPermission(user, card.permission);
   });
 
@@ -162,7 +167,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                   role="button"
                   tabIndex={0}
                   aria-label={`Afficher les informations du magasin ${store.name}`}
-                  onClick={() => setSelectedStore(store)}
+                  onClick={() => { setExpandedItem(null); setSelectedStore(store); }}
                   onKeyDown={event => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
@@ -212,13 +217,14 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isTransfersCard = card.permission === "transfers.view";
               const isUnitsCard = card.permission === "units.manage";
               const isReportsCard = card.permission === "reports.view";
+              const isAuditCard = card.permission === "audit.view";
               const isStaffCard = card.permission === "staff.manage";
-              const isActionable = isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isUnitsCard || isStaffCard || isReportsCard;
+              const isActionable = isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
               return (
                 <button
                   key={card.permission}
                   type="button"
-                  onClick={isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : undefined}
+                  onClick={isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >
@@ -248,8 +254,8 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
         const storeExpenses = expenses.filter(expense => expense.store_id === selectedStore.id && isToday(expense.expense_date));
         const dailySales = storeSales.reduce((total, sale) => total + sale.total, 0);
         const dailyExpenses = storeExpenses.reduce((total, expense) => total + expense.amount, 0);
-        const latestSales = [...storeSales].sort((left, right) => right.created_at - left.created_at).slice(0, 5);
-        const latestExpenses = [...storeExpenses].sort((left, right) => right.expense_date - left.expense_date).slice(0, 5);
+        const latestSales = [...storeSales].sort((left, right) => right.created_at - left.created_at);
+        const latestExpenses = [...storeExpenses].sort((left, right) => right.expense_date - left.expense_date);
 
         return (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setSelectedStore(null)}>
@@ -282,18 +288,57 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                 <section>
                   <h3 className="mb-2 text-sm font-bold text-slate-900">Ventes du jour <span className="text-xs font-medium text-slate-500">({storeSales.length})</span></h3>
                   {latestSales.length ? <ul className="divide-y divide-slate-100">{latestSales.map(sale => (
-                    <li key={sale.id} className="flex items-center justify-between gap-3 py-2 text-xs">
-                      <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{sale.sale_number}</span><span className="text-slate-500">{sale.customer_name} · {new Date(sale.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span></span>
-                      <span className="shrink-0 font-mono font-bold text-emerald-700">{money(sale.total)}</span>
+                    <li key={sale.id} className="py-2 text-xs">
+                      <button type="button" aria-expanded={expandedItem === sale.id} onClick={() => setExpandedItem(expandedItem === sale.id ? null : sale.id)} className="flex w-full items-center justify-between gap-3 text-left">
+                        <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{sale.sale_number}</span><span className="text-slate-500">{sale.customer_name} · {new Date(sale.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span></span>
+                        <span className="shrink-0 font-mono font-bold text-emerald-700">{money(sale.total)}</span>
+                      </button>
+                      {expandedItem === sale.id && (
+                        <div className="mt-2 space-y-2 rounded-lg bg-slate-50 p-3 text-slate-700">
+                          <ul className="space-y-1">
+                            {sale.lines.map((line, index) => (
+                              <li key={line.id || index} className="flex justify-between gap-2">
+                                <span className="min-w-0 truncate">{line.article_name} <span className="text-slate-500">× {line.quantity.toLocaleString("fr-FR")} à {money(line.unit_price)}{line.discount > 0 ? ` (−${money(line.discount)})` : ""}</span></span>
+                                <span className="shrink-0 font-mono font-semibold">{money(line.total)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-slate-200 pt-2">
+                            <dt className="text-slate-500">Vendeur</dt><dd className="text-right">{sale.seller_name}</dd>
+                            <dt className="text-slate-500">Client</dt><dd className="text-right">{sale.customer_name}{sale.customer_phone ? ` · ${sale.customer_phone}` : ""}</dd>
+                            <dt className="text-slate-500">Sous-total</dt><dd className="text-right font-mono">{money(sale.subtotal)}</dd>
+                            {sale.discount > 0 && <><dt className="text-slate-500">Remise</dt><dd className="text-right font-mono">−{money(sale.discount)}</dd></>}
+                            {sale.tax > 0 && <><dt className="text-slate-500">Taxe</dt><dd className="text-right font-mono">{money(sale.tax)}</dd></>}
+                            <dt className="text-slate-500">Paiement</dt><dd className="text-right">{sale.payment_method} · {sale.payment_status === "PAID" ? "Payé" : sale.payment_status === "PARTIAL" ? "Partiel" : "En attente"}</dd>
+                            <dt className="text-slate-500">Montant payé</dt><dd className="text-right font-mono">{money(sale.amount_paid)}</dd>
+                            {sale.change_returned > 0 && <><dt className="text-slate-500">Monnaie rendue</dt><dd className="text-right font-mono">{money(sale.change_returned)}</dd></>}
+                          </dl>
+                          {sale.notes && <p className="text-slate-500">Note : {sale.notes}</p>}
+                        </div>
+                      )}
                     </li>
                   ))}</ul> : <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Aucune vente validée aujourd’hui.</p>}
                 </section>
                 <section>
                   <h3 className="mb-2 text-sm font-bold text-slate-900">Dépenses du jour <span className="text-xs font-medium text-slate-500">({storeExpenses.length})</span></h3>
                   {latestExpenses.length ? <ul className="divide-y divide-slate-100">{latestExpenses.map(expense => (
-                    <li key={expense.id} className="flex items-center justify-between gap-3 py-2 text-xs">
-                      <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{expense.description || expense.category}</span><span className="text-slate-500">{new Date(expense.expense_date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · {expense.payment_status === "PAID" ? "Payée" : "En attente"}</span></span>
-                      <span className="shrink-0 font-mono font-bold text-rose-700">{money(expense.amount)}</span>
+                    <li key={expense.id} className="py-2 text-xs">
+                      <button type="button" aria-expanded={expandedItem === expense.id} onClick={() => setExpandedItem(expandedItem === expense.id ? null : expense.id)} className="flex w-full items-center justify-between gap-3 text-left">
+                        <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{expense.description || expense.category}</span><span className="text-slate-500">{new Date(expense.expense_date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · {expense.payment_status === "PAID" ? "Payée" : "En attente"}</span></span>
+                        <span className="shrink-0 font-mono font-bold text-rose-700">{money(expense.amount)}</span>
+                      </button>
+                      {expandedItem === expense.id && (
+                        <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg bg-slate-50 p-3 text-slate-700">
+                          <dt className="text-slate-500">N° de dépense</dt><dd className="text-right">{expense.expense_number}</dd>
+                          <dt className="text-slate-500">Catégorie</dt><dd className="text-right">{expense.category}</dd>
+                          <dt className="text-slate-500">Date</dt><dd className="text-right">{new Date(expense.expense_date).toLocaleString("fr-FR")}</dd>
+                          {expense.payee && <><dt className="text-slate-500">Bénéficiaire</dt><dd className="text-right">{expense.payee}</dd></>}
+                          <dt className="text-slate-500">Paiement</dt><dd className="text-right">{expense.payment_method}</dd>
+                          {expense.reference && <><dt className="text-slate-500">Référence</dt><dd className="text-right">{expense.reference}</dd></>}
+                          <dt className="text-slate-500">Saisie par</dt><dd className="text-right">{expense.created_by_name}</dd>
+                          {expense.notes && <><dt className="text-slate-500">Note</dt><dd className="text-right">{expense.notes}</dd></>}
+                        </dl>
+                      )}
                     </li>
                   ))}</ul> : <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Aucune dépense aujourd’hui.</p>}
                 </section>

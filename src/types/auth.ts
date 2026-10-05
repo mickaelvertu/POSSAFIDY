@@ -26,6 +26,7 @@ export interface AuthState {
 export interface SignUpPayload {
   firstName: string;
   lastName: string;
+  position: string;
   email: string;
   phone?: string;
   password: string;

@@ -77,6 +77,22 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    match /userConnections/{connectionId} {
+      allow read: if isAdmin();
+      allow create: if isActiveUser() &&
+        request.resource.data.user_id == request.auth.uid &&
+        request.resource.data.keys().hasOnly(['user_id', 'connected_at', 'heartbeat_at']) &&
+        request.resource.data.connected_at == request.time &&
+        request.resource.data.heartbeat_at == request.time;
+      allow update: if isActiveUser() &&
+        resource.data.user_id == request.auth.uid &&
+        request.resource.data.user_id == resource.data.user_id &&
+        request.resource.data.keys().hasOnly(['user_id', 'connected_at', 'heartbeat_at']) &&
+        request.resource.data.connected_at == resource.data.connected_at &&
+        request.resource.data.heartbeat_at == request.time;
+      allow delete: if isActiveUser() && resource.data.user_id == request.auth.uid;
+    }
+
     match /inventoryMetadata/{documentId} {
       allow read, write: if isAdmin();
     }
@@ -100,6 +116,43 @@ service cloud.firestore {
     }
 
     match /employees/{employeeId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() || (
+        request.auth.uid == employeeId &&
+        request.resource.data.keys().hasOnly([
+          'id', 'user_id', 'first_name', 'last_name', 'position', 'email',
+          'phone', 'application_status', 'is_active', 'created_at', 'updated_at'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'id', 'user_id', 'first_name', 'last_name', 'position', 'email',
+          'application_status', 'is_active', 'created_at', 'updated_at'
+        ]) &&
+        request.resource.data.id == employeeId &&
+        request.resource.data.user_id == request.auth.uid &&
+        request.resource.data.application_status == 'PENDING' &&
+        request.resource.data.is_active == false &&
+        request.resource.data.first_name is string &&
+        request.resource.data.first_name.size() > 0 &&
+        request.resource.data.last_name is string &&
+        request.resource.data.last_name.size() > 0 &&
+        request.resource.data.position is string &&
+        request.resource.data.position.size() > 0 &&
+        request.resource.data.email is string &&
+        request.resource.data.created_at is number &&
+        request.resource.data.updated_at is number &&
+        (!('phone' in request.resource.data) || request.resource.data.phone is string) &&
+        existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'PENDING' &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.email == request.resource.data.email
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /payroll/{payslipId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /salaryAdvances/{advanceId} {
       allow read, write: if isAdmin();
     }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
-import { AppRoleId, AppUser, Article, AuditLog, Category, Employee, Expense, GeneralFilters, Purchase, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
+import { AppRoleId, AppUser, Article, AuditLog, Category, Employee, Expense, GeneralFilters, Payslip, Purchase, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
 import UsersView from "../UsersView";
 import RoleHomeView from "../RoleHomeView";
@@ -26,6 +26,7 @@ import {
 } from "../../services/inventoryService";
 import { advanceSale, cancelSale, createProduction, createSale, loadOperationalData, saveAuditLog, validateSale } from "../../services/operationsService";
 import { createAuditLog } from "../../services/auditService";
+import AuditView from "../AuditView";
 import StoresView from "../StoresView";
 import CatalogView from "../CatalogView";
 import ProductionView from "../ProductionView";
@@ -33,6 +34,8 @@ import ProcurementView from "../ProcurementView";
 import ExpensesView from "../ExpensesView";
 import StaffView from "../StaffView";
 import { loadEmployees, saveEmployee } from "../../services/employeeService";
+import PayrollView from "../PayrollView";
+import { loadPayslips, loadSalaryAdvances, savePayslip, saveSalaryAdvance } from "../../services/payrollService";
 import TransfersView from "../TransfersView";
 import UnitsView from "../UnitsView";
 import ReportsView from "../ReportsView";
@@ -80,7 +83,7 @@ export default function AuthenticatedSessionView() {
   const [showProfile, setShowProfile] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units" | "staff">("home");
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit">("home");
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [productions, setProductions] = useState<Production[]>([]);
@@ -94,6 +97,8 @@ export default function AuthenticatedSessionView() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [payslips, setPayslips] = useState<Payslip[]>([]);
+  const [salaryAdvances, setSalaryAdvances] = useState<SalaryAdvance[]>([]);
   const [units, setUnits] = useState<UnitOfMeasure[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
@@ -201,11 +206,14 @@ export default function AuthenticatedSessionView() {
       return;
     }
     let isMounted = true;
-    loadEmployees()
-      .then(loaded => {
-        if (isMounted) setEmployees(loaded);
+    Promise.all([loadEmployees(), loadPayslips(), loadSalaryAdvances()])
+      .then(([loadedEmployees, loadedPayslips, loadedAdvances]) => {
+        if (!isMounted) return;
+        setEmployees(loadedEmployees);
+        setPayslips(loadedPayslips);
+        setSalaryAdvances(loadedAdvances);
       })
-      .catch(error => console.error("Employee Firestore load failed:", error));
+      .catch(error => console.error("Employee/payroll Firestore load failed:", error));
     return () => {
       isMounted = false;
     };
@@ -221,6 +229,29 @@ export default function AuthenticatedSessionView() {
     const auditLog = createAuditLog(currentAppUser!, action, "EMPLOYEE", employee.id, previous, employee, employee.store_id);
     await saveEmployee(employee, auditLog);
     setEmployees(current => isNew ? [...current, employee] : current.map(item => item.id === employee.id ? employee : item));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleSaveAdvance = async (advance: SalaryAdvance) => {
+    const auditLog = createAuditLog(currentAppUser!, "SALARY_ADVANCE_CREATED", "SALARY_ADVANCE", advance.id, undefined, advance);
+    await saveSalaryAdvance(advance, auditLog);
+    setSalaryAdvances(current => [advance, ...current]);
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleSavePayslip = async (payslip: Payslip, isNew: boolean, settledAdvances: SalaryAdvance[]) => {
+    const previous = payslips.find(item => item.id === payslip.id);
+    const auditLog = createAuditLog(
+      currentAppUser!,
+      isNew ? "PAYSLIP_CREATED" : "PAYSLIP_UPDATED",
+      "PAYSLIP",
+      payslip.id,
+      previous,
+      payslip
+    );
+    await savePayslip(payslip, auditLog, settledAdvances);
+    setSalaryAdvances(current => current.map(item => settledAdvances.find(settled => settled.id === item.id) || item));
+    setPayslips(current => isNew ? [payslip, ...current] : current.map(item => item.id === payslip.id ? payslip : item));
     setAuditLogs(current => [auditLog, ...current]);
   };
 
@@ -1166,6 +1197,26 @@ export default function AuthenticatedSessionView() {
               />
             )}
           </section>
+        ) : activeModule === "audit" && currentAppUser && (
+          currentAppUser.roleId === "SUPER_ADMIN" ||
+          currentAppUser.roleId === "ADMIN" ||
+          currentAppUser.permissions.includes("audit.view")
+        ) ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <AuditView
+              auditLogs={auditLogs}
+              stores={accessibleStores}
+              users={managedUsers}
+              canViewConnectionStatus={canManageStores}
+            />
+          </section>
         ) : activeModule === "production" && currentAppUser ? (
           <section className="space-y-4">
             <button
@@ -1235,7 +1286,25 @@ export default function AuthenticatedSessionView() {
             >
               ← Retour à l'accueil
             </button>
-            <StaffView employees={employees} stores={inventoryStores} onSaveEmployee={handleSaveEmployee} />
+            <StaffView employees={employees} stores={inventoryStores} onOpenPayroll={() => setActiveModule("payroll")} onSaveEmployee={handleSaveEmployee} />
+          </section>
+        ) : activeModule === "payroll" && currentAppUser && canManageStores ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("staff")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour au personnel
+            </button>
+            <PayrollView
+              employees={employees}
+              payslips={payslips}
+              advances={salaryAdvances}
+              currentUserId={currentAppUser.uid}
+              onSavePayslip={handleSavePayslip}
+              onSaveAdvance={handleSaveAdvance}
+            />
           </section>
         ) : user && (
           <RoleHomeView
@@ -1255,6 +1324,7 @@ export default function AuthenticatedSessionView() {
             onOpenUnits={() => setActiveModule("units")}
             onOpenStaff={() => setActiveModule("staff")}
             onOpenReports={() => setActiveModule("reports")}
+            onOpenAudit={() => setActiveModule("audit")}
           />
         )}
 
