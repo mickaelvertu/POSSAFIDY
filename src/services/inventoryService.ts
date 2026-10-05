@@ -11,7 +11,7 @@ import {
   writeBatch
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { Article, Category, Purchase, PurchaseLine, StockMovement, StockTransfer, Store, StoreStock, Supplier, SupplierPayment } from "../types";
+import { Article, AuditLog, Category, Purchase, PurchaseLine, StockMovement, StockTransfer, Store, StoreStock, Supplier, SupplierPayment } from "../types";
 
 const STORES_COLLECTION = "stores";
 const STOCKS_COLLECTION = "stocks";
@@ -63,15 +63,23 @@ export async function loadInventoryData(storeIds?: string[]): Promise<{ stores: 
   };
 }
 
-export async function saveTransfer(transfer: StockTransfer): Promise<void> {
-  await setDoc(doc(db, TRANSFERS_COLLECTION, transfer.id), omitUndefined(transfer));
+export async function saveTransfer(transfer: StockTransfer, auditLog?: AuditLog): Promise<void> {
+  if (!auditLog) {
+    await setDoc(doc(db, TRANSFERS_COLLECTION, transfer.id), omitUndefined(transfer));
+    return;
+  }
+  const batch = writeBatch(db);
+  batch.set(doc(db, TRANSFERS_COLLECTION, transfer.id), omitUndefined(transfer));
+  batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  await batch.commit();
 }
 
 // Persists a transfer status change together with the stock/movement side effects it triggers (ship or receive).
 export async function saveTransferWithStockEffects(
   transfer: StockTransfer,
   updatedStocks: StoreStock[],
-  movements: StockMovement[]
+  movements: StockMovement[],
+  auditLog?: AuditLog
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[] }> {
   const persistedStocks: StoreStock[] = [];
   const persistedMovements: StockMovement[] = [];
@@ -117,6 +125,7 @@ export async function saveTransferWithStockEffects(
       transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
     });
     transaction.set(transferRef, omitUndefined(transfer));
+    if (auditLog) transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   });
   return { stocks: persistedStocks, movements: persistedMovements };
 }
@@ -133,12 +142,26 @@ export async function loadCatalogData(): Promise<{ articles: Article[]; categori
   };
 }
 
-export async function saveArticle(article: Article): Promise<void> {
-  await setDoc(doc(db, ARTICLES_COLLECTION, article.id), omitUndefined(article));
+export async function saveArticle(article: Article, auditLog?: AuditLog): Promise<void> {
+  if (!auditLog) {
+    await setDoc(doc(db, ARTICLES_COLLECTION, article.id), omitUndefined(article));
+    return;
+  }
+  const batch = writeBatch(db);
+  batch.set(doc(db, ARTICLES_COLLECTION, article.id), omitUndefined(article));
+  batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  await batch.commit();
 }
 
-export async function saveCategory(category: Category): Promise<void> {
-  await setDoc(doc(db, CATEGORIES_COLLECTION, category.id), omitUndefined(category));
+export async function saveCategory(category: Category, auditLog?: AuditLog): Promise<void> {
+  if (!auditLog) {
+    await setDoc(doc(db, CATEGORIES_COLLECTION, category.id), omitUndefined(category));
+    return;
+  }
+  const batch = writeBatch(db);
+  batch.set(doc(db, CATEGORIES_COLLECTION, category.id), omitUndefined(category));
+  batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  await batch.commit();
 }
 
 export async function loadProcurementData(): Promise<{ suppliers: Supplier[]; purchases: Purchase[] }> {
@@ -153,11 +176,18 @@ export async function loadProcurementData(): Promise<{ suppliers: Supplier[]; pu
   };
 }
 
-export async function saveSupplier(supplier: Supplier): Promise<void> {
-  await setDoc(doc(db, SUPPLIERS_COLLECTION, supplier.id), omitUndefined(supplier));
+export async function saveSupplier(supplier: Supplier, auditLog?: AuditLog): Promise<void> {
+  if (!auditLog) {
+    await setDoc(doc(db, SUPPLIERS_COLLECTION, supplier.id), omitUndefined(supplier));
+    return;
+  }
+  const batch = writeBatch(db);
+  batch.set(doc(db, SUPPLIERS_COLLECTION, supplier.id), omitUndefined(supplier));
+  batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  await batch.commit();
 }
 
-export async function receivePurchase(purchase: Purchase, stocks: StoreStock[]): Promise<StoreStock[]> {
+export async function receivePurchase(purchase: Purchase, stocks: StoreStock[], auditLog?: AuditLog): Promise<StoreStock[]> {
   const [storeSnapshot, articleSnapshots] = await Promise.all([
     getDoc(doc(db, STORES_COLLECTION, purchase.store_id)),
     Promise.all(purchase.lines.map(line => getDoc(doc(db, ARTICLES_COLLECTION, line.article_id))))
@@ -228,12 +258,13 @@ export async function receivePurchase(purchase: Purchase, stocks: StoreStock[]):
       transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
     });
     transaction.set(purchaseRef, omitUndefined(purchase));
+    if (auditLog) transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   });
   return stocks.map(stock => persistedStocks.find(updated => updated.id === stock.id) || stock)
     .concat(persistedStocks.filter(updated => !stocks.some(stock => stock.id === updated.id)));
 }
 
-export async function recordSupplierPayment(purchase: Purchase, payment: SupplierPayment): Promise<Purchase> {
+export async function recordSupplierPayment(purchase: Purchase, payment: SupplierPayment, auditLog?: AuditLog): Promise<Purchase> {
   if (!Number.isFinite(payment.amount) || payment.amount <= 0) throw new Error("Le montant du paiement doit être positif.");
   let updatedPurchase: Purchase | undefined;
   await runTransaction(db, async transaction => {
@@ -252,16 +283,30 @@ export async function recordSupplierPayment(purchase: Purchase, payment: Supplie
       updated_at: payment.paid_at
     };
     transaction.set(purchaseRef, omitUndefined(updatedPurchase));
+    if (auditLog) {
+      transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined({
+        ...auditLog,
+        old_value: current,
+        new_value: updatedPurchase
+      }));
+    }
   });
   if (!updatedPurchase) throw new Error("Le paiement n'a pas pu être enregistré.");
   return updatedPurchase;
 }
 
-export async function saveStore(store: Store): Promise<void> {
-  await setDoc(doc(db, STORES_COLLECTION, store.id), omitUndefined(store));
+export async function saveStore(store: Store, auditLog?: AuditLog): Promise<void> {
+  if (!auditLog) {
+    await setDoc(doc(db, STORES_COLLECTION, store.id), omitUndefined(store));
+    return;
+  }
+  const batch = writeBatch(db);
+  batch.set(doc(db, STORES_COLLECTION, store.id), omitUndefined(store));
+  batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  await batch.commit();
 }
 
-export async function deleteStore(storeId: string): Promise<void> {
+export async function deleteStore(storeId: string, auditLog?: AuditLog): Promise<void> {
   const [stocksSnapshot, usersSnapshot] = await Promise.all([
     getDocs(query(collection(db, STOCKS_COLLECTION), where("store_id", "==", storeId))),
     getDocs(query(collection(db, USERS_COLLECTION), where("assignedStores", "array-contains", storeId)))
@@ -282,13 +327,21 @@ export async function deleteStore(storeId: string): Promise<void> {
     await batch.commit();
   }
 
-  await deleteDoc(doc(db, STORES_COLLECTION, storeId));
+  if (!auditLog) {
+    await deleteDoc(doc(db, STORES_COLLECTION, storeId));
+    return;
+  }
+  const batch = writeBatch(db);
+  batch.delete(doc(db, STORES_COLLECTION, storeId));
+  batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  await batch.commit();
 }
 
 export async function saveStockAdjustment(
   stock: StoreStock,
   quantity: number,
-  movement: StockMovement
+  movement: StockMovement,
+  auditLog?: AuditLog
 ): Promise<StoreStock> {
   const updatedStock: StoreStock = {
     ...stock,
@@ -298,6 +351,7 @@ export async function saveStockAdjustment(
   const batch = writeBatch(db);
   batch.set(doc(db, STOCKS_COLLECTION, updatedStock.id), omitUndefined(updatedStock), { merge: true });
   batch.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
+  if (auditLog) batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   await batch.commit();
   return updatedStock;
 }

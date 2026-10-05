@@ -31,7 +31,7 @@ La feuille `stock` de la sauvegarde initiale est vide, de même que les historiq
 
 `stocks-a-verifier.json` est un brouillon partiel en forme `StoreStock`, produit par `extract-stocks.ps1`. Il contient 963 lignes correspondant uniquement aux 12 onglets dont le nom de magasin et les références article reconnues correspondent exactement au catalogue préparé. Parmi elles, 624 ont un solde positif. Le fichier comporte également un rapport de contrôle : 21 onglets non associés (dont des onglets de foire), 42 noms d'articles non reconnus et 4 soldes négatifs exclus. `ready_to_apply` reste à `false`; ne pas appliquer ce fichier comme inventaire complet avant d'avoir résolu ces écarts.
 
-Aucune donnée n'a été envoyée à Firebase. L'application n'a pas encore de fonction d'import en masse des stocks; le JSON sert à la revue et à préparer cette fonction ou une procédure d'import contrôlée.
+Aucune donnée n'a été envoyée à Firebase. L'application dispose maintenant d'un import initial contrôlé, réservé aux administrateurs : il prévisualise les lignes, bloque les stocks non approuvés, doublons, références inconnues et stocks déjà présents, puis écrit les stocks, mouvements et traces d'audit par lots reprenables. Il exige `review.ready_to_apply: true` dans le JSON après rapprochement métier. Le fichier `stocks-a-verifier.json` reste à `false` et ne peut donc pas être importé en l'état. La sauvegarde des données existantes et la vérification des totaux par magasin restent obligatoires.
 
 Le classeur magasins contient une liste complète et des feuilles par type qui reprennent les mêmes magasins. La comparaison des identifiants et noms avec la sauvegarde confirme les 27 magasins ; ces feuilles ne sont pas additionnées.
 

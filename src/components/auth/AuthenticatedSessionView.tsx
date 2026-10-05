@@ -24,7 +24,8 @@ import {
   saveTransfer,
   saveTransferWithStockEffects,
 } from "../../services/inventoryService";
-import { advanceSale, cancelSale, createProduction, createSale, loadOperationalData, validateSale } from "../../services/operationsService";
+import { advanceSale, cancelSale, createProduction, createSale, loadOperationalData, saveAuditLog, validateSale } from "../../services/operationsService";
+import { createAuditLog } from "../../services/auditService";
 import StoresView from "../StoresView";
 import CatalogView from "../CatalogView";
 import ProductionView from "../ProductionView";
@@ -37,6 +38,8 @@ import ReportViewer from "../ReportViewer";
 import ThemeSwitcher from "../ThemeSwitcher";
 import { loadExpenses, saveExpense } from "../../services/expenseService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
+import { importInitialStocks } from "../../services/stockImportService";
+import type { InitialStockImportRow } from "../../services/stockImportValidation";
 import { 
   ShieldCheck, 
   LogOut, 
@@ -127,6 +130,7 @@ export default function AuthenticatedSessionView() {
     let isMounted = true;
     async function loadInventory() {
       try {
+        let unitAuditLogs: AuditLog[] = [];
         const [inventory, catalog, procurement, operations] = await Promise.all([
           loadInventoryData(canManageStores ? undefined : user?.assignedStores),
           loadCatalogData(),
@@ -139,7 +143,9 @@ export default function AuthenticatedSessionView() {
             userId: user?.id || ""
           })
         ]);
-        const loadedUnits = canManageStores ? await loadUnits(catalog.articles) : [];
+        const loadedUnits = canManageStores
+          ? await loadUnits(catalog.articles, user ? toAppUser(user) : undefined, entries => { unitAuditLogs = entries; })
+          : [];
         if (!isMounted) return;
         setInventoryStores(inventory.stores);
         setStocks(inventory.stocks);
@@ -149,7 +155,7 @@ export default function AuthenticatedSessionView() {
         setCategories(catalog.categories);
         setSales(operations.sales);
         setProductions(operations.productions);
-        setAuditLogs(operations.auditLogs);
+        setAuditLogs([...unitAuditLogs, ...operations.auditLogs]);
         setUnits(loadedUnits);
         if (canManageStores) {
           setSuppliers(procurement.suppliers);
@@ -200,7 +206,22 @@ export default function AuthenticatedSessionView() {
       alert(response.message);
       return;
     }
+    const createdUser = toAppUser(response.data.user);
+    const auditLog = createAuditLog(currentAppUser!, "USER_CREATED", "USER", createdUser.id, undefined, {
+      id: createdUser.id,
+      email: createdUser.email,
+      roleId: createdUser.roleId,
+      permissions: createdUser.permissions,
+      storeIds: createdUser.storeIds,
+      isActive: createdUser.isActive
+    });
+    try {
+      await saveAuditLog(auditLog);
+    } catch (error) {
+      throw new Error(`Le compte a été créé, mais sa trace d'audit n'a pas pu être enregistrée : ${error instanceof Error ? error.message : "erreur inconnue"}`);
+    }
     setManagedUsers(current => [...current, toAppUser(response.data!.user)]);
+    setAuditLogs(current => [auditLog, ...current]);
     alert(`Utilisateur créé. Mot de passe temporaire : ${response.data.temporaryPassword}`);
   };
 
@@ -229,18 +250,46 @@ export default function AuthenticatedSessionView() {
       alert(response.message);
       return;
     }
-    setManagedUsers(current => current.map(item => item.id === updatedUser.id ? toAppUser(response.data!.user) : item));
+    const savedUser = toAppUser(response.data.user);
+    const auditLog = createAuditLog(currentAppUser!, "USER_UPDATED", "USER", savedUser.id, existingUser, {
+      id: savedUser.id,
+      email: savedUser.email,
+      roleId: savedUser.roleId,
+      permissions: savedUser.permissions,
+      storeIds: savedUser.storeIds,
+      isActive: savedUser.isActive
+    });
+    try {
+      await saveAuditLog(auditLog);
+    } catch (error) {
+      throw new Error(`Le compte a été modifié, mais sa trace d'audit n'a pas pu être enregistrée : ${error instanceof Error ? error.message : "erreur inconnue"}`);
+    }
+    setManagedUsers(current => current.map(item => item.id === updatedUser.id ? savedUser : item));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleDeleteManagedUser = async (userId: string) => {
+    const previousUser = managedUsers.find(item => item.id === userId);
     const response = await authService.deleteManagedUser(userId);
     if (!response.success) {
       alert(response.message);
       return;
     }
+    const auditLog = createAuditLog(currentAppUser!, "USER_DISABLED", "USER", userId, previousUser, {
+      ...previousUser,
+      isActive: false,
+      permissions: [],
+      storeIds: []
+    });
+    try {
+      await saveAuditLog(auditLog);
+    } catch (error) {
+      throw new Error(`Le compte a été désactivé, mais sa trace d'audit n'a pas pu être enregistrée : ${error instanceof Error ? error.message : "erreur inconnue"}`);
+    }
     setManagedUsers(current => current.map(item => item.id === userId
       ? { ...item, isActive: false, permissions: [], storeIds: [] }
       : item));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const openUserManagement = () => {
@@ -257,6 +306,19 @@ export default function AuthenticatedSessionView() {
         currentAppUser.storeIds.includes(transfer.source_store_id) || currentAppUser.storeIds.includes(transfer.destination_store_id)
       )
     : transfers;
+
+  const handleImportInitialStocks = async (rows: InitialStockImportRow[]) => {
+    if (!currentAppUser || !canManageStores) {
+      throw new Error("Seuls les administrateurs peuvent importer l'inventaire initial.");
+    }
+    const result = await importInitialStocks(rows, currentAppUser);
+    setStocks(current => [
+      ...current.filter(stock => !result.stocks.some(imported => imported.id === stock.id)),
+      ...result.stocks
+    ]);
+    setMovements(current => [...result.movements, ...current]);
+    setAuditLogs(current => [...result.auditLogs, ...current]);
+  };
 
   const handleCreateSale = async (sale: Sale) => {
     try {
@@ -327,7 +389,8 @@ export default function AuthenticatedSessionView() {
 
   const handleInitiateProductionReturn = (transfer: StockTransfer) => {
     setTransfers(current => [transfer, ...current]);
-    saveTransfer(transfer).catch(error => {
+    const auditLog = currentAppUser && createAuditLog(currentAppUser, "PRODUCTION_RETURN_CREATED", "TRANSFER", transfer.id, undefined, transfer, transfer.source_store_id);
+    saveTransfer(transfer, auditLog || undefined).catch(error => {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer le retour de production dans Firestore.");
     });
   };
@@ -338,8 +401,10 @@ export default function AuthenticatedSessionView() {
       return;
     }
     try {
-      await saveTransfer(transfer);
+      const auditLog = createAuditLog(currentAppUser!, "TRANSFER_CREATED", "TRANSFER", transfer.id, undefined, transfer, transfer.source_store_id);
+      await saveTransfer(transfer, auditLog);
       setTransfers(current => [transfer, ...current]);
+      setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer le transfert dans Firestore.");
     }
@@ -362,8 +427,10 @@ export default function AuthenticatedSessionView() {
       updated_at: timestamp
     };
     try {
-      await saveTransfer(updatedTransfer);
+      const auditLog = createAuditLog(currentAppUser!, "TRANSFER_APPROVED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.source_store_id);
+      await saveTransfer(updatedTransfer, auditLog);
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+      setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'approbation du transfert dans Firestore.");
     }
@@ -416,11 +483,13 @@ export default function AuthenticatedSessionView() {
       transfer.lines.some(line => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id)
     );
     try {
-      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements);
+      const auditLog = createAuditLog(currentAppUser!, "TRANSFER_SHIPPED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.source_store_id);
+      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements, auditLog);
       setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
         .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
       setMovements(current => [...result.movements, ...current]);
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+      setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'expédition du transfert dans Firestore.");
     }
@@ -483,11 +552,13 @@ export default function AuthenticatedSessionView() {
       transfer.lines.some(line => stock.store_id === transfer.destination_store_id && stock.article_id === line.article_id)
     );
     try {
-      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements);
+      const auditLog = createAuditLog(currentAppUser, hasDiscrepancy ? "TRANSFER_DISCREPANCY_RECORDED" : "TRANSFER_RECEIVED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.destination_store_id);
+      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements, auditLog);
       setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
         .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
       setMovements(current => [...result.movements, ...current]);
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+      setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du transfert dans Firestore.");
     }
@@ -503,8 +574,10 @@ export default function AuthenticatedSessionView() {
       updated_at: Date.now()
     };
     try {
-      await saveTransfer(updatedTransfer);
+      const auditLog = createAuditLog(currentAppUser!, "TRANSFER_DISCREPANCY_RESOLVED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.destination_store_id);
+      await saveTransfer(updatedTransfer, auditLog);
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+      setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer la résolution de l'écart dans Firestore.");
     }
@@ -540,22 +613,29 @@ export default function AuthenticatedSessionView() {
       created_at: timestamp
     };
     try {
-      await saveStockAdjustment(updatedStock, afterQty, movement);
+      const auditLog = createAuditLog(currentAppUser!, "STOCK_ADJUSTED", "STOCK", updatedStock.id, { quantity: beforeQty }, { quantity: afterQty, reason }, storeId);
+      await saveStockAdjustment(updatedStock, afterQty, movement, auditLog);
       setStocks(newStocks);
       setMovements(current => [movement, ...current]);
+      setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'ajustement dans Firestore.");
     }
   };
 
   const handleCreateStore = async (store: Store) => {
-    await saveStore(store);
+    const auditLog = createAuditLog(currentAppUser!, "STORE_CREATED", "STORE", store.id, undefined, store);
+    await saveStore(store, auditLog);
     setInventoryStores(current => [...current, store]);
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleUpdateStore = async (store: Store) => {
-    await saveStore(store);
+    const previous = inventoryStores.find(item => item.id === store.id);
+    const auditLog = createAuditLog(currentAppUser!, "STORE_UPDATED", "STORE", store.id, previous, store);
+    await saveStore(store, auditLog);
     setInventoryStores(current => current.map(item => item.id === store.id ? store : item));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleToggleStoreStatus = async (storeId: string) => {
@@ -565,23 +645,31 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleDeleteStore = async (storeId: string) => {
-    await deleteStore(storeId);
+    const previous = inventoryStores.find(item => item.id === storeId);
+    const auditLog = createAuditLog(currentAppUser!, "STORE_DELETED", "STORE", storeId, previous);
+    await deleteStore(storeId, auditLog);
     setInventoryStores(current => current.filter(store => store.id !== storeId));
     setStocks(current => current.filter(stock => stock.store_id !== storeId));
     setManagedUsers(current => current.map(managedUser => ({
       ...managedUser,
       storeIds: managedUser.storeIds.filter(id => id !== storeId)
     })));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleCreateArticle = async (article: Article) => {
-    await saveArticle(article);
+    const auditLog = createAuditLog(currentAppUser!, "ARTICLE_CREATED", "ARTICLE", article.id, undefined, article);
+    await saveArticle(article, auditLog);
     setArticles(current => [...current, article]);
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleUpdateArticle = async (article: Article) => {
-    await saveArticle(article);
+    const previous = articles.find(item => item.id === article.id);
+    const auditLog = createAuditLog(currentAppUser!, "ARTICLE_UPDATED", "ARTICLE", article.id, previous, article);
+    await saveArticle(article, auditLog);
     setArticles(current => current.map(item => item.id === article.id ? article : item));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleToggleArticleStatus = async (articleId: string) => {
@@ -590,21 +678,28 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateCategory = async (category: Category) => {
-    await saveCategory(category);
+    const auditLog = createAuditLog(currentAppUser!, "CATEGORY_CREATED", "CATEGORY", category.id, undefined, category);
+    await saveCategory(category, auditLog);
     setCategories(current => [...current, category]);
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleCreateUnit = async (unit: UnitOfMeasure) => {
-    await saveUnit(unit);
+    const auditLog = createAuditLog(currentAppUser!, "UNIT_CREATED", "UNIT", unit.id, undefined, unit);
+    await saveUnit(unit, auditLog);
     setUnits(current => [...current, unit].sort((left, right) => left.name.localeCompare(right.name, "fr")));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleToggleUnit = async (unit: UnitOfMeasure) => {
     if (!unit.is_active && articles.some(article => article.unit.toLocaleLowerCase("fr-FR") === unit.name.toLocaleLowerCase("fr-FR"))) {
       throw new Error("Cette unité est encore associée à un article et ne peut pas être désactivée.");
     }
-    await saveUnit(unit);
+    const previous = units.find(item => item.id === unit.id);
+    const auditLog = createAuditLog(currentAppUser!, "UNIT_UPDATED", "UNIT", unit.id, previous, unit);
+    await saveUnit(unit, auditLog);
     setUnits(current => current.map(item => item.id === unit.id ? unit : item));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleDeleteUnit = async (unitId: string) => {
@@ -613,45 +708,73 @@ export default function AuthenticatedSessionView() {
     if (articles.some(article => article.unit.toLocaleLowerCase("fr-FR") === unit.name.toLocaleLowerCase("fr-FR"))) {
       throw new Error("Cette unité est encore associée à un article et ne peut pas être supprimée.");
     }
-    await deleteUnit(unitId);
+    const auditLog = createAuditLog(currentAppUser!, "UNIT_DELETED", "UNIT", unitId, unit);
+    await deleteUnit(unitId, auditLog);
     setUnits(current => current.filter(item => item.id !== unitId));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleToggleCategoryStatus = async (categoryId: string) => {
     const category = categories.find(item => item.id === categoryId);
     if (!category) return;
     const updated = { ...category, is_active: !category.is_active, updated_at: Date.now() };
-    await saveCategory(updated);
+    const auditLog = createAuditLog(currentAppUser!, "CATEGORY_UPDATED", "CATEGORY", categoryId, category, updated);
+    await saveCategory(updated, auditLog);
     setCategories(current => current.map(item => item.id === categoryId ? updated : item));
+    setAuditLogs(current => [auditLog, ...current]);
   };
   
   const handleImportCatalogData = async (data: { articles: Article[]; categories: Category[] }) => {
     if (!data || !Array.isArray(data.articles) || !Array.isArray(data.categories)) {
       throw new Error("Le fichier catalogue doit contenir les tableaux articles et catégories.");
     }
+    const auditLogs = [
+      ...data.articles.map(article => createAuditLog(
+        currentAppUser!, "ARTICLE_IMPORTED", "ARTICLE", article.id,
+        articles.find(existing => existing.id === article.id), article
+      )),
+      ...data.categories.map(category => createAuditLog(
+        currentAppUser!, "CATEGORY_IMPORTED", "CATEGORY", category.id,
+        categories.find(existing => existing.id === category.id), category
+      ))
+    ];
     await Promise.all([
-      ...data.articles.map(article => saveArticle(article)),
-      ...data.categories.map(category => saveCategory(category))
+      ...data.articles.map((article, index) => saveArticle(article, auditLogs[index])),
+      ...data.categories.map((category, index) => saveCategory(category, auditLogs[data.articles.length + index]))
     ]);
     setArticles(data.articles);
     setCategories(data.categories);
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
   
   const handleResetCatalogData = async () => {
     const timestamp = Date.now();
     const resetArticles = articles.map(article => ({ ...article, is_active: false, updated_at: timestamp }));
     const resetCategories = categories.map(category => ({ ...category, is_active: false, updated_at: timestamp }));
-    await Promise.all([...resetArticles.map(saveArticle), ...resetCategories.map(saveCategory)]);
+    const auditLogs = [
+      ...resetArticles.map(article => createAuditLog(currentAppUser!, "ARTICLE_DEACTIVATED", "ARTICLE", article.id, articles.find(item => item.id === article.id), article)),
+      ...resetCategories.map(category => createAuditLog(currentAppUser!, "CATEGORY_DEACTIVATED", "CATEGORY", category.id, categories.find(item => item.id === category.id), category))
+    ];
+    await Promise.all([
+      ...resetArticles.map((article, index) => saveArticle(article, auditLogs[index])),
+      ...resetCategories.map((category, index) => saveCategory(category, auditLogs[resetArticles.length + index]))
+    ]);
     setArticles(resetArticles);
     setCategories(resetCategories);
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
   
   const handleImportStores = async (data: Store[]) => {
     if (!Array.isArray(data) || data.some(store => !store.id || !store.code || !store.name)) {
       throw new Error("Le fichier magasins est invalide.");
     }
-    await Promise.all(data.map(store => saveStore(store)));
+    const auditLogs = data.map(store => createAuditLog(
+      currentAppUser!, "STORE_IMPORTED", "STORE", store.id,
+      inventoryStores.find(existing => existing.id === store.id), store
+    ));
+    await Promise.all(data.map((store, index) => saveStore(store, auditLogs[index])));
     setInventoryStores(data);
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
   
   const handleResetStores = async () => {
@@ -659,47 +782,74 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateSupplier = async (supplier: Supplier) => {
-    await saveSupplier(supplier);
+    const auditLog = createAuditLog(currentAppUser!, "SUPPLIER_CREATED", "SUPPLIER", supplier.id, undefined, supplier);
+    await saveSupplier(supplier, auditLog);
     setSuppliers(current => [...current, supplier]);
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleToggleSupplier = async (supplier: Supplier) => {
-    await saveSupplier(supplier);
+    const previous = suppliers.find(item => item.id === supplier.id);
+    const auditLog = createAuditLog(currentAppUser!, "SUPPLIER_UPDATED", "SUPPLIER", supplier.id, previous, supplier);
+    await saveSupplier(supplier, auditLog);
     setSuppliers(current => current.map(item => item.id === supplier.id ? supplier : item));
+    setAuditLogs(current => [auditLog, ...current]);
   };
   
   const handleImportSuppliers = async (data: Supplier[]) => {
     if (!Array.isArray(data) || data.some(supplier => !supplier.id || !supplier.name)) {
       throw new Error("Le fichier fournisseurs est invalide.");
     }
-    await Promise.all(data.map(supplier => saveSupplier(supplier)));
+    const auditLogs = data.map(supplier => createAuditLog(
+      currentAppUser!, "SUPPLIER_IMPORTED", "SUPPLIER", supplier.id,
+      suppliers.find(existing => existing.id === supplier.id), supplier
+    ));
+    await Promise.all(data.map((supplier, index) => saveSupplier(supplier, auditLogs[index])));
     setSuppliers(data);
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
   
   const handleResetSuppliers = async () => {
     const resetSuppliers = suppliers.map(supplier => ({ ...supplier, is_active: false, updated_at: Date.now() }));
-    await Promise.all(resetSuppliers.map(supplier => saveSupplier(supplier)));
+    const auditLogs = resetSuppliers.map(supplier => createAuditLog(
+      currentAppUser!, "SUPPLIER_DEACTIVATED", "SUPPLIER", supplier.id,
+      suppliers.find(item => item.id === supplier.id), supplier
+    ));
+    await Promise.all(resetSuppliers.map((supplier, index) => saveSupplier(supplier, auditLogs[index])));
     setSuppliers(resetSuppliers);
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
 
   const handleReceivePurchase = async (purchase: Purchase) => {
-    const updatedStocks = await receivePurchase(purchase, stocks);
+    const auditLog = createAuditLog(currentAppUser!, "PURCHASE_RECEIVED", "PURCHASE", purchase.id, undefined, purchase, purchase.store_id);
+    const updatedStocks = await receivePurchase(purchase, stocks, auditLog);
     setStocks(updatedStocks);
     setPurchases(current => [purchase, ...current]);
+    setAuditLogs(current => [auditLog, ...current]);
   };
   
   const handleImportUnits = async (data: UnitOfMeasure[]) => {
     if (!Array.isArray(data) || data.some(unit => !unit.id || !unit.name)) {
       throw new Error("Le fichier unités est invalide.");
     }
-    await Promise.all(data.map(unit => saveUnit(unit)));
+    const auditLogs = data.map(unit => createAuditLog(
+      currentAppUser!, "UNIT_IMPORTED", "UNIT", unit.id,
+      units.find(existing => existing.id === unit.id), unit
+    ));
+    await Promise.all(data.map((unit, index) => saveUnit(unit, auditLogs[index])));
     setUnits([...data].sort((left, right) => left.name.localeCompare(right.name, "fr")));
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
   
   const handleResetUnits = async () => {
     const resetUnits = units.map(unit => ({ ...unit, is_active: false, updated_at: Date.now() }));
-    await Promise.all(resetUnits.map(unit => saveUnit(unit)));
+    const auditLogs = resetUnits.map(unit => createAuditLog(
+      currentAppUser!, "UNIT_DEACTIVATED", "UNIT", unit.id,
+      units.find(item => item.id === unit.id), unit
+    ));
+    await Promise.all(resetUnits.map((unit, index) => saveUnit(unit, auditLogs[index])));
     setUnits(resetUnits);
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
   
   const handleImportManagedUsers = async (data: AppUser[]) => {
@@ -723,7 +873,21 @@ export default function AuthenticatedSessionView() {
       if (!response.success || !response.data) throw new Error(response.message);
       return toAppUser(response.data.user);
     }));
+    const auditLogs = updatedUsers.map(updatedUser => createAuditLog(
+      currentAppUser!, "USER_IMPORTED", "USER", updatedUser.id,
+      managedUsers.find(existing => existing.id === updatedUser.id),
+      {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        roleId: updatedUser.roleId,
+        permissions: updatedUser.permissions,
+        storeIds: updatedUser.storeIds,
+        isActive: updatedUser.isActive
+      }
+    ));
+    await Promise.all(auditLogs.map(entry => saveAuditLog(entry)));
     setManagedUsers(updatedUsers);
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
   
   const handleResetManagedUsers = async () => {
@@ -733,12 +897,22 @@ export default function AuthenticatedSessionView() {
       if (!response.success || !response.data) throw new Error(response.message);
       return toAppUser(response.data.user);
     }));
+    const auditLogs = resetUsers.filter(managedUser => managedUser.id !== user?.id)
+      .map(disabledUser => createAuditLog(
+        currentAppUser!, "USER_DISABLED", "USER", disabledUser.id,
+        managedUsers.find(existing => existing.id === disabledUser.id),
+        { ...disabledUser, isActive: false, permissions: [], storeIds: [] }
+      ));
+    await Promise.all(auditLogs.map(entry => saveAuditLog(entry)));
     setManagedUsers(resetUsers);
+    setAuditLogs(current => [...auditLogs, ...current]);
   };
 
   const handleRecordSupplierPayment = async (purchase: Purchase, payment: SupplierPayment) => {
-    const updatedPurchase = await recordSupplierPayment(purchase, payment);
+    const auditLog = createAuditLog(currentAppUser!, "SUPPLIER_PAYMENT_RECORDED", "PURCHASE", purchase.id, purchase, undefined, purchase.store_id);
+    const updatedPurchase = await recordSupplierPayment(purchase, payment, auditLog);
     setPurchases(current => current.map(item => item.id === purchase.id ? updatedPurchase : item));
+    setAuditLogs(current => [{ ...auditLog, new_value: updatedPurchase }, ...current]);
   };
 
   const handleCreateExpense = async (expense: Expense) => {
@@ -746,8 +920,10 @@ export default function AuthenticatedSessionView() {
     if (!isAdmin && (!expense.store_id || !currentAppUser?.storeIds.includes(expense.store_id))) {
       throw new Error("Vous ne pouvez enregistrer une dépense que pour un magasin attribué à votre compte.");
     }
-    await saveExpense(expense);
+    const auditLog = createAuditLog(currentAppUser!, "EXPENSE_CREATED", "EXPENSE", expense.id, undefined, expense, expense.store_id);
+    await saveExpense(expense, auditLog);
     setExpenses(current => [expense, ...current].sort((left, right) => right.expense_date - left.expense_date));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   if (!user) return null;
@@ -834,6 +1010,7 @@ export default function AuthenticatedSessionView() {
               movements={movements}
               currentUser={currentAppUser}
               onAdjustStock={handleAdjustStock}
+              onImportInitialStocks={handleImportInitialStocks}
             />
           </section>
         ) : activeModule === "stores" && currentAppUser && canManageStores ? (

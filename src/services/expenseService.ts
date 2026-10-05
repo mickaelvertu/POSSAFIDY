@@ -1,6 +1,6 @@
-import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { collection, doc, getDocs, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
-import { Expense } from "../types";
+import { AuditLog, Expense } from "../types";
 
 const EXPENSES_COLLECTION = "expenses";
 
@@ -19,6 +19,13 @@ export async function loadExpenses(storeIds?: string[]): Promise<Expense[]> {
     .sort((left, right) => right.expense_date - left.expense_date);
 }
 
-export async function saveExpense(expense: Expense): Promise<void> {
-  await setDoc(doc(db, EXPENSES_COLLECTION, expense.id), omitUndefined(expense));
+export async function saveExpense(expense: Expense, auditLog?: AuditLog): Promise<void> {
+  if (!auditLog) {
+    await setDoc(doc(db, EXPENSES_COLLECTION, expense.id), omitUndefined(expense));
+    return;
+  }
+  const batch = writeBatch(db);
+  batch.set(doc(db, EXPENSES_COLLECTION, expense.id), omitUndefined(expense));
+  batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  await batch.commit();
 }

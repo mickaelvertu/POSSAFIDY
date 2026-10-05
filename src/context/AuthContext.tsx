@@ -3,6 +3,7 @@ import { User, AuthState, SignUpPayload, LoginPayload, ApiResponse } from "../ty
 import { authService } from "../services/authService";
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { trackUserPresence } from "../services/presenceService";
 
 interface AuthContextType extends AuthState {
   signUp: (payload: SignUpPayload) => Promise<ApiResponse>;
@@ -17,6 +18,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(authService.getToken());
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!user || user.status !== "ACTIVE") return;
+    return trackUserPresence(user.id);
+  }, [user?.id, user?.status]);
 
   // Restore session on initial boot
   useEffect(() => {

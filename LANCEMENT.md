@@ -5,6 +5,8 @@
 - Les ventes et productions sont persistées dans Firestore.
 - La validation d'une vente, la production, les transferts et les réceptions fournisseurs mettent à jour les stocks avec des transactions Firestore.
 - Les ventes et productions alimentent le journal d'audit.
+- Les modifications du catalogue, des magasins, unités, fournisseurs, achats, dépenses, utilisateurs et transferts sont également tracées ; les écritures métier Firestore et leurs événements d'audit sont groupés lorsque la mutation est faite directement par l'application.
+- L'import initial de stock est réservé aux administrateurs, exige un fichier approuvé (`review.ready_to_apply: true`), présente un aperçu, refuse les lignes invalides et produit des mouvements ainsi qu'une trace par ligne. Les lots sont limités pour respecter Firestore et peuvent reprendre un import interrompu avec le même fichier.
 - Chaque utilisateur ne peut consulter que ses propres événements d'audit ; les administrateurs voient l'ensemble du journal.
 - Les données métier de démonstration ne sont plus injectées automatiquement.
 - Les comptes de test ne sont plus affichés sur la page de connexion.
@@ -33,7 +35,8 @@ Le build local se crée avec `npm run build`. Ne pas déployer les règles ou l'
 
 ## Limites encore connues
 
-- Le journal d'audit couvre actuellement les ventes et productions. Les modifications du catalogue, des utilisateurs, des dépenses et des fournisseurs doivent encore être ajoutées au journal pour une traçabilité exhaustive.
+- Les modifications de comptes gérés via le service d'authentification sont auditées après la mutation du compte : une panne pendant l'écriture de la trace peut nécessiter une vérification administrative manuelle.
 - La création administrative directe d'un compte est masquée. Le parcours sûr actuel est : l'utilisateur crée son compte, puis un administrateur approuve le profil et lui affecte un rôle et des magasins. Une création directe nécessiterait un backend Firebase Admin.
 - Le bundle JavaScript reste volumineux. Le découpage des écrans en chargement différé est conseillé, mais ne bloque pas le pilote.
 - Les sauvegardes Firestore, la supervision et les tests multi-appareils dépendent de l'environnement Firebase et doivent être configurés hors du code.
+- Le brouillon `imports/2026-09-30/stocks-a-verifier.json` reste explicitement non approuvé (`review.ready_to_apply: false`) et est refusé par l'import tant que les écarts ne sont pas rapprochés.

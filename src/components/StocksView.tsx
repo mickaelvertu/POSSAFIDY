@@ -1,4 +1,5 @@
 import { useState, FormEvent } from "react";
+import type { ChangeEvent } from "react";
 import { 
   Store, 
   Category, 
@@ -21,8 +22,11 @@ import {
   Plus, 
   Building2,
   DollarSign,
-  X
+  X,
+  Upload
 } from "lucide-react";
+import { validateInitialStockImport } from "../services/stockImportValidation";
+import type { InitialStockImportRow } from "../services/stockImportValidation";
 
 interface StocksViewProps {
   stores: Store[];
@@ -38,6 +42,7 @@ interface StocksViewProps {
     reason: string,
     isDeposit: boolean
   ) => void;
+  onImportInitialStocks: (rows: InitialStockImportRow[]) => Promise<void>;
 }
 
 export default function StocksView({
@@ -47,7 +52,8 @@ export default function StocksView({
   stocks,
   movements,
   currentUser,
-  onAdjustStock
+  onAdjustStock,
+  onImportInitialStocks
 }: StocksViewProps) {
   const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("ALL");
@@ -59,9 +65,14 @@ export default function StocksView({
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [isDepositMode, setIsDepositMode] = useState(false);
   const [adjustStoreId, setAdjustStoreId] = useState(stores[0]?.id || "");
-  const [adjustArticleId, setAdjustArticleId] = useState(articles[0]?.id || "");
+  const [adjustArticleId, setAdjustArticleId] = useState("");
   const [adjustNewQty, setAdjustNewQty] = useState(0);
   const [adjustReason, setAdjustReason] = useState("Inventaire physique périodique");
+  const [importRows, setImportRows] = useState<InitialStockImportRow[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   const canStoreRawMaterials = (storeId: string) => {
     const store = stores.find(item => item.id === storeId);
@@ -77,13 +88,12 @@ export default function StocksView({
 
   const currentAdjustStock = getArticleStock(stocks, adjustStoreId, adjustArticleId);
 
-  const handleOpenAdjustModal = (storeId?: string, articleId?: string) => {
+  const handleOpenAdjustModal = (storeId?: string) => {
     const sId = storeId || (selectedStoreId !== "ALL" ? selectedStoreId : primaryCentralStore?.id || "");
     if (!canManageStockForStore(sId)) return;
-    const aId = articleId || articlesForStore(sId)[0]?.id || "";
     setAdjustStoreId(sId);
-    setAdjustArticleId(aId);
-    setAdjustNewQty(getArticleStock(stocks, sId, aId));
+    setAdjustArticleId("");
+    setAdjustNewQty(0);
     setIsDepositMode(false);
     setAdjustReason("Inventaire physique périodique");
     setIsAdjustModalOpen(true);
@@ -94,9 +104,8 @@ export default function StocksView({
       ? selectedStoreId
       : primaryCentralStore?.id || "";
     if (!canManageStockForStore(sId)) return;
-    const aId = articlesForStore(sId)[0]?.id || "";
     setAdjustStoreId(sId);
-    setAdjustArticleId(aId);
+    setAdjustArticleId("");
     setAdjustNewQty(0);
     setIsDepositMode(true);
     setAdjustReason("Réception de marchandises");
@@ -105,12 +114,57 @@ export default function StocksView({
 
   const handleConfirmAdjust = (e: FormEvent) => {
     e.preventDefault();
+    if (!adjustArticleId) return;
     const currentStock = getArticleStock(stocks, adjustStoreId, adjustArticleId);
     const targetQuantity = isDepositMode
       ? currentStock + Number(adjustNewQty)
       : Number(adjustNewQty);
     onAdjustStock(adjustStoreId, adjustArticleId, targetQuantity, adjustReason, isDepositMode);
     setIsAdjustModalOpen(false);
+  };
+
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    setImportRows([]);
+    setImportErrors([]);
+    setImportStatus("");
+    setImportFileName(file?.name || "");
+    if (!file) return;
+
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      const validation = validateInitialStockImport(parsed, stores, articles, stocks);
+      setImportRows(validation.rows);
+      setImportErrors(validation.errors);
+      if (validation.errors.length === 0) {
+        setImportStatus(`${validation.rows.length} ligne(s) validée(s), prêtes pour prévisualisation.`);
+      }
+    } catch (error) {
+      setImportErrors([error instanceof Error ? `Lecture du fichier impossible : ${error.message}` : "Lecture du fichier impossible."]);
+    }
+  };
+
+  const handleApplyInitialStockImport = async () => {
+    if (!isAdmin || importErrors.length > 0 || importRows.length === 0 || isImporting) return;
+    const confirmed = window.confirm(
+      `Importer ${importRows.length} lignes comme inventaire initial ? Les stocks existants concernés seront refusés. Cette opération créera des mouvements et ne peut pas être annulée automatiquement.`
+    );
+    if (!confirmed) return;
+
+    setIsImporting(true);
+    setImportStatus("");
+    try {
+      await onImportInitialStocks(importRows);
+      setImportStatus(`${importRows.length} ligne(s) importée(s) avec succès.`);
+      setImportRows([]);
+    } catch (error) {
+      setImportStatus(error instanceof Error
+        ? `Import non confirmé : ${error.message}`
+        : "Import non confirmé : une erreur inconnue est survenue. Vérifiez le suivi avant toute nouvelle tentative.");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   // Filter stocks
@@ -170,6 +224,51 @@ export default function StocksView({
           Dépôt de stock
         </button>
       </div>
+
+      {isAdmin && (
+        <section className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-5" aria-labelledby="initial-stock-import-title">
+          <div className="flex items-start gap-3">
+            <Upload className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+            <div className="min-w-0 flex-1">
+              <h3 id="initial-stock-import-title" className="font-bold text-slate-900">Importer l’inventaire initial</h3>
+              <p className="mt-1 text-xs text-slate-700">
+                Fichier JSON avec <code>data</code> et <code>review.ready_to_apply: true</code>. Les doublons, stocks déjà présents et écarts non approuvés sont refusés.
+              </p>
+              <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-amber-100">
+                <Upload className="h-4 w-4" />
+                Choisir un fichier JSON
+                <input type="file" accept="application/json,.json" onChange={handleImportFile} className="sr-only" />
+              </label>
+              {importFileName && <p className="mt-2 truncate text-xs text-slate-600">{importFileName}</p>}
+            </div>
+          </div>
+
+          {importRows.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-white p-3 text-xs text-slate-700">
+              <strong>Prévisualisation :</strong> {importRows.length} ligne(s), {new Set(importRows.map(row => row.store_id)).size} magasin(s),{" "}
+              {importRows.filter(row => row.quantity === 0).length} quantité(s) nulle(s). Aucun stock n’a encore été modifié.
+            </div>
+          )}
+          {importErrors.length > 0 && (
+            <div className="max-h-40 overflow-auto rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800" role="alert">
+              <strong>Import bloqué ({importErrors.length} erreur(s))</strong>
+              <ul className="mt-1 list-inside list-disc">
+                {importErrors.slice(0, 20).map((error, index) => <li key={`${index}-${error}`}>{error}</li>)}
+              </ul>
+              {importErrors.length > 20 && <p className="mt-1">Et {importErrors.length - 20} autre(s) erreur(s).</p>}
+            </div>
+          )}
+          {importStatus && <p className="text-xs font-semibold text-slate-700" role="status">{importStatus}</p>}
+          <button
+            type="button"
+            onClick={handleApplyInitialStockImport}
+            disabled={isImporting || importRows.length === 0 || importErrors.length > 0}
+            className="rounded-lg bg-amber-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isImporting ? "Import en cours…" : "Confirmer l’import initial"}
+          </button>
+        </section>
+      )}
 
       {/* Filter Toolbar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap gap-3 items-center justify-between">
@@ -327,7 +426,7 @@ export default function StocksView({
                     <td className="py-2.5 px-3 text-right">
                       <button
                         type="button"
-                        onClick={() => handleOpenAdjustModal(item.store.id, item.article.id)}
+                        onClick={() => handleOpenAdjustModal(item.store.id)}
                         disabled={!canManageStockForStore(item.store.id)}
                         title={!canManageStockForStore(item.store.id) ? "Seul l'administrateur peut gérer le stock du dépôt central" : "Ajuster le stock"}
                         className="text-blue-600 hover:text-blue-800 font-bold text-[11px] disabled:cursor-not-allowed disabled:opacity-40"
@@ -371,10 +470,9 @@ export default function StocksView({
                 <SearchableSelect
                   value={adjustStoreId}
                   onChange={(storeId) => {
-                    const firstAvailableArticle = articlesForStore(storeId)[0];
                     setAdjustStoreId(storeId);
-                    setAdjustArticleId(firstAvailableArticle?.id || "");
-                    setAdjustNewQty(getArticleStock(stocks, storeId, firstAvailableArticle?.id || ""));
+                    setAdjustArticleId("");
+                    setAdjustNewQty(0);
                   }}
                   options={centralStores.map(store => ({ value: store.id, label: store.name, description: `${store.code} · ${store.store_type}` }))}
                   placeholder="Saisir un magasin..."
@@ -410,6 +508,7 @@ export default function StocksView({
                   min={isDepositMode ? "1" : "0"}
                   value={adjustNewQty}
                   onChange={(e) => setAdjustNewQty(Number(e.target.value))}
+                  disabled={!adjustArticleId}
                   className="w-full font-mono font-bold text-base text-slate-900 bg-white border border-slate-300 rounded-lg p-2 text-right"
                 />
               </div>
@@ -438,6 +537,7 @@ export default function StocksView({
                 </button>
                 <button
                   type="submit"
+                  disabled={!adjustArticleId}
                   className="px-5 py-2 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs cursor-pointer"
                 >
                   {isDepositMode ? "Enregistrer le dépôt" : "Enregistrer l'Ajustement"}
