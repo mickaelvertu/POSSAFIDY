@@ -688,6 +688,7 @@ export function createExpressApp() {
 export async function startServer() {
   const app = createExpressApp();
   const PORT = Number(process.env.PORT) || 3000;
+  const HOST = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
 
   if (process.env.NODE_ENV === "production") {
     const distPath = path.resolve(__dirname, "dist");
@@ -703,8 +704,8 @@ export async function startServer() {
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[GILEADA Auth] Server running at http://0.0.0.0:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`[GILEADA Auth] Server running at http://${HOST}:${PORT}`);
   });
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
-import { AppRoleId, AppUser, Article, AuditLog, Category, Expense, GeneralFilters, Purchase, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
+import { AppRoleId, AppUser, Article, AuditLog, Category, Employee, Expense, GeneralFilters, Purchase, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
 import UsersView from "../UsersView";
 import RoleHomeView from "../RoleHomeView";
@@ -31,6 +31,8 @@ import CatalogView from "../CatalogView";
 import ProductionView from "../ProductionView";
 import ProcurementView from "../ProcurementView";
 import ExpensesView from "../ExpensesView";
+import StaffView from "../StaffView";
+import { loadEmployees, saveEmployee } from "../../services/employeeService";
 import TransfersView from "../TransfersView";
 import UnitsView from "../UnitsView";
 import ReportsView from "../ReportsView";
@@ -78,7 +80,7 @@ export default function AuthenticatedSessionView() {
   const [showProfile, setShowProfile] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units">("home");
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units" | "staff">("home");
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [productions, setProductions] = useState<Production[]>([]);
@@ -91,6 +93,7 @@ export default function AuthenticatedSessionView() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [units, setUnits] = useState<UnitOfMeasure[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
@@ -191,6 +194,35 @@ export default function AuthenticatedSessionView() {
       isMounted = false;
     };
   }, [canManageStores, user]);
+
+  useEffect(() => {
+    if (!canManageStores) {
+      setEmployees([]);
+      return;
+    }
+    let isMounted = true;
+    loadEmployees()
+      .then(loaded => {
+        if (isMounted) setEmployees(loaded);
+      })
+      .catch(error => console.error("Employee Firestore load failed:", error));
+    return () => {
+      isMounted = false;
+    };
+  }, [canManageStores]);
+
+  const handleSaveEmployee = async (employee: Employee, isNew: boolean) => {
+    const previous = employees.find(item => item.id === employee.id);
+    const action = isNew
+      ? "EMPLOYEE_CREATED"
+      : previous && previous.is_active !== employee.is_active
+        ? (employee.is_active ? "EMPLOYEE_REACTIVATED" : "EMPLOYEE_DEACTIVATED")
+        : "EMPLOYEE_UPDATED";
+    const auditLog = createAuditLog(currentAppUser!, action, "EMPLOYEE", employee.id, previous, employee, employee.store_id);
+    await saveEmployee(employee, auditLog);
+    setEmployees(current => isNew ? [...current, employee] : current.map(item => item.id === employee.id ? employee : item));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
 
   const handleCreateManagedUser = async (newUser: AppUser) => {
     const response = await authService.createManagedUser({
@@ -447,9 +479,8 @@ export default function AuthenticatedSessionView() {
     const movements: StockMovement[] = [];
     for (const line of transfer.lines) {
       const available = updatedStocks.find(stock => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id)?.quantity || 0;
-      const sourceStockFloor = line.source_stock_floor ?? (transfer.type.startsWith("CENTRAL_TO_") ? available * 0.15 : 0);
-      if (line.quantity_sent <= 0 || available - line.quantity_sent < sourceStockFloor) {
-        alert(`Stock insuffisant ou réserve centrale de 15 % à préserver pour ${line.article_name}. Disponible : ${available}, réserve : ${sourceStockFloor}.`);
+      if (line.quantity_sent <= 0 || available - line.quantity_sent < 0) {
+        alert(`Stock insuffisant pour ${line.article_name}. Disponible : ${available}.`);
         return;
       }
       const { newStocks, beforeQty, afterQty } = updateStockQuantity(updatedStocks, transfer.source_store_id, line.article_id, -line.quantity_sent);
@@ -1195,6 +1226,17 @@ export default function AuthenticatedSessionView() {
               onCreateExpense={handleCreateExpense}
             />
           </section>
+        ) : activeModule === "staff" && currentAppUser && canManageStores ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <StaffView employees={employees} stores={inventoryStores} onSaveEmployee={handleSaveEmployee} />
+          </section>
         ) : user && (
           <RoleHomeView
             user={toAppUser(user)}
@@ -1211,6 +1253,7 @@ export default function AuthenticatedSessionView() {
             onOpenExpenses={() => setActiveModule("expenses")}
             onOpenTransfers={() => setActiveModule("transfers")}
             onOpenUnits={() => setActiveModule("units")}
+            onOpenStaff={() => setActiveModule("staff")}
             onOpenReports={() => setActiveModule("reports")}
           />
         )}

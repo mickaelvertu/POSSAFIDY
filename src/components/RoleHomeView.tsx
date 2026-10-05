@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Truck,
+  UserRound,
   Users,
   X
 } from "lucide-react";
@@ -30,6 +31,7 @@ interface RoleHomeViewProps {
   onOpenExpenses: () => void;
   onOpenTransfers: () => void;
   onOpenUnits: () => void;
+  onOpenStaff: () => void;
   onOpenReports: () => void;
   stores: Store[];
   sales: Sale[];
@@ -67,7 +69,8 @@ const accessCards = [
   { permission: "catalog.manage", title: "Articles & catégories", description: "Gérer les articles et leur classification", icon: PackageCheck, accent: "indigo" },
   { permission: "procurement.manage", title: "Achats & fournisseurs", description: "Réceptionner les achats et suivre les échéances", icon: Truck, accent: "emerald" },
   { permission: "expenses.view", title: "Dépenses & frais", description: "Suivre les loyers, factures et autres charges", icon: HandCoins, accent: "amber" },
-  { permission: "units.manage", title: "Unités de mesure", description: "Administrer les unités du catalogue", icon: Ruler, accent: "emerald" }
+  { permission: "units.manage", title: "Unités de mesure", description: "Administrer les unités du catalogue", icon: Ruler, accent: "emerald" },
+  { permission: "staff.manage", title: "Personnel", description: "Gérer les employés, affectations et contrats", icon: UserRound, accent: "violet" }
 ];
 
 const accentClasses: Record<string, string> = {
@@ -79,7 +82,7 @@ const accentClasses: Record<string, string> = {
   rose: "bg-rose-50 text-rose-700 border-rose-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenUnits, onOpenReports, stores, sales, expenses }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenUnits, onOpenStaff, onOpenReports, stores, sales, expenses }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const role = user.role || "UNASSIGNED";
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
@@ -98,7 +101,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
         ? "Dépôt central"
         : "Production";
   const availableCards = accessCards.filter(card => {
-    if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage") return isAdmin;
+    if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage" || card.permission === "staff.manage") return isAdmin;
     if (card.permission === "expenses.view" && isAdmin) return true;
     if (card.permission === "transfers.view" && isAdmin) return true;
     if (card.permission === "reports.view" && isAdmin) return true;
@@ -209,12 +212,13 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isTransfersCard = card.permission === "transfers.view";
               const isUnitsCard = card.permission === "units.manage";
               const isReportsCard = card.permission === "reports.view";
-              const isActionable = isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isUnitsCard || isReportsCard;
+              const isStaffCard = card.permission === "staff.manage";
+              const isActionable = isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isUnitsCard || isStaffCard || isReportsCard;
               return (
                 <button
                   key={card.permission}
                   type="button"
-                  onClick={isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isUnitsCard ? onOpenUnits : isReportsCard ? onOpenReports : undefined}
+                  onClick={isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >

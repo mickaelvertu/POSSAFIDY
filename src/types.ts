@@ -444,3 +444,23 @@ export type ReportType =
   | "PRODUCTION"
   | "RETURNS"
   | "AUDIT_LOG";
+
+export type EmployeeContractType = "CDI" | "CDD" | "TEMPORARY" | "INTERN" | "DAILY";
+
+export interface Employee {
+  id: string;
+  code: string;
+  first_name: string;
+  last_name: string;
+  position: string;
+  store_id?: string;
+  phone?: string;
+  email?: string;
+  hire_date: number;
+  contract_type: EmployeeContractType;
+  salary?: number;
+  notes?: string;
+  is_active: boolean;
+  created_at: number;
+  updated_at: number;
+}

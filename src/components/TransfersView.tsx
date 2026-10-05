@@ -59,7 +59,6 @@ interface StoreAllocation {
 interface StockDistributionPlan {
   article: Article;
   centralStock: number;
-  securityStock: number;
   pendingStock: number;
   distributableStock: number;
   allocations: StoreAllocation[];
@@ -146,14 +145,13 @@ export default function TransfersView({
     if (!article || pointOfSales.length === 0) return null;
 
     const centralStock = getArticleStock(stocks, primaryCentralStore.id, articleId);
-    const securityStock = centralStock * 0.15;
     const pendingStock = transfers
       .filter(transfer => transfer.source_store_id === primaryCentralStore.id && ["DRAFT", "APPROVED"].includes(transfer.status))
       .flatMap(transfer => transfer.lines)
       .filter(line => line.article_id === articleId)
       .reduce((total, line) => total + line.quantity_sent, 0);
     const quantityStep = getQuantityStep(article.unit);
-    const rawDistributableStock = Math.max(0, centralStock - securityStock - pendingStock);
+    const rawDistributableStock = Math.max(0, centralStock - pendingStock);
     const distributableStock = Math.floor(rawDistributableStock / quantityStep + 1e-9) * quantityStep;
     const orderedStores = pointOfSales
       .map(store => ({ store, currentStock: getArticleStock(stocks, store.id, articleId), quantity: 0 }))
@@ -186,7 +184,6 @@ export default function TransfersView({
     return {
       article,
       centralStock,
-      securityStock,
       pendingStock,
       distributableStock,
       allocations: orderedStores.filter(allocation => allocation.quantity > 0)
@@ -196,7 +193,7 @@ export default function TransfersView({
   const handleCreateDistributionDrafts = () => {
     const plan = calculateStockDistribution(distributionArticleId);
     if (!plan || plan.allocations.length === 0) {
-      alert("Aucun stock disponible à répartir après la réserve de sécurité et les transferts en attente.");
+      alert("Aucun stock disponible à répartir après déduction des transferts en attente.");
       return;
     }
 
@@ -222,8 +219,7 @@ export default function TransfersView({
           quantity_sent: allocation.quantity,
           quantity_received: 0,
           quantity_accepted: 0,
-          quantity_rejected: 0,
-          source_stock_floor: plan.securityStock
+          quantity_rejected: 0
         }],
         note: "Répartition sur demande, équilibrée selon le stock de chaque point de vente.",
         has_discrepancy: false,
@@ -309,7 +305,7 @@ export default function TransfersView({
         .flatMap(transfer => transfer.lines)
         .filter(item => item.article_id === line.article_id)
         .reduce((total, item) => total + item.quantity_sent, 0);
-      const availableAfterReserve = availableQuantity * 0.85 - pendingForArticle;
+      const availableAfterReserve =       availableQuantity - pendingForArticle;
       return !Number.isFinite(requestedQuantity) || requestedQuantity <= 0 || requestedForArticle > availableAfterReserve;
     });
     if (invalidLine) {
@@ -325,7 +321,7 @@ export default function TransfersView({
           .reduce((total, item) => total + item.quantity_sent, 0)
         : 0;
       const dispatchable = sourceStore?.store_type === "CENTRAL_WAREHOUSE"
-        ? Math.max(0, availableQuantity * 0.85 - pendingForArticle)
+        ? Math.max(0, availableQuantity - pendingForArticle)
         : availableQuantity;
       alert(`Stock insuffisant pour ${article?.name || "cet article"}. Demandé : ${requestedQuantity}. Répartissable : ${dispatchable}.`);
       return;
@@ -347,9 +343,6 @@ export default function TransfersView({
         quantity_received: 0,
         quantity_accepted: 0,
         quantity_rejected: 0,
-        source_stock_floor: stores.find(store => store.id === sourceStoreId)?.store_type === "CENTRAL_WAREHOUSE"
-          ? getArticleStock(stocks, sourceStoreId, line.article_id) * 0.15
-          : undefined,
       };
     });
 
@@ -748,7 +741,7 @@ export default function TransfersView({
               </div>
 
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
-                La réserve de sécurité de 15 % reste au dépôt central. Les transferts déjà en brouillon ou approuvés sont déduits avant le calcul.
+                Les transferts déjà en brouillon ou approuvés sont déduits avant le calcul.
               </div>
 
               <button
@@ -764,7 +757,6 @@ export default function TransfersView({
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
                     <span>Stock central : <strong>{formatQuantity(distributionPlan.centralStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
-                    <span>Réserve 15 % : <strong>{formatQuantity(distributionPlan.securityStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
                     <span>Déjà engagé : <strong>{formatQuantity(distributionPlan.pendingStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
                     <span>À répartir : <strong>{formatQuantity(distributionPlan.distributableStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
                   </div>
