@@ -179,7 +179,7 @@ service cloud.firestore {
     }
 
     match /sales/{saleId} {
-      allow read: if hasPermission('sales.view') && hasStoreAccess(resource.data.store_id);
+      allow read: if hasPermission('sales.view') && (resource == null || hasStoreAccess(resource.data.store_id));
       allow create: if hasPermission('sales.create') &&
         request.resource.data.seller_id == request.auth.uid &&
         request.resource.data.status == 'DRAFT' &&
@@ -207,7 +207,7 @@ service cloud.firestore {
     }
 
     match /productions/{productionId} {
-      allow read: if hasPermission('production.view') && hasStoreAccess(resource.data.manufacturer_store_id);
+      allow read: if hasPermission('production.view') && (resource == null || hasStoreAccess(resource.data.manufacturer_store_id));
       allow create: if (hasPermission('production.create') || hasPermission('production.validate')) &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.consumptions is list && request.resource.data.consumptions.size() > 0 &&
@@ -230,7 +230,8 @@ service cloud.firestore {
     }
 
     match /stocks/{stockId} {
-      allow read: if isActiveUser() && hasStoreAccess(resource.data.store_id);
+      // resource == null lets transactions probe a stock row that does not exist yet (first receipt of an article in a store)
+      allow read: if isActiveUser() && (resource == null || hasStoreAccess(resource.data.store_id));
       allow create: if hasStoreAccess(request.resource.data.store_id) &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
           hasPermission('stock.adjust') || hasPermission('transfers.ship') ||

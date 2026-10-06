@@ -11,7 +11,7 @@ import {
 import { db } from "../firebase";
 
 const USER_CONNECTIONS = "userConnections";
-const HEARTBEAT_INTERVAL_MS = 30_000;
+const HEARTBEAT_INTERVAL_MS = 120_000;
 
 export interface UserConnection {
   id: string;
@@ -38,7 +38,7 @@ export function trackUserPresence(userId: string): () => void {
       }
 
       heartbeatId = window.setInterval(() => {
-        if (!isTracking) return;
+        if (!isTracking || document.hidden) return;
         void updateDoc(connectionRef, { heartbeat_at: serverTimestamp() }).catch(error => {
           console.error("Failed to update Firebase user presence heartbeat:", error);
         });

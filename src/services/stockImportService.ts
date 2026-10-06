@@ -26,8 +26,8 @@ export async function applyStockSnapshot(
   rows: StockSyncRow[],
   actor: AppUser
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[]; auditLogs: AuditLog[] }> {
-  if (actor.roleId !== "ADMIN" && actor.roleId !== "SUPER_ADMIN") {
-    throw new Error("Seuls les administrateurs peuvent importer le stock.");
+  if (actor.roleId !== "SUPER_ADMIN") {
+    throw new Error("Seul le super administrateur peut importer le stock.");
   }
   if (rows.length === 0 || rows.length > MAX_IMPORT_ROWS) {
     throw new Error("Le nombre de lignes à importer est invalide.");
@@ -113,8 +113,8 @@ export async function importInitialStocks(
   rows: InitialStockImportRow[],
   actor: AppUser
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[]; auditLogs: AuditLog[] }> {
-  if (actor.roleId !== "ADMIN" && actor.roleId !== "SUPER_ADMIN") {
-    throw new Error("Seuls les administrateurs peuvent importer l'inventaire initial.");
+  if (actor.roleId !== "SUPER_ADMIN") {
+    throw new Error("Seul le super administrateur peut importer l'inventaire initial.");
   }
   if (rows.length === 0 || rows.length > MAX_IMPORT_ROWS) {
     throw new Error("Le nombre de lignes à importer est invalide.");

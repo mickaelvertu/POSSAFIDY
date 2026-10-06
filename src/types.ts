@@ -328,6 +328,8 @@ export interface SaleLine {
   unit_price: number;
   discount: number; // en montant ou pourcentage
   total: number;
+  line_type?: "PRODUCT" | "SERVICE"; // absent = produit (anciennes ventes)
+  price_reason?: string; // motif obligatoire pour une prestation à prix saisi manuellement
 }
 
 export interface Sale {

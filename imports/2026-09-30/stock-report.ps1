@@ -1,8 +1,11 @@
-param(
+﻿param(
   [datetime]$Date = (Get-Date).Date,
-  [string]$Workbook = 'POINT0426.xlsx'
+  [string]$Workbook = 'POINT0426.xlsx',
+  [string]$StoresFile = 'magasins-2026-10-06.json',
+  [string]$CatalogueFile = 'catalogue-2026-10-06.json'
 )
 $ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # Rapport de stock de cloture pour une date, a partir du classeur par magasin.
@@ -16,14 +19,21 @@ $sheetAliases = @{
   'ANKADINDRATOMBO' = 'REV-06'
   'ANALAKELY'       = 'REV-02'
   'MAJUNGA'         = 'POS-01'
+  'MRISMAELCOMMERCIAL' = 'POS-17'  # POS-19 porte le meme nom dans l'export du 2026-10-06 (doublon probable)
+  'MRRIANACOMMERCIAL'  = 'POS-18'
 }
 
 # Alias d'articles du classeur -> code article du catalogue (libelle normalise).
 # Les libelles incertains ne sont volontairement pas listes : ils apparaissent dans non-rapproches.json.
 $articleAliases = @{
-  'ANTISTRESSGM'       = 'AS146'
-  'AVRPM'              = 'AV147'
+  'ANTISTRESSGM'       = 'AS017'
+  'AVRPM'              = 'AV012'
   'ASHVAGANDA'         = 'AS087'
+  'BAUMERAMBIA'        = 'BR149'
+  'CHLONPHE'           = 'CH115'
+  'DERMAGGM'           = 'DG039'
+  'NONIGM'             = 'NO052'
+  'SAVONANTIRIDE'      = 'SA079'
   'BAUMEANTICELLULITE' = 'BA010'
   'BEUREDEKARITE'      = 'BK016'
   'HEEUCALUPT'         = 'HE106'
@@ -37,8 +47,11 @@ $articleAliases = @{
   'SAVONREP'           = 'SR078'
   'TESTGLYCEMIE'       = 'GL109'
   'TESTPALU'           = 'PA113'
-  'TESTST'             = 'ST111'
+  'TESTST'             = 'FT117'
 }
+
+# Libelles volontairement ignores (absents du catalogue, a ne pas signaler).
+$ignoredLabels = @('ASPEGIC', 'HYDROCHLORE', 'OMEGACAPSULE', 'OMEPRAINJ', 'REHASINA', 'SHALLAKI', 'TESTCOMBO', 'CHARBON')
 
 # Lignes de services (pas des articles en stock).
 $serviceLabels = @('ANALYSE', 'AUTRES', 'CONSULTATION', 'CONTROLE', 'LIVRAISON', 'MASSAGEPARTIEL', 'MASSAGERELAXANT', 'REFLEXO')
@@ -82,10 +95,11 @@ function Get-CellText($cell, $sharedStrings) {
 $workbookPath = Join-Path $PSScriptRoot $Workbook
 if (-not (Test-Path $workbookPath)) { throw "Classeur introuvable : $workbookPath" }
 
-$stores = (Get-Content (Join-Path $PSScriptRoot 'magasins.json') -Raw -Encoding UTF8 | ConvertFrom-Json).data
-$articles = (Get-Content (Join-Path $PSScriptRoot 'catalogue-2026-10-01.json') -Raw -Encoding UTF8 | ConvertFrom-Json).data.articles
+$stores = (Get-Content (Join-Path $PSScriptRoot $StoresFile) -Raw -Encoding UTF8 | ConvertFrom-Json).data
+$articles = (Get-Content (Join-Path $PSScriptRoot $CatalogueFile) -Raw -Encoding UTF8 | ConvertFrom-Json).data.articles
 
-$storeByName = @{}; foreach ($s in $stores) { $storeByName[(Normalize-Label $s.name)] = $s }
+# Les feuilles sont des points de vente/revendeurs : les depots et la production sont exclus de la recherche par nom (ex. Mahamasina).
+$storeByName = @{}; foreach ($s in $stores) { if ($s.store_type -in 'POS', 'RESELLER') { $storeByName[(Normalize-Label $s.name)] = $s } }
 $storeByCode = @{}; foreach ($s in $stores) { $storeByCode[$s.code] = $s }
 $articleByName = @{}; foreach ($a in $articles) { $articleByName[(Normalize-Label $a.name)] = $a }
 $articleByCode = @{}; foreach ($a in $articles) { $articleByCode[$a.code] = $a }
@@ -104,7 +118,8 @@ $duplicates = [System.Collections.Generic.List[object]]::new()
 $rowsWithoutStock = [System.Collections.Generic.List[object]]::new()
 $totals = [System.Collections.Generic.List[object]]::new()
 
-$archive = [System.IO.Compression.ZipFile]::OpenRead($workbookPath)
+$stream = [System.IO.FileStream]::new($workbookPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+$archive = [System.IO.Compression.ZipArchive]::new($stream, [System.IO.Compression.ZipArchiveMode]::Read)
 try {
   $workbookXml = Read-XlsxXml $archive 'xl/workbook.xml'
   $relationships = Read-XlsxXml $archive 'xl/_rels/workbook.xml.rels'
@@ -164,13 +179,14 @@ try {
 
       $labelKey = Normalize-Label $label
       if ($serviceLabels -contains $labelKey) { $skippedServices[$label] = $true; continue }
+      if ($ignoredLabels -contains $labelKey) { continue }
 
       $article = $null
       if ($articleAliases.ContainsKey($labelKey)) { $article = $articleByCode[$articleAliases[$labelKey]] }
       elseif ($articleByName.ContainsKey($labelKey)) { $article = $articleByName[$labelKey] }
       if (-not $article) {
-        if (-not $unmatchedArticles.ContainsKey($label)) { $unmatchedArticles[$label] = [System.Collections.Generic.List[string]]::new() }
-        $unmatchedArticles[$label].Add($sheetName)
+        if (-not $unmatchedArticles.ContainsKey($label)) { $unmatchedArticles[$label] = [System.Collections.Generic.List[object]]::new() }
+        $unmatchedArticles[$label].Add([pscustomobject]@{ sheet = $sheetName; quantity = $closingText })
         continue
       }
 
@@ -180,8 +196,8 @@ try {
         continue
       }
       if ($quantity -lt 0) {
-        $negatives.Add([pscustomobject]@{ sheet = $sheetName; row = $rowNumber; label = $label; article_code = $article.code; quantity = $quantity })
-        continue
+        $negatives.Add([pscustomobject]@{ sheet = $sheetName; row = $rowNumber; label = $label; article_code = $article.code; quantity = $quantity; reported_as = 0 })
+        $quantity = 0.0
       }
       if ($seenCodes.ContainsKey($article.code)) {
         $duplicates.Add([pscustomobject]@{ sheet = $sheetName; row = $rowNumber; label = $label; article_code = $article.code; quantity = $quantity })
@@ -206,6 +222,7 @@ try {
   }
 } finally {
   $archive.Dispose()
+  $stream.Dispose()
 }
 
 function Escape-Csv($value) {
@@ -239,7 +256,7 @@ $json = [ordered]@{
 $review = [ordered]@{
   report_date          = $dateText
   unmatched_sheets     = $unmatchedSheets
-  unmatched_articles   = @($unmatchedArticles.Keys | Sort-Object | ForEach-Object { [pscustomobject]@{ label = $_; sheets = $unmatchedArticles[$_].Count } })
+  unmatched_articles   = @($unmatchedArticles.Keys | Sort-Object | ForEach-Object { [pscustomobject]@{ label = $_; sheets = $unmatchedArticles[$_].Count; total_units = [double](($unmatchedArticles[$_] | ForEach-Object { $q = 0.0; [void][double]::TryParse([string]$_.quantity, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$q); $q } | Measure-Object -Sum).Sum); by_sheet = $unmatchedArticles[$_] } })
   skipped_service_rows = @($skippedServices.Keys | Sort-Object)
   negative_balances    = $negatives
   duplicate_rows       = $duplicates
@@ -251,3 +268,11 @@ $review = [ordered]@{
 "Date $dateText (serie $serial) : $($rows.Count) lignes, $($totals.Count) magasins."
 "Feuilles non rapprochees : $($unmatchedSheets.Count) ; libelles non rapproches : $($unmatchedArticles.Count) ; soldes negatifs : $($negatives.Count) ; doublons : $($duplicates.Count) ; sans stock : $($rowsWithoutStock.Count)"
 "Sortie : $outDir"
+
+
+
+
+
+
+
+

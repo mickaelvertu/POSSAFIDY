@@ -1,0 +1,281 @@
+{
+  "version": 1,
+  "exportedAt": "2026-10-06T13:03:10.636Z",
+  "data": [
+    {
+      "is_active": true,
+      "id": "MAG-028",
+      "updated_at": 1791189396247,
+      "code": "DEP-02",
+      "store_type": "CENTRAL_WAREHOUSE",
+      "created_at": 1791189396247,
+      "location": "Betsizaraina ",
+      "name": "Betsizaraina "
+    },
+    {
+      "store_type": "POS",
+      "updated_at": 1791284597471,
+      "location": "",
+      "name": "Mr Riana Commercial",
+      "code": "POS-18",
+      "created_at": 1791284597471,
+      "id": "MAG-029",
+      "is_active": true
+    },
+    {
+      "created_at": 1791284621558,
+      "location": "",
+      "code": "POS-19",
+      "is_active": true,
+      "id": "MAG-030",
+      "name": "Mr Ismael Commercial",
+      "updated_at": 1791284621558,
+      "store_type": "POS"
+    },
+    {
+      "updated_at": 1791198253746,
+      "is_active": true,
+      "name": "Mahamasina",
+      "created_at": 1790880225133,
+      "store_type": "CENTRAL_WAREHOUSE",
+      "id": "store-central-01",
+      "code": "DEP-01",
+      "location": "Mahamasina"
+    },
+    {
+      "code": "PRD-01",
+      "updated_at": 1790880225133,
+      "is_active": true,
+      "name": "Production",
+      "id": "store-manuf-01",
+      "created_at": 1790880225133,
+      "store_type": "MANUFACTURER"
+    },
+    {
+      "code": "POS-01",
+      "id": "store-pos-01",
+      "updated_at": 1790880225133,
+      "is_active": true,
+      "name": "Mahajanga",
+      "store_type": "POS",
+      "created_at": 1790880225133
+    },
+    {
+      "updated_at": 1790880225133,
+      "code": "POS-02",
+      "is_active": true,
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "name": "Antsahabe",
+      "id": "store-pos-02"
+    },
+    {
+      "name": "Rex",
+      "id": "store-pos-03",
+      "updated_at": 1790880225133,
+      "code": "POS-03",
+      "is_active": true,
+      "created_at": 1790880225133,
+      "store_type": "POS"
+    },
+    {
+      "name": "Mahamasina",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "id": "store-pos-04",
+      "code": "POS-04",
+      "updated_at": 1790880225133,
+      "is_active": true
+    },
+    {
+      "updated_at": 1790880225133,
+      "code": "POS-05",
+      "is_active": true,
+      "name": "Soanierana",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "id": "store-pos-05"
+    },
+    {
+      "id": "store-pos-06",
+      "updated_at": 1790880225133,
+      "name": "Antaninandro",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "is_active": true,
+      "code": "POS-06"
+    },
+    {
+      "is_active": true,
+      "name": "Ankazomanga",
+      "updated_at": 1790880225133,
+      "code": "POS-07",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "id": "store-pos-07"
+    },
+    {
+      "name": "Analamahintsy",
+      "updated_at": 1790880225133,
+      "code": "POS-08",
+      "is_active": true,
+      "id": "store-pos-08",
+      "created_at": 1790880225133,
+      "store_type": "POS"
+    },
+    {
+      "is_active": true,
+      "id": "store-pos-09",
+      "store_type": "POS",
+      "created_at": 1790880225133,
+      "code": "POS-09",
+      "updated_at": 1790880225133,
+      "name": "Andranomena"
+    },
+    {
+      "name": "Ivato",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "is_active": true,
+      "code": "POS-10",
+      "updated_at": 1790880225133,
+      "id": "store-pos-10"
+    },
+    {
+      "id": "store-pos-11",
+      "updated_at": 1790880225133,
+      "name": "Akoor Digue",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "code": "POS-11",
+      "is_active": true
+    },
+    {
+      "id": "store-pos-12",
+      "store_type": "POS",
+      "created_at": 1790880225133,
+      "code": "POS-12",
+      "is_active": true,
+      "updated_at": 1790880225133,
+      "name": "Ampandrana"
+    },
+    {
+      "name": "Antsirabe",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "code": "POS-13",
+      "id": "store-pos-13",
+      "updated_at": 1790880225133,
+      "is_active": true
+    },
+    {
+      "code": "POS-14",
+      "updated_at": 1790880225133,
+      "is_active": true,
+      "name": "Moramanga",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "id": "store-pos-14"
+    },
+    {
+      "id": "store-pos-15",
+      "code": "POS-15",
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "is_active": true,
+      "name": "Meteo Ampasapito",
+      "updated_at": 1790880225133
+    },
+    {
+      "is_active": true,
+      "created_at": 1790880225133,
+      "store_type": "POS",
+      "id": "store-pos-16",
+      "code": "POS-16",
+      "updated_at": 1790880225133,
+      "name": "Mr Ony Mission"
+    },
+    {
+      "code": "POS-17",
+      "id": "store-pos-17",
+      "updated_at": 1790880225133,
+      "is_active": true,
+      "name": "Mr Ismael Commercial",
+      "store_type": "POS",
+      "created_at": 1790880225133
+    },
+    {
+      "updated_at": 1790880225133,
+      "id": "store-rev-01",
+      "name": "Maman Shinning Tamatave",
+      "is_active": true,
+      "code": "REV-01",
+      "store_type": "RESELLER",
+      "created_at": 1790880225133
+    },
+    {
+      "name": "Analakely 401",
+      "is_active": true,
+      "created_at": 1790880225133,
+      "store_type": "RESELLER",
+      "code": "REV-02",
+      "updated_at": 1790880225133,
+      "id": "store-rev-02"
+    },
+    {
+      "name": "Anosy",
+      "store_type": "RESELLER",
+      "created_at": 1790880225133,
+      "updated_at": 1790880225133,
+      "is_active": true,
+      "code": "REV-03",
+      "id": "store-rev-03"
+    },
+    {
+      "name": "Talatamaty",
+      "is_active": true,
+      "created_at": 1790880225133,
+      "store_type": "RESELLER",
+      "id": "store-rev-04",
+      "updated_at": 1790880225133,
+      "code": "REV-04"
+    },
+    {
+      "store_type": "RESELLER",
+      "created_at": 1790880225133,
+      "code": "REV-05",
+      "is_active": true,
+      "updated_at": 1790880225133,
+      "name": "Imeritsiatosika",
+      "id": "store-rev-05"
+    },
+    {
+      "created_at": 1790880225133,
+      "store_type": "RESELLER",
+      "name": "Ankadidratombo",
+      "is_active": true,
+      "code": "REV-06",
+      "id": "store-rev-06",
+      "updated_at": 1790880225133
+    },
+    {
+      "is_active": true,
+      "code": "REV-07",
+      "store_type": "RESELLER",
+      "location": "",
+      "id": "store-rev-07",
+      "created_at": 1790880225133,
+      "name": "Mr Guy",
+      "updated_at": 1791282498592
+    },
+    {
+      "code": "REV-08",
+      "is_active": true,
+      "created_at": 1790880225133,
+      "store_type": "RESELLER",
+      "name": "Mr Jean Yves Antsirabe",
+      "updated_at": 1790880225133,
+      "id": "store-rev-08"
+    }
+  ]
+}

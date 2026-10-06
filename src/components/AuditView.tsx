@@ -13,7 +13,7 @@ interface AuditViewProps {
 type ConnectionLoadState = "loading" | "ready" | "error";
 type ConnectionFilter = "ALL" | "ONLINE" | "OFFLINE";
 
-const CONNECTION_FRESHNESS_MS = 90_000;
+const CONNECTION_FRESHNESS_MS = 300_000;
 
 function timestampToMillis(value: UserConnection["heartbeat_at"]): number {
   if (typeof value === "number") return value;

@@ -319,7 +319,9 @@ export default function StoresView({
                     onChange={(e) => {
                       const nextType = e.target.value as StoreTypeCode;
                       setStoreType(nextType);
-                      if (!editingStore) setCode(generateStoreCode(nextType, stores));
+                      setCode(editingStore && nextType === editingStore.store_type
+                        ? editingStore.code
+                        : generateStoreCode(nextType, stores));
                     }}
                     className="w-full font-bold text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
                   >

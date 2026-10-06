@@ -91,6 +91,7 @@ export default function StocksView({
   };
 
   const isAdmin = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN";
+  const isSuperAdmin = currentUser.roleId === "SUPER_ADMIN";
   const canManageStockForStore = (storeId: string) => isAdmin && stores.find(store => store.id === storeId)?.store_type === "CENTRAL_WAREHOUSE";
   const centralStores = stores.filter(store => store.store_type === "CENTRAL_WAREHOUSE");
   const primaryCentralStore = centralStores.find(store => store.code === "DEP-01") || centralStores[0];
@@ -157,7 +158,7 @@ export default function StocksView({
   };
 
   const handleApplyInitialStockImport = async () => {
-    if (!isAdmin || importErrors.length > 0 || importRows.length === 0 || isImporting) return;
+    if (!isSuperAdmin || importErrors.length > 0 || importRows.length === 0 || isImporting) return;
     const confirmed = window.confirm(
       `Importer ${importRows.length} lignes comme inventaire initial ? Les stocks existants concernés seront refusés. Cette opération créera des mouvements et ne peut pas être annulée automatiquement.`
     );
@@ -220,7 +221,7 @@ export default function StocksView({
   };
 
   const handleApplySync = async () => {
-    if (!isAdmin || syncErrors.length > 0 || syncRows.length === 0 || isSyncing) return;
+    if (!isSuperAdmin || syncErrors.length > 0 || syncRows.length === 0 || isSyncing) return;
     if (!window.confirm(`Remplacer le stock de ${syncRows.length} ligne(s) par les quantités du fichier ? Un mouvement d'ajustement sera créé pour chaque écart.`)) return;
     setIsSyncing(true);
     setSyncStatus("");
@@ -293,7 +294,7 @@ export default function StocksView({
         </button>
       </div>
 
-      {isAdmin && (
+      {isSuperAdmin && (
         <section className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50 p-5" aria-labelledby="stock-sync-title">
           <div className="flex items-start gap-3">
             <Download className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
@@ -365,7 +366,7 @@ export default function StocksView({
         </section>
       )}
 
-      {isAdmin && (
+      {isSuperAdmin && (
         <section className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-5" aria-labelledby="initial-stock-import-title">
           <div className="flex items-start gap-3">
             <Upload className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />

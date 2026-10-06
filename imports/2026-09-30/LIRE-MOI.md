@@ -1,4 +1,4 @@
-# Reprise des fichiers Excel du 30 septembre 2026
+﻿# Reprise des fichiers Excel du 30 septembre 2026
 
 Ces fichiers ont été préparés localement. Aucune donnée n'a été envoyée à Firebase.
 
@@ -41,8 +41,11 @@ Le classeur magasins contient une liste complète et des feuilles par type qui r
 
 ## Rapport de stock du jour (POINT0426.xlsx)
 
-`stock-report.ps1` lit `POINT0426.xlsx` et produit le stock de clôture d'une date (par défaut aujourd'hui) dans `rapport-stock-AAAA-MM-JJ/` : `stock-AAAA-MM-JJ.csv` (séparateur `;`, ouvrable dans Excel), `stock-AAAA-MM-JJ.json` et `non-rapproches.json` (feuilles, libellés, soldes négatifs à vérifier). Chaque jour occupe 4 colonnes (entrée, vente, montant, stock de fin) ; l'en-tête de date est au-dessus de la colonne « entrée » et le stock de clôture se trouve 3 colonnes plus loin. Les alias de feuilles et d'articles se modifient en tête du script. Les libellés incertains ne sont pas devinés : ils restent dans `non-rapproches.json`.
+`stock-report.ps1` lit `POINT0426.xlsx` et produit le stock de clôture d'une date (par défaut aujourd'hui) dans `rapport-stock-AAAA-MM-JJ/` : `stock-AAAA-MM-JJ.csv` (séparateur `;`, ouvrable dans Excel), `stock-AAAA-MM-JJ.json` et `non-rapproches.json` (feuilles, libellés, soldes négatifs à vérifier). Chaque jour occupe 4 colonnes (entrée, vente, montant, stock de fin) ; l'en-tête de date est au-dessus de la colonne « entrée » et le stock de clôture se trouve 3 colonnes plus loin. Les listes utilisées sont `magasins-2026-10-06.json` et `catalogue-2026-10-06.json` (exports de l'application ; paramètres `-StoresFile` et `-CatalogueFile`). Les alias de feuilles et d'articles se modifient en tête du script. Les libellés incertains ne sont pas devinés : ils restent dans `non-rapproches.json`.
 
 Commande : `powershell -ExecutionPolicy Bypass -File imports/2026-09-30/stock-report.ps1 [-Date 2026-10-06]`.
 
 Le fichier suit les colonnes de l'export de stock de l'application, mais n'a pas été importé. Rien n'a été envoyé à Firebase.
+
+
+

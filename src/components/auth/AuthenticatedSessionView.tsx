@@ -372,8 +372,8 @@ export default function AuthenticatedSessionView() {
     : transfers;
 
   const handleImportInitialStocks = async (rows: InitialStockImportRow[]) => {
-    if (!currentAppUser || !canManageStores) {
-      throw new Error("Seuls les administrateurs peuvent importer l'inventaire initial.");
+    if (!currentAppUser || currentAppUser.roleId !== "SUPER_ADMIN") {
+      throw new Error("Seul le super administrateur peut importer l'inventaire initial.");
     }
     const result = await importInitialStocks(rows, currentAppUser);
     setStocks(current => [
@@ -385,8 +385,8 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleSyncStocks = async (rows: StockSyncRow[]) => {
-    if (!currentAppUser || !canManageStores) {
-      throw new Error("Seuls les administrateurs peuvent importer le stock.");
+    if (!currentAppUser || currentAppUser.roleId !== "SUPER_ADMIN") {
+      throw new Error("Seul le super administrateur peut importer le stock.");
     }
     const result = await applyStockSnapshot(rows, currentAppUser);
     setStocks(current => [

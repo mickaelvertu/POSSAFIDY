@@ -75,6 +75,9 @@ export default function SalesView({
     quantity: number;
     unit_price: number;
     discount: number;
+    line_type?: "PRODUCT" | "SERVICE";
+    label?: string;
+    reason?: string;
   }>>([]);
 
   const currentStore = stores.find(s => s.id === selectedStoreId);
@@ -114,10 +117,26 @@ export default function SalesView({
   const handleStoreChange = (newStoreId: string) => {
     setSelectedStoreId(newStoreId);
     // Update unit prices of all lines according to new store type
-    setSaleLines(lines => lines.map(line => ({
+    setSaleLines(lines => lines.map(line => line.line_type === "SERVICE" ? line : ({
       ...line,
       unit_price: getDefaultPriceForArticle(line.article_id, newStoreId)
     })));
+  };
+
+  const handleAddService = () => {
+    setSaleLines(lines => [...lines, {
+      article_id: `service-${Date.now()}-${lines.length}`,
+      quantity: 1,
+      unit_price: 0,
+      discount: 0,
+      line_type: "SERVICE",
+      label: "Consultation",
+      reason: ""
+    }]);
+  };
+
+  const updateServiceLine = (idx: number, patch: { label?: string; reason?: string; unit_price?: number }) => {
+    setSaleLines(lines => lines.map((line, index) => index === idx ? { ...line, ...patch } : line));
   };
 
   const handleAddLine = () => {
@@ -176,7 +195,7 @@ export default function SalesView({
   const totalDiscount = saleLines.reduce((acc, l) => acc + l.discount, 0);
   const netTotal = Math.max(0, subtotal - totalDiscount);
   const changeReturned = Math.max(0, amountPaid - netTotal);
-  const stockIssues = [...saleLines.reduce((quantities, line) => {
+  const stockIssues = [...saleLines.filter(line => line.line_type !== "SERVICE").reduce((quantities, line) => {
     quantities.set(line.article_id, (quantities.get(line.article_id) || 0) + line.quantity);
     return quantities;
   }, new Map<string, number>())].flatMap(([articleId, quantity]) => {
@@ -185,6 +204,9 @@ export default function SalesView({
     const article = articles.find(item => item.id === articleId);
     return [{ name: article?.name || "Article", quantity, available }];
   });
+
+  const hasInvalidService = saleLines.some(line => line.line_type === "SERVICE"
+    && (!line.label?.trim() || !line.reason?.trim() || !(line.unit_price > 0)));
 
   const handleSubmitSale = async (e: FormEvent) => {
     e.preventDefault();
@@ -197,8 +219,28 @@ export default function SalesView({
       return;
     }
 
+    if (hasInvalidService) {
+      alert("Chaque prestation doit avoir un libellé, un prix supérieur à 0 et un motif.");
+      return;
+    }
+
     const saleNumber = generateRef("VTE", sales.length);
     const lines: SaleLine[] = saleLines.map((l, idx) => {
+      if (l.line_type === "SERVICE") {
+        return {
+          id: `saleline-${Date.now()}-${idx}`,
+          sale_id: `sale-${Date.now()}`,
+          article_id: l.article_id,
+          article_code: "PREST",
+          article_name: l.label!.trim(),
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          discount: l.discount,
+          total: Math.max(0, (l.quantity * l.unit_price) - l.discount),
+          line_type: "SERVICE",
+          price_reason: l.reason!.trim()
+        };
+      }
       const art = articles.find(a => a.id === l.article_id);
       return {
         id: `saleline-${Date.now()}-${idx}`,
@@ -506,7 +548,10 @@ export default function SalesView({
                   <div dir="ltr">
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="font-bold text-slate-900">Catalogue</h4>
-                    <span className="text-xs text-slate-500">{availableSaleArticles.length} disponible(s) / {saleArticles.length}</span>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={handleAddService} className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100">+ Prestation (prix libre)</button>
+                      <span className="text-xs text-slate-500">{availableSaleArticles.length} disponible(s) / {saleArticles.length}</span>
+                    </div>
                   </div>
                   {availableSaleArticles.length === 0 && (
                     <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
@@ -552,7 +597,10 @@ export default function SalesView({
                 <div className={`${mobileSaleStep === "PAYMENT" ? "hidden" : "block"} min-h-0 flex-1 overflow-y-auto p-4 md:p-5`}>
                   <div className="mb-4 flex items-center justify-between">
                     <div><h4 className="font-black text-slate-900">Panier</h4><p className="text-xs text-slate-500">{saleLines.length} ligne(s)</p></div>
+                    <div className="flex items-center gap-2">
                     <button type="button" onClick={handleAddLine} disabled={availableSaleArticles.length === 0} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">+ Article en stock</button>
+                    <button type="button" onClick={handleAddService} className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700">+ Prestation</button>
+                    </div>
                   </div>
                   <div className="space-y-3">
                     {saleLines.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">Panier vide. Sélectionnez un article disponible dans le catalogue.</p>}
@@ -560,6 +608,33 @@ export default function SalesView({
                       const article = articles.find(item => item.id === line.article_id);
                       const lineTotal = Math.max(0, line.quantity * line.unit_price - line.discount);
                       const stock = getArticleStock(stocks, selectedStoreId, line.article_id);
+                      if (line.line_type === "SERVICE") {
+                        return (
+                          <div key={line.article_id} className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">Prestation · sans stock</span>
+                              <button type="button" onClick={() => handleRemoveLine(idx)} className="rounded-lg p-1.5 text-rose-500 hover:bg-rose-50" aria-label="Supprimer"><Trash2 className="h-4 w-4" /></button>
+                            </div>
+                            <label className="mt-2 block text-[10px] font-bold text-slate-500">Prestation
+                              <input value={line.label || ""} onChange={(e) => updateServiceLine(idx, { label: e.target.value })} placeholder="Ex. Consultation" className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-900" />
+                            </label>
+                            <label className="mt-2 block text-[10px] font-bold text-slate-500">Motif du prix saisi <span className="text-rose-600">*</span>
+                              <input value={line.reason || ""} onChange={(e) => updateServiceLine(idx, { reason: e.target.value })} placeholder="Ex. Consultation à domicile, suivi, tarif négocié..." className={`mt-1 w-full rounded-lg border bg-white p-2 text-xs text-slate-900 ${line.reason?.trim() ? "border-slate-200" : "border-rose-300"}`} />
+                            </label>
+                            <div className="mt-3 flex items-end gap-2">
+                              <div className="flex items-center rounded-xl border border-slate-200 bg-white">
+                                <button type="button" onClick={() => updateLineQuantity(idx, line.quantity - 1)} className="p-2 text-slate-600"><Minus className="h-4 w-4" /></button>
+                                <input type="number" min="1" value={line.quantity} onChange={(e) => updateLineQuantity(idx, Number(e.target.value))} className="w-10 bg-transparent text-center font-mono font-bold text-slate-900 outline-none" />
+                                <button type="button" onClick={() => updateLineQuantity(idx, line.quantity + 1)} className="p-2 text-slate-600"><Plus className="h-4 w-4" /></button>
+                              </div>
+                              <label className="min-w-0 flex-1 text-[10px] font-bold text-slate-500">Prix (Ar)
+                                <input type="number" min="0" value={line.unit_price || ""} onChange={(e) => updateServiceLine(idx, { unit_price: Math.max(0, Number(e.target.value)) })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-right font-mono text-xs text-slate-900" />
+                              </label>
+                              <div className="pb-2 text-right font-mono text-xs font-black text-slate-900">{lineTotal.toLocaleString("fr-FR")} Ar</div>
+                            </div>
+                          </div>
+                        );
+                      }
                       return (
                         <div key={`${line.article_id}-${idx}`} className="rounded-2xl border border-slate-200 p-3">
                           <div className="flex items-start justify-between gap-2">
@@ -627,11 +702,11 @@ export default function SalesView({
                   {mobileSaleStep === "PRODUCTS" ? (
                     <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0} className="hidden w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:flex"><span>Suivant · Résumer l'achat</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
                   ) : mobileSaleStep === "CART" ? (
-                    <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0 || stockIssues.length > 0} className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:hidden"><span>Continuer vers le paiement</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
+                    <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService} className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:hidden"><span>Continuer vers le paiement</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
                   ) : (
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setMobileSaleStep("CART")} className="rounded-xl border border-slate-300 px-4 py-3 font-bold text-slate-700 hover:bg-slate-50">Retour au panier</button>
-                      <button type="submit" disabled={saleLines.length === 0 || stockIssues.length > 0} className="flex-1 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none">Enregistrer la vente (DRAFT)</button>
+                      <button type="submit" disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService} className="flex-1 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none">Enregistrer la vente (DRAFT)</button>
                     </div>
                   )}
                   {mobileSaleStep === "PAYMENT" && stockIssues.length > 0 && (
@@ -679,6 +754,7 @@ export default function SalesView({
                     <div className="text-[10px] text-slate-400 font-mono">
                       {l.quantity} x {l.unit_price.toLocaleString("fr-FR")} Ar
                     </div>
+                    {l.price_reason && <div className="text-[10px] italic text-slate-500">Motif : {l.price_reason}</div>}
                   </div>
                   <div className="font-mono font-bold text-slate-900">
                     {l.total.toLocaleString("fr-FR")} Ar

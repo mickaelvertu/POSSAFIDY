@@ -162,7 +162,7 @@ export async function validateSale(
   userName: string
 ): Promise<{ sale: Sale; stocks: StoreStock[]; movements: StockMovement[]; auditLog: AuditLog }> {
   const quantities = new Map<string, number>();
-  sale.lines.forEach(line => quantities.set(line.article_id, (quantities.get(line.article_id) || 0) + line.quantity));
+  sale.lines.filter(line => line.line_type !== "SERVICE").forEach(line => quantities.set(line.article_id, (quantities.get(line.article_id) || 0) + line.quantity));
   const stockTargets = [...quantities].map(([articleId, quantity]) => ({ articleId, quantity, ...stockReference(knownStocks, sale.store_id, articleId) }));
   const saleRef = doc(db, SALES, sale.id);
   const timestamp = Date.now();
