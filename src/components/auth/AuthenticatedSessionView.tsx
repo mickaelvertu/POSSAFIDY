@@ -1327,6 +1327,7 @@ export default function AuthenticatedSessionView() {
             stores={inventoryStores}
             sales={sales}
             expenses={expenses}
+            auditLogs={auditLogs}
             onOpenUsers={openUserManagement}
             onOpenSales={() => setActiveModule("sales")}
             onOpenStocks={() => setActiveModule("stocks")}
