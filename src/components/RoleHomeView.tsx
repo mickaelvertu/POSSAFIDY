@@ -91,6 +91,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
   const role = user.role || "UNASSIGNED";
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   const pointOfSales = stores.filter(store => store.store_type === "POS" && store.is_active);
+  const resellerStores = stores.filter(store => store.store_type === "RESELLER" && store.is_active);
   const today = new Date();
   const isToday = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -182,6 +183,57 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                       <p className="mt-1 text-[11px] font-mono font-semibold text-slate-500">{store.code} · Point de vente</p>
                     </div>
                     <Building2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                  </div>
+                  <dl className="mt-3 space-y-2 text-xs">
+                    <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">CA du jour</dt><dd className="font-bold text-emerald-700">{money(dailySales)}</dd></div>
+                    <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Dépenses du jour</dt><dd className="font-bold text-rose-600">{money(dailyExpenses)}</dd></div>
+                    <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2"><dt className="font-bold text-slate-700">CA - dépenses</dt><dd className={`font-black ${dailySales - dailyExpenses >= 0 ? "text-blue-700" : "text-rose-700"}`}>{money(dailySales - dailyExpenses)}</dd></div>
+                  </dl>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {isAdmin && resellerStores.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Performance du jour par revendeur</h2>
+              <p className="text-xs text-slate-500">Chiffre d’affaires validé, dépenses enregistrées et solde net.</p>
+            </div>
+            <span className="hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:block">Défiler horizontalement</span>
+          </div>
+          <div className="flex snap-x gap-3 overflow-x-auto pb-2">
+            {resellerStores.map(store => {
+              const dailySales = sales
+                .filter(sale => sale.store_id === store.id && sale.status === "VALIDATED" && isToday(sale.created_at))
+                .reduce((total, sale) => total + sale.total, 0);
+              const dailyExpenses = expenses
+                .filter(expense => expense.store_id === store.id && isToday(expense.expense_date))
+                .reduce((total, expense) => total + expense.amount, 0);
+              return (
+                <article
+                  key={store.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Afficher les informations du magasin ${store.name}`}
+                  onClick={() => { setExpandedItem(null); setSelectedStore(store); }}
+                  onKeyDown={event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedStore(store);
+                    }
+                  }}
+                  className="min-w-[285px] snap-start cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-amber-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500 sm:min-w-[320px]"
+                >
+                  <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-900">{store.name}</p>
+                      <p className="mt-1 text-[11px] font-mono font-semibold text-slate-500">{store.code} · Revendeur</p>
+                    </div>
+                    <Building2 className="h-5 w-5 shrink-0 text-amber-600" />
                   </div>
                   <dl className="mt-3 space-y-2 text-xs">
                     <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">CA du jour</dt><dd className="font-bold text-emerald-700">{money(dailySales)}</dd></div>
