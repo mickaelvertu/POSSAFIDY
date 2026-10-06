@@ -102,7 +102,7 @@ export default function TransfersView({
   // New transfer form state
   const [sourceStoreId, setSourceStoreId] = useState(stores[0]?.id || "");
   const [destStoreId, setDestStoreId] = useState(stores[1]?.id || "");
-  const [transferLines, setTransferLines] = useState<Array<{ article_id: string; quantity: number }>>([
+  const [transferLines, setTransferLines] = useState<Array<{ article_id: string; quantity: number; query?: string }>>([
     { article_id: articles[0]?.id || "", quantity: 10 }
   ]);
   const [transferNote, setTransferNote] = useState("");
@@ -256,8 +256,24 @@ export default function TransfersView({
     setIsCreateModalOpen(true);
   };
 
-  const handleAddTransferLine = () => {
-    setTransferLines([...transferLines, { article_id: getTransferArticles(destStoreId)[0]?.id || "", quantity: 5 }]);
+  const formatArticleLabel = (a: Article) => `[${a.code}] ${a.name}${a.unit ? ` (${a.unit})` : ""}`;
+
+  const findTransferArticle = (text: string) => {
+    const t = text.trim().toLowerCase();
+    if (!t) return undefined;
+    return getTransferArticles(destStoreId).find(a =>
+      formatArticleLabel(a).toLowerCase() === t || a.code.toLowerCase() === t || a.name.toLowerCase() === t
+    );
+  };
+
+  const handleAddTransferLine = (focusNew = false) => {
+    setTransferLines([...transferLines, { article_id: "", quantity: 1, query: "" }]);
+    if (focusNew) {
+      setTimeout(() => {
+        const inputs = document.querySelectorAll<HTMLInputElement>("input[data-transfer-article]");
+        inputs[inputs.length - 1]?.focus();
+      }, 0);
+    }
   };
 
   const handleRemoveTransferLine = (index: number) => {
@@ -878,34 +894,43 @@ export default function TransfersView({
                   <label className="text-xs font-bold text-slate-800">Articles à transférer :</label>
                   <button
                     type="button"
-                    onClick={handleAddTransferLine}
+                    onClick={() => handleAddTransferLine(true)}
                     className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5" /> Ajouter une ligne
                   </button>
                 </div>
 
+                <datalist id="transfer-article-options">
+                  {getTransferArticles(destStoreId).map((a) => (
+                    <option key={a.id} value={formatArticleLabel(a)} />
+                  ))}
+                </datalist>
+                <p className="text-[10px] text-slate-500 mb-1">Astuce : tapez le code, Tab pour la quantité, Entrée pour ajouter une ligne.</p>
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {transferLines.map((line, idx) => {
                     const currentStock = getArticleStock(stocks, sourceStoreId, line.article_id);
                     const selectedArticle = articles.find(article => article.id === line.article_id);
                     return (
                       <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                        <select
-                          value={line.article_id}
+                        <input
+                          type="text"
+                          list="transfer-article-options"
+                          data-transfer-article
+                          autoComplete="off"
+                          placeholder="Tapez le code ou le nom…"
+                          value={line.query ?? (selectedArticle ? formatArticleLabel(selectedArticle) : "")}
+                          onFocus={(e) => e.target.select()}
                           onChange={(e) => {
-                            const newLines = [...transferLines];
-                            newLines[idx].article_id = e.target.value;
-                            setTransferLines(newLines);
+                            const text = e.target.value;
+                            const match = findTransferArticle(text);
+                            setTransferLines(lines => lines.map((l, i) => i === idx
+                              ? { ...l, query: text, article_id: match ? match.id : l.article_id }
+                              : l));
                           }}
+                          onBlur={() => setTransferLines(lines => lines.map((l, i) => i === idx ? { ...l, query: undefined } : l))}
                           className="flex-1 text-xs bg-white border border-slate-300 rounded-lg p-2"
-                        >
-                          {getTransferArticles(destStoreId).map((a) => (
-                            <option key={a.id} value={a.id}>
-                              [{a.code}] {a.name} ({a.unit})
-                            </option>
-                          ))}
-                        </select>
+                        />
 
                         <div className="flex w-32 shrink-0 items-center gap-1.5">
                           <input
@@ -913,6 +938,13 @@ export default function TransfersView({
                             min="1"
                             aria-label={`Quantité à transférer (${selectedArticle?.unit || "unité"})`}
                             value={line.quantity}
+                            onFocus={(e) => e.target.select()}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddTransferLine(true);
+                              }
+                            }}
                             onChange={(e) => {
                               const newLines = [...transferLines];
                               newLines[idx].quantity = Math.max(1, Number(e.target.value));

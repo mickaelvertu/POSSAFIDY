@@ -1,0 +1,254 @@
+{
+    "report_date":  "2026-10-06",
+    "unmatched_sheets":  [
+                             {
+                                 "sheet":  "Mr Riana Commercial",
+                                 "reason":  "Aucun magasin correspondant"
+                             }
+                         ],
+    "unmatched_articles":  [
+                               {
+                                   "label":  "ASPEGIC",
+                                   "sheets":  22
+                               },
+                               {
+                                   "label":  "BAUME RAMBIA",
+                                   "sheets":  23
+                               },
+                               {
+                                   "label":  "CHARBON",
+                                   "sheets":  1
+                               },
+                               {
+                                   "label":  "CHLONPHE",
+                                   "sheets":  23
+                               },
+                               {
+                                   "label":  "DERMAG GM",
+                                   "sheets":  23
+                               },
+                               {
+                                   "label":  "HYDROCHLORE",
+                                   "sheets":  22
+                               },
+                               {
+                                   "label":  "NONI GM",
+                                   "sheets":  23
+                               },
+                               {
+                                   "label":  "OMEGA CAPSULE",
+                                   "sheets":  22
+                               },
+                               {
+                                   "label":  "OMEPRA INJ",
+                                   "sheets":  22
+                               },
+                               {
+                                   "label":  "REHASINA",
+                                   "sheets":  22
+                               },
+                               {
+                                   "label":  "SHALLAKI",
+                                   "sheets":  22
+                               },
+                               {
+                                   "label":  "TEST COMBO",
+                                   "sheets":  22
+                               }
+                           ],
+    "skipped_service_rows":  [
+                                 "ANALYSE",
+                                 "AUTRES",
+                                 "CONSULTATION",
+                                 "CONTRÔLE",
+                                 "LIVRAISON",
+                                 "MASSAGE PARTIEL",
+                                 "MASSAGE RELAXANT",
+                                 "REFLEXO"
+                             ],
+    "negative_balances":  [
+                              {
+                                  "sheet":  "Akoor Digue",
+                                  "row":  116,
+                                  "label":  "TEST ST",
+                                  "article_code":  "ST111",
+                                  "quantity":  -1
+                              },
+                              {
+                                  "sheet":  "REX",
+                                  "row":  116,
+                                  "label":  "TEST ST",
+                                  "article_code":  "ST111",
+                                  "quantity":  -1
+                              }
+                          ],
+    "duplicate_rows":  [
+
+                       ],
+    "rows_without_stock":  [
+
+                           ],
+    "totals_by_store":  [
+                            {
+                                "sheet":  "ANTSAHABE",
+                                "store_code":  "POS-02",
+                                "store_name":  "Antsahabe",
+                                "articles":  99,
+                                "total_units":  482
+                            },
+                            {
+                                "sheet":  "ANALAMAHITSY",
+                                "store_code":  "POS-08",
+                                "store_name":  "Analamahintsy",
+                                "articles":  99,
+                                "total_units":  421
+                            },
+                            {
+                                "sheet":  "Akoor Digue",
+                                "store_code":  "POS-11",
+                                "store_name":  "Akoor Digue",
+                                "articles":  98,
+                                "total_units":  579
+                            },
+                            {
+                                "sheet":  "ANTANINANDRO",
+                                "store_code":  "POS-06",
+                                "store_name":  "Antaninandro",
+                                "articles":  99,
+                                "total_units":  449
+                            },
+                            {
+                                "sheet":  "ANOSY",
+                                "store_code":  "REV-03",
+                                "store_name":  "Anosy",
+                                "articles":  99,
+                                "total_units":  403
+                            },
+                            {
+                                "sheet":  "REX",
+                                "store_code":  "POS-03",
+                                "store_name":  "Rex",
+                                "articles":  99,
+                                "total_units":  661
+                            },
+                            {
+                                "sheet":  "ANKAZOMANGA",
+                                "store_code":  "POS-07",
+                                "store_name":  "Ankazomanga",
+                                "articles":  99,
+                                "total_units":  327
+                            },
+                            {
+                                "sheet":  "MORAMANGA",
+                                "store_code":  "POS-14",
+                                "store_name":  "Moramanga",
+                                "articles":  99,
+                                "total_units":  405
+                            },
+                            {
+                                "sheet":  "Maman Shinning Tamatave",
+                                "store_code":  "REV-01",
+                                "store_name":  "Maman Shinning Tamatave",
+                                "articles":  99,
+                                "total_units":  461
+                            },
+                            {
+                                "sheet":  "Meteo Ampasapito",
+                                "store_code":  "POS-15",
+                                "store_name":  "Meteo Ampasapito",
+                                "articles":  99,
+                                "total_units":  480
+                            },
+                            {
+                                "sheet":  "IVATO",
+                                "store_code":  "POS-10",
+                                "store_name":  "Ivato",
+                                "articles":  99,
+                                "total_units":  474
+                            },
+                            {
+                                "sheet":  "SOANIERANA",
+                                "store_code":  "POS-05",
+                                "store_name":  "Soanierana",
+                                "articles":  99,
+                                "total_units":  422
+                            },
+                            {
+                                "sheet":  "TALATAMATY",
+                                "store_code":  "REV-04",
+                                "store_name":  "Talatamaty",
+                                "articles":  99,
+                                "total_units":  442
+                            },
+                            {
+                                "sheet":  "MAHAMASINA",
+                                "store_code":  "POS-04",
+                                "store_name":  "Mahamasina",
+                                "articles":  102,
+                                "total_units":  621
+                            },
+                            {
+                                "sheet":  "ANKADINDRATOMBO",
+                                "store_code":  "REV-06",
+                                "store_name":  "Ankadidratombo",
+                                "articles":  99,
+                                "total_units":  324
+                            },
+                            {
+                                "sheet":  "AMPANDRANA",
+                                "store_code":  "POS-12",
+                                "store_name":  "Ampandrana",
+                                "articles":  99,
+                                "total_units":  402
+                            },
+                            {
+                                "sheet":  "ANDRANOMENA",
+                                "store_code":  "POS-09",
+                                "store_name":  "Andranomena",
+                                "articles":  99,
+                                "total_units":  413
+                            },
+                            {
+                                "sheet":  "ANTSIRABE",
+                                "store_code":  "POS-13",
+                                "store_name":  "Antsirabe",
+                                "articles":  99,
+                                "total_units":  449
+                            },
+                            {
+                                "sheet":  "ANALAKELY",
+                                "store_code":  "REV-02",
+                                "store_name":  "Analakely 401",
+                                "articles":  99,
+                                "total_units":  450
+                            },
+                            {
+                                "sheet":  "Mr Ismael Commercial",
+                                "store_code":  "POS-17",
+                                "store_name":  "Mr Ismael Commercial",
+                                "articles":  99,
+                                "total_units":  41
+                            },
+                            {
+                                "sheet":  "Mr Jean Yves Antsirabe",
+                                "store_code":  "REV-08",
+                                "store_name":  "Mr Jean Yves Antsirabe",
+                                "articles":  99,
+                                "total_units":  328
+                            },
+                            {
+                                "sheet":  "IMERITSIATOSIKA",
+                                "store_code":  "REV-05",
+                                "store_name":  "Imeritsiatosika",
+                                "articles":  99,
+                                "total_units":  413
+                            },
+                            {
+                                "sheet":  "MAJUNGA",
+                                "store_code":  "POS-01",
+                                "store_name":  "Mahajanga",
+                                "articles":  99,
+                                "total_units":  184
+                            }
+                        ]
+}

@@ -38,3 +38,11 @@ Le classeur magasins contient une liste complète et des feuilles par type qui r
 ## Traçabilité
 
 `source-excel.json` contient les valeurs extraites des deux classeurs. `convert.mjs` permet de régénérer les fichiers depuis cette extraction avec `node imports/2026-09-30/convert.mjs`. Pour régénérer uniquement les magasins, utilisez `node imports/2026-09-30/convert.mjs --stores-only`; pour régénérer uniquement le catalogue importable dédoublonné, utilisez `--catalogue-only`. Pour dédoublonner le catalogue complet du 1er octobre et remapper son brouillon de stocks, utilisez `--normalize-current-catalogue`. Le script vérifie l'unicité des IDs et codes et les références entre données. La commande complète remplace les fichiers générés et leurs dates : ne pas la relancer après des corrections manuelles sans sauvegarder celles-ci.
+
+## Rapport de stock du jour (POINT0426.xlsx)
+
+`stock-report.ps1` lit `POINT0426.xlsx` et produit le stock de clôture d'une date (par défaut aujourd'hui) dans `rapport-stock-AAAA-MM-JJ/` : `stock-AAAA-MM-JJ.csv` (séparateur `;`, ouvrable dans Excel), `stock-AAAA-MM-JJ.json` et `non-rapproches.json` (feuilles, libellés, soldes négatifs à vérifier). Chaque jour occupe 4 colonnes (entrée, vente, montant, stock de fin) ; l'en-tête de date est au-dessus de la colonne « entrée » et le stock de clôture se trouve 3 colonnes plus loin. Les alias de feuilles et d'articles se modifient en tête du script. Les libellés incertains ne sont pas devinés : ils restent dans `non-rapproches.json`.
+
+Commande : `powershell -ExecutionPolicy Bypass -File imports/2026-09-30/stock-report.ps1 [-Date 2026-10-06]`.
+
+Le fichier suit les colonnes de l'export de stock de l'application, mais n'a pas été importé. Rien n'a été envoyé à Firebase.

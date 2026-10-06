@@ -1,0 +1,2280 @@
+﻿store_id;store_code;store_name;article_id;article_code;article_name;unit;quantity
+store-pos-02;POS-02;Antsahabe;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;12
+store-pos-02;POS-02;Antsahabe;article-resale-aloe-noni;AN001;ALOE NONI;Piece;3
+store-pos-02;POS-02;Antsahabe;article-resale-aloe-pur;AP004;ALOE PUR;Piece;8
+store-pos-02;POS-02;Antsahabe;article-resale-ananambo;AN003;ANANAMBO;Piece;4
+store-pos-02;POS-02;Antsahabe;article-resale-anjarasoa;AN034;ANJARASOA;Piece;7
+store-pos-02;POS-02;Antsahabe;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;8
+store-pos-02;POS-02;Antsahabe;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;13
+store-pos-02;POS-02;Antsahabe;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-pos-02;POS-02;Antsahabe;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;2
+store-pos-02;POS-02;Antsahabe;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-02;POS-02;Antsahabe;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-02;POS-02;Antsahabe;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-02;POS-02;Antsahabe;article-resale-baobab;BA036;BAOBAB;Piece;7
+store-pos-02;POS-02;Antsahabe;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;19
+store-pos-02;POS-02;Antsahabe;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;6
+store-pos-02;POS-02;Antsahabe;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;15
+store-pos-02;POS-02;Antsahabe;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;7
+store-pos-02;POS-02;Antsahabe;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;9
+store-pos-02;POS-02;Antsahabe;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;3
+store-pos-02;POS-02;Antsahabe;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;3
+store-pos-02;POS-02;Antsahabe;article-resale-beroberoka;BE031;BEROBEROKA;Piece;17
+store-pos-02;POS-02;Antsahabe;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;13
+store-pos-02;POS-02;Antsahabe;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;3
+store-pos-02;POS-02;Antsahabe;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-02;POS-02;Antsahabe;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-circulation;CI032;CIRCULATION;Piece;8
+store-pos-02;POS-02;Antsahabe;article-resale-corofar-gm;CG024;COROFAR GM;Piece;3
+store-pos-02;POS-02;Antsahabe;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;8
+store-pos-02;POS-02;Antsahabe;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;36
+store-pos-02;POS-02;Antsahabe;article-resale-detox;DE030;DETOX;Piece;14
+store-pos-02;POS-02;Antsahabe;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;8
+store-pos-02;POS-02;Antsahabe;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;11
+store-pos-02;POS-02;Antsahabe;article-resale-fanazava;FA029;FANAZAVA;Piece;2
+store-pos-02;POS-02;Antsahabe;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;4
+store-pos-02;POS-02;Antsahabe;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-pos-02;POS-02;Antsahabe;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;4
+store-pos-02;POS-02;Antsahabe;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-02;POS-02;Antsahabe;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-he-radriaka;HR089;HE RADRIAKA;;4
+store-pos-02;POS-02;Antsahabe;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;1
+store-pos-02;POS-02;Antsahabe;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;7
+store-pos-02;POS-02;Antsahabe;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-02;POS-02;Antsahabe;article-resale-kinana;KI044;KINANA;Piece;5
+store-pos-02;POS-02;Antsahabe;article-resale-komima;KO064;KOMIMA;Piece;4
+store-pos-02;POS-02;Antsahabe;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;2
+store-pos-02;POS-02;Antsahabe;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-02;POS-02;Antsahabe;article-resale-karela;KA098;KARELA;;0
+store-pos-02;POS-02;Antsahabe;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;7
+store-pos-02;POS-02;Antsahabe;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;4
+store-pos-02;POS-02;Antsahabe;article-resale-madetoxyl;MA051;MADETOXYL;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-madetussyl;MA045;MADETUSSYL;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-miel;MI061;MIEL;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-magasine;MA099;MAGASINE;;5
+store-pos-02;POS-02;Antsahabe;article-resale-mrg;MR100;MRG;;0
+store-pos-02;POS-02;Antsahabe;article-resale-oac;OA049;OAC;Piece;2
+store-pos-02;POS-02;Antsahabe;article-resale-ody-vato;OV054;ODY VATO;Piece;1
+store-pos-02;POS-02;Antsahabe;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;14
+store-pos-02;POS-02;Antsahabe;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;22
+store-pos-02;POS-02;Antsahabe;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;3
+store-pos-02;POS-02;Antsahabe;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;3
+store-pos-02;POS-02;Antsahabe;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;10
+store-pos-02;POS-02;Antsahabe;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-02;POS-02;Antsahabe;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-02;POS-02;Antsahabe;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-02;POS-02;Antsahabe;article-resale-revitalisant;RE070;REVITALISANT;Piece;18
+store-pos-02;POS-02;Antsahabe;article-resale-savlah;SA082;SAVLAH;Piece;18
+store-pos-02;POS-02;Antsahabe;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;4
+store-pos-02;POS-02;Antsahabe;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;1
+store-pos-02;POS-02;Antsahabe;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;5
+store-pos-02;POS-02;Antsahabe;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-02;POS-02;Antsahabe;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;3
+store-pos-02;POS-02;Antsahabe;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;1
+store-pos-02;POS-02;Antsahabe;article-resale-spray;SP102;SPRAY;;4
+store-pos-02;POS-02;Antsahabe;article-resale-spiruline;SP076;SPIRULINE;Piece;14
+store-pos-02;POS-02;Antsahabe;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-pos-02;POS-02;Antsahabe;article-resale-tanjaka;TA083;TANJAKA;Piece;7
+store-pos-02;POS-02;Antsahabe;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;7
+store-pos-02;POS-02;Antsahabe;article-resale-hcg;HC110;HCG;;0
+store-pos-02;POS-02;Antsahabe;article-resale-toxo;TO104;TOXO;;4
+store-pos-02;POS-02;Antsahabe;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;8
+store-pos-02;POS-02;Antsahabe;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;3
+store-pos-02;POS-02;Antsahabe;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;11
+store-pos-02;POS-02;Antsahabe;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;17
+store-pos-02;POS-02;Antsahabe;article-resale-st;ST111;ST;;0
+store-pos-02;POS-02;Antsahabe;article-resale-palu;PA113;PALU;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;4
+store-pos-08;POS-08;Analamahintsy;article-resale-aloe-noni;AN001;ALOE NONI;Piece;10
+store-pos-08;POS-08;Analamahintsy;article-resale-aloe-pur;AP004;ALOE PUR;Piece;10
+store-pos-08;POS-08;Analamahintsy;article-resale-ananambo;AN003;ANANAMBO;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-anjarasoa;AN034;ANJARASOA;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;4
+store-pos-08;POS-08;Analamahintsy;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;10
+store-pos-08;POS-08;Analamahintsy;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-pos-08;POS-08;Analamahintsy;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;5
+store-pos-08;POS-08;Analamahintsy;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-baobab;BA036;BAOBAB;Piece;6
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;8
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;6
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;3
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;6
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;4
+store-pos-08;POS-08;Analamahintsy;article-resale-beroberoka;BE031;BEROBEROKA;Piece;13
+store-pos-08;POS-08;Analamahintsy;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;11
+store-pos-08;POS-08;Analamahintsy;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;2
+store-pos-08;POS-08;Analamahintsy;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;1
+store-pos-08;POS-08;Analamahintsy;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;5
+store-pos-08;POS-08;Analamahintsy;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-circulation;CI032;CIRCULATION;Piece;4
+store-pos-08;POS-08;Analamahintsy;article-resale-corofar-gm;CG024;COROFAR GM;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;6
+store-pos-08;POS-08;Analamahintsy;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;28
+store-pos-08;POS-08;Analamahintsy;article-resale-detox;DE030;DETOX;Piece;11
+store-pos-08;POS-08;Analamahintsy;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;2
+store-pos-08;POS-08;Analamahintsy;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;8
+store-pos-08;POS-08;Analamahintsy;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;2
+store-pos-08;POS-08;Analamahintsy;article-resale-fanjatony;FA022;FANJATONY;Piece;3
+store-pos-08;POS-08;Analamahintsy;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;10
+store-pos-08;POS-08;Analamahintsy;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-he-radriaka;HR089;HE RADRIAKA;;5
+store-pos-08;POS-08;Analamahintsy;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;1
+store-pos-08;POS-08;Analamahintsy;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;6
+store-pos-08;POS-08;Analamahintsy;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-kinana;KI044;KINANA;Piece;1
+store-pos-08;POS-08;Analamahintsy;article-resale-komima;KO064;KOMIMA;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;2
+store-pos-08;POS-08;Analamahintsy;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-karela;KA098;KARELA;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;4
+store-pos-08;POS-08;Analamahintsy;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;7
+store-pos-08;POS-08;Analamahintsy;article-resale-madetoxyl;MA051;MADETOXYL;Piece;7
+store-pos-08;POS-08;Analamahintsy;article-resale-madetussyl;MA045;MADETUSSYL;Piece;6
+store-pos-08;POS-08;Analamahintsy;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;4
+store-pos-08;POS-08;Analamahintsy;article-resale-miel;MI061;MIEL;Piece;8
+store-pos-08;POS-08;Analamahintsy;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-mrg;MR100;MRG;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-oac;OA049;OAC;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-ody-vato;OV054;ODY VATO;Piece;1
+store-pos-08;POS-08;Analamahintsy;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;13
+store-pos-08;POS-08;Analamahintsy;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;7
+store-pos-08;POS-08;Analamahintsy;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;2
+store-pos-08;POS-08;Analamahintsy;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;11
+store-pos-08;POS-08;Analamahintsy;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-revitalisant;RE070;REVITALISANT;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-savlah;SA082;SAVLAH;Piece;5
+store-pos-08;POS-08;Analamahintsy;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;5
+store-pos-08;POS-08;Analamahintsy;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;2
+store-pos-08;POS-08;Analamahintsy;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;4
+store-pos-08;POS-08;Analamahintsy;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;1
+store-pos-08;POS-08;Analamahintsy;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-08;POS-08;Analamahintsy;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;2
+store-pos-08;POS-08;Analamahintsy;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;1
+store-pos-08;POS-08;Analamahintsy;article-resale-spray;SP102;SPRAY;;3
+store-pos-08;POS-08;Analamahintsy;article-resale-spiruline;SP076;SPIRULINE;Piece;10
+store-pos-08;POS-08;Analamahintsy;article-resale-glycemie;GL109;GLYCEMIE;;9
+store-pos-08;POS-08;Analamahintsy;article-resale-tanjaka;TA083;TANJAKA;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;3
+store-pos-08;POS-08;Analamahintsy;article-resale-hcg;HC110;HCG;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-toxo;TO104;TOXO;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;8
+store-pos-08;POS-08;Analamahintsy;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;5
+store-pos-08;POS-08;Analamahintsy;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;11
+store-pos-08;POS-08;Analamahintsy;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;9
+store-pos-08;POS-08;Analamahintsy;article-resale-st;ST111;ST;;0
+store-pos-08;POS-08;Analamahintsy;article-resale-palu;PA113;PALU;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;10
+store-pos-11;POS-11;Akoor Digue;article-resale-aloe-noni;AN001;ALOE NONI;Piece;23
+store-pos-11;POS-11;Akoor Digue;article-resale-aloe-pur;AP004;ALOE PUR;Piece;4
+store-pos-11;POS-11;Akoor Digue;article-resale-ananambo;AN003;ANANAMBO;Piece;17
+store-pos-11;POS-11;Akoor Digue;article-resale-anjarasoa;AN034;ANJARASOA;Piece;9
+store-pos-11;POS-11;Akoor Digue;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;5
+store-pos-11;POS-11;Akoor Digue;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;5
+store-pos-11;POS-11;Akoor Digue;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;11
+store-pos-11;POS-11;Akoor Digue;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;5
+store-pos-11;POS-11;Akoor Digue;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-baobab;BA036;BAOBAB;Piece;10
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;9
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;8
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;7
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;13
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;15
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;14
+store-pos-11;POS-11;Akoor Digue;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;9
+store-pos-11;POS-11;Akoor Digue;article-resale-beroberoka;BE031;BEROBEROKA;Piece;47
+store-pos-11;POS-11;Akoor Digue;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;7
+store-pos-11;POS-11;Akoor Digue;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;8
+store-pos-11;POS-11;Akoor Digue;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;1
+store-pos-11;POS-11;Akoor Digue;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-circulation;CI032;CIRCULATION;Piece;3
+store-pos-11;POS-11;Akoor Digue;article-resale-corofar-gm;CG024;COROFAR GM;Piece;11
+store-pos-11;POS-11;Akoor Digue;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;10
+store-pos-11;POS-11;Akoor Digue;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;30
+store-pos-11;POS-11;Akoor Digue;article-resale-detox;DE030;DETOX;Piece;15
+store-pos-11;POS-11;Akoor Digue;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;12
+store-pos-11;POS-11;Akoor Digue;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;12
+store-pos-11;POS-11;Akoor Digue;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;5
+store-pos-11;POS-11;Akoor Digue;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-he-radriaka;HR089;HE RADRIAKA;;3
+store-pos-11;POS-11;Akoor Digue;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;3
+store-pos-11;POS-11;Akoor Digue;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-kinana;KI044;KINANA;Piece;4
+store-pos-11;POS-11;Akoor Digue;article-resale-komima;KO064;KOMIMA;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;2
+store-pos-11;POS-11;Akoor Digue;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-karela;KA098;KARELA;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;8
+store-pos-11;POS-11;Akoor Digue;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-madetoxyl;MA051;MADETOXYL;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-madetussyl;MA045;MADETUSSYL;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-miel;MI061;MIEL;Piece;3
+store-pos-11;POS-11;Akoor Digue;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-mrg;MR100;MRG;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-oac;OA049;OAC;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;16
+store-pos-11;POS-11;Akoor Digue;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;27
+store-pos-11;POS-11;Akoor Digue;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;11
+store-pos-11;POS-11;Akoor Digue;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;11
+store-pos-11;POS-11;Akoor Digue;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;10
+store-pos-11;POS-11;Akoor Digue;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-revitalisant;RE070;REVITALISANT;Piece;14
+store-pos-11;POS-11;Akoor Digue;article-resale-savlah;SA082;SAVLAH;Piece;23
+store-pos-11;POS-11;Akoor Digue;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;8
+store-pos-11;POS-11;Akoor Digue;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;6
+store-pos-11;POS-11;Akoor Digue;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-11;POS-11;Akoor Digue;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-spray;SP102;SPRAY;;1
+store-pos-11;POS-11;Akoor Digue;article-resale-spiruline;SP076;SPIRULINE;Piece;7
+store-pos-11;POS-11;Akoor Digue;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-tanjaka;TA083;TANJAKA;Piece;11
+store-pos-11;POS-11;Akoor Digue;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;6
+store-pos-11;POS-11;Akoor Digue;article-resale-hcg;HC110;HCG;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-toxo;TO104;TOXO;;0
+store-pos-11;POS-11;Akoor Digue;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;2
+store-pos-11;POS-11;Akoor Digue;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;3
+store-pos-11;POS-11;Akoor Digue;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;35
+store-pos-11;POS-11;Akoor Digue;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;30
+store-pos-11;POS-11;Akoor Digue;article-resale-palu;PA113;PALU;;0
+store-pos-06;POS-06;Antaninandro;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-aloe-noni;AN001;ALOE NONI;Piece;11
+store-pos-06;POS-06;Antaninandro;article-resale-aloe-pur;AP004;ALOE PUR;Piece;13
+store-pos-06;POS-06;Antaninandro;article-resale-ananambo;AN003;ANANAMBO;Piece;5
+store-pos-06;POS-06;Antaninandro;article-resale-anjarasoa;AN034;ANJARASOA;Piece;3
+store-pos-06;POS-06;Antaninandro;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;3
+store-pos-06;POS-06;Antaninandro;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;8
+store-pos-06;POS-06;Antaninandro;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-pos-06;POS-06;Antaninandro;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;5
+store-pos-06;POS-06;Antaninandro;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-06;POS-06;Antaninandro;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-06;POS-06;Antaninandro;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-06;POS-06;Antaninandro;article-resale-baobab;BA036;BAOBAB;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;4
+store-pos-06;POS-06;Antaninandro;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;6
+store-pos-06;POS-06;Antaninandro;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;4
+store-pos-06;POS-06;Antaninandro;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;0
+store-pos-06;POS-06;Antaninandro;article-resale-beroberoka;BE031;BEROBEROKA;Piece;16
+store-pos-06;POS-06;Antaninandro;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;7
+store-pos-06;POS-06;Antaninandro;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;5
+store-pos-06;POS-06;Antaninandro;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-06;POS-06;Antaninandro;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;3
+store-pos-06;POS-06;Antaninandro;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-circulation;CI032;CIRCULATION;Piece;3
+store-pos-06;POS-06;Antaninandro;article-resale-corofar-gm;CG024;COROFAR GM;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;27
+store-pos-06;POS-06;Antaninandro;article-resale-detox;DE030;DETOX;Piece;11
+store-pos-06;POS-06;Antaninandro;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;8
+store-pos-06;POS-06;Antaninandro;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;7
+store-pos-06;POS-06;Antaninandro;article-resale-fanazava;FA029;FANAZAVA;Piece;2
+store-pos-06;POS-06;Antaninandro;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;2
+store-pos-06;POS-06;Antaninandro;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-pos-06;POS-06;Antaninandro;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;18
+store-pos-06;POS-06;Antaninandro;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-06;POS-06;Antaninandro;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-he-radriaka;HR089;HE RADRIAKA;;5
+store-pos-06;POS-06;Antaninandro;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;2
+store-pos-06;POS-06;Antaninandro;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;6
+store-pos-06;POS-06;Antaninandro;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-06;POS-06;Antaninandro;article-resale-kinana;KI044;KINANA;Piece;5
+store-pos-06;POS-06;Antaninandro;article-resale-komima;KO064;KOMIMA;Piece;1
+store-pos-06;POS-06;Antaninandro;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;2
+store-pos-06;POS-06;Antaninandro;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-06;POS-06;Antaninandro;article-resale-karela;KA098;KARELA;;0
+store-pos-06;POS-06;Antaninandro;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;4
+store-pos-06;POS-06;Antaninandro;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;7
+store-pos-06;POS-06;Antaninandro;article-resale-madetoxyl;MA051;MADETOXYL;Piece;1
+store-pos-06;POS-06;Antaninandro;article-resale-madetussyl;MA045;MADETUSSYL;Piece;3
+store-pos-06;POS-06;Antaninandro;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;1
+store-pos-06;POS-06;Antaninandro;article-resale-miel;MI061;MIEL;Piece;3
+store-pos-06;POS-06;Antaninandro;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-06;POS-06;Antaninandro;article-resale-mrg;MR100;MRG;;0
+store-pos-06;POS-06;Antaninandro;article-resale-oac;OA049;OAC;Piece;2
+store-pos-06;POS-06;Antaninandro;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;13
+store-pos-06;POS-06;Antaninandro;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;19
+store-pos-06;POS-06;Antaninandro;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;7
+store-pos-06;POS-06;Antaninandro;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;11
+store-pos-06;POS-06;Antaninandro;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-06;POS-06;Antaninandro;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-06;POS-06;Antaninandro;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-06;POS-06;Antaninandro;article-resale-revitalisant;RE070;REVITALISANT;Piece;9
+store-pos-06;POS-06;Antaninandro;article-resale-savlah;SA082;SAVLAH;Piece;20
+store-pos-06;POS-06;Antaninandro;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;4
+store-pos-06;POS-06;Antaninandro;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;1
+store-pos-06;POS-06;Antaninandro;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;6
+store-pos-06;POS-06;Antaninandro;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;2
+store-pos-06;POS-06;Antaninandro;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-06;POS-06;Antaninandro;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;3
+store-pos-06;POS-06;Antaninandro;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-06;POS-06;Antaninandro;article-resale-spray;SP102;SPRAY;;2
+store-pos-06;POS-06;Antaninandro;article-resale-spiruline;SP076;SPIRULINE;Piece;3
+store-pos-06;POS-06;Antaninandro;article-resale-glycemie;GL109;GLYCEMIE;;2
+store-pos-06;POS-06;Antaninandro;article-resale-tanjaka;TA083;TANJAKA;Piece;13
+store-pos-06;POS-06;Antaninandro;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;8
+store-pos-06;POS-06;Antaninandro;article-resale-hcg;HC110;HCG;;0
+store-pos-06;POS-06;Antaninandro;article-resale-toxo;TO104;TOXO;;2
+store-pos-06;POS-06;Antaninandro;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;6
+store-pos-06;POS-06;Antaninandro;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;3
+store-pos-06;POS-06;Antaninandro;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;13
+store-pos-06;POS-06;Antaninandro;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;10
+store-pos-06;POS-06;Antaninandro;article-resale-st;ST111;ST;;0
+store-pos-06;POS-06;Antaninandro;article-resale-palu;PA113;PALU;;1
+store-rev-03;REV-03;Anosy;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;5
+store-rev-03;REV-03;Anosy;article-resale-aloe-noni;AN001;ALOE NONI;Piece;9
+store-rev-03;REV-03;Anosy;article-resale-aloe-pur;AP004;ALOE PUR;Piece;12
+store-rev-03;REV-03;Anosy;article-resale-ananambo;AN003;ANANAMBO;Piece;4
+store-rev-03;REV-03;Anosy;article-resale-anjarasoa;AN034;ANJARASOA;Piece;5
+store-rev-03;REV-03;Anosy;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;5
+store-rev-03;REV-03;Anosy;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;11
+store-rev-03;REV-03;Anosy;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;8
+store-rev-03;REV-03;Anosy;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;4
+store-rev-03;REV-03;Anosy;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-rev-03;REV-03;Anosy;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-rev-03;REV-03;Anosy;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-rev-03;REV-03;Anosy;article-resale-baobab;BA036;BAOBAB;Piece;6
+store-rev-03;REV-03;Anosy;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;9
+store-rev-03;REV-03;Anosy;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;7
+store-rev-03;REV-03;Anosy;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;6
+store-rev-03;REV-03;Anosy;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;23
+store-rev-03;REV-03;Anosy;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;3
+store-rev-03;REV-03;Anosy;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;17
+store-rev-03;REV-03;Anosy;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;2
+store-rev-03;REV-03;Anosy;article-resale-beroberoka;BE031;BEROBEROKA;Piece;24
+store-rev-03;REV-03;Anosy;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;2
+store-rev-03;REV-03;Anosy;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-rev-03;REV-03;Anosy;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;3
+store-rev-03;REV-03;Anosy;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-circulation;CI032;CIRCULATION;Piece;2
+store-rev-03;REV-03;Anosy;article-resale-corofar-gm;CG024;COROFAR GM;Piece;4
+store-rev-03;REV-03;Anosy;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;7
+store-rev-03;REV-03;Anosy;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;25
+store-rev-03;REV-03;Anosy;article-resale-detox;DE030;DETOX;Piece;5
+store-rev-03;REV-03;Anosy;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;8
+store-rev-03;REV-03;Anosy;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;5
+store-rev-03;REV-03;Anosy;article-resale-fanazava;FA029;FANAZAVA;Piece;2
+store-rev-03;REV-03;Anosy;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;2
+store-rev-03;REV-03;Anosy;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-rev-03;REV-03;Anosy;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;9
+store-rev-03;REV-03;Anosy;article-resale-gudichi;GU092;GUDICHI;;0
+store-rev-03;REV-03;Anosy;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-he-radriaka;HR089;HE RADRIAKA;;2
+store-rev-03;REV-03;Anosy;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;5
+store-rev-03;REV-03;Anosy;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-rev-03;REV-03;Anosy;article-resale-kinana;KI044;KINANA;Piece;8
+store-rev-03;REV-03;Anosy;article-resale-komima;KO064;KOMIMA;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-rev-03;REV-03;Anosy;article-resale-karela;KA098;KARELA;;0
+store-rev-03;REV-03;Anosy;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;4
+store-rev-03;REV-03;Anosy;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;12
+store-rev-03;REV-03;Anosy;article-resale-madetoxyl;MA051;MADETOXYL;Piece;12
+store-rev-03;REV-03;Anosy;article-resale-madetussyl;MA045;MADETUSSYL;Piece;3
+store-rev-03;REV-03;Anosy;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;1
+store-rev-03;REV-03;Anosy;article-resale-miel;MI061;MIEL;Piece;1
+store-rev-03;REV-03;Anosy;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-magasine;MA099;MAGASINE;;0
+store-rev-03;REV-03;Anosy;article-resale-mrg;MR100;MRG;;0
+store-rev-03;REV-03;Anosy;article-resale-oac;OA049;OAC;Piece;2
+store-rev-03;REV-03;Anosy;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-ofa;OF057;OFA;Piece;1
+store-rev-03;REV-03;Anosy;article-resale-ofm;OF063;OFM;Piece;1
+store-rev-03;REV-03;Anosy;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;11
+store-rev-03;REV-03;Anosy;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;13
+store-rev-03;REV-03;Anosy;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;8
+store-rev-03;REV-03;Anosy;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;1
+store-rev-03;REV-03;Anosy;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;2
+store-rev-03;REV-03;Anosy;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-rev-03;REV-03;Anosy;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-rev-03;REV-03;Anosy;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-rev-03;REV-03;Anosy;article-resale-revitalisant;RE070;REVITALISANT;Piece;7
+store-rev-03;REV-03;Anosy;article-resale-savlah;SA082;SAVLAH;Piece;17
+store-rev-03;REV-03;Anosy;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;5
+store-rev-03;REV-03;Anosy;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;3
+store-rev-03;REV-03;Anosy;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;1
+store-rev-03;REV-03;Anosy;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-rev-03;REV-03;Anosy;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-rev-03;REV-03;Anosy;article-resale-spray;SP102;SPRAY;;3
+store-rev-03;REV-03;Anosy;article-resale-spiruline;SP076;SPIRULINE;Piece;1
+store-rev-03;REV-03;Anosy;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-rev-03;REV-03;Anosy;article-resale-tanjaka;TA083;TANJAKA;Piece;7
+store-rev-03;REV-03;Anosy;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;6
+store-rev-03;REV-03;Anosy;article-resale-hcg;HC110;HCG;;0
+store-rev-03;REV-03;Anosy;article-resale-toxo;TO104;TOXO;;0
+store-rev-03;REV-03;Anosy;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;7
+store-rev-03;REV-03;Anosy;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;9
+store-rev-03;REV-03;Anosy;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;11
+store-rev-03;REV-03;Anosy;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;3
+store-rev-03;REV-03;Anosy;article-resale-st;ST111;ST;;0
+store-rev-03;REV-03;Anosy;article-resale-palu;PA113;PALU;;0
+store-pos-03;POS-03;Rex;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;6
+store-pos-03;POS-03;Rex;article-resale-aloe-noni;AN001;ALOE NONI;Piece;10
+store-pos-03;POS-03;Rex;article-resale-aloe-pur;AP004;ALOE PUR;Piece;8
+store-pos-03;POS-03;Rex;article-resale-ananambo;AN003;ANANAMBO;Piece;10
+store-pos-03;POS-03;Rex;article-resale-anjarasoa;AN034;ANJARASOA;Piece;6
+store-pos-03;POS-03;Rex;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;6
+store-pos-03;POS-03;Rex;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;21
+store-pos-03;POS-03;Rex;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;10
+store-pos-03;POS-03;Rex;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-pos-03;POS-03;Rex;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;7
+store-pos-03;POS-03;Rex;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-03;POS-03;Rex;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-03;POS-03;Rex;article-resale-alben-sp;AS105;ALBEN SP;;4
+store-pos-03;POS-03;Rex;article-resale-baobab;BA036;BAOBAB;Piece;16
+store-pos-03;POS-03;Rex;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;14
+store-pos-03;POS-03;Rex;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;8
+store-pos-03;POS-03;Rex;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;4
+store-pos-03;POS-03;Rex;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;13
+store-pos-03;POS-03;Rex;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-03;POS-03;Rex;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-03;POS-03;Rex;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;3
+store-pos-03;POS-03;Rex;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;6
+store-pos-03;POS-03;Rex;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;2
+store-pos-03;POS-03;Rex;article-resale-beroberoka;BE031;BEROBEROKA;Piece;20
+store-pos-03;POS-03;Rex;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;11
+store-pos-03;POS-03;Rex;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;4
+store-pos-03;POS-03;Rex;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-03;POS-03;Rex;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;3
+store-pos-03;POS-03;Rex;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-03;POS-03;Rex;article-resale-circulation;CI032;CIRCULATION;Piece;6
+store-pos-03;POS-03;Rex;article-resale-corofar-gm;CG024;COROFAR GM;Piece;12
+store-pos-03;POS-03;Rex;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;5
+store-pos-03;POS-03;Rex;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;16
+store-pos-03;POS-03;Rex;article-resale-detox;DE030;DETOX;Piece;15
+store-pos-03;POS-03;Rex;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;10
+store-pos-03;POS-03;Rex;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;7
+store-pos-03;POS-03;Rex;article-resale-fanazava;FA029;FANAZAVA;Piece;2
+store-pos-03;POS-03;Rex;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;0
+store-pos-03;POS-03;Rex;article-resale-fanjatony;FA022;FANJATONY;Piece;6
+store-pos-03;POS-03;Rex;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;17
+store-pos-03;POS-03;Rex;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-03;POS-03;Rex;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-03;POS-03;Rex;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-03;POS-03;Rex;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-03;POS-03;Rex;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-03;POS-03;Rex;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-03;POS-03;Rex;article-resale-he-radriaka;HR089;HE RADRIAKA;;6
+store-pos-03;POS-03;Rex;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-03;POS-03;Rex;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-03;POS-03;Rex;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;4
+store-pos-03;POS-03;Rex;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-03;POS-03;Rex;article-resale-kinana;KI044;KINANA;Piece;3
+store-pos-03;POS-03;Rex;article-resale-komima;KO064;KOMIMA;Piece;3
+store-pos-03;POS-03;Rex;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;5
+store-pos-03;POS-03;Rex;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-03;POS-03;Rex;article-resale-karela;KA098;KARELA;;0
+store-pos-03;POS-03;Rex;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;10
+store-pos-03;POS-03;Rex;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;2
+store-pos-03;POS-03;Rex;article-resale-madetoxyl;MA051;MADETOXYL;Piece;7
+store-pos-03;POS-03;Rex;article-resale-madetussyl;MA045;MADETUSSYL;Piece;4
+store-pos-03;POS-03;Rex;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;3
+store-pos-03;POS-03;Rex;article-resale-miel;MI061;MIEL;Piece;0
+store-pos-03;POS-03;Rex;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-03;POS-03;Rex;article-resale-magasine;MA099;MAGASINE;;9
+store-pos-03;POS-03;Rex;article-resale-mrg;MR100;MRG;;5
+store-pos-03;POS-03;Rex;article-resale-oac;OA049;OAC;Piece;0
+store-pos-03;POS-03;Rex;article-resale-ody-vato;OV054;ODY VATO;Piece;2
+store-pos-03;POS-03;Rex;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-03;POS-03;Rex;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-03;POS-03;Rex;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;9
+store-pos-03;POS-03;Rex;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;17
+store-pos-03;POS-03;Rex;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;10
+store-pos-03;POS-03;Rex;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;15
+store-pos-03;POS-03;Rex;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;16
+store-pos-03;POS-03;Rex;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-03;POS-03;Rex;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;7
+store-pos-03;POS-03;Rex;article-resale-vitamine-c;VC108;VITAMINE C;;11
+store-pos-03;POS-03;Rex;article-resale-revitalisant;RE070;REVITALISANT;Piece;9
+store-pos-03;POS-03;Rex;article-resale-savlah;SA082;SAVLAH;Piece;19
+store-pos-03;POS-03;Rex;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;8
+store-pos-03;POS-03;Rex;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-03;POS-03;Rex;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;0
+store-pos-03;POS-03;Rex;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;0
+store-pos-03;POS-03;Rex;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-03;POS-03;Rex;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-03;POS-03;Rex;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-03;POS-03;Rex;article-resale-spray;SP102;SPRAY;;2
+store-pos-03;POS-03;Rex;article-resale-spiruline;SP076;SPIRULINE;Piece;19
+store-pos-03;POS-03;Rex;article-resale-glycemie;GL109;GLYCEMIE;;7
+store-pos-03;POS-03;Rex;article-resale-tanjaka;TA083;TANJAKA;Piece;4
+store-pos-03;POS-03;Rex;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;9
+store-pos-03;POS-03;Rex;article-resale-the-olive;TO116;THE OLIVE;;93
+store-pos-03;POS-03;Rex;article-resale-hcg;HC110;HCG;;0
+store-pos-03;POS-03;Rex;article-resale-toxo;TO104;TOXO;;0
+store-pos-03;POS-03;Rex;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;15
+store-pos-03;POS-03;Rex;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;5
+store-pos-03;POS-03;Rex;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;13
+store-pos-03;POS-03;Rex;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;18
+store-pos-03;POS-03;Rex;article-resale-palu;PA113;PALU;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-aloe-noni;AN001;ALOE NONI;Piece;9
+store-pos-07;POS-07;Ankazomanga;article-resale-aloe-pur;AP004;ALOE PUR;Piece;8
+store-pos-07;POS-07;Ankazomanga;article-resale-ananambo;AN003;ANANAMBO;Piece;5
+store-pos-07;POS-07;Ankazomanga;article-resale-anjarasoa;AN034;ANJARASOA;Piece;7
+store-pos-07;POS-07;Ankazomanga;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;7
+store-pos-07;POS-07;Ankazomanga;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;0
+store-pos-07;POS-07;Ankazomanga;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-pos-07;POS-07;Ankazomanga;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;7
+store-pos-07;POS-07;Ankazomanga;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-baobab;BA036;BAOBAB;Piece;5
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;5
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;4
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;5
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;17
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;4
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;11
+store-pos-07;POS-07;Ankazomanga;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;2
+store-pos-07;POS-07;Ankazomanga;article-resale-beroberoka;BE031;BEROBEROKA;Piece;7
+store-pos-07;POS-07;Ankazomanga;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;1
+store-pos-07;POS-07;Ankazomanga;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;3
+store-pos-07;POS-07;Ankazomanga;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-circulation;CI032;CIRCULATION;Piece;4
+store-pos-07;POS-07;Ankazomanga;article-resale-corofar-gm;CG024;COROFAR GM;Piece;5
+store-pos-07;POS-07;Ankazomanga;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;4
+store-pos-07;POS-07;Ankazomanga;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;17
+store-pos-07;POS-07;Ankazomanga;article-resale-detox;DE030;DETOX;Piece;6
+store-pos-07;POS-07;Ankazomanga;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;3
+store-pos-07;POS-07;Ankazomanga;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;3
+store-pos-07;POS-07;Ankazomanga;article-resale-fanazava;FA029;FANAZAVA;Piece;3
+store-pos-07;POS-07;Ankazomanga;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;3
+store-pos-07;POS-07;Ankazomanga;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-pos-07;POS-07;Ankazomanga;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;7
+store-pos-07;POS-07;Ankazomanga;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-he-radriaka;HR089;HE RADRIAKA;;3
+store-pos-07;POS-07;Ankazomanga;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;1
+store-pos-07;POS-07;Ankazomanga;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-kinana;KI044;KINANA;Piece;5
+store-pos-07;POS-07;Ankazomanga;article-resale-komima;KO064;KOMIMA;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-karela;KA098;KARELA;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;6
+store-pos-07;POS-07;Ankazomanga;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;2
+store-pos-07;POS-07;Ankazomanga;article-resale-madetoxyl;MA051;MADETOXYL;Piece;1
+store-pos-07;POS-07;Ankazomanga;article-resale-madetussyl;MA045;MADETUSSYL;Piece;3
+store-pos-07;POS-07;Ankazomanga;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-miel;MI061;MIEL;Piece;4
+store-pos-07;POS-07;Ankazomanga;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-mrg;MR100;MRG;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-oac;OA049;OAC;Piece;5
+store-pos-07;POS-07;Ankazomanga;article-resale-ody-vato;OV054;ODY VATO;Piece;1
+store-pos-07;POS-07;Ankazomanga;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;12
+store-pos-07;POS-07;Ankazomanga;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;15
+store-pos-07;POS-07;Ankazomanga;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;9
+store-pos-07;POS-07;Ankazomanga;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;6
+store-pos-07;POS-07;Ankazomanga;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-revitalisant;RE070;REVITALISANT;Piece;7
+store-pos-07;POS-07;Ankazomanga;article-resale-savlah;SA082;SAVLAH;Piece;17
+store-pos-07;POS-07;Ankazomanga;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;2
+store-pos-07;POS-07;Ankazomanga;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;5
+store-pos-07;POS-07;Ankazomanga;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-07;POS-07;Ankazomanga;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-spray;SP102;SPRAY;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-spiruline;SP076;SPIRULINE;Piece;10
+store-pos-07;POS-07;Ankazomanga;article-resale-glycemie;GL109;GLYCEMIE;;7
+store-pos-07;POS-07;Ankazomanga;article-resale-tanjaka;TA083;TANJAKA;Piece;4
+store-pos-07;POS-07;Ankazomanga;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;3
+store-pos-07;POS-07;Ankazomanga;article-resale-hcg;HC110;HCG;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-toxo;TO104;TOXO;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;4
+store-pos-07;POS-07;Ankazomanga;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;6
+store-pos-07;POS-07;Ankazomanga;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;7
+store-pos-07;POS-07;Ankazomanga;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;14
+store-pos-07;POS-07;Ankazomanga;article-resale-st;ST111;ST;;0
+store-pos-07;POS-07;Ankazomanga;article-resale-palu;PA113;PALU;;0
+store-pos-14;POS-14;Moramanga;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-aloe-noni;AN001;ALOE NONI;Piece;9
+store-pos-14;POS-14;Moramanga;article-resale-aloe-pur;AP004;ALOE PUR;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-ananambo;AN003;ANANAMBO;Piece;4
+store-pos-14;POS-14;Moramanga;article-resale-anjarasoa;AN034;ANJARASOA;Piece;2
+store-pos-14;POS-14;Moramanga;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;4
+store-pos-14;POS-14;Moramanga;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;18
+store-pos-14;POS-14;Moramanga;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;5
+store-pos-14;POS-14;Moramanga;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;4
+store-pos-14;POS-14;Moramanga;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-14;POS-14;Moramanga;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-14;POS-14;Moramanga;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-14;POS-14;Moramanga;article-resale-baobab;BA036;BAOBAB;Piece;5
+store-pos-14;POS-14;Moramanga;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;6
+store-pos-14;POS-14;Moramanga;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;7
+store-pos-14;POS-14;Moramanga;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;14
+store-pos-14;POS-14;Moramanga;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;6
+store-pos-14;POS-14;Moramanga;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;8
+store-pos-14;POS-14;Moramanga;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;8
+store-pos-14;POS-14;Moramanga;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;2
+store-pos-14;POS-14;Moramanga;article-resale-beroberoka;BE031;BEROBEROKA;Piece;25
+store-pos-14;POS-14;Moramanga;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;7
+store-pos-14;POS-14;Moramanga;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-14;POS-14;Moramanga;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;7
+store-pos-14;POS-14;Moramanga;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-circulation;CI032;CIRCULATION;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-corofar-gm;CG024;COROFAR GM;Piece;5
+store-pos-14;POS-14;Moramanga;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;4
+store-pos-14;POS-14;Moramanga;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;36
+store-pos-14;POS-14;Moramanga;article-resale-detox;DE030;DETOX;Piece;12
+store-pos-14;POS-14;Moramanga;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;5
+store-pos-14;POS-14;Moramanga;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-pos-14;POS-14;Moramanga;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;4
+store-pos-14;POS-14;Moramanga;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-14;POS-14;Moramanga;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-he-radriaka;HR089;HE RADRIAKA;;7
+store-pos-14;POS-14;Moramanga;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;2
+store-pos-14;POS-14;Moramanga;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-14;POS-14;Moramanga;article-resale-kinana;KI044;KINANA;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-komima;KO064;KOMIMA;Piece;2
+store-pos-14;POS-14;Moramanga;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-14;POS-14;Moramanga;article-resale-karela;KA098;KARELA;;0
+store-pos-14;POS-14;Moramanga;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;7
+store-pos-14;POS-14;Moramanga;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;4
+store-pos-14;POS-14;Moramanga;article-resale-madetoxyl;MA051;MADETOXYL;Piece;5
+store-pos-14;POS-14;Moramanga;article-resale-madetussyl;MA045;MADETUSSYL;Piece;4
+store-pos-14;POS-14;Moramanga;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;1
+store-pos-14;POS-14;Moramanga;article-resale-miel;MI061;MIEL;Piece;2
+store-pos-14;POS-14;Moramanga;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-14;POS-14;Moramanga;article-resale-mrg;MR100;MRG;;0
+store-pos-14;POS-14;Moramanga;article-resale-oac;OA049;OAC;Piece;1
+store-pos-14;POS-14;Moramanga;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-ofm;OF063;OFM;Piece;1
+store-pos-14;POS-14;Moramanga;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;13
+store-pos-14;POS-14;Moramanga;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;14
+store-pos-14;POS-14;Moramanga;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;7
+store-pos-14;POS-14;Moramanga;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;5
+store-pos-14;POS-14;Moramanga;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-14;POS-14;Moramanga;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-14;POS-14;Moramanga;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-14;POS-14;Moramanga;article-resale-revitalisant;RE070;REVITALISANT;Piece;13
+store-pos-14;POS-14;Moramanga;article-resale-savlah;SA082;SAVLAH;Piece;17
+store-pos-14;POS-14;Moramanga;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;4
+store-pos-14;POS-14;Moramanga;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;2
+store-pos-14;POS-14;Moramanga;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;2
+store-pos-14;POS-14;Moramanga;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-14;POS-14;Moramanga;article-resale-spray;SP102;SPRAY;;4
+store-pos-14;POS-14;Moramanga;article-resale-spiruline;SP076;SPIRULINE;Piece;0
+store-pos-14;POS-14;Moramanga;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-pos-14;POS-14;Moramanga;article-resale-tanjaka;TA083;TANJAKA;Piece;6
+store-pos-14;POS-14;Moramanga;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;5
+store-pos-14;POS-14;Moramanga;article-resale-hcg;HC110;HCG;;0
+store-pos-14;POS-14;Moramanga;article-resale-toxo;TO104;TOXO;;0
+store-pos-14;POS-14;Moramanga;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;3
+store-pos-14;POS-14;Moramanga;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;5
+store-pos-14;POS-14;Moramanga;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;11
+store-pos-14;POS-14;Moramanga;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;19
+store-pos-14;POS-14;Moramanga;article-resale-st;ST111;ST;;0
+store-pos-14;POS-14;Moramanga;article-resale-palu;PA113;PALU;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-aloe-noni;AN001;ALOE NONI;Piece;10
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-aloe-pur;AP004;ALOE PUR;Piece;4
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-ananambo;AN003;ANANAMBO;Piece;9
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-anjarasoa;AN034;ANJARASOA;Piece;17
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;3
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;9
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;10
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;11
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;4
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baobab;BA036;BAOBAB;Piece;9
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;7
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;7
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;5
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;12
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;8
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;11
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-beroberoka;BE031;BEROBEROKA;Piece;19
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;7
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;1
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;1
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;4
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-cataplasme;CA035;CATAPLASME;Piece;1
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-circulation;CI032;CIRCULATION;Piece;5
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-corofar-gm;CG024;COROFAR GM;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;21
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-detox;DE030;DETOX;Piece;9
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;5
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;7
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-gudichi;GU092;GUDICHI;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-radriaka;HR089;HE RADRIAKA;;5
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;5
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;4
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-kinana;KI044;KINANA;Piece;4
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-komima;KO064;KOMIMA;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;1
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-karela;KA098;KARELA;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-madetoxyl;MA051;MADETOXYL;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-madetussyl;MA045;MADETUSSYL;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-miel;MI061;MIEL;Piece;3
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-magasine;MA099;MAGASINE;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-mrg;MR100;MRG;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-oac;OA049;OAC;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-ofa;OF057;OFA;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-ofm;OF063;OFM;Piece;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;20
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;21
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;12
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;13
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-revitalisant;RE070;REVITALISANT;Piece;9
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-savlah;SA082;SAVLAH;Piece;7
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;4
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;3
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;3
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;2
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;2
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;3
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-spray;SP102;SPRAY;;5
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-spiruline;SP076;SPIRULINE;Piece;5
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-tanjaka;TA083;TANJAKA;Piece;4
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;10
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-hcg;HC110;HCG;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-toxo;TO104;TOXO;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;6
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;8
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;20
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;18
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-st;ST111;ST;;0
+store-rev-01;REV-01;Maman Shinning Tamatave;article-resale-palu;PA113;PALU;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;2
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-aloe-noni;AN001;ALOE NONI;Piece;8
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-aloe-pur;AP004;ALOE PUR;Piece;16
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-ananambo;AN003;ANANAMBO;Piece;4
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-anjarasoa;AN034;ANJARASOA;Piece;14
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;11
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;13
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;6
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baobab;BA036;BAOBAB;Piece;14
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;11
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;11
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;10
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;19
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;10
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;10
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;4
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-beroberoka;BE031;BEROBEROKA;Piece;5
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;6
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;7
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-circulation;CI032;CIRCULATION;Piece;6
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-corofar-gm;CG024;COROFAR GM;Piece;10
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;6
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;27
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-detox;DE030;DETOX;Piece;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;8
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;7
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-fanazava;FA029;FANAZAVA;Piece;2
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;9
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-radriaka;HR089;HE RADRIAKA;;5
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;6
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-kinana;KI044;KINANA;Piece;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-komima;KO064;KOMIMA;Piece;2
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-karela;KA098;KARELA;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;4
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;4
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-madetoxyl;MA051;MADETOXYL;Piece;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-madetussyl;MA045;MADETUSSYL;Piece;5
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;2
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-miel;MI061;MIEL;Piece;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-mrg;MR100;MRG;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-oac;OA049;OAC;Piece;5
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-ody-vato;OV054;ODY VATO;Piece;5
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;10
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;14
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;4
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;6
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;9
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-revitalisant;RE070;REVITALISANT;Piece;15
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-savlah;SA082;SAVLAH;Piece;13
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;4
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;1
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;2
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-spray;SP102;SPRAY;;4
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-spiruline;SP076;SPIRULINE;Piece;19
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-glycemie;GL109;GLYCEMIE;;4
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-tanjaka;TA083;TANJAKA;Piece;8
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;3
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-hcg;HC110;HCG;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-toxo;TO104;TOXO;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;8
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;12
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;24
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-st;ST111;ST;;0
+store-pos-15;POS-15;Meteo Ampasapito;article-resale-palu;PA113;PALU;;0
+store-pos-10;POS-10;Ivato;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;9
+store-pos-10;POS-10;Ivato;article-resale-aloe-noni;AN001;ALOE NONI;Piece;8
+store-pos-10;POS-10;Ivato;article-resale-aloe-pur;AP004;ALOE PUR;Piece;10
+store-pos-10;POS-10;Ivato;article-resale-ananambo;AN003;ANANAMBO;Piece;4
+store-pos-10;POS-10;Ivato;article-resale-anjarasoa;AN034;ANJARASOA;Piece;12
+store-pos-10;POS-10;Ivato;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;5
+store-pos-10;POS-10;Ivato;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;12
+store-pos-10;POS-10;Ivato;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;5
+store-pos-10;POS-10;Ivato;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;3
+store-pos-10;POS-10;Ivato;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-10;POS-10;Ivato;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-10;POS-10;Ivato;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-10;POS-10;Ivato;article-resale-baobab;BA036;BAOBAB;Piece;10
+store-pos-10;POS-10;Ivato;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;8
+store-pos-10;POS-10;Ivato;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;9
+store-pos-10;POS-10;Ivato;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;4
+store-pos-10;POS-10;Ivato;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;15
+store-pos-10;POS-10;Ivato;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;5
+store-pos-10;POS-10;Ivato;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;7
+store-pos-10;POS-10;Ivato;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;1
+store-pos-10;POS-10;Ivato;article-resale-beroberoka;BE031;BEROBEROKA;Piece;22
+store-pos-10;POS-10;Ivato;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;9
+store-pos-10;POS-10;Ivato;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;3
+store-pos-10;POS-10;Ivato;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-10;POS-10;Ivato;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;2
+store-pos-10;POS-10;Ivato;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-circulation;CI032;CIRCULATION;Piece;6
+store-pos-10;POS-10;Ivato;article-resale-corofar-gm;CG024;COROFAR GM;Piece;7
+store-pos-10;POS-10;Ivato;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;2
+store-pos-10;POS-10;Ivato;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;25
+store-pos-10;POS-10;Ivato;article-resale-detox;DE030;DETOX;Piece;10
+store-pos-10;POS-10;Ivato;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;9
+store-pos-10;POS-10;Ivato;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;11
+store-pos-10;POS-10;Ivato;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;7
+store-pos-10;POS-10;Ivato;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;17
+store-pos-10;POS-10;Ivato;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-10;POS-10;Ivato;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-he-radriaka;HR089;HE RADRIAKA;;2
+store-pos-10;POS-10;Ivato;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;6
+store-pos-10;POS-10;Ivato;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-10;POS-10;Ivato;article-resale-kinana;KI044;KINANA;Piece;5
+store-pos-10;POS-10;Ivato;article-resale-komima;KO064;KOMIMA;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-10;POS-10;Ivato;article-resale-karela;KA098;KARELA;;0
+store-pos-10;POS-10;Ivato;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;7
+store-pos-10;POS-10;Ivato;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;6
+store-pos-10;POS-10;Ivato;article-resale-madetoxyl;MA051;MADETOXYL;Piece;4
+store-pos-10;POS-10;Ivato;article-resale-madetussyl;MA045;MADETUSSYL;Piece;5
+store-pos-10;POS-10;Ivato;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-miel;MI061;MIEL;Piece;2
+store-pos-10;POS-10;Ivato;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-10;POS-10;Ivato;article-resale-mrg;MR100;MRG;;0
+store-pos-10;POS-10;Ivato;article-resale-oac;OA049;OAC;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;16
+store-pos-10;POS-10;Ivato;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;15
+store-pos-10;POS-10;Ivato;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;11
+store-pos-10;POS-10;Ivato;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;14
+store-pos-10;POS-10;Ivato;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;8
+store-pos-10;POS-10;Ivato;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-10;POS-10;Ivato;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-10;POS-10;Ivato;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-10;POS-10;Ivato;article-resale-revitalisant;RE070;REVITALISANT;Piece;7
+store-pos-10;POS-10;Ivato;article-resale-savlah;SA082;SAVLAH;Piece;16
+store-pos-10;POS-10;Ivato;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;4
+store-pos-10;POS-10;Ivato;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;2
+store-pos-10;POS-10;Ivato;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;0
+store-pos-10;POS-10;Ivato;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;2
+store-pos-10;POS-10;Ivato;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-10;POS-10;Ivato;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-10;POS-10;Ivato;article-resale-spray;SP102;SPRAY;;4
+store-pos-10;POS-10;Ivato;article-resale-spiruline;SP076;SPIRULINE;Piece;4
+store-pos-10;POS-10;Ivato;article-resale-glycemie;GL109;GLYCEMIE;;6
+store-pos-10;POS-10;Ivato;article-resale-tanjaka;TA083;TANJAKA;Piece;16
+store-pos-10;POS-10;Ivato;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;15
+store-pos-10;POS-10;Ivato;article-resale-hcg;HC110;HCG;;0
+store-pos-10;POS-10;Ivato;article-resale-toxo;TO104;TOXO;;0
+store-pos-10;POS-10;Ivato;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;12
+store-pos-10;POS-10;Ivato;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;4
+store-pos-10;POS-10;Ivato;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;12
+store-pos-10;POS-10;Ivato;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;12
+store-pos-10;POS-10;Ivato;article-resale-st;ST111;ST;;0
+store-pos-10;POS-10;Ivato;article-resale-palu;PA113;PALU;;0
+store-pos-05;POS-05;Soanierana;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;9
+store-pos-05;POS-05;Soanierana;article-resale-aloe-noni;AN001;ALOE NONI;Piece;10
+store-pos-05;POS-05;Soanierana;article-resale-aloe-pur;AP004;ALOE PUR;Piece;9
+store-pos-05;POS-05;Soanierana;article-resale-ananambo;AN003;ANANAMBO;Piece;7
+store-pos-05;POS-05;Soanierana;article-resale-anjarasoa;AN034;ANJARASOA;Piece;11
+store-pos-05;POS-05;Soanierana;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;5
+store-pos-05;POS-05;Soanierana;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;13
+store-pos-05;POS-05;Soanierana;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;6
+store-pos-05;POS-05;Soanierana;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-05;POS-05;Soanierana;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-05;POS-05;Soanierana;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-05;POS-05;Soanierana;article-resale-baobab;BA036;BAOBAB;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;9
+store-pos-05;POS-05;Soanierana;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;7
+store-pos-05;POS-05;Soanierana;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;13
+store-pos-05;POS-05;Soanierana;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;8
+store-pos-05;POS-05;Soanierana;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;3
+store-pos-05;POS-05;Soanierana;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;5
+store-pos-05;POS-05;Soanierana;article-resale-beroberoka;BE031;BEROBEROKA;Piece;14
+store-pos-05;POS-05;Soanierana;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;11
+store-pos-05;POS-05;Soanierana;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;3
+store-pos-05;POS-05;Soanierana;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-05;POS-05;Soanierana;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;6
+store-pos-05;POS-05;Soanierana;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-circulation;CI032;CIRCULATION;Piece;9
+store-pos-05;POS-05;Soanierana;article-resale-corofar-gm;CG024;COROFAR GM;Piece;4
+store-pos-05;POS-05;Soanierana;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;9
+store-pos-05;POS-05;Soanierana;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;18
+store-pos-05;POS-05;Soanierana;article-resale-detox;DE030;DETOX;Piece;9
+store-pos-05;POS-05;Soanierana;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;4
+store-pos-05;POS-05;Soanierana;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;2
+store-pos-05;POS-05;Soanierana;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-pos-05;POS-05;Soanierana;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;8
+store-pos-05;POS-05;Soanierana;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-05;POS-05;Soanierana;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-he-radriaka;HR089;HE RADRIAKA;;2
+store-pos-05;POS-05;Soanierana;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;6
+store-pos-05;POS-05;Soanierana;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-05;POS-05;Soanierana;article-resale-kinana;KI044;KINANA;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-komima;KO064;KOMIMA;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;3
+store-pos-05;POS-05;Soanierana;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-05;POS-05;Soanierana;article-resale-karela;KA098;KARELA;;0
+store-pos-05;POS-05;Soanierana;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;11
+store-pos-05;POS-05;Soanierana;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-madetoxyl;MA051;MADETOXYL;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-madetussyl;MA045;MADETUSSYL;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;2
+store-pos-05;POS-05;Soanierana;article-resale-miel;MI061;MIEL;Piece;3
+store-pos-05;POS-05;Soanierana;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-magasine;MA099;MAGASINE;;1
+store-pos-05;POS-05;Soanierana;article-resale-mrg;MR100;MRG;;0
+store-pos-05;POS-05;Soanierana;article-resale-oac;OA049;OAC;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;10
+store-pos-05;POS-05;Soanierana;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;11
+store-pos-05;POS-05;Soanierana;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;8
+store-pos-05;POS-05;Soanierana;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;7
+store-pos-05;POS-05;Soanierana;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;8
+store-pos-05;POS-05;Soanierana;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-05;POS-05;Soanierana;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-05;POS-05;Soanierana;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-05;POS-05;Soanierana;article-resale-revitalisant;RE070;REVITALISANT;Piece;5
+store-pos-05;POS-05;Soanierana;article-resale-savlah;SA082;SAVLAH;Piece;15
+store-pos-05;POS-05;Soanierana;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;3
+store-pos-05;POS-05;Soanierana;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;3
+store-pos-05;POS-05;Soanierana;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;0
+store-pos-05;POS-05;Soanierana;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-05;POS-05;Soanierana;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;2
+store-pos-05;POS-05;Soanierana;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-05;POS-05;Soanierana;article-resale-spray;SP102;SPRAY;;1
+store-pos-05;POS-05;Soanierana;article-resale-spiruline;SP076;SPIRULINE;Piece;6
+store-pos-05;POS-05;Soanierana;article-resale-glycemie;GL109;GLYCEMIE;;2
+store-pos-05;POS-05;Soanierana;article-resale-tanjaka;TA083;TANJAKA;Piece;12
+store-pos-05;POS-05;Soanierana;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;3
+store-pos-05;POS-05;Soanierana;article-resale-hcg;HC110;HCG;;0
+store-pos-05;POS-05;Soanierana;article-resale-toxo;TO104;TOXO;;0
+store-pos-05;POS-05;Soanierana;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;3
+store-pos-05;POS-05;Soanierana;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;14
+store-pos-05;POS-05;Soanierana;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;13
+store-pos-05;POS-05;Soanierana;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;14
+store-pos-05;POS-05;Soanierana;article-resale-st;ST111;ST;;0
+store-pos-05;POS-05;Soanierana;article-resale-palu;PA113;PALU;;0
+store-rev-04;REV-04;Talatamaty;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;8
+store-rev-04;REV-04;Talatamaty;article-resale-aloe-noni;AN001;ALOE NONI;Piece;6
+store-rev-04;REV-04;Talatamaty;article-resale-aloe-pur;AP004;ALOE PUR;Piece;1
+store-rev-04;REV-04;Talatamaty;article-resale-ananambo;AN003;ANANAMBO;Piece;4
+store-rev-04;REV-04;Talatamaty;article-resale-anjarasoa;AN034;ANJARASOA;Piece;11
+store-rev-04;REV-04;Talatamaty;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;4
+store-rev-04;REV-04;Talatamaty;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;15
+store-rev-04;REV-04;Talatamaty;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;5
+store-rev-04;REV-04;Talatamaty;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;4
+store-rev-04;REV-04;Talatamaty;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-rev-04;REV-04;Talatamaty;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-rev-04;REV-04;Talatamaty;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-rev-04;REV-04;Talatamaty;article-resale-baobab;BA036;BAOBAB;Piece;6
+store-rev-04;REV-04;Talatamaty;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;11
+store-rev-04;REV-04;Talatamaty;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;11
+store-rev-04;REV-04;Talatamaty;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;5
+store-rev-04;REV-04;Talatamaty;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;14
+store-rev-04;REV-04;Talatamaty;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;4
+store-rev-04;REV-04;Talatamaty;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;16
+store-rev-04;REV-04;Talatamaty;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;2
+store-rev-04;REV-04;Talatamaty;article-resale-beroberoka;BE031;BEROBEROKA;Piece;23
+store-rev-04;REV-04;Talatamaty;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;1
+store-rev-04;REV-04;Talatamaty;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;4
+store-rev-04;REV-04;Talatamaty;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-rev-04;REV-04;Talatamaty;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;3
+store-rev-04;REV-04;Talatamaty;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-circulation;CI032;CIRCULATION;Piece;6
+store-rev-04;REV-04;Talatamaty;article-resale-corofar-gm;CG024;COROFAR GM;Piece;6
+store-rev-04;REV-04;Talatamaty;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;11
+store-rev-04;REV-04;Talatamaty;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;34
+store-rev-04;REV-04;Talatamaty;article-resale-detox;DE030;DETOX;Piece;15
+store-rev-04;REV-04;Talatamaty;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;7
+store-rev-04;REV-04;Talatamaty;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;3
+store-rev-04;REV-04;Talatamaty;article-resale-fanazava;FA029;FANAZAVA;Piece;2
+store-rev-04;REV-04;Talatamaty;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-rev-04;REV-04;Talatamaty;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;4
+store-rev-04;REV-04;Talatamaty;article-resale-gudichi;GU092;GUDICHI;;0
+store-rev-04;REV-04;Talatamaty;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-he-radriaka;HR089;HE RADRIAKA;;3
+store-rev-04;REV-04;Talatamaty;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;1
+store-rev-04;REV-04;Talatamaty;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-rev-04;REV-04;Talatamaty;article-resale-kinana;KI044;KINANA;Piece;4
+store-rev-04;REV-04;Talatamaty;article-resale-komima;KO064;KOMIMA;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-rev-04;REV-04;Talatamaty;article-resale-karela;KA098;KARELA;;0
+store-rev-04;REV-04;Talatamaty;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;11
+store-rev-04;REV-04;Talatamaty;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;6
+store-rev-04;REV-04;Talatamaty;article-resale-madetoxyl;MA051;MADETOXYL;Piece;4
+store-rev-04;REV-04;Talatamaty;article-resale-madetussyl;MA045;MADETUSSYL;Piece;5
+store-rev-04;REV-04;Talatamaty;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-miel;MI061;MIEL;Piece;1
+store-rev-04;REV-04;Talatamaty;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-magasine;MA099;MAGASINE;;0
+store-rev-04;REV-04;Talatamaty;article-resale-mrg;MR100;MRG;;0
+store-rev-04;REV-04;Talatamaty;article-resale-oac;OA049;OAC;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-ofa;OF057;OFA;Piece;1
+store-rev-04;REV-04;Talatamaty;article-resale-ofm;OF063;OFM;Piece;0
+store-rev-04;REV-04;Talatamaty;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;8
+store-rev-04;REV-04;Talatamaty;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;7
+store-rev-04;REV-04;Talatamaty;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;3
+store-rev-04;REV-04;Talatamaty;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;8
+store-rev-04;REV-04;Talatamaty;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;9
+store-rev-04;REV-04;Talatamaty;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-rev-04;REV-04;Talatamaty;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-rev-04;REV-04;Talatamaty;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-rev-04;REV-04;Talatamaty;article-resale-revitalisant;RE070;REVITALISANT;Piece;8
+store-rev-04;REV-04;Talatamaty;article-resale-savlah;SA082;SAVLAH;Piece;21
+store-rev-04;REV-04;Talatamaty;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;2
+store-rev-04;REV-04;Talatamaty;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;8
+store-rev-04;REV-04;Talatamaty;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;3
+store-rev-04;REV-04;Talatamaty;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;1
+store-rev-04;REV-04;Talatamaty;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;3
+store-rev-04;REV-04;Talatamaty;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;2
+store-rev-04;REV-04;Talatamaty;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-rev-04;REV-04;Talatamaty;article-resale-spray;SP102;SPRAY;;4
+store-rev-04;REV-04;Talatamaty;article-resale-spiruline;SP076;SPIRULINE;Piece;12
+store-rev-04;REV-04;Talatamaty;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-rev-04;REV-04;Talatamaty;article-resale-tanjaka;TA083;TANJAKA;Piece;6
+store-rev-04;REV-04;Talatamaty;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;10
+store-rev-04;REV-04;Talatamaty;article-resale-hcg;HC110;HCG;;0
+store-rev-04;REV-04;Talatamaty;article-resale-toxo;TO104;TOXO;;0
+store-rev-04;REV-04;Talatamaty;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;7
+store-rev-04;REV-04;Talatamaty;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;11
+store-rev-04;REV-04;Talatamaty;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;14
+store-rev-04;REV-04;Talatamaty;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;11
+store-rev-04;REV-04;Talatamaty;article-resale-st;ST111;ST;;0
+store-rev-04;REV-04;Talatamaty;article-resale-palu;PA113;PALU;;0
+store-pos-04;POS-04;Mahamasina;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;11
+store-pos-04;POS-04;Mahamasina;article-resale-aloe-noni;AN001;ALOE NONI;Piece;9
+store-pos-04;POS-04;Mahamasina;article-resale-aloe-pur;AP004;ALOE PUR;Piece;13
+store-pos-04;POS-04;Mahamasina;article-resale-ananambo;AN003;ANANAMBO;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-anjarasoa;AN034;ANJARASOA;Piece;14
+store-pos-04;POS-04;Mahamasina;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;3
+store-pos-04;POS-04;Mahamasina;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;4
+store-pos-04;POS-04;Mahamasina;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;4
+store-pos-04;POS-04;Mahamasina;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-pos-04;POS-04;Mahamasina;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;4
+store-pos-04;POS-04;Mahamasina;article-resale-ashvagandha;AS087;ASHVAGANDHA;;1
+store-pos-04;POS-04;Mahamasina;article-resale-alben-cp;AC091;ALBEN CP;;2
+store-pos-04;POS-04;Mahamasina;article-resale-alben-sp;AS105;ALBEN SP;;18
+store-pos-04;POS-04;Mahamasina;article-resale-baobab;BA036;BAOBAB;Piece;1
+store-pos-04;POS-04;Mahamasina;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;5
+store-pos-04;POS-04;Mahamasina;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;7
+store-pos-04;POS-04;Mahamasina;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;6
+store-pos-04;POS-04;Mahamasina;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;16
+store-pos-04;POS-04;Mahamasina;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;9
+store-pos-04;POS-04;Mahamasina;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;12
+store-pos-04;POS-04;Mahamasina;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;0
+store-pos-04;POS-04;Mahamasina;article-resale-beroberoka;BE031;BEROBEROKA;Piece;14
+store-pos-04;POS-04;Mahamasina;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;9
+store-pos-04;POS-04;Mahamasina;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;7
+store-pos-04;POS-04;Mahamasina;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;1
+store-pos-04;POS-04;Mahamasina;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;6
+store-pos-04;POS-04;Mahamasina;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-circulation;CI032;CIRCULATION;Piece;3
+store-pos-04;POS-04;Mahamasina;article-resale-corofar-gm;CG024;COROFAR GM;Piece;23
+store-pos-04;POS-04;Mahamasina;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;3
+store-pos-04;POS-04;Mahamasina;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;21
+store-pos-04;POS-04;Mahamasina;article-resale-detox;DE030;DETOX;Piece;19
+store-pos-04;POS-04;Mahamasina;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;6
+store-pos-04;POS-04;Mahamasina;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;5
+store-pos-04;POS-04;Mahamasina;article-resale-fanazava;FA029;FANAZAVA;Piece;5
+store-pos-04;POS-04;Mahamasina;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;20
+store-pos-04;POS-04;Mahamasina;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-04;POS-04;Mahamasina;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-predni-50g;P5093;PREDNI 50G;;5
+store-pos-04;POS-04;Mahamasina;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-injection;IN094;INJECTION;;0
+store-pos-04;POS-04;Mahamasina;article-resale-he-radriaka;HR089;HE RADRIAKA;;3
+store-pos-04;POS-04;Mahamasina;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-ampi-inj;AI095;AMPI INJ;;0
+store-pos-04;POS-04;Mahamasina;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;11
+store-pos-04;POS-04;Mahamasina;article-resale-diclo;DI096;DICLO;;44
+store-pos-04;POS-04;Mahamasina;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-04;POS-04;Mahamasina;article-resale-kinana;KI044;KINANA;Piece;1
+store-pos-04;POS-04;Mahamasina;article-resale-komima;KO064;KOMIMA;Piece;5
+store-pos-04;POS-04;Mahamasina;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-kapikachu;KA097;KAPIKACHU;;1
+store-pos-04;POS-04;Mahamasina;article-resale-karela;KA098;KARELA;;0
+store-pos-04;POS-04;Mahamasina;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;6
+store-pos-04;POS-04;Mahamasina;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;5
+store-pos-04;POS-04;Mahamasina;article-resale-madetoxyl;MA051;MADETOXYL;Piece;3
+store-pos-04;POS-04;Mahamasina;article-resale-madetussyl;MA045;MADETUSSYL;Piece;4
+store-pos-04;POS-04;Mahamasina;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;3
+store-pos-04;POS-04;Mahamasina;article-resale-miel;MI061;MIEL;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-04;POS-04;Mahamasina;article-resale-mrg;MR100;MRG;;1
+store-pos-04;POS-04;Mahamasina;article-resale-oac;OA049;OAC;Piece;4
+store-pos-04;POS-04;Mahamasina;article-resale-ody-vato;OV054;ODY VATO;Piece;10
+store-pos-04;POS-04;Mahamasina;article-resale-ofa;OF057;OFA;Piece;1
+store-pos-04;POS-04;Mahamasina;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;17
+store-pos-04;POS-04;Mahamasina;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;10
+store-pos-04;POS-04;Mahamasina;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;15
+store-pos-04;POS-04;Mahamasina;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;8
+store-pos-04;POS-04;Mahamasina;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;7
+store-pos-04;POS-04;Mahamasina;article-resale-punarnava;PU101;PUNARNAVA;;2
+store-pos-04;POS-04;Mahamasina;article-resale-arina;AR112;ARINA;;2
+store-pos-04;POS-04;Mahamasina;article-resale-hepatite-b;HB107;HEPATITE B;;7
+store-pos-04;POS-04;Mahamasina;article-resale-vitamine-c;VC108;VITAMINE C;;35
+store-pos-04;POS-04;Mahamasina;article-resale-revitalisant;RE070;REVITALISANT;Piece;8
+store-pos-04;POS-04;Mahamasina;article-resale-savlah;SA082;SAVLAH;Piece;11
+store-pos-04;POS-04;Mahamasina;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;7
+store-pos-04;POS-04;Mahamasina;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;4
+store-pos-04;POS-04;Mahamasina;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;3
+store-pos-04;POS-04;Mahamasina;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-04;POS-04;Mahamasina;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;6
+store-pos-04;POS-04;Mahamasina;article-resale-spray;SP102;SPRAY;;0
+store-pos-04;POS-04;Mahamasina;article-resale-spiruline;SP076;SPIRULINE;Piece;10
+store-pos-04;POS-04;Mahamasina;article-resale-glycemie;GL109;GLYCEMIE;;8
+store-pos-04;POS-04;Mahamasina;article-resale-tanjaka;TA083;TANJAKA;Piece;8
+store-pos-04;POS-04;Mahamasina;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;9
+store-pos-04;POS-04;Mahamasina;article-resale-atropine;AT103;ATROPINE;;0
+store-pos-04;POS-04;Mahamasina;article-resale-hcg;HC110;HCG;;2
+store-pos-04;POS-04;Mahamasina;article-resale-toxo;TO104;TOXO;;11
+store-pos-04;POS-04;Mahamasina;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;4
+store-pos-04;POS-04;Mahamasina;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;6
+store-pos-04;POS-04;Mahamasina;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;8
+store-pos-04;POS-04;Mahamasina;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;12
+store-pos-04;POS-04;Mahamasina;article-resale-st;ST111;ST;;0
+store-pos-04;POS-04;Mahamasina;article-resale-seringue;SE119;SERINGUE;;8
+store-pos-04;POS-04;Mahamasina;article-resale-dexa;DE118;DEXA;;1
+store-rev-06;REV-06;Ankadidratombo;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;7
+store-rev-06;REV-06;Ankadidratombo;article-resale-aloe-noni;AN001;ALOE NONI;Piece;9
+store-rev-06;REV-06;Ankadidratombo;article-resale-aloe-pur;AP004;ALOE PUR;Piece;5
+store-rev-06;REV-06;Ankadidratombo;article-resale-ananambo;AN003;ANANAMBO;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-anjarasoa;AN034;ANJARASOA;Piece;9
+store-rev-06;REV-06;Ankadidratombo;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;5
+store-rev-06;REV-06;Ankadidratombo;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;5
+store-rev-06;REV-06;Ankadidratombo;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;1
+store-rev-06;REV-06;Ankadidratombo;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-baobab;BA036;BAOBAB;Piece;7
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;8
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;5
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;1
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;8
+store-rev-06;REV-06;Ankadidratombo;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-beroberoka;BE031;BEROBEROKA;Piece;23
+store-rev-06;REV-06;Ankadidratombo;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;6
+store-rev-06;REV-06;Ankadidratombo;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-circulation;CI032;CIRCULATION;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-corofar-gm;CG024;COROFAR GM;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;15
+store-rev-06;REV-06;Ankadidratombo;article-resale-detox;DE030;DETOX;Piece;9
+store-rev-06;REV-06;Ankadidratombo;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;7
+store-rev-06;REV-06;Ankadidratombo;article-resale-fanazava;FA029;FANAZAVA;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;7
+store-rev-06;REV-06;Ankadidratombo;article-resale-gudichi;GU092;GUDICHI;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-radriaka;HR089;HE RADRIAKA;;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-kinana;KI044;KINANA;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-komima;KO064;KOMIMA;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-karela;KA098;KARELA;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;7
+store-rev-06;REV-06;Ankadidratombo;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;5
+store-rev-06;REV-06;Ankadidratombo;article-resale-madetoxyl;MA051;MADETOXYL;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-madetussyl;MA045;MADETUSSYL;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;5
+store-rev-06;REV-06;Ankadidratombo;article-resale-miel;MI061;MIEL;Piece;1
+store-rev-06;REV-06;Ankadidratombo;article-resale-madetonyl;MA062;MADETONYL;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-magasine;MA099;MAGASINE;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-mrg;MR100;MRG;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-oac;OA049;OAC;Piece;1
+store-rev-06;REV-06;Ankadidratombo;article-resale-ody-vato;OV054;ODY VATO;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-ofa;OF057;OFA;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-ofm;OF063;OFM;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;8
+store-rev-06;REV-06;Ankadidratombo;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;7
+store-rev-06;REV-06;Ankadidratombo;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-revitalisant;RE070;REVITALISANT;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-savlah;SA082;SAVLAH;Piece;13
+store-rev-06;REV-06;Ankadidratombo;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;9
+store-rev-06;REV-06;Ankadidratombo;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;5
+store-rev-06;REV-06;Ankadidratombo;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-spray;SP102;SPRAY;;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-spiruline;SP076;SPIRULINE;Piece;8
+store-rev-06;REV-06;Ankadidratombo;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-tanjaka;TA083;TANJAKA;Piece;2
+store-rev-06;REV-06;Ankadidratombo;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;11
+store-rev-06;REV-06;Ankadidratombo;article-resale-hcg;HC110;HCG;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-toxo;TO104;TOXO;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;4
+store-rev-06;REV-06;Ankadidratombo;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;3
+store-rev-06;REV-06;Ankadidratombo;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;5
+store-rev-06;REV-06;Ankadidratombo;article-resale-st;ST111;ST;;0
+store-rev-06;REV-06;Ankadidratombo;article-resale-palu;PA113;PALU;;0
+store-pos-12;POS-12;Ampandrana;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-aloe-noni;AN001;ALOE NONI;Piece;9
+store-pos-12;POS-12;Ampandrana;article-resale-aloe-pur;AP004;ALOE PUR;Piece;6
+store-pos-12;POS-12;Ampandrana;article-resale-ananambo;AN003;ANANAMBO;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-anjarasoa;AN034;ANJARASOA;Piece;8
+store-pos-12;POS-12;Ampandrana;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;5
+store-pos-12;POS-12;Ampandrana;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;10
+store-pos-12;POS-12;Ampandrana;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;5
+store-pos-12;POS-12;Ampandrana;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;6
+store-pos-12;POS-12;Ampandrana;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-12;POS-12;Ampandrana;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-12;POS-12;Ampandrana;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-12;POS-12;Ampandrana;article-resale-baobab;BA036;BAOBAB;Piece;6
+store-pos-12;POS-12;Ampandrana;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;11
+store-pos-12;POS-12;Ampandrana;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;9
+store-pos-12;POS-12;Ampandrana;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;8
+store-pos-12;POS-12;Ampandrana;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;11
+store-pos-12;POS-12;Ampandrana;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;8
+store-pos-12;POS-12;Ampandrana;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;4
+store-pos-12;POS-12;Ampandrana;article-resale-beroberoka;BE031;BEROBEROKA;Piece;2
+store-pos-12;POS-12;Ampandrana;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;11
+store-pos-12;POS-12;Ampandrana;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;3
+store-pos-12;POS-12;Ampandrana;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-12;POS-12;Ampandrana;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;3
+store-pos-12;POS-12;Ampandrana;article-resale-cataplasme;CA035;CATAPLASME;Piece;1
+store-pos-12;POS-12;Ampandrana;article-resale-circulation;CI032;CIRCULATION;Piece;6
+store-pos-12;POS-12;Ampandrana;article-resale-corofar-gm;CG024;COROFAR GM;Piece;3
+store-pos-12;POS-12;Ampandrana;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;10
+store-pos-12;POS-12;Ampandrana;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;15
+store-pos-12;POS-12;Ampandrana;article-resale-detox;DE030;DETOX;Piece;14
+store-pos-12;POS-12;Ampandrana;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;7
+store-pos-12;POS-12;Ampandrana;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-fanazava;FA029;FANAZAVA;Piece;2
+store-pos-12;POS-12;Ampandrana;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;3
+store-pos-12;POS-12;Ampandrana;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-pos-12;POS-12;Ampandrana;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;12
+store-pos-12;POS-12;Ampandrana;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-12;POS-12;Ampandrana;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-he-radriaka;HR089;HE RADRIAKA;;3
+store-pos-12;POS-12;Ampandrana;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;7
+store-pos-12;POS-12;Ampandrana;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-12;POS-12;Ampandrana;article-resale-kinana;KI044;KINANA;Piece;1
+store-pos-12;POS-12;Ampandrana;article-resale-komima;KO064;KOMIMA;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;5
+store-pos-12;POS-12;Ampandrana;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-12;POS-12;Ampandrana;article-resale-karela;KA098;KARELA;;0
+store-pos-12;POS-12;Ampandrana;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;8
+store-pos-12;POS-12;Ampandrana;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-madetoxyl;MA051;MADETOXYL;Piece;1
+store-pos-12;POS-12;Ampandrana;article-resale-madetussyl;MA045;MADETUSSYL;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-miel;MI061;MIEL;Piece;6
+store-pos-12;POS-12;Ampandrana;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-12;POS-12;Ampandrana;article-resale-mrg;MR100;MRG;;0
+store-pos-12;POS-12;Ampandrana;article-resale-oac;OA049;OAC;Piece;2
+store-pos-12;POS-12;Ampandrana;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;12
+store-pos-12;POS-12;Ampandrana;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;10
+store-pos-12;POS-12;Ampandrana;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;4
+store-pos-12;POS-12;Ampandrana;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;7
+store-pos-12;POS-12;Ampandrana;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-12;POS-12;Ampandrana;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-12;POS-12;Ampandrana;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-12;POS-12;Ampandrana;article-resale-revitalisant;RE070;REVITALISANT;Piece;6
+store-pos-12;POS-12;Ampandrana;article-resale-savlah;SA082;SAVLAH;Piece;15
+store-pos-12;POS-12;Ampandrana;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;5
+store-pos-12;POS-12;Ampandrana;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;0
+store-pos-12;POS-12;Ampandrana;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;1
+store-pos-12;POS-12;Ampandrana;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-12;POS-12;Ampandrana;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-12;POS-12;Ampandrana;article-resale-spray;SP102;SPRAY;;0
+store-pos-12;POS-12;Ampandrana;article-resale-spiruline;SP076;SPIRULINE;Piece;7
+store-pos-12;POS-12;Ampandrana;article-resale-glycemie;GL109;GLYCEMIE;;3
+store-pos-12;POS-12;Ampandrana;article-resale-tanjaka;TA083;TANJAKA;Piece;12
+store-pos-12;POS-12;Ampandrana;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;11
+store-pos-12;POS-12;Ampandrana;article-resale-hcg;HC110;HCG;;2
+store-pos-12;POS-12;Ampandrana;article-resale-toxo;TO104;TOXO;;2
+store-pos-12;POS-12;Ampandrana;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;6
+store-pos-12;POS-12;Ampandrana;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;7
+store-pos-12;POS-12;Ampandrana;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;12
+store-pos-12;POS-12;Ampandrana;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;13
+store-pos-12;POS-12;Ampandrana;article-resale-st;ST111;ST;;2
+store-pos-12;POS-12;Ampandrana;article-resale-palu;PA113;PALU;;0
+store-pos-09;POS-09;Andranomena;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;6
+store-pos-09;POS-09;Andranomena;article-resale-aloe-noni;AN001;ALOE NONI;Piece;10
+store-pos-09;POS-09;Andranomena;article-resale-aloe-pur;AP004;ALOE PUR;Piece;6
+store-pos-09;POS-09;Andranomena;article-resale-ananambo;AN003;ANANAMBO;Piece;3
+store-pos-09;POS-09;Andranomena;article-resale-anjarasoa;AN034;ANJARASOA;Piece;7
+store-pos-09;POS-09;Andranomena;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;4
+store-pos-09;POS-09;Andranomena;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;9
+store-pos-09;POS-09;Andranomena;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;2
+store-pos-09;POS-09;Andranomena;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;2
+store-pos-09;POS-09;Andranomena;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-09;POS-09;Andranomena;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-09;POS-09;Andranomena;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-09;POS-09;Andranomena;article-resale-baobab;BA036;BAOBAB;Piece;8
+store-pos-09;POS-09;Andranomena;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;8
+store-pos-09;POS-09;Andranomena;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;24
+store-pos-09;POS-09;Andranomena;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;6
+store-pos-09;POS-09;Andranomena;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;5
+store-pos-09;POS-09;Andranomena;article-resale-beroberoka;BE031;BEROBEROKA;Piece;17
+store-pos-09;POS-09;Andranomena;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;4
+store-pos-09;POS-09;Andranomena;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-09;POS-09;Andranomena;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;6
+store-pos-09;POS-09;Andranomena;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-circulation;CI032;CIRCULATION;Piece;3
+store-pos-09;POS-09;Andranomena;article-resale-corofar-gm;CG024;COROFAR GM;Piece;10
+store-pos-09;POS-09;Andranomena;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;4
+store-pos-09;POS-09;Andranomena;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;20
+store-pos-09;POS-09;Andranomena;article-resale-detox;DE030;DETOX;Piece;10
+store-pos-09;POS-09;Andranomena;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;10
+store-pos-09;POS-09;Andranomena;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;7
+store-pos-09;POS-09;Andranomena;article-resale-fanazava;FA029;FANAZAVA;Piece;1
+store-pos-09;POS-09;Andranomena;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;2
+store-pos-09;POS-09;Andranomena;article-resale-fanjatony;FA022;FANJATONY;Piece;1
+store-pos-09;POS-09;Andranomena;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;6
+store-pos-09;POS-09;Andranomena;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-09;POS-09;Andranomena;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-he-radriaka;HR089;HE RADRIAKA;;0
+store-pos-09;POS-09;Andranomena;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-09;POS-09;Andranomena;article-resale-kinana;KI044;KINANA;Piece;4
+store-pos-09;POS-09;Andranomena;article-resale-komima;KO064;KOMIMA;Piece;2
+store-pos-09;POS-09;Andranomena;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;2
+store-pos-09;POS-09;Andranomena;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-09;POS-09;Andranomena;article-resale-karela;KA098;KARELA;;0
+store-pos-09;POS-09;Andranomena;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;7
+store-pos-09;POS-09;Andranomena;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;4
+store-pos-09;POS-09;Andranomena;article-resale-madetoxyl;MA051;MADETOXYL;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-madetussyl;MA045;MADETUSSYL;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;2
+store-pos-09;POS-09;Andranomena;article-resale-miel;MI061;MIEL;Piece;1
+store-pos-09;POS-09;Andranomena;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-09;POS-09;Andranomena;article-resale-mrg;MR100;MRG;;0
+store-pos-09;POS-09;Andranomena;article-resale-oac;OA049;OAC;Piece;3
+store-pos-09;POS-09;Andranomena;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;15
+store-pos-09;POS-09;Andranomena;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;10
+store-pos-09;POS-09;Andranomena;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;6
+store-pos-09;POS-09;Andranomena;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;9
+store-pos-09;POS-09;Andranomena;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-09;POS-09;Andranomena;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-09;POS-09;Andranomena;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-09;POS-09;Andranomena;article-resale-revitalisant;RE070;REVITALISANT;Piece;4
+store-pos-09;POS-09;Andranomena;article-resale-savlah;SA082;SAVLAH;Piece;7
+store-pos-09;POS-09;Andranomena;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;5
+store-pos-09;POS-09;Andranomena;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;0
+store-pos-09;POS-09;Andranomena;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-09;POS-09;Andranomena;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-09;POS-09;Andranomena;article-resale-spray;SP102;SPRAY;;2
+store-pos-09;POS-09;Andranomena;article-resale-spiruline;SP076;SPIRULINE;Piece;11
+store-pos-09;POS-09;Andranomena;article-resale-glycemie;GL109;GLYCEMIE;;12
+store-pos-09;POS-09;Andranomena;article-resale-tanjaka;TA083;TANJAKA;Piece;7
+store-pos-09;POS-09;Andranomena;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;15
+store-pos-09;POS-09;Andranomena;article-resale-hcg;HC110;HCG;;0
+store-pos-09;POS-09;Andranomena;article-resale-toxo;TO104;TOXO;;0
+store-pos-09;POS-09;Andranomena;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;9
+store-pos-09;POS-09;Andranomena;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;7
+store-pos-09;POS-09;Andranomena;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;13
+store-pos-09;POS-09;Andranomena;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;15
+store-pos-09;POS-09;Andranomena;article-resale-st;ST111;ST;;0
+store-pos-09;POS-09;Andranomena;article-resale-palu;PA113;PALU;;0
+store-pos-13;POS-13;Antsirabe;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;9
+store-pos-13;POS-13;Antsirabe;article-resale-aloe-noni;AN001;ALOE NONI;Piece;11
+store-pos-13;POS-13;Antsirabe;article-resale-aloe-pur;AP004;ALOE PUR;Piece;5
+store-pos-13;POS-13;Antsirabe;article-resale-ananambo;AN003;ANANAMBO;Piece;9
+store-pos-13;POS-13;Antsirabe;article-resale-anjarasoa;AN034;ANJARASOA;Piece;15
+store-pos-13;POS-13;Antsirabe;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;5
+store-pos-13;POS-13;Antsirabe;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;13
+store-pos-13;POS-13;Antsirabe;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;8
+store-pos-13;POS-13;Antsirabe;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;6
+store-pos-13;POS-13;Antsirabe;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-13;POS-13;Antsirabe;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-13;POS-13;Antsirabe;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-13;POS-13;Antsirabe;article-resale-baobab;BA036;BAOBAB;Piece;10
+store-pos-13;POS-13;Antsirabe;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;16
+store-pos-13;POS-13;Antsirabe;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;4
+store-pos-13;POS-13;Antsirabe;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;7
+store-pos-13;POS-13;Antsirabe;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;10
+store-pos-13;POS-13;Antsirabe;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;2
+store-pos-13;POS-13;Antsirabe;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;5
+store-pos-13;POS-13;Antsirabe;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;5
+store-pos-13;POS-13;Antsirabe;article-resale-beroberoka;BE031;BEROBEROKA;Piece;23
+store-pos-13;POS-13;Antsirabe;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;2
+store-pos-13;POS-13;Antsirabe;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-13;POS-13;Antsirabe;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;2
+store-pos-13;POS-13;Antsirabe;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-circulation;CI032;CIRCULATION;Piece;4
+store-pos-13;POS-13;Antsirabe;article-resale-corofar-gm;CG024;COROFAR GM;Piece;12
+store-pos-13;POS-13;Antsirabe;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;7
+store-pos-13;POS-13;Antsirabe;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;26
+store-pos-13;POS-13;Antsirabe;article-resale-detox;DE030;DETOX;Piece;17
+store-pos-13;POS-13;Antsirabe;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;4
+store-pos-13;POS-13;Antsirabe;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;5
+store-pos-13;POS-13;Antsirabe;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;1
+store-pos-13;POS-13;Antsirabe;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-pos-13;POS-13;Antsirabe;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;9
+store-pos-13;POS-13;Antsirabe;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-13;POS-13;Antsirabe;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-he-radriaka;HR089;HE RADRIAKA;;4
+store-pos-13;POS-13;Antsirabe;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;4
+store-pos-13;POS-13;Antsirabe;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;2
+store-pos-13;POS-13;Antsirabe;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-13;POS-13;Antsirabe;article-resale-kinana;KI044;KINANA;Piece;3
+store-pos-13;POS-13;Antsirabe;article-resale-komima;KO064;KOMIMA;Piece;4
+store-pos-13;POS-13;Antsirabe;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;3
+store-pos-13;POS-13;Antsirabe;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-13;POS-13;Antsirabe;article-resale-karela;KA098;KARELA;;0
+store-pos-13;POS-13;Antsirabe;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;7
+store-pos-13;POS-13;Antsirabe;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;7
+store-pos-13;POS-13;Antsirabe;article-resale-madetoxyl;MA051;MADETOXYL;Piece;3
+store-pos-13;POS-13;Antsirabe;article-resale-madetussyl;MA045;MADETUSSYL;Piece;4
+store-pos-13;POS-13;Antsirabe;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;3
+store-pos-13;POS-13;Antsirabe;article-resale-miel;MI061;MIEL;Piece;6
+store-pos-13;POS-13;Antsirabe;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-13;POS-13;Antsirabe;article-resale-mrg;MR100;MRG;;0
+store-pos-13;POS-13;Antsirabe;article-resale-oac;OA049;OAC;Piece;4
+store-pos-13;POS-13;Antsirabe;article-resale-ody-vato;OV054;ODY VATO;Piece;2
+store-pos-13;POS-13;Antsirabe;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;10
+store-pos-13;POS-13;Antsirabe;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;9
+store-pos-13;POS-13;Antsirabe;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;7
+store-pos-13;POS-13;Antsirabe;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;13
+store-pos-13;POS-13;Antsirabe;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;8
+store-pos-13;POS-13;Antsirabe;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-13;POS-13;Antsirabe;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-13;POS-13;Antsirabe;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-13;POS-13;Antsirabe;article-resale-revitalisant;RE070;REVITALISANT;Piece;5
+store-pos-13;POS-13;Antsirabe;article-resale-savlah;SA082;SAVLAH;Piece;10
+store-pos-13;POS-13;Antsirabe;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;3
+store-pos-13;POS-13;Antsirabe;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;2
+store-pos-13;POS-13;Antsirabe;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;2
+store-pos-13;POS-13;Antsirabe;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;2
+store-pos-13;POS-13;Antsirabe;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-13;POS-13;Antsirabe;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-13;POS-13;Antsirabe;article-resale-spray;SP102;SPRAY;;4
+store-pos-13;POS-13;Antsirabe;article-resale-spiruline;SP076;SPIRULINE;Piece;9
+store-pos-13;POS-13;Antsirabe;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-pos-13;POS-13;Antsirabe;article-resale-tanjaka;TA083;TANJAKA;Piece;5
+store-pos-13;POS-13;Antsirabe;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;7
+store-pos-13;POS-13;Antsirabe;article-resale-hcg;HC110;HCG;;0
+store-pos-13;POS-13;Antsirabe;article-resale-toxo;TO104;TOXO;;0
+store-pos-13;POS-13;Antsirabe;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;3
+store-pos-13;POS-13;Antsirabe;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;10
+store-pos-13;POS-13;Antsirabe;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;15
+store-pos-13;POS-13;Antsirabe;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;15
+store-pos-13;POS-13;Antsirabe;article-resale-st;ST111;ST;;0
+store-pos-13;POS-13;Antsirabe;article-resale-palu;PA113;PALU;;0
+store-rev-02;REV-02;Analakely 401;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;6
+store-rev-02;REV-02;Analakely 401;article-resale-aloe-noni;AN001;ALOE NONI;Piece;7
+store-rev-02;REV-02;Analakely 401;article-resale-aloe-pur;AP004;ALOE PUR;Piece;11
+store-rev-02;REV-02;Analakely 401;article-resale-ananambo;AN003;ANANAMBO;Piece;5
+store-rev-02;REV-02;Analakely 401;article-resale-anjarasoa;AN034;ANJARASOA;Piece;9
+store-rev-02;REV-02;Analakely 401;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;4
+store-rev-02;REV-02;Analakely 401;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;13
+store-rev-02;REV-02;Analakely 401;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;3
+store-rev-02;REV-02;Analakely 401;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-rev-02;REV-02;Analakely 401;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-rev-02;REV-02;Analakely 401;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-rev-02;REV-02;Analakely 401;article-resale-baobab;BA036;BAOBAB;Piece;5
+store-rev-02;REV-02;Analakely 401;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;8
+store-rev-02;REV-02;Analakely 401;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;8
+store-rev-02;REV-02;Analakely 401;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;8
+store-rev-02;REV-02;Analakely 401;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;18
+store-rev-02;REV-02;Analakely 401;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;5
+store-rev-02;REV-02;Analakely 401;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;7
+store-rev-02;REV-02;Analakely 401;article-resale-beroberoka;BE031;BEROBEROKA;Piece;23
+store-rev-02;REV-02;Analakely 401;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;7
+store-rev-02;REV-02;Analakely 401;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-rev-02;REV-02;Analakely 401;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-circulation;CI032;CIRCULATION;Piece;5
+store-rev-02;REV-02;Analakely 401;article-resale-corofar-gm;CG024;COROFAR GM;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;20
+store-rev-02;REV-02;Analakely 401;article-resale-detox;DE030;DETOX;Piece;7
+store-rev-02;REV-02;Analakely 401;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;9
+store-rev-02;REV-02;Analakely 401;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;5
+store-rev-02;REV-02;Analakely 401;article-resale-fanazava;FA029;FANAZAVA;Piece;1
+store-rev-02;REV-02;Analakely 401;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;1
+store-rev-02;REV-02;Analakely 401;article-resale-fanjatony;FA022;FANJATONY;Piece;2
+store-rev-02;REV-02;Analakely 401;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;10
+store-rev-02;REV-02;Analakely 401;article-resale-gudichi;GU092;GUDICHI;;0
+store-rev-02;REV-02;Analakely 401;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-he-radriaka;HR089;HE RADRIAKA;;5
+store-rev-02;REV-02;Analakely 401;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-rev-02;REV-02;Analakely 401;article-resale-kinana;KI044;KINANA;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-komima;KO064;KOMIMA;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-rev-02;REV-02;Analakely 401;article-resale-karela;KA098;KARELA;;0
+store-rev-02;REV-02;Analakely 401;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;5
+store-rev-02;REV-02;Analakely 401;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;2
+store-rev-02;REV-02;Analakely 401;article-resale-madetoxyl;MA051;MADETOXYL;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-madetussyl;MA045;MADETUSSYL;Piece;3
+store-rev-02;REV-02;Analakely 401;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-miel;MI061;MIEL;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-magasine;MA099;MAGASINE;;0
+store-rev-02;REV-02;Analakely 401;article-resale-mrg;MR100;MRG;;0
+store-rev-02;REV-02;Analakely 401;article-resale-oac;OA049;OAC;Piece;1
+store-rev-02;REV-02;Analakely 401;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-ofa;OF057;OFA;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-ofm;OF063;OFM;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;18
+store-rev-02;REV-02;Analakely 401;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;22
+store-rev-02;REV-02;Analakely 401;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;10
+store-rev-02;REV-02;Analakely 401;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-rev-02;REV-02;Analakely 401;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-rev-02;REV-02;Analakely 401;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-rev-02;REV-02;Analakely 401;article-resale-revitalisant;RE070;REVITALISANT;Piece;8
+store-rev-02;REV-02;Analakely 401;article-resale-savlah;SA082;SAVLAH;Piece;18
+store-rev-02;REV-02;Analakely 401;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;4
+store-rev-02;REV-02;Analakely 401;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;6
+store-rev-02;REV-02;Analakely 401;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;3
+store-rev-02;REV-02;Analakely 401;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-rev-02;REV-02;Analakely 401;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;6
+store-rev-02;REV-02;Analakely 401;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-rev-02;REV-02;Analakely 401;article-resale-spray;SP102;SPRAY;;3
+store-rev-02;REV-02;Analakely 401;article-resale-spiruline;SP076;SPIRULINE;Piece;8
+store-rev-02;REV-02;Analakely 401;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-rev-02;REV-02;Analakely 401;article-resale-tanjaka;TA083;TANJAKA;Piece;13
+store-rev-02;REV-02;Analakely 401;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;11
+store-rev-02;REV-02;Analakely 401;article-resale-hcg;HC110;HCG;;0
+store-rev-02;REV-02;Analakely 401;article-resale-toxo;TO104;TOXO;;0
+store-rev-02;REV-02;Analakely 401;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;7
+store-rev-02;REV-02;Analakely 401;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;5
+store-rev-02;REV-02;Analakely 401;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;26
+store-rev-02;REV-02;Analakely 401;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;19
+store-rev-02;REV-02;Analakely 401;article-resale-st;ST111;ST;;0
+store-rev-02;REV-02;Analakely 401;article-resale-palu;PA113;PALU;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-aloe-noni;AN001;ALOE NONI;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-aloe-pur;AP004;ALOE PUR;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-ananambo;AN003;ANANAMBO;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-anjarasoa;AN034;ANJARASOA;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baobab;BA036;BAOBAB;Piece;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;3
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-beroberoka;BE031;BEROBEROKA;Piece;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-circulation;CI032;CIRCULATION;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-corofar-gm;CG024;COROFAR GM;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-detox;DE030;DETOX;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-radriaka;HR089;HE RADRIAKA;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-kinana;KI044;KINANA;Piece;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-komima;KO064;KOMIMA;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-karela;KA098;KARELA;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-madetoxyl;MA051;MADETOXYL;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-madetussyl;MA045;MADETUSSYL;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-miel;MI061;MIEL;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-mrg;MR100;MRG;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-oac;OA049;OAC;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;4
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-revitalisant;RE070;REVITALISANT;Piece;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-savlah;SA082;SAVLAH;Piece;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-spray;SP102;SPRAY;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-spiruline;SP076;SPIRULINE;Piece;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-tanjaka;TA083;TANJAKA;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-hcg;HC110;HCG;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-toxo;TO104;TOXO;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;1
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;2
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-st;ST111;ST;;0
+store-pos-17;POS-17;Mr Ismael Commercial;article-resale-palu;PA113;PALU;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;8
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-aloe-noni;AN001;ALOE NONI;Piece;3
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-aloe-pur;AP004;ALOE PUR;Piece;9
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-ananambo;AN003;ANANAMBO;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-anjarasoa;AN034;ANJARASOA;Piece;6
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;3
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;16
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;5
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;1
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baobab;BA036;BAOBAB;Piece;5
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;8
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;9
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;8
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;11
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;11
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;12
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;3
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-beroberoka;BE031;BEROBEROKA;Piece;7
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;8
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;3
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;5
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-circulation;CI032;CIRCULATION;Piece;5
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-corofar-gm;CG024;COROFAR GM;Piece;2
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;5
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;15
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-detox;DE030;DETOX;Piece;9
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;9
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;4
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;1
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-gudichi;GU092;GUDICHI;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-radriaka;HR089;HE RADRIAKA;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;4
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-kinana;KI044;KINANA;Piece;5
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-komima;KO064;KOMIMA;Piece;2
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;2
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-karela;KA098;KARELA;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;4
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-madetoxyl;MA051;MADETOXYL;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-madetussyl;MA045;MADETUSSYL;Piece;2
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-miel;MI061;MIEL;Piece;4
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-magasine;MA099;MAGASINE;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-mrg;MR100;MRG;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-oac;OA049;OAC;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-ofa;OF057;OFA;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-ofm;OF063;OFM;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;9
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;13
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-revitalisant;RE070;REVITALISANT;Piece;9
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-savlah;SA082;SAVLAH;Piece;19
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;5
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;1
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-spray;SP102;SPRAY;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-spiruline;SP076;SPIRULINE;Piece;3
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-tanjaka;TA083;TANJAKA;Piece;8
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;13
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-hcg;HC110;HCG;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-toxo;TO104;TOXO;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;4
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;4
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;13
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;13
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-st;ST111;ST;;0
+store-rev-08;REV-08;Mr Jean Yves Antsirabe;article-resale-palu;PA113;PALU;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;3
+store-rev-05;REV-05;Imeritsiatosika;article-resale-aloe-noni;AN001;ALOE NONI;Piece;5
+store-rev-05;REV-05;Imeritsiatosika;article-resale-aloe-pur;AP004;ALOE PUR;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-ananambo;AN003;ANANAMBO;Piece;6
+store-rev-05;REV-05;Imeritsiatosika;article-resale-anjarasoa;AN034;ANJARASOA;Piece;8
+store-rev-05;REV-05;Imeritsiatosika;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;7
+store-rev-05;REV-05;Imeritsiatosika;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;1
+store-rev-05;REV-05;Imeritsiatosika;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baobab;BA036;BAOBAB;Piece;7
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;6
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;6
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;12
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;5
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;1
+store-rev-05;REV-05;Imeritsiatosika;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-beroberoka;BE031;BEROBEROKA;Piece;47
+store-rev-05;REV-05;Imeritsiatosika;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;5
+store-rev-05;REV-05;Imeritsiatosika;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;3
+store-rev-05;REV-05;Imeritsiatosika;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;8
+store-rev-05;REV-05;Imeritsiatosika;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-circulation;CI032;CIRCULATION;Piece;5
+store-rev-05;REV-05;Imeritsiatosika;article-resale-corofar-gm;CG024;COROFAR GM;Piece;7
+store-rev-05;REV-05;Imeritsiatosika;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;7
+store-rev-05;REV-05;Imeritsiatosika;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;20
+store-rev-05;REV-05;Imeritsiatosika;article-resale-detox;DE030;DETOX;Piece;13
+store-rev-05;REV-05;Imeritsiatosika;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;6
+store-rev-05;REV-05;Imeritsiatosika;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;6
+store-rev-05;REV-05;Imeritsiatosika;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;3
+store-rev-05;REV-05;Imeritsiatosika;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;9
+store-rev-05;REV-05;Imeritsiatosika;article-resale-gudichi;GU092;GUDICHI;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-radriaka;HR089;HE RADRIAKA;;2
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;3
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;3
+store-rev-05;REV-05;Imeritsiatosika;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-kinana;KI044;KINANA;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-komima;KO064;KOMIMA;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-karela;KA098;KARELA;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;6
+store-rev-05;REV-05;Imeritsiatosika;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;1
+store-rev-05;REV-05;Imeritsiatosika;article-resale-madetoxyl;MA051;MADETOXYL;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-madetussyl;MA045;MADETUSSYL;Piece;7
+store-rev-05;REV-05;Imeritsiatosika;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;1
+store-rev-05;REV-05;Imeritsiatosika;article-resale-miel;MI061;MIEL;Piece;3
+store-rev-05;REV-05;Imeritsiatosika;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-magasine;MA099;MAGASINE;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-mrg;MR100;MRG;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-oac;OA049;OAC;Piece;3
+store-rev-05;REV-05;Imeritsiatosika;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-ofa;OF057;OFA;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-ofm;OF063;OFM;Piece;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;18
+store-rev-05;REV-05;Imeritsiatosika;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;9
+store-rev-05;REV-05;Imeritsiatosika;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;8
+store-rev-05;REV-05;Imeritsiatosika;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-revitalisant;RE070;REVITALISANT;Piece;12
+store-rev-05;REV-05;Imeritsiatosika;article-resale-savlah;SA082;SAVLAH;Piece;14
+store-rev-05;REV-05;Imeritsiatosika;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;6
+store-rev-05;REV-05;Imeritsiatosika;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;2
+store-rev-05;REV-05;Imeritsiatosika;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;3
+store-rev-05;REV-05;Imeritsiatosika;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-spray;SP102;SPRAY;;5
+store-rev-05;REV-05;Imeritsiatosika;article-resale-spiruline;SP076;SPIRULINE;Piece;10
+store-rev-05;REV-05;Imeritsiatosika;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-tanjaka;TA083;TANJAKA;Piece;4
+store-rev-05;REV-05;Imeritsiatosika;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;9
+store-rev-05;REV-05;Imeritsiatosika;article-resale-hcg;HC110;HCG;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-toxo;TO104;TOXO;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;6
+store-rev-05;REV-05;Imeritsiatosika;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;5
+store-rev-05;REV-05;Imeritsiatosika;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;11
+store-rev-05;REV-05;Imeritsiatosika;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;8
+store-rev-05;REV-05;Imeritsiatosika;article-resale-st;ST111;ST;;0
+store-rev-05;REV-05;Imeritsiatosika;article-resale-palu;PA113;PALU;;0
+store-pos-01;POS-01;Mahajanga;article-resale-aloe-miel;AM002;ALOE MIEL;Piece;2
+store-pos-01;POS-01;Mahajanga;article-resale-aloe-noni;AN001;ALOE NONI;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-aloe-pur;AP004;ALOE PUR;Piece;4
+store-pos-01;POS-01;Mahajanga;article-resale-ananambo;AN003;ANANAMBO;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-anjarasoa;AN034;ANJARASOA;Piece;6
+store-pos-01;POS-01;Mahajanga;article-resale-anti-stresse-gm;AS146;Anti Stresse GM;Unité;5
+store-pos-01;POS-01;Mahajanga;article-resale-anti-virus-pm;AV147;Anti Virus PM;Unité;2
+store-pos-01;POS-01;Mahajanga;article-resale-argile-jaune;AJ021;ARGILE JAUNE;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-argile-rouge;AR005;ARGILE ROUGE;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-argile-verte;AV026;ARGILE VERTE;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-ashvagandha;AS087;ASHVAGANDHA;;0
+store-pos-01;POS-01;Mahajanga;article-resale-alben-cp;AC091;ALBEN CP;;0
+store-pos-01;POS-01;Mahajanga;article-resale-alben-sp;AS105;ALBEN SP;;0
+store-pos-01;POS-01;Mahajanga;article-resale-baobab;BA036;BAOBAB;Piece;8
+store-pos-01;POS-01;Mahajanga;article-resale-baume-alavonto;BA006;Baume ALAVONTO;Piece;3
+store-pos-01;POS-01;Mahajanga;article-resale-baume-anti-cellulites;BA010;Baume Anti cellulites;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-baume-anti-virus;BA041;Baume ANTI VIRUS;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-baume-champion;BC037;Baume CHAMPION;Piece;6
+store-pos-01;POS-01;Mahajanga;article-resale-baume-cypres;BC018;Baume Cyprès;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-baume-katrafay;BK009;Baume KATRAFAY;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-baume-memoire;BM008;Baume MEMOIRE;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-baume-radriaka;BR025;Baume RADRIAKA;Piece;4
+store-pos-01;POS-01;Mahajanga;article-resale-baume-ravitsara;BR150;Baume RAVITSARA;Pot 50ml;0
+store-pos-01;POS-01;Mahajanga;article-resale-beroberoka;BE031;BEROBEROKA;Piece;2
+store-pos-01;POS-01;Mahajanga;article-resale-beurre-de-karite;BK016;BEURRE DE KARITE;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-bois-de-rose;BR019;BOIS DE ROSE;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-beroka-fakany;BF088;BEROKA FAKANY;;0
+store-pos-01;POS-01;Mahajanga;article-resale-calcium-masy;CM040;CALCIUM MASY;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-cataplasme;CA035;CATAPLASME;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-circulation;CI032;CIRCULATION;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-corofar-gm;CG024;COROFAR GM;Piece;6
+store-pos-01;POS-01;Mahajanga;article-resale-creme-coiffante;CC013;CREME COIFFANTE;Piece;6
+store-pos-01;POS-01;Mahajanga;article-resale-desmofar-gm;DG011;DESMOFAR GM;Piece;6
+store-pos-01;POS-01;Mahajanga;article-resale-detox;DE030;DETOX;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-eau-micellaire-gm;EM023;EAU MICELLAIRE GM;Piece;2
+store-pos-01;POS-01;Mahajanga;article-resale-eau-micellaire-pm;EM007;EAU MICELLAIRE PM;Piece;2
+store-pos-01;POS-01;Mahajanga;article-resale-fanazava;FA029;FANAZAVA;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-fandravagodro;FA014;FANDRAVAGODRO;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-fanjatony;FA022;FANJATONY;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-g-articulation;GA020;G-ARTICULATION;Piece;1
+store-pos-01;POS-01;Mahajanga;article-resale-gudichi;GU092;GUDICHI;;0
+store-pos-01;POS-01;Mahajanga;article-resale-he-cypres;HC027;HE CYPRES;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-he-geranium;HG038;HE GERANIUM;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-he-girofle;HG033;HE GIROFLE;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-he-helichryse;HH059;HE HELICHRYSE;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-he-katrafay;HK042;HE KATRAFAY;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-he-radriaka;HR089;HE RADRIAKA;;0
+store-pos-01;POS-01;Mahajanga;article-resale-he-ravintsara;HR046;HE RAVINTSARA;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-he-saro;HS053;HE SARO;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-hodipotsy;HO043;HODIPOTSY;Piece;1
+store-pos-01;POS-01;Mahajanga;article-resale-he-eucaluptus;HE106;HE EUCALUPTUS;;0
+store-pos-01;POS-01;Mahajanga;article-resale-kinana;KI044;KINANA;Piece;2
+store-pos-01;POS-01;Mahajanga;article-resale-komima;KO064;KOMIMA;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-komima-cancer;KC056;KOMIMA CANCER;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-kapikachu;KA097;KAPIKACHU;;0
+store-pos-01;POS-01;Mahajanga;article-resale-karela;KA098;KARELA;;0
+store-pos-01;POS-01;Mahajanga;article-resale-lotion-intime;LI047;LOTION INTIME;Piece;3
+store-pos-01;POS-01;Mahajanga;article-resale-madeglucyl;MA048;MADEGLUCYL;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-madetoxyl;MA051;MADETOXYL;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-madetussyl;MA045;MADETUSSYL;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-masy-pagyl;MP058;MASY PAGYL;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-miel;MI061;MIEL;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-madetonyl;MA062;MADETONYL;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-magasine;MA099;MAGASINE;;0
+store-pos-01;POS-01;Mahajanga;article-resale-mrg;MR100;MRG;;0
+store-pos-01;POS-01;Mahajanga;article-resale-oac;OA049;OAC;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-ody-vato;OV054;ODY VATO;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-ofa;OF057;OFA;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-ofm;OF063;OFM;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-omega-3-gm;O3050;OMEGA 3 GM;Piece;6
+store-pos-01;POS-01;Mahajanga;article-resale-omega-3-pm;O3055;OMEGA 3 PM;Piece;6
+store-pos-01;POS-01;Mahajanga;article-resale-omega-diabete;OD065;OMEGA DIABETE;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-protofar-gm;PG077;PROTOFAR GM;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-protofar-pm;PP081;PROTOFAR PM;Piece;3
+store-pos-01;POS-01;Mahajanga;article-resale-punarnava;PU101;PUNARNAVA;;0
+store-pos-01;POS-01;Mahajanga;article-resale-paraceta-500mg;P5114;PARACETA 500MG;;0
+store-pos-01;POS-01;Mahajanga;article-resale-vitamine-c;VC108;VITAMINE C;;0
+store-pos-01;POS-01;Mahajanga;article-resale-revitalisant;RE070;REVITALISANT;Piece;6
+store-pos-01;POS-01;Mahajanga;article-resale-savlah;SA082;SAVLAH;Piece;3
+store-pos-01;POS-01;Mahajanga;article-resale-savon-anti-acne;SA073;SAVON ANTI ACNE;Piece;1
+store-pos-01;POS-01;Mahajanga;article-resale-savon-aminci;SA071;SAVON AMINCI;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-savon-anti-ride;SA153;SAVON ANTI-RIDE;Pain 100g;6
+store-pos-01;POS-01;Mahajanga;article-resale-savon-manazava;SM068;SAVON MANAZAVA;Piece;3
+store-pos-01;POS-01;Mahajanga;article-resale-savon-repousse;SR078;SAVON REPOUSSE;Piece;3
+store-pos-01;POS-01;Mahajanga;article-resale-savon-vahona;SV066;SAVON VAHONA;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-rois-des-herbes;RH090;ROIS DES HERBES;;0
+store-pos-01;POS-01;Mahajanga;article-resale-spray;SP102;SPRAY;;0
+store-pos-01;POS-01;Mahajanga;article-resale-spiruline;SP076;SPIRULINE;Piece;1
+store-pos-01;POS-01;Mahajanga;article-resale-glycemie;GL109;GLYCEMIE;;0
+store-pos-01;POS-01;Mahajanga;article-resale-tanjaka;TA083;TANJAKA;Piece;3
+store-pos-01;POS-01;Mahajanga;article-resale-tanjaka-plus;TP074;TANJAKA PLUS;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-hcg;HC110;HCG;;0
+store-pos-01;POS-01;Mahajanga;article-resale-toxo;TO104;TOXO;;0
+store-pos-01;POS-01;Mahajanga;article-resale-vinaigre-gm;VG075;VINAIGRE GM;Piece;0
+store-pos-01;POS-01;Mahajanga;article-resale-vinaigre-pm;VP069;VINAIGRE PM;Piece;3
+store-pos-01;POS-01;Mahajanga;article-resale-voamboatavo-gm;VG084;VOAMBOATAVO GM;Piece;5
+store-pos-01;POS-01;Mahajanga;article-resale-voamboatavo-pm;VP085;VOAMBOATAVO PM;Piece;9
+store-pos-01;POS-01;Mahajanga;article-resale-st;ST111;ST;;0
+store-pos-01;POS-01;Mahajanga;article-resale-palu;PA113;PALU;;0

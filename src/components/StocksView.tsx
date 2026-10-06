@@ -23,8 +23,11 @@ import {
   Building2,
   DollarSign,
   X,
-  Upload
+  Upload,
+  Download
 } from "lucide-react";
+import { buildStockExportRecords, parseStockSyncFile, toStockCsv, validateStockSync } from "../services/stockSyncValidation";
+import type { StockSyncRow } from "../services/stockSyncValidation";
 import { validateInitialStockImport } from "../services/stockImportValidation";
 import type { InitialStockImportRow } from "../services/stockImportValidation";
 
@@ -43,6 +46,7 @@ interface StocksViewProps {
     isDeposit: boolean
   ) => void;
   onImportInitialStocks: (rows: InitialStockImportRow[]) => Promise<void>;
+  onSyncStocks: (rows: StockSyncRow[]) => Promise<void>;
 }
 
 export default function StocksView({
@@ -53,7 +57,8 @@ export default function StocksView({
   movements,
   currentUser,
   onAdjustStock,
-  onImportInitialStocks
+  onImportInitialStocks,
+  onSyncStocks
 }: StocksViewProps) {
   const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("ALL");
@@ -73,6 +78,12 @@ export default function StocksView({
   const [importFileName, setImportFileName] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [syncRows, setSyncRows] = useState<StockSyncRow[]>([]);
+  const [syncErrors, setSyncErrors] = useState<string[]>([]);
+  const [syncUnchanged, setSyncUnchanged] = useState(0);
+  const [syncFileName, setSyncFileName] = useState("");
+  const [syncStatus, setSyncStatus] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const canStoreRawMaterials = (storeId: string) => {
     const store = stores.find(item => item.id === storeId);
@@ -167,6 +178,63 @@ export default function StocksView({
     }
   };
 
+  const downloadFile = (name: string, content: string, type: string) => {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportStock = (format: "csv" | "json") => {
+    const scopeStores = selectedStoreId === "ALL" ? stores : stores.filter(store => store.id === selectedStoreId);
+    const records = buildStockExportRecords(scopeStores, articles, stocks);
+    const suffix = selectedStoreId === "ALL" ? "tous-magasins" : scopeStores[0]?.code || "magasin";
+    const date = new Date().toISOString().slice(0, 10);
+    if (format === "csv") {
+      downloadFile(`stock-${suffix}-${date}.csv`, toStockCsv(records), "text/csv;charset=utf-8");
+    } else {
+      downloadFile(`stock-${suffix}-${date}.json`, JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), data: records }, null, 2), "application/json");
+    }
+  };
+
+  const handleSyncFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    setSyncRows([]);
+    setSyncErrors([]);
+    setSyncUnchanged(0);
+    setSyncStatus("");
+    setSyncFileName(file?.name || "");
+    if (!file) return;
+    try {
+      const records = parseStockSyncFile(file.name, await file.text());
+      const validation = validateStockSync(records, stores, articles, stocks);
+      setSyncRows(validation.rows);
+      setSyncErrors(validation.errors);
+      setSyncUnchanged(validation.unchanged);
+    } catch (error) {
+      setSyncErrors([error instanceof Error ? `Lecture du fichier impossible : ${error.message}` : "Lecture du fichier impossible."]);
+    }
+  };
+
+  const handleApplySync = async () => {
+    if (!isAdmin || syncErrors.length > 0 || syncRows.length === 0 || isSyncing) return;
+    if (!window.confirm(`Remplacer le stock de ${syncRows.length} ligne(s) par les quantités du fichier ? Un mouvement d'ajustement sera créé pour chaque écart.`)) return;
+    setIsSyncing(true);
+    setSyncStatus("");
+    try {
+      await onSyncStocks(syncRows);
+      setSyncStatus(`${syncRows.length} ligne(s) mise(s) à jour.`);
+      setSyncRows([]);
+    } catch (error) {
+      setSyncStatus(error instanceof Error ? `Import non confirmé : ${error.message}` : "Import non confirmé.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Filter stocks
   const filteredItems = articles.flatMap((art) => {
     // If a specific store is selected
@@ -224,6 +292,78 @@ export default function StocksView({
           Dépôt de stock
         </button>
       </div>
+
+      {isAdmin && (
+        <section className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50 p-5" aria-labelledby="stock-sync-title">
+          <div className="flex items-start gap-3">
+            <Download className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+            <div className="min-w-0 flex-1">
+              <h3 id="stock-sync-title" className="font-bold text-slate-900">Exporter / importer le stock par magasin</h3>
+              <p className="mt-1 text-xs text-slate-700">
+                Exportez le magasin sélectionné ({selectedStoreId === "ALL" ? "tous les magasins" : stores.find(s => s.id === selectedStoreId)?.name}), modifiez les quantités, puis réimportez le fichier CSV ou JSON : le stock est remplacé par les quantités du fichier et chaque écart crée un mouvement d’ajustement.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => handleExportStock("csv")} className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-blue-100">
+                  <Download className="h-4 w-4" /> Exporter CSV
+                </button>
+                <button type="button" onClick={() => handleExportStock("json")} className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-blue-100">
+                  <Download className="h-4 w-4" /> Exporter JSON
+                </button>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-blue-100">
+                  <Upload className="h-4 w-4" /> Importer CSV / JSON
+                  <input type="file" accept=".csv,.json,text/csv,application/json" onChange={handleSyncFile} className="sr-only" />
+                </label>
+              </div>
+              {syncFileName && <p className="mt-2 truncate text-xs text-slate-600">{syncFileName}</p>}
+            </div>
+          </div>
+
+          {syncErrors.length > 0 && (
+            <div className="max-h-40 overflow-auto rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800" role="alert">
+              <strong>Import bloqué ({syncErrors.length} erreur(s))</strong>
+              <ul className="mt-1 list-inside list-disc">
+                {syncErrors.slice(0, 20).map((error, index) => <li key={`${index}-${error}`}>{error}</li>)}
+              </ul>
+              {syncErrors.length > 20 && <p className="mt-1">Et {syncErrors.length - 20} autre(s) erreur(s).</p>}
+            </div>
+          )}
+          {syncFileName && syncErrors.length === 0 && (
+            <div className="rounded-xl border border-blue-200 bg-white p-3 text-xs text-slate-700">
+              <strong>Prévisualisation :</strong> {syncRows.length} ligne(s) modifiée(s), {syncUnchanged} inchangée(s). Aucun stock n’a encore été modifié.
+              {syncRows.length > 0 && (
+                <div className="mt-2 max-h-48 overflow-auto">
+                  <table className="w-full text-left">
+                    <thead className="text-slate-500">
+                      <tr><th className="pr-2">Magasin</th><th className="pr-2">Article</th><th className="pr-2 text-right">Actuel</th><th className="pr-2 text-right">Nouveau</th><th className="text-right">Écart</th></tr>
+                    </thead>
+                    <tbody>
+                      {syncRows.slice(0, 200).map(row => (
+                        <tr key={row.id} className="border-t border-slate-100">
+                          <td className="pr-2">{stores.find(s => s.id === row.store_id)?.name}</td>
+                          <td className="pr-2">{articles.find(a => a.id === row.article_id)?.name}</td>
+                          <td className="pr-2 text-right font-mono">{row.before}</td>
+                          <td className="pr-2 text-right font-mono">{row.quantity}</td>
+                          <td className={`text-right font-mono font-bold ${row.quantity > row.before ? "text-emerald-700" : "text-rose-700"}`}>{row.quantity - row.before > 0 ? "+" : ""}{row.quantity - row.before}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {syncRows.length > 200 && <p className="mt-1">Et {syncRows.length - 200} autre(s) ligne(s).</p>}
+                </div>
+              )}
+            </div>
+          )}
+          {syncStatus && <p className="text-xs font-semibold text-slate-700" role="status">{syncStatus}</p>}
+          <button
+            type="button"
+            onClick={handleApplySync}
+            disabled={isSyncing || syncRows.length === 0 || syncErrors.length > 0}
+            className="rounded-lg bg-blue-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSyncing ? "Application en cours…" : "Appliquer les quantités du fichier"}
+          </button>
+        </section>
+      )}
 
       {isAdmin && (
         <section className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-5" aria-labelledby="initial-stock-import-title">

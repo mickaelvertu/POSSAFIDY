@@ -43,7 +43,8 @@ import ReportViewer from "../ReportViewer";
 import ThemeSwitcher from "../ThemeSwitcher";
 import { loadExpenses, saveExpense } from "../../services/expenseService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
-import { importInitialStocks } from "../../services/stockImportService";
+import { applyStockSnapshot, importInitialStocks } from "../../services/stockImportService";
+import type { StockSyncRow } from "../../services/stockSyncValidation";
 import type { InitialStockImportRow } from "../../services/stockImportValidation";
 import { 
   ShieldCheck, 
@@ -377,6 +378,19 @@ export default function AuthenticatedSessionView() {
     const result = await importInitialStocks(rows, currentAppUser);
     setStocks(current => [
       ...current.filter(stock => !result.stocks.some(imported => imported.id === stock.id)),
+      ...result.stocks
+    ]);
+    setMovements(current => [...result.movements, ...current]);
+    setAuditLogs(current => [...result.auditLogs, ...current]);
+  };
+
+  const handleSyncStocks = async (rows: StockSyncRow[]) => {
+    if (!currentAppUser || !canManageStores) {
+      throw new Error("Seuls les administrateurs peuvent importer le stock.");
+    }
+    const result = await applyStockSnapshot(rows, currentAppUser);
+    setStocks(current => [
+      ...current.filter(stock => !result.stocks.some(updated => updated.id === stock.id)),
       ...result.stocks
     ]);
     setMovements(current => [...result.movements, ...current]);
@@ -1073,6 +1087,7 @@ export default function AuthenticatedSessionView() {
               currentUser={currentAppUser}
               onAdjustStock={handleAdjustStock}
               onImportInitialStocks={handleImportInitialStocks}
+              onSyncStocks={handleSyncStocks}
             />
           </section>
         ) : activeModule === "stores" && currentAppUser && canManageStores ? (

@@ -2,6 +2,7 @@ import { doc, getDoc, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
 import { AppUser, AuditLog, StockMovement, StoreStock } from "../types";
 import type { InitialStockImportRow } from "./stockImportValidation";
+import type { StockSyncRow } from "./stockSyncValidation";
 
 const STOCKS_COLLECTION = "stocks";
 const MOVEMENTS_COLLECTION = "movements";
@@ -19,6 +20,93 @@ async function hashRows(rows: InitialStockImportRow[]): Promise<string> {
     .map(({ store_id, article_id, quantity }) => ({ store_id, article_id, quantity }));
   const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(canonicalRows)));
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function applyStockSnapshot(
+  rows: StockSyncRow[],
+  actor: AppUser
+): Promise<{ stocks: StoreStock[]; movements: StockMovement[]; auditLogs: AuditLog[] }> {
+  if (actor.roleId !== "ADMIN" && actor.roleId !== "SUPER_ADMIN") {
+    throw new Error("Seuls les administrateurs peuvent importer le stock.");
+  }
+  if (rows.length === 0 || rows.length > MAX_IMPORT_ROWS) {
+    throw new Error("Le nombre de lignes à importer est invalide.");
+  }
+
+  const runId = crypto.randomUUID();
+  const referenceNumber = `SYNC-${runId.slice(0, 8).toUpperCase()}`;
+  const stocks: StoreStock[] = [];
+  const movements: StockMovement[] = [];
+  const auditLogs: AuditLog[] = [];
+
+  for (let start = 0; start < rows.length; start += CHUNK_SIZE) {
+    const chunk = rows.slice(start, start + CHUNK_SIZE);
+    const timestamp = Date.now();
+    const result = await runTransaction(db, async transaction => {
+      const refs = chunk.map(row => doc(db, STOCKS_COLLECTION, row.id));
+      const snapshots = await Promise.all(refs.map(reference => transaction.get(reference)));
+      const written: { stock: StoreStock; movement: StockMovement; auditLog: AuditLog }[] = [];
+
+      chunk.forEach((row, index) => {
+        const existing = snapshots[index].exists() ? snapshots[index].data() as StoreStock : undefined;
+        const before = existing?.quantity ?? 0;
+        if (before === row.quantity) return;
+        const stock: StoreStock = {
+          ...(existing || { reserved_quantity: 0 }),
+          id: row.id,
+          store_id: row.store_id,
+          article_id: row.article_id,
+          quantity: row.quantity,
+          updated_at: timestamp
+        };
+        const movementId = `movement-${runId}-${start + index}`;
+        const movement: StockMovement = {
+          id: movementId,
+          store_id: row.store_id,
+          article_id: row.article_id,
+          movement_type: "INVENTORY_ADJUSTMENT",
+          quantity: row.quantity - before,
+          reference_type: "INVENTORY_ADJUSTMENT",
+          reference_id: runId,
+          reference_number: referenceNumber,
+          before_quantity: before,
+          after_quantity: row.quantity,
+          created_by: actor.id,
+          created_by_name: actor.displayName,
+          notes: "Correction de stock par import de fichier",
+          created_at: timestamp
+        };
+        const auditLog: AuditLog = {
+          id: `audit-${runId}-${start + index}`,
+          user_id: actor.id,
+          user_name: actor.displayName,
+          store_id: row.store_id,
+          device_id: "POS-WEB-CLIENT",
+          action: "STOCK_ADJUSTED",
+          entity_type: "STOCK",
+          entity_id: row.id,
+          old_value: { quantity: before },
+          new_value: { quantity: row.quantity, reason: movement.notes },
+          created_at: timestamp
+        };
+        written.push({ stock, movement, auditLog });
+      });
+
+      written.forEach(({ stock, movement, auditLog }) => {
+        transaction.set(doc(db, STOCKS_COLLECTION, stock.id), stock);
+        transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), movement);
+        transaction.set(doc(db, AUDIT_LOGS_COLLECTION, auditLog.id), auditLog);
+      });
+      return written;
+    });
+    result.forEach(({ stock, movement, auditLog }) => {
+      stocks.push(stock);
+      movements.push(movement);
+      auditLogs.push(auditLog);
+    });
+  }
+
+  return { stocks, movements, auditLogs };
 }
 
 export async function importInitialStocks(
