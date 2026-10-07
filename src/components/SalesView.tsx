@@ -152,6 +152,25 @@ export default function SalesView({
     setIsModalOpen(true);
   };
 
+  const handlePrintReceipt = () => {
+    const receipt = document.querySelector<HTMLElement>(".thermal-receipt");
+    if (!receipt) {
+      window.print();
+      return;
+    }
+
+    receipt.classList.add("thermal-print-sizing");
+    const contentHeightMm = Math.ceil(receipt.getBoundingClientRect().height * 25.4 / 96) + 2;
+    const pageStyle = document.createElement("style");
+    pageStyle.textContent = `@page thermal-receipt { size: 80mm ${contentHeightMm}mm; margin: 0; }`;
+    document.head.appendChild(pageStyle);
+    window.addEventListener("afterprint", () => {
+      receipt.classList.remove("thermal-print-sizing");
+      pageStyle.remove();
+    }, { once: true });
+    window.print();
+  };
+
   const handleStoreChange = (newStoreId: string) => {
     setSelectedStoreId(newStoreId);
     if (stores.find(store => store.id === newStoreId)?.store_type !== "CENTRAL_WAREHOUSE") {
@@ -874,7 +893,7 @@ export default function SalesView({
       {/* TICKET DE CAISSE MODAL */}
       {receiptSale && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="printable-document bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-xs">
+          <div className="printable-document thermal-receipt bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 print:hidden">
               <span className="font-bold text-slate-900">Reçu Caisse Officiel</span>
               <button
@@ -936,7 +955,7 @@ export default function SalesView({
             <div className="mt-4 flex gap-2 print:hidden">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={handlePrintReceipt}
                 className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Printer className="h-3.5 w-3.5" />

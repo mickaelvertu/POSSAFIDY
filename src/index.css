@@ -3,6 +3,9 @@
 
 @media print {
   @page { margin: 15mm; }
+  @page thermal-receipt {
+    margin: 0;
+  }
 
   /* Keep only the document and its ancestors in the print layout. */
   body:has(.printable-document) *:has(.printable-document) {
@@ -31,6 +34,50 @@
   }
   .printable-document thead { display: table-header-group; }
   .printable-document tr, .printable-document img { break-inside: avoid; }
+
+  body:has(.thermal-receipt) {
+    width: 80mm !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+  .thermal-receipt {
+    page: thermal-receipt;
+    box-sizing: border-box !important;
+    width: 74mm !important;
+    min-width: 74mm !important;
+    max-width: 74mm !important;
+    margin: 0 auto !important;
+    padding: 3mm !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 9pt !important;
+    line-height: 1.25 !important;
+  }
+  .thermal-receipt * {
+    box-sizing: border-box;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+  .thermal-receipt img {
+    max-width: 100% !important;
+  }
+}
+
+.thermal-receipt.thermal-print-sizing {
+  box-sizing: border-box !important;
+  width: 74mm !important;
+  min-width: 74mm !important;
+  max-width: 74mm !important;
+  padding: 3mm !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  font-family: Arial, sans-serif !important;
+  font-size: 9pt !important;
+  line-height: 1.25 !important;
+}
+.thermal-receipt.thermal-print-sizing [class~="print:hidden"] {
+  display: none !important;
 }
 
 @theme {
