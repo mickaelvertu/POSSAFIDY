@@ -9,7 +9,9 @@ export type AppRoleId =
   | "MAGASINIER"
   | "RESPONSABLE_MAGASIN"
   | "PRODUCTION"
-  | "COMPTABLE";
+  | "COMPTABLE"
+  | "GESTIONNAIRE_CREDIT"
+  | "REVENDEUR";
 
 export type AppPermission = string;
 
@@ -34,7 +36,9 @@ export interface UserProfile {
   uid: string;
   code?: string;
   username: string;
+  businessName?: string;
   email: string;
+  phone?: string;
   displayName: string;
   role: UserRole;
   roleId: AppRoleId;
@@ -44,6 +48,7 @@ export interface UserProfile {
   storeIds: string[];
   permissions: AppPermission[];
   isActive: boolean;
+  accountStatus?: "PENDING" | "ACTIVE" | "DISABLED";
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;
@@ -58,6 +63,7 @@ export const ALL_PERMISSIONS: AppPermission[] = [
   "transfers.view", "transfers.create", "transfers.approve", "transfers.ship",
   "transfers.receive", "transfers.validate", "production.view", "production.create",
   "production.validate", "reports.view", "reports.export", "audit.view",
+  "credit.sales", "credit.manage",
   "users.view", "users.create", "users.edit", "users.delete", "users.permissions",
   "expenses.view", "expenses.create", "units.manage"
 ];
@@ -209,6 +215,7 @@ export type TransferStatus =
   | "RECEIVED"
   | "VALIDATED"
   | "DISCREPANCY"
+  | "REJECTED"
   | "CANCELLED";
 
 export type TransferTypeCode = 
@@ -246,6 +253,10 @@ export interface StockTransfer {
   requested_by_name: string;
   approved_by?: string;
   approved_by_name?: string;
+  rejected_by?: string;
+  rejected_by_name?: string;
+  rejected_at?: number;
+  rejection_note?: string;
   shipped_by?: string;
   shipped_by_name?: string;
   received_by?: string;
@@ -339,6 +350,10 @@ export interface Sale {
   customer_name: string;
   customer_phone?: string;
   customer_type: "PARTICULIER" | "REVENDEUR" | "ENTREPRISE";
+  credit_customer_id?: string;
+  credit_due_at?: number;
+  credit_payments?: CreditPayment[];
+  credit_followups?: CreditFollowUp[];
   status: SaleStatus;
   seller_id: string;
   seller_name: string;
@@ -360,6 +375,76 @@ export interface Sale {
   created_at: number;
   verified_at?: number;
   validated_at?: number;
+}
+
+export type ResellerOrderStatus = "PENDING" | "APPROVED" | "REJECTED" | "REVISION_REQUESTED";
+
+export interface ResellerOrder {
+  id: string;
+  order_number: string;
+  reseller_user_id: string;
+  business_name: string;
+  customer_name: string;
+  customer_phone: string;
+  store_id: string;
+  lines: SaleLine[];
+  total: number;
+  payment_type: "CASH" | "CREDIT";
+  status: ResellerOrderStatus;
+  notes?: string;
+  admin_message?: string;
+  created_at: number;
+  updated_at: number;
+  reviewed_by?: string;
+  reviewed_by_name?: string;
+  reviewed_at?: number;
+  sale_id?: string;
+  cash_paid_at?: number;
+  cash_paid_by?: string;
+  cash_paid_by_name?: string;
+}
+
+export interface ResellerNotification {
+  id: string;
+  user_id: string;
+  order_id: string;
+  title: string;
+  message: string;
+  status: ResellerOrderStatus;
+  is_read: boolean;
+  created_at: number;
+}
+
+export interface CreditCustomer {
+  id: string;
+  linked_user_id?: string;
+  name: string;
+  phone: string;
+  credit_limit: number;
+  payment_term_days: number;
+  outstanding_balance: number;
+  is_active: boolean;
+  created_at: number;
+  updated_at: number;
+  last_credit_sale_id?: string;
+}
+
+export interface CreditPayment {
+  id: string;
+  amount: number;
+  method: PaymentMethod;
+  reference?: string;
+  paid_at: number;
+  recorded_by: string;
+  recorded_by_name: string;
+}
+
+export interface CreditFollowUp {
+  id: string;
+  note: string;
+  followed_up_at: number;
+  followed_up_by: string;
+  followed_up_by_name: string;
 }
 
 // 8. Production & Consommation

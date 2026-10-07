@@ -58,6 +58,27 @@ service cloud.firestore {
           request.resource.data.role == null &&
           request.resource.data.permissions.size() == 0 &&
           request.resource.data.assignedStores.size() == 0
+        ) ||
+        (
+          request.auth.uid == userId &&
+          request.resource.data.status == 'PENDING' &&
+          request.resource.data.role == 'REVENDEUR' &&
+          request.resource.data.businessName is string &&
+          request.resource.data.businessName.size() >= 2 &&
+          request.resource.data.firstName is string &&
+          request.resource.data.firstName.size() >= 2 &&
+          request.resource.data.lastName is string &&
+          request.resource.data.lastName.size() >= 2 &&
+          request.resource.data.phone is string &&
+          request.resource.data.phone.size() >= 5 &&
+          request.resource.data.uid == request.auth.uid &&
+          request.resource.data.permissions.size() == 0 &&
+          request.resource.data.assignedStores.size() == 0 &&
+          request.resource.data.keys().hasOnly([
+            'uid', 'email', 'firstName', 'lastName', 'businessName',
+            'phone', 'status', 'role', 'permissions', 'assignedStores',
+            'createdAt', 'updatedAt'
+          ])
         )
       ) &&
         request.resource.data.email is string &&
@@ -179,18 +200,83 @@ service cloud.firestore {
     }
 
     match /sales/{saleId} {
-      allow read: if hasPermission('sales.view') && (resource == null || hasStoreAccess(resource.data.store_id));
+      allow read: if (hasPermission('sales.view') && (resource == null || hasStoreAccess(resource.data.store_id)) || hasPermission('credit.manage'));
       allow create: if hasPermission('sales.create') &&
         request.resource.data.seller_id == request.auth.uid &&
-        request.resource.data.status == 'DRAFT' &&
+        (request.resource.data.status == 'DRAFT' ||
+          (isAdmin() && request.resource.data.status == 'VALIDATED' && request.resource.data.customer_type == 'REVENDEUR')) &&
         request.resource.data.lines is list && request.resource.data.lines.size() > 0 &&
         request.resource.data.total is number && request.resource.data.total >= 0 &&
-        hasStoreAccess(request.resource.data.store_id);
-      allow update: if (hasPermission('sales.edit') || hasPermission('sales.validate')) &&
+        request.resource.data.amount_paid is number &&
+        request.resource.data.amount_paid >= 0 &&
+        hasStoreAccess(request.resource.data.store_id) &&
+        (
+          request.resource.data.customer_type != 'REVENDEUR' ||
+          (
+            (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'RESPONSABLE_MAGASIN') &&
+            exists(/databases/$(database)/documents/stores/$(request.resource.data.store_id)) &&
+            get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+            (
+              (isAdmin() && request.resource.data.status == 'VALIDATED' && !request.resource.data.keys().hasAny(['credit_customer_id'])) ||
+              request.resource.data.amount_paid >= request.resource.data.total ||
+              (
+                hasPermission('credit.sales') &&
+                request.resource.data.credit_customer_id is string &&
+                exists(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)) &&
+                get(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)).data.is_active == true &&
+                request.resource.data.credit_due_at is number &&
+                existsAfter(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)) &&
+                getAfter(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)).data.outstanding_balance ==
+                  get(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)).data.outstanding_balance +
+                  request.resource.data.total - request.resource.data.amount_paid &&
+                getAfter(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)).data.outstanding_balance <=
+                  get(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)).data.credit_limit &&
+                getAfter(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)).data.last_credit_sale_id == saleId
+              )
+            )
+          )
+        );
+      allow update: if (
+        hasPermission('sales.create') &&
+        resource.data.status == 'DRAFT' &&
+        request.resource.data.status == 'DRAFT' &&
+        resource.data.seller_id == request.auth.uid &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.sale_number == resource.data.sale_number &&
+        request.resource.data.store_id == resource.data.store_id &&
+        request.resource.data.seller_id == resource.data.seller_id &&
+        request.resource.data.seller_name == resource.data.seller_name &&
+        request.resource.data.created_at == resource.data.created_at &&
+        request.resource.data.customer_type == resource.data.customer_type &&
+        request.resource.data.get('credit_customer_id', null) == resource.data.get('credit_customer_id', null) &&
+        request.resource.data.amount_paid == resource.data.amount_paid &&
+        request.resource.data.payment_method == resource.data.payment_method &&
+        request.resource.data.lines is list &&
+        request.resource.data.lines.size() > 0 &&
+        request.resource.data.total is number &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'customer_name', 'customer_phone', 'credit_due_at', 'lines', 'subtotal',
+          'discount', 'tax', 'total', 'payment_status', 'change_returned', 'notes'
+        ]) &&
+        (
+          !resource.data.keys().hasAny(['credit_customer_id']) ||
+          (
+            existsAfter(/databases/$(database)/documents/creditCustomers/$(resource.data.credit_customer_id)) &&
+            getAfter(/databases/$(database)/documents/creditCustomers/$(resource.data.credit_customer_id)).data.outstanding_balance ==
+              get(/databases/$(database)/documents/creditCustomers/$(resource.data.credit_customer_id)).data.outstanding_balance +
+              request.resource.data.total - request.resource.data.amount_paid -
+              resource.data.total + resource.data.amount_paid
+          )
+        ) &&
+        hasStoreAccess(resource.data.store_id)
+      ) || (
+        (hasPermission('sales.edit') || hasPermission('sales.validate')) &&
         request.resource.data.id == resource.data.id &&
         request.resource.data.store_id == resource.data.store_id &&
         request.resource.data.seller_id == resource.data.seller_id &&
         request.resource.data.created_at == resource.data.created_at &&
+        request.resource.data.customer_type == resource.data.customer_type &&
         request.resource.data.lines == resource.data.lines &&
         request.resource.data.subtotal == resource.data.subtotal &&
         request.resource.data.discount == resource.data.discount &&
@@ -203,7 +289,41 @@ service cloud.firestore {
           (resource.data.status == 'CHECKING' && request.resource.data.status in ['VERIFIED', 'CANCELLED']) ||
           (resource.data.status == 'VERIFIED' && request.resource.data.status in ['VALIDATED', 'CANCELLED'])
         ) &&
-        (request.resource.data.status != 'VALIDATED' || request.resource.data.validated_by == request.auth.uid);
+        (request.resource.data.status != 'VALIDATED' || resource.data.customer_type != 'REVENDEUR' || isAdmin()) &&
+        (request.resource.data.status != 'VALIDATED' || request.resource.data.validated_by == request.auth.uid)
+      ) || (
+        hasPermission('credit.manage') &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.store_id == resource.data.store_id &&
+        request.resource.data.seller_id == resource.data.seller_id &&
+        request.resource.data.created_at == resource.data.created_at &&
+        request.resource.data.credit_customer_id == resource.data.credit_customer_id &&
+        request.resource.data.total == resource.data.total &&
+        request.resource.data.lines == resource.data.lines &&
+        (
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'amount_paid', 'payment_status', 'credit_payments'
+            ]) &&
+            request.resource.data.amount_paid > resource.data.amount_paid &&
+            request.resource.data.amount_paid <= resource.data.total &&
+            request.resource.data.payment_status == (request.resource.data.amount_paid == resource.data.total ? 'PAID' : 'PARTIAL')
+          ) ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credit_followups']) &&
+            request.resource.data.credit_followups.size() == resource.data.get('credit_followups', []).size() + 1
+          )
+        )
+      ) || (
+        isAdmin() &&
+        resource.data.status == 'VALIDATED' &&
+        resource.data.payment_status != 'PAID' &&
+        !resource.data.keys().hasAny(['credit_customer_id']) &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.amount_paid == resource.data.total &&
+        request.resource.data.payment_status == 'PAID' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amount_paid', 'payment_status'])
+      );
     }
 
     match /productions/{productionId} {
@@ -229,9 +349,162 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /creditCustomers/{customerId} {
+      allow read: if hasPermission('credit.sales') || hasPermission('credit.manage') ||
+        (isActiveUser() && resource.data.linked_user_id == request.auth.uid);
+      allow create: if hasPermission('credit.manage') &&
+        request.resource.data.id == customerId &&
+        request.resource.data.credit_limit is number &&
+        request.resource.data.credit_limit >= 0 &&
+        request.resource.data.outstanding_balance == 0 &&
+        request.resource.data.payment_term_days is int &&
+        request.resource.data.payment_term_days > 0;
+      allow update: if (
+        hasPermission('credit.manage') &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.outstanding_balance >= 0 &&
+        request.resource.data.credit_limit is number &&
+        request.resource.data.credit_limit >= request.resource.data.outstanding_balance &&
+        request.resource.data.payment_term_days is int &&
+        request.resource.data.payment_term_days > 0
+      ) || (
+        hasPermission('credit.sales') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'outstanding_balance', 'last_credit_sale_id', 'updated_at'
+        ]) &&
+        request.resource.data.outstanding_balance >= 0 &&
+        request.resource.data.outstanding_balance <= resource.data.credit_limit &&
+        request.resource.data.last_credit_sale_id is string &&
+        exists(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)) &&
+        existsAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)) &&
+        get(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.credit_customer_id == customerId &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.credit_customer_id == customerId &&
+        get(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.status == 'DRAFT' &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.status == 'DRAFT' &&
+        request.resource.data.outstanding_balance - resource.data.outstanding_balance ==
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.total -
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.amount_paid -
+          get(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.total +
+          get(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.amount_paid
+      ) || (
+        hasPermission('credit.sales') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'updated_at']) &&
+        request.resource.data.outstanding_balance < resource.data.outstanding_balance &&
+        request.resource.data.outstanding_balance >= 0 &&
+        request.resource.data.last_credit_sale_id is string &&
+        existsAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)) &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.credit_customer_id == customerId &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.status == 'CANCELLED' &&
+        resource.data.outstanding_balance - request.resource.data.outstanding_balance ==
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.total -
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.amount_paid
+      ) || (
+        hasPermission('credit.sales') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'last_credit_sale_id', 'updated_at']) &&
+        request.resource.data.outstanding_balance > resource.data.outstanding_balance &&
+        request.resource.data.outstanding_balance <= resource.data.credit_limit &&
+        request.resource.data.last_credit_sale_id is string &&
+        existsAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)) &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.credit_customer_id == customerId &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.total -
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.amount_paid ==
+          request.resource.data.outstanding_balance - resource.data.outstanding_balance
+      );
+      allow delete: if hasPermission('credit.manage') && resource.data.outstanding_balance == 0;
+    }
+
+    match /resellerOrders/{orderId} {
+      allow read: if isAdmin() ||
+        (isActiveUser() && resource.data.reseller_user_id == request.auth.uid &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'REVENDEUR');
+      allow create: if isActiveUser() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'REVENDEUR' &&
+        request.resource.data.id == orderId &&
+        request.resource.data.reseller_user_id == request.auth.uid &&
+        request.resource.data.status == 'PENDING' &&
+        request.resource.data.lines is list && request.resource.data.lines.size() > 0 &&
+        request.resource.data.total is number && request.resource.data.total > 0 &&
+        request.resource.data.business_name is string &&
+        request.resource.data.customer_phone is string &&
+        request.resource.data.created_at is number &&
+        request.resource.data.payment_type in ['CASH', 'CREDIT'] &&
+        exists(/databases/$(database)/documents/stores/$(request.resource.data.store_id)) &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.is_active == true;
+      allow update: if isAdmin() &&
+        request.resource.data.reseller_user_id == resource.data.reseller_user_id &&
+        request.resource.data.store_id == resource.data.store_id &&
+        request.resource.data.payment_type == resource.data.payment_type &&
+        resource.data.status == 'PENDING' &&
+        request.resource.data.status in ['APPROVED', 'REJECTED', 'REVISION_REQUESTED'] &&
+        (
+          (request.resource.data.status == 'APPROVED' &&
+            request.resource.data.lines is list &&
+            request.resource.data.total is number &&
+            request.resource.data.sale_id is string) ||
+          (request.resource.data.status != 'APPROVED' &&
+            request.resource.data.lines == resource.data.lines &&
+            request.resource.data.total == resource.data.total)
+        ) ||
+        (
+          isAdmin() &&
+          resource.data.status == 'APPROVED' &&
+          resource.data.payment_type == 'CASH' &&
+          !resource.data.keys().hasAny(['cash_paid_at']) &&
+          request.resource.data.status == 'APPROVED' &&
+          request.resource.data.payment_type == 'CASH' &&
+          request.resource.data.cash_paid_at is number &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'cash_paid_at', 'cash_paid_by', 'cash_paid_by_name', 'updated_at'
+          ])
+        ) ||
+        (
+          isActiveUser() &&
+          resource.data.reseller_user_id == request.auth.uid &&
+          resource.data.status == 'REVISION_REQUESTED' &&
+          request.resource.data.status == 'PENDING' &&
+          request.resource.data.reseller_user_id == resource.data.reseller_user_id &&
+          request.resource.data.order_number == resource.data.order_number &&
+          request.resource.data.business_name == resource.data.business_name &&
+          request.resource.data.customer_name == resource.data.customer_name &&
+          request.resource.data.customer_phone == resource.data.customer_phone &&
+          request.resource.data.store_id == resource.data.store_id &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'lines', 'total', 'payment_type', 'notes', 'status', 'updated_at', 'admin_message', 'reviewed_by', 'reviewed_by_name', 'reviewed_at'
+          ])
+        );
+      allow delete: if false;
+    }
+
+    match /resellerNotifications/{notificationId} {
+      allow read: if isActiveUser() && resource.data.user_id == request.auth.uid;
+      allow create: if isAdmin() &&
+        request.resource.data.user_id is string &&
+        request.resource.data.order_id is string &&
+        request.resource.data.is_read == false &&
+        exists(/databases/$(database)/documents/users/$(request.resource.data.user_id)) &&
+        get(/databases/$(database)/documents/users/$(request.resource.data.user_id)).data.role == 'REVENDEUR';
+      allow update: if isActiveUser() &&
+        resource.data.user_id == request.auth.uid &&
+        request.resource.data.user_id == resource.data.user_id &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_read']) &&
+        request.resource.data.is_read == true;
+      allow delete: if false;
+    }
+
     match /stocks/{stockId} {
       // resource == null lets transactions probe a stock row that does not exist yet (first receipt of an article in a store)
-      allow read: if isActiveUser() && (resource == null || hasStoreAccess(resource.data.store_id));
+      allow read: if isActiveUser() && (
+        resource == null ||
+        hasStoreAccess(resource.data.store_id) ||
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'REVENDEUR' &&
+          exists(/databases/$(database)/documents/stores/$(resource.data.store_id)) &&
+          get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+          exists(/databases/$(database)/documents/articles/$(resource.data.article_id)) &&
+          get(/databases/$(database)/documents/articles/$(resource.data.article_id)).data.article_type == 'RESALE'
+        )
+      );
       allow create: if hasStoreAccess(request.resource.data.store_id) &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
           hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
@@ -254,20 +527,100 @@ service cloud.firestore {
         hasStoreAccess(resource.data.source_store_id) || hasStoreAccess(resource.data.destination_store_id)
       );
       allow create: if hasPermission('transfers.create') &&
+        request.resource.data.id == transferId &&
         request.resource.data.requested_by == request.auth.uid &&
         hasStoreAccess(request.resource.data.source_store_id) &&
-        request.resource.data.status == 'DRAFT';
-      allow update: if (hasPermission('transfers.approve') || hasPermission('transfers.ship') || hasPermission('transfers.receive')) &&
+        request.resource.data.source_store_id != request.resource.data.destination_store_id &&
+        exists(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)) &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.is_active == true &&
+        exists(/databases/$(database)/documents/stores/$(request.resource.data.source_store_id)) &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.source_store_id)).data.is_active == true &&
+        request.resource.data.status == 'DRAFT' &&
+        request.resource.data.lines is list &&
+        request.resource.data.lines.size() > 0;
+      allow update: if
         request.resource.data.id == resource.data.id &&
-        request.resource.data.source_store_id == resource.data.source_store_id &&
-        request.resource.data.destination_store_id == resource.data.destination_store_id &&
         request.resource.data.created_at == resource.data.created_at &&
         (
-          (resource.data.status == 'DRAFT' && request.resource.data.status == 'APPROVED') ||
-          (resource.data.status == 'APPROVED' && request.resource.data.status == 'IN_TRANSIT') ||
-          (resource.data.status == 'IN_TRANSIT' && request.resource.data.status in ['VALIDATED', 'DISCREPANCY']) ||
-          (resource.data.status == 'DISCREPANCY' && request.resource.data.status == 'DISCREPANCY')
-        );
+          (
+          hasPermission('transfers.create') &&
+          resource.data.status == 'DRAFT' &&
+          request.resource.data.status == 'DRAFT' &&
+          resource.data.requested_by == request.auth.uid &&
+          request.resource.data.requested_by == resource.data.requested_by &&
+          request.resource.data.requested_by_name == resource.data.requested_by_name &&
+          request.resource.data.source_store_id != request.resource.data.destination_store_id &&
+          hasStoreAccess(request.resource.data.source_store_id) &&
+          exists(/databases/$(database)/documents/stores/$(request.resource.data.source_store_id)) &&
+          get(/databases/$(database)/documents/stores/$(request.resource.data.source_store_id)).data.is_active == true &&
+          exists(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)) &&
+          get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.is_active == true &&
+          request.resource.data.lines is list &&
+          request.resource.data.lines.size() > 0 &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'type', 'source_store_id', 'destination_store_id', 'lines', 'note', 'updated_at'
+          ])
+        ) ||
+        (
+          (
+            isAdmin() &&
+            resource.data.status == 'DRAFT' &&
+            resource.data.requested_by != request.auth.uid &&
+            request.resource.data.status == 'APPROVED' &&
+            request.resource.data.approved_by == request.auth.uid &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'approved_by', 'approved_by_name', 'approved_at', 'updated_at'
+            ])
+          ) ||
+          (
+            isAdmin() &&
+            resource.data.status == 'DRAFT' &&
+            resource.data.requested_by != request.auth.uid &&
+            request.resource.data.status == 'REJECTED' &&
+            request.resource.data.rejected_by == request.auth.uid &&
+            request.resource.data.rejection_note is string &&
+            request.resource.data.rejection_note.size() > 0 &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'rejected_by', 'rejected_by_name', 'rejected_at', 'rejection_note', 'updated_at'
+            ])
+          ) ||
+          (
+            hasPermission('transfers.ship') &&
+            hasStoreAccess(resource.data.source_store_id) &&
+            resource.data.status == 'APPROVED' &&
+            request.resource.data.status == 'IN_TRANSIT' &&
+            request.resource.data.shipped_by == request.auth.uid &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'shipped_by', 'shipped_by_name', 'shipped_at', 'updated_at'
+            ])
+          ) ||
+          (
+            hasPermission('transfers.receive') &&
+            hasStoreAccess(resource.data.destination_store_id) &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
+            resource.data.status == 'IN_TRANSIT' &&
+            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
+            request.resource.data.received_by == request.auth.uid &&
+            request.resource.data.validated_by == request.auth.uid &&
+            request.auth.uid != resource.data.requested_by &&
+            request.auth.uid != resource.data.approved_by &&
+            request.resource.data.lines is list &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'lines', 'received_by', 'received_by_name', 'received_at',
+              'validated_by', 'validated_by_name', 'validated_at', 'has_discrepancy',
+              'note', 'updated_at'
+            ])
+          ) ||
+          (
+            isAdmin() &&
+            resource.data.status == 'DISCREPANCY' &&
+            request.resource.data.status == 'DISCREPANCY' &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'discrepancy_resolved', 'discrepancy_resolution_note', 'updated_at'
+            ])
+          )
+        )
+      );
       allow delete: if isAdmin();
     }
   }

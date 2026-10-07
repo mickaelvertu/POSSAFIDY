@@ -31,6 +31,9 @@ interface RoleHomeViewProps {
   onOpenProcurement: () => void;
   onOpenExpenses: () => void;
   onOpenTransfers: () => void;
+  onOpenCredit: () => void;
+  onOpenResellerOrders: () => void;
+  pendingResellerOrders: number;
   onOpenUnits: () => void;
   onOpenStaff: () => void;
   onOpenReports: () => void;
@@ -59,10 +62,14 @@ const auditActionLabels: Record<string, string> = {
   SALE_CANCELLED: "Vente annulée",
   TRANSFER_CREATED: "Transfert créé",
   TRANSFER_APPROVED: "Transfert approuvé",
+  TRANSFER_REJECTED: "Transfert refusé",
   TRANSFER_SHIPPED: "Transfert expédié",
   TRANSFER_RECEIVED: "Transfert réceptionné",
   TRANSFER_DISCREPANCY_RECORDED: "Écart de transfert signalé",
   TRANSFER_DISCREPANCY_RESOLVED: "Écart de transfert résolu",
+  CREDIT_CUSTOMER_UPDATED: "Compte revendeur modifié",
+  CREDIT_PAYMENT_RECORDED: "Règlement revendeur enregistré",
+  CREDIT_FOLLOW_UP_RECORDED: "Relance revendeur consignée",
   EXPENSE_CREATED: "Dépense enregistrée",
   STOCK_ADJUSTED: "Stock ajusté",
   PURCHASE_RECEIVED: "Dépôt réceptionné"
@@ -212,7 +219,9 @@ const roleLabels: Record<string, string> = {
   MAGASINIER: "Magasinier",
   RESPONSABLE_MAGASIN: "Responsable magasin",
   PRODUCTION: "Responsable production",
-  COMPTABLE: "Comptable"
+  COMPTABLE: "Comptable",
+  GESTIONNAIRE_CREDIT: "Gestionnaire crédit",
+  REVENDEUR: "Revendeur"
 };
 
 const roleDescriptions: Record<string, string> = {
@@ -222,11 +231,15 @@ const roleDescriptions: Record<string, string> = {
   MAGASINIER: "Suivi du stock et préparation des flux entre magasins.",
   RESPONSABLE_MAGASIN: "Pilotage des ventes, du stock et des transferts de votre magasin.",
   PRODUCTION: "Suivi des ordres de production et des matières premières.",
-  COMPTABLE: "Contrôle des ventes, des indicateurs et des rapports."
+  COMPTABLE: "Contrôle des ventes, des indicateurs et des rapports.",
+  GESTIONNAIRE_CREDIT: "Gestion des comptes revendeurs, plafonds, règlements et relances.",
+  REVENDEUR: "Votre demande de compte revendeur est en cours d'examen."
 };
 
 const accessCards = [
   { permission: "sales.view", title: "Ventes & caisse", description: "Consulter et gérer les ventes", icon: ShoppingCart, accent: "emerald" },
+  { permission: "credit.manage", title: "Crédits revendeurs", description: "Gérer les plafonds, échéances, paiements et relances", icon: HandCoins, accent: "teal" },
+  { permission: "reseller.orders", title: "Commandes revendeurs", description: "Examiner les commandes et notifier les décisions", icon: ShoppingCart, accent: "amber", adminOnly: true },
   { permission: "stock.view", title: "Stocks", description: "Suivre les disponibilités par magasin", icon: Boxes, accent: "blue" },
   { permission: "transfers.view", title: "Transferts", description: "Suivre les mouvements inter-magasins", icon: ArrowRightLeft, accent: "amber" },
   { permission: "production.view", title: "Production", description: "Suivre les fabrications et consommations", icon: Factory, accent: "indigo" },
@@ -247,10 +260,11 @@ const accentClasses: Record<string, string> = {
   amber: "bg-amber-50 text-amber-700 border-amber-200",
   indigo: "bg-indigo-50 text-indigo-700 border-indigo-200",
   violet: "bg-violet-50 text-violet-700 border-violet-200",
-  rose: "bg-rose-50 text-rose-700 border-rose-200"
+  rose: "bg-rose-50 text-rose-700 border-rose-200",
+  teal: "bg-teal-50 text-teal-700 border-teal-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -275,10 +289,12 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
         ? "Dépôt central"
         : "Production";
   const availableCards = accessCards.filter(card => {
+    if (card.permission === "reseller.orders") return isAdmin;
     if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage" || card.permission === "staff.manage") return isAdmin;
     if (card.permission === "expenses.view" && isAdmin) return true;
     if (card.permission === "transfers.view" && isAdmin) return true;
     if (card.permission === "reports.view" && isAdmin) return true;
+    if (card.permission === "credit.manage" && isAdmin) return true;
     if (card.adminOnly && !hasPermission(user, "users.view")) return false;
     if (card.permission === "audit.view" && !isAdmin) return false;
     return hasPermission(user, card.permission);
@@ -535,16 +551,18 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isProcurementCard = card.permission === "procurement.manage";
               const isExpensesCard = card.permission === "expenses.view";
               const isTransfersCard = card.permission === "transfers.view";
+              const isCreditCard = card.permission === "credit.manage";
               const isUnitsCard = card.permission === "units.manage";
               const isReportsCard = card.permission === "reports.view";
               const isAuditCard = card.permission === "audit.view";
               const isStaffCard = card.permission === "staff.manage";
-              const isActionable = isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
+              const isResellerOrdersCard = card.permission === "reseller.orders";
+              const isActionable = isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
               return (
                 <button
                   key={card.permission}
                   type="button"
-                  onClick={isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
+                  onClick={isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >
@@ -554,6 +572,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                   <span className="min-w-0">
                     <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
                       {card.title}
+                      {isResellerOrdersCard && pendingResellerOrders > 0 && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] text-rose-700">{pendingResellerOrders}</span>}
                       {isUsersCard && <span className="text-[10px] font-semibold uppercase text-rose-600">Admin</span>}
                     </span>
                     <span className="mt-1 block text-xs leading-5 text-slate-500">{card.description}</span>

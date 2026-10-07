@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User, AuthState, SignUpPayload, LoginPayload, ApiResponse } from "../types/auth";
+import { User, AuthState, SignUpPayload, ResellerSignUpPayload, LoginPayload, ApiResponse } from "../types/auth";
 import { authService } from "../services/authService";
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -7,6 +7,7 @@ import { trackUserPresence } from "../services/presenceService";
 
 interface AuthContextType extends AuthState {
   signUp: (payload: SignUpPayload) => Promise<ApiResponse>;
+  signUpReseller: (payload: ResellerSignUpPayload) => Promise<ApiResponse>;
   login: (payload: LoginPayload) => Promise<ApiResponse<{ token: string; user: User }>>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -55,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return await authService.signUp(payload);
   };
 
+  const handleResellerSignUp = async (payload: ResellerSignUpPayload): Promise<ApiResponse> => {
+    return await authService.signUpReseller(payload);
+  };
+
   const handleLogin = async (payload: LoginPayload): Promise<ApiResponse<{ token: string; user: User }>> => {
     const res = await authService.login(payload);
     if (res.success && res.data) {
@@ -82,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     token,
     signUp: handleSignUp,
+    signUpReseller: handleResellerSignUp,
     login: handleLogin,
     logout: handleLogout,
     refreshUser: handleRefreshUser

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import LoginForm from "./LoginForm";
 import SignUpForm from "./SignUpForm";
+import ResellerSignUpForm from "./ResellerSignUpForm";
 import { UserPlus, LogIn } from "lucide-react";
 import ThemeSwitcher from "../ThemeSwitcher";
 
 export default function AuthPortal() {
-  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [activeTab, setActiveTab] = useState<"login" | "signup" | "reseller">("login");
   const [prefillEmail, setPrefillEmail] = useState<string>("");
 
   const handleSwitchToLogin = (email?: string) => {
@@ -59,7 +60,7 @@ export default function AuthPortal() {
             }`}
           >
             <UserPlus className="w-4 h-4" />
-            <span>Créer un compte</span>
+            <span>Compte employé</span>
           </button>
         </div>
 
@@ -68,10 +69,13 @@ export default function AuthPortal() {
           {activeTab === "login" ? (
             <LoginForm
               onSwitchToSignUp={handleSwitchToSignUp}
+              onSwitchToReseller={() => setActiveTab("reseller")}
               prefillEmail={prefillEmail}
             />
-          ) : (
+          ) : activeTab === "signup" ? (
             <SignUpForm onSwitchToLogin={handleSwitchToLogin} />
+          ) : (
+            <ResellerSignUpForm onSwitchToLogin={handleSwitchToLogin} />
           )}
         </div>
       </div>

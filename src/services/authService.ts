@@ -1,4 +1,4 @@
-import { SignUpPayload, LoginPayload, ApiResponse, User } from "../types/auth";
+import { SignUpPayload, ResellerSignUpPayload, LoginPayload, ApiResponse, User } from "../types/auth";
 import { ALL_PERMISSIONS, AppPermission, AppRoleId, AppUser } from "../types";
 import { initializeApp } from "firebase/app";
 import {
@@ -30,17 +30,21 @@ export const ROLE_DEFINITIONS: Record<AppRoleId, { id: AppRoleId; name: string; 
   MAGASINIER: { id: "MAGASINIER", name: "Magasinier", description: "Stocks et transferts", bgLight: "bg-cyan-100 text-cyan-800 border-cyan-300" },
   RESPONSABLE_MAGASIN: { id: "RESPONSABLE_MAGASIN", name: "Responsable magasin", description: "Pilotage d'un magasin", bgLight: "bg-amber-100 text-amber-800 border-amber-300" },
   PRODUCTION: { id: "PRODUCTION", name: "Production", description: "Production et consommation", bgLight: "bg-indigo-100 text-indigo-800 border-indigo-300" },
-  COMPTABLE: { id: "COMPTABLE", name: "Comptable", description: "Ventes et rapports", bgLight: "bg-slate-100 text-slate-800 border-slate-300" }
+  COMPTABLE: { id: "COMPTABLE", name: "Comptable", description: "Ventes et rapports", bgLight: "bg-slate-100 text-slate-800 border-slate-300" },
+  GESTIONNAIRE_CREDIT: { id: "GESTIONNAIRE_CREDIT", name: "Gestionnaire crédit", description: "Plafonds, encaissements et relances revendeurs", bgLight: "bg-teal-100 text-teal-800 border-teal-300" },
+  REVENDEUR: { id: "REVENDEUR", name: "Revendeur", description: "Compte revendeur en attente d'activation", bgLight: "bg-orange-100 text-orange-800 border-orange-300" }
 };
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   SUPER_ADMIN: [...ALL_PERMISSIONS],
   ADMIN: ALL_PERMISSIONS.filter(permission => permission !== "users.delete"),
-  VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit"],
+  VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit", "credit.sales", "transfers.view", "transfers.create"],
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
-  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "transfers.view", "transfers.create", "transfers.receive", "reports.view"],
+  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive", "reports.view"],
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
-  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"]
+  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"],
+  GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
+  REVENDEUR: []
 };
 
 const permissionDefinition = (code: string) => ({
@@ -54,6 +58,7 @@ export const PERMISSION_GROUPS = [
   { id: "catalog", label: "Produits et stocks", description: "Catalogue et inventaire", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("products.") || permission.startsWith("stock.")) },
   { id: "units", label: "Unités de mesure", description: "Gérer les unités des articles", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("units.")) },
   { id: "sales", label: "Ventes", description: "Cycle de vente", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("sales.")) },
+  { id: "credit", label: "Crédits revendeurs", description: "Gérer les plafonds, paiements et relances", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("credit.")) },
   { id: "transfers", label: "Transferts", description: "Flux entre magasins", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("transfers.")) },
   { id: "production", label: "Production", description: "Ordres de production", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("production.")) },
   { id: "reporting", label: "Rapports et audit", description: "Analyse et traçabilité", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("reports.") || permission.startsWith("audit.")) },
@@ -108,6 +113,7 @@ export class AuthService {
     const user: User = {
       id: firebaseUser.uid,
       code: typeof profile.code === "string" ? profile.code : undefined,
+      businessName: typeof profile.businessName === "string" ? profile.businessName : undefined,
       firstName: String(profile.firstName || firebaseUser.displayName?.split(" ")[0] || "Utilisateur"),
       lastName: String(profile.lastName || firebaseUser.displayName?.split(" ").slice(1).join(" ") || ""),
       email: firebaseUser.email || String(profile.email || ""),
@@ -189,6 +195,51 @@ export class AuthService {
     }
     this.setStoredToken(null);
     return { success: true, code: "ACCOUNT_CREATED", message: "Votre compte et votre fiche de personnel ont été créés et sont en attente de validation." };
+  }
+
+  async signUpReseller(payload: ResellerSignUpPayload): Promise<ApiResponse> {
+    let createdUser: FirebaseUser | null = null;
+    try {
+      const email = payload.email.trim().toLowerCase();
+      const credential = await this.withTimeout(createUserWithEmailAndPassword(auth, email, payload.password));
+      createdUser = credential.user;
+      const now = new Date().toISOString();
+      await this.withTimeout(setDoc(doc(db, "users", credential.user.uid), {
+        uid: credential.user.uid,
+        email,
+        firstName: payload.firstName.trim(),
+        lastName: payload.lastName.trim(),
+        businessName: payload.businessName.trim(),
+        phone: payload.phone.trim(),
+        status: "PENDING",
+        role: "REVENDEUR",
+        permissions: [],
+        assignedStores: [],
+        createdAt: now,
+        updatedAt: now
+      }));
+    } catch (err) {
+      if (createdUser) {
+        try {
+          await deleteUser(createdUser);
+        } catch (cleanupError) {
+          console.error("Failed to clean up Firebase account after reseller registration failed:", cleanupError);
+        }
+      }
+      return this.errorResponse(err);
+    }
+
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Failed to sign out after successful reseller registration:", err);
+    }
+    this.setStoredToken(null);
+    return {
+      success: true,
+      code: "RESELLER_APPLICATION_CREATED",
+      message: "Votre demande d'inscription revendeur a été envoyée. Elle sera examinée par un administrateur avant l'activation du compte."
+    };
   }
 
   async login(payload: LoginPayload): Promise<ApiResponse<{ token: string; user: User }>> {

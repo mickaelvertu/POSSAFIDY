@@ -8,7 +8,7 @@ import {
   where
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { AuditLog, Production, Sale, StockMovement, StoreStock } from "../types";
+import { AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
 
 const SALES = "sales";
 const PRODUCTIONS = "productions";
@@ -64,7 +64,7 @@ async function loadForStores<T>(collectionName: string, storeField: string, allo
     .map(item => [item.id, item.data() as T])).values()];
 }
 
-export async function loadOperationalData(access: { sales: boolean; productions: boolean; audit: boolean; storeIds?: string[]; userId: string }): Promise<{
+export async function loadOperationalData(access: { sales: boolean; productions: boolean; audit: boolean; auditUserOnly?: boolean; storeIds?: string[]; userId: string }): Promise<{
   sales: Sale[];
   productions: Production[];
   auditLogs: AuditLog[];
@@ -74,6 +74,9 @@ export async function loadOperationalData(access: { sales: boolean; productions:
     loadForStores<Production>(PRODUCTIONS, "manufacturer_store_id", access.productions, access.storeIds),
     !access.audit
       ? Promise.resolve([])
+      : access.auditUserOnly
+        ? getDocs(query(collection(db, AUDIT_LOGS), where("user_id", "==", access.userId)))
+            .then(snapshot => snapshot.docs.map(item => item.data() as AuditLog))
       : access.storeIds === undefined
         ? getDocs(collection(db, AUDIT_LOGS)).then(snapshot => snapshot.docs.map(item => item.data() as AuditLog))
         : getDocs(query(collection(db, AUDIT_LOGS), where("user_id", "==", access.userId)))
@@ -96,6 +99,79 @@ export async function createSale(sale: Sale): Promise<AuditLog> {
     transaction.set(doc(db, AUDIT_LOGS, entry.id), entry);
   });
   return entry;
+}
+
+export async function updateDraftSale(
+  originalSale: Sale,
+  updatedSale: Sale,
+  userId: string,
+  userName: string
+): Promise<{ sale: Sale; auditLog: AuditLog }> {
+  if (
+    originalSale.status !== "DRAFT" ||
+    updatedSale.status !== "DRAFT" ||
+    originalSale.seller_id !== userId ||
+    updatedSale.id !== originalSale.id ||
+    updatedSale.sale_number !== originalSale.sale_number ||
+    updatedSale.store_id !== originalSale.store_id ||
+    updatedSale.seller_id !== originalSale.seller_id ||
+    updatedSale.created_at !== originalSale.created_at ||
+    updatedSale.customer_type !== originalSale.customer_type ||
+    updatedSale.credit_customer_id !== originalSale.credit_customer_id ||
+    updatedSale.amount_paid !== originalSale.amount_paid ||
+    updatedSale.payment_method !== originalSale.payment_method
+  ) {
+    throw new Error("Seul le demandeur peut modifier les informations d'une vente encore en brouillon.");
+  }
+
+  const entry = audit("SALE_DRAFT_UPDATED", "SALE", originalSale.id, userId, userName, originalSale.store_id, originalSale, updatedSale);
+  await runTransaction(db, async transaction => {
+    const saleRef = doc(db, SALES, originalSale.id);
+    const snapshot = await transaction.get(saleRef);
+    if (!snapshot.exists()) throw new Error("Cette vente n'existe plus.");
+    const currentSale = snapshot.data() as Sale;
+    if (currentSale.status !== "DRAFT" || currentSale.seller_id !== userId) {
+      throw new Error("La vente a déjà été prise en charge et ne peut plus être modifiée.");
+    }
+    if (
+      currentSale.sale_number !== originalSale.sale_number ||
+      currentSale.total !== originalSale.total ||
+      currentSale.amount_paid !== originalSale.amount_paid ||
+      currentSale.customer_name !== originalSale.customer_name ||
+      currentSale.customer_phone !== originalSale.customer_phone ||
+      currentSale.notes !== originalSale.notes ||
+      JSON.stringify(currentSale.lines) !== JSON.stringify(originalSale.lines)
+    ) {
+      throw new Error("La vente a changé depuis son ouverture. Rechargez les données avant de la modifier.");
+    }
+
+    if (originalSale.credit_customer_id) {
+      const customerRef = doc(db, "creditCustomers", originalSale.credit_customer_id);
+      const customerSnapshot = await transaction.get(customerRef);
+      if (!customerSnapshot.exists()) throw new Error("Le compte crédit associé à cette vente est introuvable.");
+      const customer = customerSnapshot.data() as CreditCustomer;
+      const oldCredit = Math.max(0, originalSale.total - originalSale.amount_paid);
+      const newCredit = Math.max(0, updatedSale.total - updatedSale.amount_paid);
+      const nextBalance = customer.outstanding_balance + newCredit - oldCredit;
+      if (nextBalance < 0) throw new Error("Le solde crédit du revendeur est incohérent. Contactez un administrateur.");
+      if (nextBalance > customer.credit_limit) {
+        throw new Error(`Plafond dépassé. Crédit disponible : ${Math.max(0, customer.credit_limit - customer.outstanding_balance + oldCredit).toLocaleString("fr-FR")} Ar.`);
+      }
+      if (newCredit > 0 && !customer.is_active) throw new Error("Le compte crédit de ce revendeur est désactivé.");
+      if (nextBalance !== customer.outstanding_balance) {
+        transaction.set(customerRef, clean({
+          ...customer,
+          outstanding_balance: nextBalance,
+          last_credit_sale_id: originalSale.id,
+          updated_at: Date.now()
+        }));
+      }
+    }
+
+    transaction.set(saleRef, clean(updatedSale));
+    transaction.set(doc(db, AUDIT_LOGS, entry.id), clean(entry));
+  });
+  return { sale: updatedSale, auditLog: entry };
 }
 
 export async function advanceSale(
@@ -140,6 +216,20 @@ export async function cancelSale(
     const snapshot = await transaction.get(saleRef);
     if (!snapshot.exists() || (snapshot.data() as Sale).status !== sale.status) {
       throw new Error("Le statut de la vente a changé. Rechargez les données.");
+    }
+    const customerRef = sale.credit_customer_id ? doc(db, "creditCustomers", sale.credit_customer_id) : null;
+    const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
+    const remainingCredit = sale.credit_customer_id ? Math.max(0, sale.total - sale.amount_paid) : 0;
+    if (customerRef && customerSnapshot?.exists() && remainingCredit > 0) {
+      const customer = customerSnapshot.data() as { outstanding_balance: number; updated_at: number };
+      if (customer.outstanding_balance < remainingCredit) {
+        throw new Error("Le solde crédit du revendeur est incohérent. Contactez un administrateur.");
+      }
+      transaction.set(customerRef, clean({
+        ...customer,
+        outstanding_balance: customer.outstanding_balance - remainingCredit,
+        updated_at: Date.now()
+      }));
     }
     transaction.set(saleRef, clean(updated));
     transaction.set(doc(db, AUDIT_LOGS, entry.id), entry);

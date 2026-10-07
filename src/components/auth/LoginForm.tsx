@@ -6,10 +6,11 @@ import { auth } from "../../firebase";
 
 interface LoginFormProps {
   onSwitchToSignUp: () => void;
+  onSwitchToReseller: () => void;
   prefillEmail?: string;
 }
 
-export default function LoginForm({ onSwitchToSignUp, prefillEmail = "" }: LoginFormProps) {
+export default function LoginForm({ onSwitchToSignUp, onSwitchToReseller, prefillEmail = "" }: LoginFormProps) {
   const { login } = useAuth();
 
   const [email, setEmail] = useState(prefillEmail);
@@ -219,6 +220,16 @@ export default function LoginForm({ onSwitchToSignUp, prefillEmail = "" }: Login
             className="font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-2 cursor-pointer ml-1"
           >
             Créer un compte
+          </button>
+        </p>
+        <p className="mt-3 text-sm text-slate-600">
+          Vous achetez pour un commerce ?{" "}
+          <button
+            type="button"
+            onClick={onSwitchToReseller}
+            className="font-semibold text-orange-700 hover:text-orange-800 underline underline-offset-2"
+          >
+            Demander un compte revendeur
           </button>
         </p>
       </div>
