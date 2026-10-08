@@ -181,13 +181,46 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    function hasExpenseStoreAccess(storeId) {
+      return isSuperAdmin() || (isActiveUser() && storeId is string &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([storeId]));
+    }
+
     match /expenses/{expenseId} {
-      allow read: if hasPermission('expenses.view') && hasStoreAccess(resource.data.store_id);
+      allow read: if (hasPermission('expenses.view') || hasPermission('expenses.create')) &&
+        (isSuperAdmin() || resource.data.created_by == request.auth.uid || hasExpenseStoreAccess(resource.data.get('store_id', null)));
       allow create: if hasPermission('expenses.create') &&
-        (isAdmin() || (request.resource.data.store_id is string && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([request.resource.data.store_id]))) &&
+        hasExpenseStoreAccess(request.resource.data.get('store_id', null)) &&
+        request.resource.data.id == expenseId &&
+        request.resource.data.status == 'DRAFT' &&
+        !request.resource.data.keys().hasAny(['validated_by', 'validated_at']) &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.amount is number && request.resource.data.amount > 0 &&
         request.resource.data.description is string;
+      allow update: if (
+        hasPermission('expenses.create') &&
+        resource.data.status == 'DRAFT' &&
+        request.resource.data.status == 'DRAFT' &&
+        resource.data.created_by == request.auth.uid &&
+        request.resource.data.created_by == resource.data.created_by &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.expense_number == resource.data.expense_number &&
+        request.resource.data.created_at == resource.data.created_at &&
+        hasExpenseStoreAccess(request.resource.data.get('store_id', null)) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'category', 'description', 'amount', 'expense_date', 'store_id',
+          'store_name', 'payee', 'payment_method', 'payment_status', 'reference', 'notes'
+        ])
+      ) || (
+        hasPermission('expenses.create') &&
+        (isSuperAdmin() || (resource.data.created_by == request.auth.uid && hasExpenseStoreAccess(resource.data.get('store_id', null)))) &&
+        resource.data.status == 'DRAFT' &&
+        request.resource.data.status == 'VALIDATED' &&
+        request.resource.data.validated_by == request.auth.uid &&
+        request.resource.data.validated_at is number &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'validated_by', 'validated_at'])
+      );
+      allow delete: if isSuperAdmin();
     }
 
     match /movements/{movementId} {
@@ -324,6 +357,7 @@ service cloud.firestore {
         request.resource.data.payment_status == 'PAID' &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amount_paid', 'payment_status'])
       );
+      allow delete: if isSuperAdmin() && resource.data.status == 'DRAFT';
     }
 
     match /productions/{productionId} {
@@ -333,6 +367,22 @@ service cloud.firestore {
         request.resource.data.consumptions is list && request.resource.data.consumptions.size() > 0 &&
         request.resource.data.outputs is list && request.resource.data.outputs.size() > 0 &&
         hasStoreAccess(request.resource.data.manufacturer_store_id);
+      allow update: if hasPermission('production.create') &&
+        resource.data.status == 'DRAFT' &&
+        request.resource.data.status == 'DRAFT' &&
+        resource.data.created_by == request.auth.uid &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.production_number == resource.data.production_number &&
+        request.resource.data.manufacturer_store_id == resource.data.manufacturer_store_id &&
+        request.resource.data.created_by == resource.data.created_by &&
+        request.resource.data.created_at == resource.data.created_at &&
+        request.resource.data.consumptions is list &&
+        request.resource.data.consumptions.size() > 0 &&
+        request.resource.data.outputs is list &&
+        request.resource.data.outputs.size() > 0 &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consumptions', 'outputs', 'notes']) &&
+        hasStoreAccess(resource.data.manufacturer_store_id);
+      allow delete: if isSuperAdmin() && resource.data.status == 'DRAFT';
     }
 
     match /auditLogs/{auditId} {
@@ -409,6 +459,18 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.total -
           getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.amount_paid ==
           request.resource.data.outstanding_balance - resource.data.outstanding_balance
+      ) || (
+        isSuperAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'updated_at']) &&
+        request.resource.data.outstanding_balance >= 0 &&
+        resource.data.last_credit_sale_id is string &&
+        exists(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)) &&
+        get(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)).data.credit_customer_id == customerId &&
+        get(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)).data.status == 'DRAFT' &&
+        !existsAfter(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)) &&
+        resource.data.outstanding_balance - request.resource.data.outstanding_balance ==
+          get(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)).data.total -
+          get(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)).data.amount_paid
       );
       allow delete: if hasPermission('credit.manage') && resource.data.outstanding_balance == 0;
     }
@@ -621,7 +683,7 @@ service cloud.firestore {
           )
         )
       );
-      allow delete: if isAdmin();
+      allow delete: if isSuperAdmin() && resource.data.status == 'DRAFT';
     }
   }
 }

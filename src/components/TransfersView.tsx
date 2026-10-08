@@ -38,6 +38,7 @@ interface TransfersViewProps {
   currentUser: UserProfile;
   onCreateTransfer: (transfer: StockTransfer) => Promise<boolean>;
   onUpdateTransfer: (originalTransfer: StockTransfer, transfer: StockTransfer) => Promise<boolean>;
+  onDeleteTransfer: (transfer: StockTransfer) => Promise<void>;
   onApproveTransfer: (transferId: string) => void;
   onRejectTransfer: (transferId: string, rejectionNote: string) => Promise<boolean>;
   onShipTransfer: (transferId: string) => void;
@@ -83,6 +84,7 @@ export default function TransfersView({
   currentUser,
   onCreateTransfer,
   onUpdateTransfer,
+  onDeleteTransfer,
   onApproveTransfer,
   onRejectTransfer,
   onShipTransfer,
@@ -774,6 +776,21 @@ export default function TransfersView({
                       >
                         <Pencil className="h-3.5 w-3.5" />
                         Modifier
+                      </button>
+                    )}
+                    {t.status === "DRAFT" && currentUser.roleId === "SUPER_ADMIN" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Supprimer le brouillon ${t.transfer_number} ?`)) {
+                            void onDeleteTransfer(t);
+                          }
+                        }}
+                        className="flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50"
+                        title="Supprimer le brouillon (super administrateur)"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Supprimer
                       </button>
                     )}
                     {/* Step 1 -> 2: Approve DRAFT */}

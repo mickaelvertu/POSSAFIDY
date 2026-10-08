@@ -11,6 +11,7 @@ import { Production, StockMovement, StockTransfer, Store, StoreStock } from "../
 import { generateRef, getArticleStock, updateStockQuantity } from "../../services/stockService";
 import {
   deleteStore,
+  deleteDraftTransfer,
   loadCatalogData,
   loadInventoryData,
   loadProcurementData,
@@ -25,7 +26,7 @@ import {
   saveTransferWithStockEffects,
   updateDraftTransfer,
 } from "../../services/inventoryService";
-import { advanceSale, cancelSale, createProduction, loadOperationalData, saveAuditLog, updateDraftSale, validateSale } from "../../services/operationsService";
+import { advanceSale, cancelSale, createProduction, deleteDraftSale, deleteDraftProduction, loadOperationalData, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
 import { createCreditSale, loadCreditCustomerForUser, loadCreditCustomers, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
 import { createResellerOrder, loadResellerStocks, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
@@ -46,7 +47,7 @@ import UnitsView from "../UnitsView";
 import ReportsView from "../ReportsView";
 import ReportViewer from "../ReportViewer";
 import ThemeSwitcher from "../ThemeSwitcher";
-import { loadExpenses, saveExpense } from "../../services/expenseService";
+import { deleteExpense, loadExpenses, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { applyStockSnapshot, importInitialStocks } from "../../services/stockImportService";
 import type { StockSyncRow } from "../../services/stockSyncValidation";
@@ -226,16 +227,12 @@ export default function AuthenticatedSessionView() {
 
   useEffect(() => {
     let isMounted = true;
-    const canViewExpenses = user && (
-      user.role === "ADMIN" ||
-      user.role === "SUPER_ADMIN" ||
-      user.permissions.includes("expenses.view")
-    );
+    const canViewExpenses = user?.status === "ACTIVE" && (canManageStores || user.permissions.includes("expenses.view") || user.permissions.includes("expenses.create"));
     if (!canViewExpenses) {
       setExpenses([]);
       return;
     }
-    loadExpenses(canManageStores ? undefined : user?.assignedStores)
+    loadExpenses(user?.role === "SUPER_ADMIN" ? undefined : user?.assignedStores, user?.id)
       .then(loadedExpenses => {
         if (isMounted) setExpenses(loadedExpenses);
       })
@@ -753,6 +750,26 @@ export default function AuthenticatedSessionView() {
     }
   };
 
+  const handleDeleteSale = async (sale: Sale) => {
+    if (currentAppUser?.roleId !== "SUPER_ADMIN") {
+      alert("Suppression réservée aux super administrateurs.");
+      return;
+    }
+    try {
+      const auditLog = createAuditLog(currentAppUser, "SALE_DRAFT_DELETED", "SALE", sale.id, sale, undefined, sale.store_id);
+      const updatedCustomer = await deleteDraftSale(sale, currentAppUser.uid, auditLog);
+      setSales(current => current.filter(item => item.id !== sale.id));
+      if (updatedCustomer) {
+        setCreditCustomers(current => current.map(customer =>
+          customer.id === updatedCustomer.id ? updatedCustomer : customer
+        ));
+      }
+      setAuditLogs(current => [auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible de supprimer le brouillon de vente.");
+    }
+  };
+
   const handleCreateProduction = async (production: Production) => {
     try {
       const result = await createProduction(production, stocks);
@@ -765,6 +782,42 @@ export default function AuthenticatedSessionView() {
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer la production.");
       return false;
+    }
+  };
+
+  const handleUpdateDraftProduction = async (original: Production, production: Production): Promise<boolean> => {
+    try {
+      if (
+        !currentAppUser ||
+        !hasPermission(currentAppUser, "production.create") ||
+        currentAppUser.uid !== original.created_by ||
+        original.status !== "DRAFT"
+      ) {
+        throw new Error("Seul le créateur peut modifier une production en brouillon.");
+      }
+      const auditLog = createAuditLog(currentAppUser, "PRODUCTION_DRAFT_UPDATED", "PRODUCTION", production.id, original, production, production.manufacturer_store_id);
+      const updated = await updateDraftProduction(original, production, currentAppUser.uid, auditLog);
+      setProductions(current => current.map(item => item.id === updated.id ? updated : item));
+      setAuditLogs(current => [auditLog, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible de modifier la production en brouillon.");
+      return false;
+    }
+  };
+
+  const handleDeleteDraftProduction = async (production: Production) => {
+    if (currentAppUser?.roleId !== "SUPER_ADMIN") {
+      alert("Suppression réservée aux super administrateurs.");
+      return;
+    }
+    try {
+      const auditLog = createAuditLog(currentAppUser, "PRODUCTION_DRAFT_DELETED", "PRODUCTION", production.id, production, undefined, production.manufacturer_store_id);
+      await deleteDraftProduction(production, auditLog);
+      setProductions(current => current.filter(item => item.id !== production.id));
+      setAuditLogs(current => [auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible de supprimer la production en brouillon.");
     }
   };
 
@@ -853,6 +906,21 @@ export default function AuthenticatedSessionView() {
 
   const handleCreateTransfer = (transfer: StockTransfer) => handleSaveTransfer(transfer);
   const handleUpdateTransfer = (originalTransfer: StockTransfer, transfer: StockTransfer) => handleSaveTransfer(transfer, originalTransfer);
+
+  const handleDeleteTransfer = async (transfer: StockTransfer) => {
+    if (currentAppUser?.roleId !== "SUPER_ADMIN") {
+      alert("Suppression réservée aux super administrateurs.");
+      return;
+    }
+    try {
+      const auditLog = createAuditLog(currentAppUser, "TRANSFER_DRAFT_DELETED", "TRANSFER", transfer.id, transfer, undefined, transfer.source_store_id);
+      await deleteDraftTransfer(transfer, auditLog);
+      setTransfers(current => current.filter(item => item.id !== transfer.id));
+      setAuditLogs(current => [auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible de supprimer le brouillon de transfert.");
+    }
+  };
 
   const handleApproveTransfer = async (transferId: string) => {
     if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
@@ -1408,13 +1476,48 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateExpense = async (expense: Expense) => {
-    const isAdmin = currentAppUser?.roleId === "ADMIN" || currentAppUser?.roleId === "SUPER_ADMIN";
-    if (!isAdmin && (!expense.store_id || !currentAppUser?.storeIds.includes(expense.store_id))) {
+    if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create"))) throw new Error("Vous ne disposez pas de la permission de créer une dépense.");
+    const isSuperAdmin = currentAppUser.roleId === "SUPER_ADMIN";
+    if (!isSuperAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id))) {
       throw new Error("Vous ne pouvez enregistrer une dépense que pour un magasin attribué à votre compte.");
     }
+    expense = { ...expense, status: "DRAFT", created_by: currentAppUser!.uid, validated_by: undefined, validated_at: undefined };
     const auditLog = createAuditLog(currentAppUser!, "EXPENSE_CREATED", "EXPENSE", expense.id, undefined, expense, expense.store_id);
     await saveExpense(expense, auditLog);
     setExpenses(current => [expense, ...current].sort((left, right) => right.expense_date - left.expense_date));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleUpdateExpense = async (original: Expense, expense: Expense) => {
+    const isSuperAdmin = currentAppUser?.roleId === "SUPER_ADMIN";
+    if (
+      user?.status !== "ACTIVE" ||
+      !currentAppUser ||
+      !hasPermission(currentAppUser, "expenses.create") ||
+      expense.created_by !== currentAppUser.uid ||
+      (!isSuperAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))
+    ) {
+      throw new Error("Vous pouvez uniquement modifier vos propres brouillons dans un magasin attribué à votre compte.");
+    }
+    const auditLog = createAuditLog(currentAppUser, "EXPENSE_DRAFT_UPDATED", "EXPENSE", expense.id, original, expense, expense.store_id);
+    const updated = await updateDraftExpense(original, expense, currentAppUser.uid, auditLog);
+    setExpenses(current => current.map(item => item.id === updated.id ? updated : item)
+      .sort((left, right) => right.expense_date - left.expense_date));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleValidateExpense = async (expense: Expense) => {
+    if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || (currentAppUser.roleId !== "SUPER_ADMIN" && (expense.created_by !== currentAppUser.uid || !expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))) throw new Error("Vous pouvez uniquement valider vos propres dépenses avec la permission de création.");
+    const auditLog = createAuditLog(currentAppUser, "EXPENSE_VALIDATED", "EXPENSE", expense.id, expense, undefined, expense.store_id);
+    const updated = await validateExpense(expense, currentAppUser.uid, auditLog, currentAppUser.roleId === "SUPER_ADMIN");
+    setExpenses(current => current.map(item => item.id === updated.id ? updated : item));
+    setAuditLogs(current => [{ ...auditLog, new_value: updated }, ...current]);
+  };
+  const handleDeleteExpense = async (expense: Expense) => {
+    if (currentAppUser?.roleId !== "SUPER_ADMIN") throw new Error("Suppression réservée aux super administrateurs.");
+    const auditLog = createAuditLog(currentAppUser, "EXPENSE_DELETED", "EXPENSE", expense.id, expense, undefined, expense.store_id);
+    await deleteExpense(expense, auditLog);
+    setExpenses(current => current.filter(item => item.id !== expense.id));
     setAuditLogs(current => [auditLog, ...current]);
   };
 
@@ -1440,6 +1543,7 @@ export default function AuthenticatedSessionView() {
             {isOnline ? "En ligne" : "Hors connexion · synchro en attente"}
           </div>
           <ThemeSwitcher />
+          {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) && <button type="button" onClick={() => setActiveModule("expenses")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Dépenses</button>}
           <button
             type="button"
             onClick={() => setShowProfile(current => !current)}
@@ -1512,6 +1616,7 @@ export default function AuthenticatedSessionView() {
                 && currentAppUser.storeIds.some(storeId => inventoryStores.some(store => store.id === storeId && store.store_type === "CENTRAL_WAREHOUSE"))}
               onCreateSale={handleCreateSale}
               onUpdateSale={handleUpdateSale}
+              onDeleteSale={handleDeleteSale}
               onVerifySale={handleVerifySale}
               onValidateSale={handleValidateSale}
               onCancelSale={handleCancelSale}
@@ -1616,6 +1721,7 @@ export default function AuthenticatedSessionView() {
               canResolveDiscrepancy={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               onCreateTransfer={handleCreateTransfer}
               onUpdateTransfer={handleUpdateTransfer}
+              onDeleteTransfer={handleDeleteTransfer}
               onApproveTransfer={handleApproveTransfer}
               onRejectTransfer={handleRejectTransfer}
               onShipTransfer={handleShipTransfer}
@@ -1699,6 +1805,8 @@ export default function AuthenticatedSessionView() {
               stocks={stocks}
               currentUser={currentAppUser}
               onCreateProduction={handleCreateProduction}
+              onUpdateDraftProduction={handleUpdateDraftProduction}
+              onDeleteDraftProduction={handleDeleteDraftProduction}
               onInitiateReturn={handleInitiateProductionReturn}
             />
           </section>
@@ -1726,7 +1834,7 @@ export default function AuthenticatedSessionView() {
               onResetData={handleResetSuppliers}
             />
           </section>
-        ) : activeModule === "expenses" && currentAppUser && (currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("expenses.view")) ? (
+        ) : activeModule === "expenses" && currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) ? (
           <section className="space-y-4">
             <button
               type="button"
@@ -1739,8 +1847,11 @@ export default function AuthenticatedSessionView() {
               expenses={expenses}
               stores={accessibleStores}
               currentUser={currentAppUser}
-              canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || currentAppUser.permissions.includes("expenses.create")}
+              canCreate={user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create"))}
+              onValidateExpense={handleValidateExpense}
+              onDeleteExpense={handleDeleteExpense}
               onCreateExpense={handleCreateExpense}
+              onUpdateExpense={handleUpdateExpense}
             />
           </section>
         ) : activeModule === "credit" && currentAppUser && (

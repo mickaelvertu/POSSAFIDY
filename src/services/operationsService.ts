@@ -174,6 +174,61 @@ export async function updateDraftSale(
   return { sale: updatedSale, auditLog: entry };
 }
 
+export async function deleteDraftSale(sale: Sale, userId: string, auditLog: AuditLog): Promise<CreditCustomer | undefined> {
+  if (auditLog.user_id !== userId) throw new Error("L'utilisateur de l'audit ne correspond pas à l'utilisateur connecté.");
+  let updatedCustomer: CreditCustomer | undefined;
+  await runTransaction(db, async transaction => {
+    const saleRef = doc(db, SALES, sale.id);
+    const snapshot = await transaction.get(saleRef);
+    if (!snapshot.exists() || (snapshot.data() as Sale).status !== "DRAFT") {
+      throw new Error("Seul un brouillon de vente peut être supprimé.");
+    }
+    const current = snapshot.data() as Sale;
+    if (
+      current.seller_id !== sale.seller_id ||
+      current.total !== sale.total ||
+      current.amount_paid !== sale.amount_paid ||
+      current.credit_customer_id !== sale.credit_customer_id
+    ) {
+      throw new Error("La vente a changé depuis son ouverture. Rechargez les données avant de la supprimer.");
+    }
+
+    const customerRef = current.credit_customer_id
+      ? doc(db, "creditCustomers", current.credit_customer_id)
+      : undefined;
+    const customerSnapshot = customerRef ? await transaction.get(customerRef) : undefined;
+    if (customerRef && !customerSnapshot?.exists()) {
+      throw new Error("Le compte crédit associé à cette vente est introuvable.");
+    }
+    if (customerRef && customerSnapshot?.exists()) {
+      const customer = customerSnapshot.data() as CreditCustomer;
+      const amountReleased = Math.max(0, current.total - current.amount_paid);
+      if (customer.last_credit_sale_id !== current.id) {
+        throw new Error("Ce brouillon de crédit ne peut pas être supprimé tant qu'il n'est pas le dernier associé au compte.");
+      }
+      if (customer.outstanding_balance < amountReleased) {
+        throw new Error("Le solde crédit associé est incohérent. Contactez un administrateur.");
+      }
+      updatedCustomer = {
+        ...customer,
+        outstanding_balance: customer.outstanding_balance - amountReleased,
+        updated_at: Date.now()
+      };
+      transaction.update(customerRef, {
+        outstanding_balance: updatedCustomer.outstanding_balance,
+        updated_at: updatedCustomer.updated_at
+      });
+    }
+
+    transaction.delete(saleRef);
+    transaction.set(doc(db, AUDIT_LOGS, auditLog.id), clean({
+      ...auditLog,
+      old_value: current
+    }));
+  });
+  return updatedCustomer;
+}
+
 export async function advanceSale(
   sale: Sale,
   nextStatus: "CHECKING" | "VERIFIED",
@@ -363,6 +418,68 @@ export async function createProduction(
     transaction.set(doc(db, AUDIT_LOGS, entry.id), entry);
   });
   return { stocks: updatedStocks, movements, auditLog: entry };
+}
+
+export async function updateDraftProduction(
+  original: Production,
+  updated: Production,
+  userId: string,
+  auditLog: AuditLog
+): Promise<Production> {
+  if (
+    original.status !== "DRAFT" ||
+    updated.status !== "DRAFT" ||
+    original.created_by !== userId ||
+    updated.id !== original.id ||
+    updated.production_number !== original.production_number ||
+    updated.manufacturer_store_id !== original.manufacturer_store_id ||
+    updated.created_by !== original.created_by ||
+    updated.created_at !== original.created_at
+  ) {
+    throw new Error("Seul le créateur peut modifier sa production tant qu'elle est en brouillon.");
+  }
+
+  await runTransaction(db, async transaction => {
+    const productionRef = doc(db, PRODUCTIONS, original.id);
+    const snapshot = await transaction.get(productionRef);
+    if (!snapshot.exists()) throw new Error("Cette production n'existe plus.");
+    const current = snapshot.data() as Production;
+    if (
+      current.status !== "DRAFT" ||
+      current.created_by !== userId ||
+      JSON.stringify(current.consumptions) !== JSON.stringify(original.consumptions) ||
+      JSON.stringify(current.outputs) !== JSON.stringify(original.outputs) ||
+      current.notes !== original.notes
+    ) {
+      throw new Error("La production a changé depuis son ouverture. Rechargez les données avant de la modifier.");
+    }
+    transaction.update(productionRef, clean({
+      consumptions: updated.consumptions,
+      outputs: updated.outputs,
+      notes: updated.notes
+    }));
+    transaction.set(doc(db, AUDIT_LOGS, auditLog.id), clean({
+      ...auditLog,
+      old_value: current,
+      new_value: updated
+    }));
+  });
+  return updated;
+}
+
+export async function deleteDraftProduction(production: Production, auditLog: AuditLog): Promise<void> {
+  await runTransaction(db, async transaction => {
+    const productionRef = doc(db, PRODUCTIONS, production.id);
+    const snapshot = await transaction.get(productionRef);
+    if (!snapshot.exists() || (snapshot.data() as Production).status !== "DRAFT") {
+      throw new Error("Seule une production en brouillon peut être supprimée.");
+    }
+    transaction.delete(productionRef);
+    transaction.set(doc(db, AUDIT_LOGS, auditLog.id), clean({
+      ...auditLog,
+      old_value: snapshot.data()
+    }));
+  });
 }
 
 export async function saveAuditLog(entry: AuditLog): Promise<void> {

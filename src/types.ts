@@ -157,6 +157,9 @@ export interface SupplierPayment {
 export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "FOOD" | "OTHER";
 
 export interface Expense {
+  status?: "DRAFT" | "VALIDATED";
+  validated_by?: string;
+  validated_at?: number;
   id: string;
   expense_number: string;
   category: ExpenseCategory;

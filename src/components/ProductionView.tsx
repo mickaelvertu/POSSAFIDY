@@ -22,7 +22,8 @@ import {
   Layers,
   FlaskConical,
   Sparkles,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Pencil
 } from "lucide-react";
 
 interface ProductionViewProps {
@@ -32,6 +33,8 @@ interface ProductionViewProps {
   stocks: StoreStock[];
   currentUser: UserProfile;
   onCreateProduction: (prod: Production) => Promise<boolean>;
+  onUpdateDraftProduction: (original: Production, updated: Production) => Promise<boolean>;
+  onDeleteDraftProduction: (production: Production) => Promise<void>;
   onInitiateReturn: (transfer: StockTransfer) => void;
 }
 
@@ -42,10 +45,13 @@ export default function ProductionView({
   stocks,
   currentUser,
   onCreateProduction,
+  onUpdateDraftProduction,
+  onDeleteDraftProduction,
   onInitiateReturn
 }: ProductionViewProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [editingProduction, setEditingProduction] = useState<Production | null>(null);
 
   // Manufacturer store
   const manufStore = stores.find(s => s.store_type === "MANUFACTURER") || stores[0];
@@ -69,9 +75,19 @@ export default function ProductionView({
   const [returnReason, setReturnReason] = useState("Surplus de production non consommé");
 
   const handleOpenProductionModal = () => {
+    setEditingProduction(null);
     setConsumptions([{ article_id: rawArticles[0]?.id || "", quantity: 10 }]);
     setOutputs([{ article_id: resaleArticles[0]?.id || "", quantity: 5 }]);
     setBatchNote("");
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditProductionModal = (production: Production) => {
+    if (production.status !== "DRAFT" || production.created_by !== currentUser.uid) return;
+    setEditingProduction(production);
+    setConsumptions(production.consumptions.map(line => ({ article_id: line.article_id, quantity: line.quantity })));
+    setOutputs(production.outputs.map(line => ({ article_id: line.article_id, quantity: line.quantity })));
+    setBatchNote(production.notes || "");
     setIsModalOpen(true);
   };
 
@@ -85,7 +101,12 @@ export default function ProductionView({
 
   const handleSubmitProduction = async (e: FormEvent) => {
     e.preventDefault();
-    if (consumptions.length === 0 || outputs.length === 0) {
+    if (
+      consumptions.length === 0 ||
+      outputs.length === 0 ||
+      consumptions.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !rawArticles.some(article => article.id === line.article_id)) ||
+      outputs.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !resaleArticles.some(article => article.id === line.article_id))
+    ) {
       alert("Veuillez renseigner au moins une matière première consommée et un produit fini fabriqué.");
       return;
     }
@@ -95,7 +116,7 @@ export default function ProductionView({
     const consumptionLines: ProductionConsumptionLine[] = consumptions.map((c, idx) => {
       const art = articles.find(a => a.id === c.article_id);
       return {
-        id: `cons-${Date.now()}-${idx}`,
+        id: editingProduction?.consumptions[idx]?.id || `cons-${Date.now()}-${idx}`,
         article_id: c.article_id,
         article_code: art?.code || "MP",
         article_name: art?.name || "Matière Première",
@@ -107,7 +128,7 @@ export default function ProductionView({
     const outputLines: ProductionOutputLine[] = outputs.map((o, idx) => {
       const art = articles.find(a => a.id === o.article_id);
       return {
-        id: `out-${Date.now()}-${idx}`,
+        id: editingProduction?.outputs[idx]?.id || `out-${Date.now()}-${idx}`,
         article_id: o.article_id,
         article_code: art?.code || "PF",
         article_name: art?.name || "Produit Fini",
@@ -116,7 +137,12 @@ export default function ProductionView({
       };
     });
 
-    const newProd: Production = {
+    const newProd: Production = editingProduction ? {
+      ...editingProduction,
+      consumptions: consumptionLines,
+      outputs: outputLines,
+      notes: batchNote
+    } : {
       id: `prod-${Date.now()}`,
       production_number: prodNumber,
       manufacturer_store_id: manufStore.id,
@@ -132,7 +158,13 @@ export default function ProductionView({
       validated_at: Date.now()
     };
 
-    if (await onCreateProduction(newProd)) setIsModalOpen(false);
+    const saved = editingProduction
+      ? await onUpdateDraftProduction(editingProduction, newProd)
+      : await onCreateProduction(newProd);
+    if (saved) {
+      setEditingProduction(null);
+      setIsModalOpen(false);
+    }
   };
 
   const handleSubmitReturn = (e: FormEvent) => {
@@ -249,9 +281,23 @@ export default function ProductionView({
                   Opérateur : {p.created_by_name}
                 </span>
               </div>
-              <span className="bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-0.5 rounded-full border border-emerald-300">
-                {p.status}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`font-bold text-xs px-2.5 py-0.5 rounded-full border ${p.status === "DRAFT" ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"}`}>
+                  {p.status}
+                </span>
+                {p.status === "DRAFT" && p.created_by === currentUser.uid && (
+                  <button type="button" onClick={() => handleOpenEditProductionModal(p)} className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50">
+                    <Pencil className="h-3 w-3" /> Modifier
+                  </button>
+                )}
+                {p.status === "DRAFT" && currentUser.roleId === "SUPER_ADMIN" && (
+                  <button type="button" onClick={() => {
+                    if (window.confirm(`Supprimer le brouillon ${p.production_number} ?`)) void onDeleteDraftProduction(p);
+                  }} className="inline-flex items-center gap-1 rounded border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50">
+                    <Trash2 className="h-3 w-3" /> Supprimer
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
@@ -308,7 +354,7 @@ export default function ProductionView({
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <FlaskConical className="h-5 w-5 text-indigo-600" />
-                <h3 className="font-bold text-slate-900 text-base">Nouvel Ordre de Fabrication Laboratoire</h3>
+                <h3 className="font-bold text-slate-900 text-base">{editingProduction ? `Modifier le brouillon ${editingProduction.production_number}` : "Nouvel Ordre de Fabrication Laboratoire"}</h3>
               </div>
               <button
                 type="button"
@@ -483,7 +529,7 @@ export default function ProductionView({
                   type="submit"
                   className="px-5 py-2 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs cursor-pointer"
                 >
-                  Enregistrer & Valider la Production
+                  {editingProduction ? "Enregistrer les modifications" : "Enregistrer & Valider la Production"}
                 </button>
               </div>
 

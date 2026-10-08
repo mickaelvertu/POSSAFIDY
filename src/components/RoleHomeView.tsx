@@ -56,11 +56,15 @@ const auditCategoryLabels: Record<AuditCategory, string> = {
 
 const auditActionLabels: Record<string, string> = {
   SALE_CREATED: "Vente créée",
+  SALE_DRAFT_UPDATED: "Brouillon de vente modifié",
+  SALE_DRAFT_DELETED: "Brouillon de vente supprimé",
   SALE_CHECKING: "Vente en vérification",
   SALE_VERIFIED: "Vente vérifiée",
   SALE_VALIDATED: "Vente validée",
   SALE_CANCELLED: "Vente annulée",
   TRANSFER_CREATED: "Transfert créé",
+  TRANSFER_DRAFT_UPDATED: "Brouillon de transfert modifié",
+  TRANSFER_DRAFT_DELETED: "Brouillon de transfert supprimé",
   TRANSFER_APPROVED: "Transfert approuvé",
   TRANSFER_REJECTED: "Transfert refusé",
   TRANSFER_SHIPPED: "Transfert expédié",
@@ -70,7 +74,12 @@ const auditActionLabels: Record<string, string> = {
   CREDIT_CUSTOMER_UPDATED: "Compte revendeur modifié",
   CREDIT_PAYMENT_RECORDED: "Règlement revendeur enregistré",
   CREDIT_FOLLOW_UP_RECORDED: "Relance revendeur consignée",
-  EXPENSE_CREATED: "Dépense enregistrée",
+  PRODUCTION_DRAFT_UPDATED: "Brouillon de production modifié",
+  PRODUCTION_DRAFT_DELETED: "Brouillon de production supprimé",
+  EXPENSE_CREATED: "Brouillon de dépense créé",
+  EXPENSE_DRAFT_UPDATED: "Brouillon de dépense modifié",
+  EXPENSE_VALIDATED: "Dépense validée",
+  EXPENSE_DELETED: "Dépense supprimée",
   STOCK_ADJUSTED: "Stock ajusté",
   PURCHASE_RECEIVED: "Dépôt réceptionné"
 };
@@ -291,7 +300,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
   const availableCards = accessCards.filter(card => {
     if (card.permission === "reseller.orders") return isAdmin;
     if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage" || card.permission === "staff.manage") return isAdmin;
-    if (card.permission === "expenses.view" && isAdmin) return true;
+    if (card.permission === "expenses.view") return isAdmin || hasPermission(user, "expenses.view") || hasPermission(user, "expenses.create");
     if (card.permission === "transfers.view" && isAdmin) return true;
     if (card.permission === "reports.view" && isAdmin) return true;
     if (card.permission === "credit.manage" && isAdmin) return true;
@@ -360,7 +369,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                 .filter(sale => sale.store_id === store.id && sale.status === "VALIDATED" && isToday(sale.created_at))
                 .reduce((total, sale) => total + sale.total, 0);
               const dailyExpenses = expenses
-                .filter(expense => expense.store_id === store.id && isToday(expense.expense_date))
+                .filter(expense => expense.status !== "DRAFT" && expense.store_id === store.id && isToday(expense.expense_date))
                 .reduce((total, expense) => total + expense.amount, 0);
               return (
                 <article
@@ -411,7 +420,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                 .filter(sale => sale.store_id === store.id && sale.status === "VALIDATED" && isToday(sale.created_at))
                 .reduce((total, sale) => total + sale.total, 0);
               const dailyExpenses = expenses
-                .filter(expense => expense.store_id === store.id && isToday(expense.expense_date))
+                .filter(expense => expense.status !== "DRAFT" && expense.store_id === store.id && isToday(expense.expense_date))
                 .reduce((total, expense) => total + expense.amount, 0);
               return (
                 <article
@@ -649,7 +658,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
 
       {selectedStore && (() => {
         const storeSales = sales.filter(sale => sale.store_id === selectedStore.id && sale.status === "VALIDATED" && isToday(sale.created_at));
-        const storeExpenses = expenses.filter(expense => expense.store_id === selectedStore.id && isToday(expense.expense_date));
+        const storeExpenses = expenses.filter(expense => expense.status !== "DRAFT" && expense.store_id === selectedStore.id && isToday(expense.expense_date));
         const dailySales = storeSales.reduce((total, sale) => total + sale.total, 0);
         const dailyExpenses = storeExpenses.reduce((total, expense) => total + expense.amount, 0);
         const latestSales = [...storeSales].sort((left, right) => right.created_at - left.created_at);
