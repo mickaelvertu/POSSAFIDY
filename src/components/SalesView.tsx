@@ -11,6 +11,7 @@ import {
   SaleStatus 
 } from "../types";
 import { generateRef, getArticleStock } from "../services/stockService";
+import StoreDropdown from "./StoreDropdown";
 import { 
   ShoppingCart, 
   Plus, 
@@ -673,11 +674,9 @@ export default function SalesView({
               <section className={`${mobileSaleStep === "PRODUCTS" ? "flex" : "hidden"} min-h-0 flex-1 flex-col md:border-r md:border-slate-200`}>
                 <div className="shrink-0 space-y-3 border-b border-slate-200 bg-white p-4 md:p-5">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="text-xs font-bold text-slate-700">Magasin vendeur
-                      <select value={selectedStoreId} onChange={(e) => handleStoreChange(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500">
-                        {eligibleStores.map(store => <option key={store.id} value={store.id}>{store.name} ({store.store_type})</option>)}
-                      </select>
-                    </label>
+                    <div className="text-xs font-bold text-slate-700">Magasin vendeur
+                      <StoreDropdown value={selectedStoreId} stores={eligibleStores} onChange={handleStoreChange} />
+                    </div>
                     <label className="text-xs font-bold text-slate-700">Rechercher un article
                       <span className="relative mt-1.5 block">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
