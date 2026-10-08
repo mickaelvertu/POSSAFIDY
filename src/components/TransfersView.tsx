@@ -1,5 +1,6 @@
 import { useState, FormEvent } from "react";
 import DeliveryNote from "./DeliveryNote";
+import SearchableSelect from "./SearchableSelect";
 import { 
   StockTransfer, 
   StockTransferLine, 
@@ -25,7 +26,8 @@ import {
   FileCheck,
   Building2,
   Trash2,
-  HelpCircle
+  HelpCircle,
+  Pencil
 } from "lucide-react";
 
 interface TransfersViewProps {
@@ -34,8 +36,10 @@ interface TransfersViewProps {
   articles: Article[];
   stocks: StoreStock[];
   currentUser: UserProfile;
-  onCreateTransfer: (transfer: StockTransfer) => void;
+  onCreateTransfer: (transfer: StockTransfer) => Promise<boolean>;
+  onUpdateTransfer: (originalTransfer: StockTransfer, transfer: StockTransfer) => Promise<boolean>;
   onApproveTransfer: (transferId: string) => void;
+  onRejectTransfer: (transferId: string, rejectionNote: string) => Promise<boolean>;
   onShipTransfer: (transferId: string) => void;
   onReceiveAndValidateTransfer: (
     transferId: string, 
@@ -45,6 +49,7 @@ interface TransfersViewProps {
   onResolveDiscrepancy: (transferId: string, resolutionNote: string) => void;
   canCreate: boolean;
   canApprove: boolean;
+  canReject: boolean;
   canShip: boolean;
   canReceive: boolean;
   canResolveDiscrepancy: boolean;
@@ -77,12 +82,15 @@ export default function TransfersView({
   stocks,
   currentUser,
   onCreateTransfer,
+  onUpdateTransfer,
   onApproveTransfer,
+  onRejectTransfer,
   onShipTransfer,
   onReceiveAndValidateTransfer,
   onResolveDiscrepancy,
   canCreate,
   canApprove,
+  canReject,
   canShip,
   canReceive,
   canResolveDiscrepancy
@@ -92,7 +100,10 @@ export default function TransfersView({
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingTransfer, setEditingTransfer] = useState<StockTransfer | null>(null);
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
+  const [rejectingTransfer, setRejectingTransfer] = useState<StockTransfer | null>(null);
+  const [rejectionNote, setRejectionNote] = useState("");
   const [distributionArticleId, setDistributionArticleId] = useState(articles.find(article => article.article_type === "RESALE")?.id || "");
   const [distributionPlan, setDistributionPlan] = useState<StockDistributionPlan | null>(null);
   const [inspectingTransfer, setInspectingTransfer] = useState<StockTransfer | null>(null);
@@ -112,15 +123,39 @@ export default function TransfersView({
   const [receiverGeneralNote, setReceiverGeneralNote] = useState("");
 
   const getStoreName = (id: string) => stores.find(s => s.id === id)?.name || id;
-  const centralStores = stores.filter(store => store.store_type === "CENTRAL_WAREHOUSE");
+  const centralStores = stores.filter(store => store.store_type === "CENTRAL_WAREHOUSE" && store.is_active);
   const primaryCentralStore = centralStores.find(store => store.code === "DEP-01") || centralStores[0];
-  const resellerStores = stores.filter(store => store.store_type === "RESELLER");
+  const resellerStores = stores.filter(store => store.store_type === "RESELLER" && store.is_active);
+  const activeStores = stores.filter(store => store.is_active);
+  const sourceStores = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"
+    ? activeStores
+    : activeStores.filter(store => currentUser.storeIds.includes(store.id));
   const getTransferArticles = (destinationStoreId: string) => {
     const destination = stores.find(store => store.id === destinationStoreId);
     return destination?.store_type === "POS" || destination?.store_type === "RESELLER"
       ? articles.filter(article => article.article_type === "RESALE")
       : articles;
   };
+  const getDispatchableStock = (storeId: string, articleId: string, excludeTransferId?: string) => {
+    const stock = getArticleStock(stocks, storeId, articleId);
+    const pending = transfers
+      .filter(transfer => transfer.id !== excludeTransferId && transfer.source_store_id === storeId && ["DRAFT", "APPROVED"].includes(transfer.status))
+      .flatMap(transfer => transfer.lines)
+      .filter(line => line.article_id === articleId)
+      .reduce((total, line) => total + line.quantity_sent, 0);
+    return Math.max(0, stock - pending);
+  };
+  const storeOptions = activeStores.map(store => ({
+    value: store.id,
+    label: `${store.name} (${store.code})`,
+    description: ({
+      CENTRAL_WAREHOUSE: "Entrepôt central",
+      POS: "Point de vente",
+      RESELLER: "Revendeur",
+      MANUFACTURER: "Fabricant"
+    }[store.store_type])
+  }));
+  const sourceStoreOptions = storeOptions.filter(option => sourceStores.some(store => store.id === option.value));
 
   // Determine transfer type code automatically from source and destination
   const getTransferTypeCode = (srcId: string, dstId: string): TransferTypeCode => {
@@ -190,7 +225,7 @@ export default function TransfersView({
     };
   };
 
-  const handleCreateDistributionDrafts = () => {
+  const handleCreateDistributionDrafts = async () => {
     const plan = calculateStockDistribution(distributionArticleId);
     if (!plan || plan.allocations.length === 0) {
       alert("Aucun stock disponible à répartir après déduction des transferts en attente.");
@@ -226,7 +261,7 @@ export default function TransfersView({
         created_at: timestamp,
         updated_at: timestamp
       };
-      onCreateTransfer(transfer);
+      if (!await onCreateTransfer(transfer)) return;
     }
 
     setIsDistributionModalOpen(false);
@@ -247,12 +282,30 @@ export default function TransfersView({
   });
 
   const handleOpenCreateModal = () => {
-    const sourceStoreId = primaryCentralStore?.id || stores[0]?.id || "";
-    const destinationStoreId = resellerStores[0]?.id || stores.find(store => store.id !== sourceStoreId)?.id || "";
+    setEditingTransfer(null);
+    const sourceStoreId = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"
+      ? primaryCentralStore?.id || sourceStores[0]?.id || ""
+      : sourceStores[0]?.id || "";
+    const destinationStoreId = resellerStores.find(store => store.id !== sourceStoreId)?.id
+      || stores.find(store => store.id !== sourceStoreId)?.id
+      || "";
     setSourceStoreId(sourceStoreId);
     setDestStoreId(destinationStoreId);
-    setTransferLines([{ article_id: getTransferArticles(destinationStoreId)[0]?.id || "", quantity: 10 }]);
+    setTransferLines([{ article_id: "", quantity: 1 }]);
     setTransferNote("");
+    setIsCreateModalOpen(true);
+  };
+
+  const handleOpenEditModal = (transfer: StockTransfer) => {
+    if (transfer.status !== "DRAFT" || transfer.requested_by !== currentUser.uid) return;
+    setEditingTransfer(transfer);
+    setSourceStoreId(transfer.source_store_id);
+    setDestStoreId(transfer.destination_store_id);
+    setTransferLines(transfer.lines.map(line => ({
+      article_id: line.article_id,
+      quantity: line.quantity_sent
+    })));
+    setTransferNote(transfer.note || "");
     setIsCreateModalOpen(true);
   };
 
@@ -281,7 +334,7 @@ export default function TransfersView({
     setTransferLines(transferLines.filter((_, idx) => idx !== index));
   };
 
-  const handleSaveNewTransfer = (e: FormEvent) => {
+  const handleSaveNewTransfer = async (e: FormEvent) => {
     e.preventDefault();
     if (sourceStoreId === destStoreId) {
       alert("Le magasin source et le magasin destination doivent être distincts !");
@@ -308,49 +361,29 @@ export default function TransfersView({
 
     const invalidLine = transferLines.find(line => {
       const requestedQuantity = Number(line.quantity);
-      const availableQuantity = getArticleStock(stocks, sourceStoreId, line.article_id);
-      const sourceStore = stores.find(store => store.id === sourceStoreId);
-      if (sourceStore?.store_type !== "CENTRAL_WAREHOUSE") {
-        return !Number.isFinite(requestedQuantity) || requestedQuantity <= 0 || requestedQuantity > availableQuantity;
-      }
+      const availableQuantity = getDispatchableStock(sourceStoreId, line.article_id, editingTransfer?.id);
       const requestedForArticle = transferLines
         .filter(item => item.article_id === line.article_id)
         .reduce((total, item) => total + Number(item.quantity), 0);
-      const pendingForArticle = transfers
-        .filter(transfer => transfer.source_store_id === sourceStoreId && ["DRAFT", "APPROVED"].includes(transfer.status))
-        .flatMap(transfer => transfer.lines)
-        .filter(item => item.article_id === line.article_id)
-        .reduce((total, item) => total + item.quantity_sent, 0);
-      const availableAfterReserve =       availableQuantity - pendingForArticle;
-      return !Number.isFinite(requestedQuantity) || requestedQuantity <= 0 || requestedForArticle > availableAfterReserve;
+      return !Number.isFinite(requestedQuantity) || requestedQuantity <= 0 || requestedForArticle > availableQuantity;
     });
     if (invalidLine) {
       const article = articles.find(item => item.id === invalidLine.article_id);
       const requestedQuantity = Number(invalidLine.quantity);
-      const availableQuantity = getArticleStock(stocks, sourceStoreId, invalidLine.article_id);
-      const sourceStore = stores.find(store => store.id === sourceStoreId);
-      const pendingForArticle = sourceStore?.store_type === "CENTRAL_WAREHOUSE"
-        ? transfers
-          .filter(transfer => transfer.source_store_id === sourceStoreId && ["DRAFT", "APPROVED"].includes(transfer.status))
-          .flatMap(transfer => transfer.lines)
-          .filter(item => item.article_id === invalidLine.article_id)
-          .reduce((total, item) => total + item.quantity_sent, 0)
-        : 0;
-      const dispatchable = sourceStore?.store_type === "CENTRAL_WAREHOUSE"
-        ? Math.max(0, availableQuantity - pendingForArticle)
-        : availableQuantity;
+      const dispatchable = getDispatchableStock(sourceStoreId, invalidLine.article_id, editingTransfer?.id);
       alert(`Stock insuffisant pour ${article?.name || "cet article"}. Demandé : ${requestedQuantity}. Répartissable : ${dispatchable}.`);
       return;
     }
 
     const type = getTransferTypeCode(sourceStoreId, destStoreId);
     const transferNumber = generateRef("TRF", transfers.length);
+    const transferId = editingTransfer?.id || `trf-${crypto.randomUUID()}`;
 
     const lines: StockTransferLine[] = transferLines.map((line, idx) => {
       const art = articles.find(a => a.id === line.article_id);
       return {
         id: `line-${Date.now()}-${idx}`,
-        transfer_id: `trf-${Date.now()}`,
+        transfer_id: transferId,
         article_id: line.article_id,
         article_code: art?.code || "REF",
         article_name: art?.name || "Article",
@@ -363,24 +396,50 @@ export default function TransfersView({
     });
 
     const newTransfer: StockTransfer = {
-      id: `trf-${Date.now()}`,
-      transfer_number: transferNumber,
+      id: transferId,
+      transfer_number: editingTransfer?.transfer_number || transferNumber,
       type,
       source_store_id: sourceStoreId,
       destination_store_id: destStoreId,
       status: "DRAFT",
-      requested_by: currentUser.uid,
-      requested_by_name: currentUser.displayName || currentUser.email,
-      lines,
+      requested_by: editingTransfer?.requested_by || currentUser.uid,
+      requested_by_name: editingTransfer?.requested_by_name || currentUser.displayName || currentUser.email,
+      lines: lines.map((line, index) => ({
+        ...line,
+        id: editingTransfer?.lines[index]?.id || line.id,
+        transfer_id: transferId
+      })),
       note: transferNote,
       has_discrepancy: false,
-      created_at: Date.now(),
-      updated_at: Date.now(),
+      created_at: editingTransfer?.created_at || Date.now(),
+      updated_at: editingTransfer ? Math.max(Date.now(), editingTransfer.updated_at + 1) : Date.now(),
     };
 
-    onCreateTransfer(newTransfer);
-    setIsCreateModalOpen(false);
+    const saved = editingTransfer
+      ? await onUpdateTransfer(editingTransfer, newTransfer)
+      : await onCreateTransfer(newTransfer);
+    if (saved) {
+      setIsCreateModalOpen(false);
+      setEditingTransfer(null);
+    }
   };
+
+  const transferFormIssue = sourceStoreId === destStoreId
+    ? "Choisissez deux magasins différents pour créer le transfert."
+    : transferLines.some(line => !line.article_id)
+      ? "Sélectionnez un article dans chaque ligne avant de continuer."
+      : transferLines.some(line => {
+        const requested = transferLines
+          .filter(item => item.article_id === line.article_id)
+          .reduce((total, item) => total + Number(item.quantity), 0);
+        return !Number.isFinite(Number(line.quantity))
+          || Number(line.quantity) <= 0
+          || requested > getDispatchableStock(sourceStoreId, line.article_id, editingTransfer?.id);
+      })
+        ? "Le stock disponible ne couvre pas toutes les quantités demandées."
+        : transferLines.some(line => !getTransferArticles(destStoreId).some(article => article.id === line.article_id))
+          ? "Un article n'est pas autorisé pour le magasin destinataire."
+          : "";
 
   // Launch inspection modal
   const handleOpenInspection = (transfer: StockTransfer) => {
@@ -419,9 +478,11 @@ export default function TransfersView({
           </p>
         </div>
 
-        {canCreate && (
+        {canCreate && sourceStores.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {primaryCentralStore && stores.some(store => store.store_type === "POS" && store.is_active) && (
+            {(currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN")
+              && primaryCentralStore
+              && stores.some(store => store.store_type === "POS" && store.is_active) && (
               <button
                 type="button"
                 onClick={() => {
@@ -454,19 +515,19 @@ export default function TransfersView({
           Cycle de Vie d'un Transfert GILEADA (Section 3 & 4) :
         </div>
         <div className="flex items-center gap-2 text-xs font-mono min-w-max">
-          <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">1. DRAFT</span>
+          <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">1. Demande</span>
           <span className="text-slate-500">→</span>
-          <span className="bg-blue-950 text-blue-300 px-2.5 py-1 rounded-md border border-blue-800">2. APPROVED (Admin)</span>
+          <span className="bg-blue-950 text-blue-300 px-2.5 py-1 rounded-md border border-blue-800">2. Approbation (Admin)</span>
           <span className="text-slate-500">→</span>
-          <span className="bg-indigo-950 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-800">3. SHIPPED (Stock Source Décrémenté)</span>
+          <span className="bg-indigo-950 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-800">3. Expédition (stock source débité)</span>
           <span className="text-slate-500">→</span>
-          <span className="bg-amber-950 text-amber-300 px-2.5 py-1 rounded-md border border-amber-800">4. IN_TRANSIT</span>
+          <span className="bg-amber-950 text-amber-300 px-2.5 py-1 rounded-md border border-amber-800">4. En transit</span>
           <span className="text-slate-500">→</span>
-          <span className="bg-purple-950 text-purple-300 px-2.5 py-1 rounded-md border border-purple-800">5. RECEIVED (Contrôle Destinataire)</span>
+          <span className="bg-purple-950 text-purple-300 px-2.5 py-1 rounded-md border border-purple-800">5. Réception (magasin destinataire)</span>
           <span className="text-slate-500">→</span>
-          <span className="bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-800">6. VALIDATED (Stock Destinataire Crédité)</span>
+          <span className="bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-800">6. Validé (stock accepté crédité)</span>
           <span className="text-slate-500">/</span>
-          <span className="bg-rose-950 text-rose-300 px-2.5 py-1 rounded-md border border-rose-800">DISCREPANCY (Écarts Tracés)</span>
+          <span className="bg-rose-950 text-rose-300 px-2.5 py-1 rounded-md border border-rose-800">Écart à traiter</span>
         </div>
       </div>
 
@@ -475,7 +536,16 @@ export default function TransfersView({
         
         {/* Status filter tabs */}
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
-          {["ALL", "DRAFT", "APPROVED", "IN_TRANSIT", "RECEIVED", "VALIDATED", "DISCREPANCY"].map((st) => (
+          {[
+            ["ALL", "Tous"],
+            ["DRAFT", "En attente"],
+            ["APPROVED", "Approuvés"],
+            ["REJECTED", "Refusés"],
+            ["IN_TRANSIT", "En transit"],
+            ["RECEIVED", "Reçus"],
+            ["VALIDATED", "Validés"],
+            ["DISCREPANCY", "Avec écart"]
+          ].map(([st, label]) => (
             <button
               key={st}
               type="button"
@@ -486,7 +556,7 @@ export default function TransfersView({
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              {st === "ALL" ? "Tous" : st}
+              {label}
             </button>
           ))}
         </div>
@@ -515,9 +585,12 @@ export default function TransfersView({
             const totalAccepted = t.lines.reduce((acc, l) => acc + l.quantity_accepted, 0);
             const totalRejected = t.lines.reduce((acc, l) => acc + l.quantity_rejected, 0);
 
-            const isReceiver = currentUser.roleId === "RESPONSABLE_MAGASIN"
-              && currentUser.storeIds.includes(t.destination_store_id)
-              && currentUser.uid !== t.requested_by;
+            const isReceiver = currentUser.storeIds.includes(t.destination_store_id)
+              && currentUser.uid !== t.requested_by
+              && currentUser.uid !== t.approved_by;
+            const isSourceOperator = currentUser.roleId === "ADMIN"
+              || currentUser.roleId === "SUPER_ADMIN"
+              || currentUser.storeIds.includes(t.source_store_id);
 
             return (
               <div 
@@ -525,7 +598,8 @@ export default function TransfersView({
                 className={`bg-white rounded-2xl border p-5 shadow-xs transition hover:shadow-md ${
                   t.status === "DISCREPANCY" ? "border-rose-300 bg-rose-50/20" :
                   t.status === "IN_TRANSIT" ? "border-amber-300" :
-                  t.status === "VALIDATED" ? "border-emerald-200" : "border-slate-200"
+                  t.status === "VALIDATED" ? "border-emerald-200" :
+                  t.status === "REJECTED" ? "border-rose-200 bg-rose-50/20" : "border-slate-200"
                 }`}
               >
                 
@@ -541,6 +615,9 @@ export default function TransfersView({
                     <span className="text-xs text-slate-400">
                       {new Date(t.created_at).toLocaleDateString("fr-FR")}
                     </span>
+                    <span className="text-xs font-medium text-slate-500">
+                      Demandeur : {t.requested_by_name}
+                    </span>
                   </div>
 
                   {/* Status Badge */}
@@ -550,9 +627,20 @@ export default function TransfersView({
                       t.status === "IN_TRANSIT" ? "bg-amber-100 text-amber-800 border-amber-300 animate-pulse" :
                       t.status === "APPROVED" ? "bg-blue-100 text-blue-800 border-blue-300" :
                       t.status === "DISCREPANCY" ? "bg-rose-100 text-rose-800 border-rose-300" :
+                      t.status === "REJECTED" ? "bg-rose-100 text-rose-800 border-rose-300" :
                       t.status === "DRAFT" ? "bg-slate-100 text-slate-800 border-slate-300" : "bg-purple-100 text-purple-800 border-purple-300"
                     }`}>
-                      {t.status}
+                      {{
+                        DRAFT: "En attente d'approbation",
+                        APPROVED: "Approuvé",
+                        SHIPPED: "Expédié",
+                        IN_TRANSIT: "En transit",
+                        RECEIVED: "Reçu",
+                        VALIDATED: "Réception validée",
+                        DISCREPANCY: "Écart à traiter",
+                        REJECTED: "Refusé",
+                        CANCELLED: "Annulé"
+                      }[t.status]}
                     </span>
                   </div>
                 </div>
@@ -566,6 +654,11 @@ export default function TransfersView({
                     {t.shipped_at && (
                       <div className="text-indigo-600 mt-1 font-medium">
                         Expédié le : {new Date(t.shipped_at).toLocaleString("fr-FR")} ({t.shipped_by_name})
+                      </div>
+                    )}
+                    {t.approved_by_name && (
+                      <div className="mt-1 font-medium text-blue-700">
+                        Approuvé par {t.approved_by_name}
                       </div>
                     )}
                   </div>
@@ -659,6 +752,12 @@ export default function TransfersView({
                   <div className="text-xs text-slate-500 italic">
                     {t.note && `Observation : "${t.note}"`}
                   </div>
+                  {t.status === "REJECTED" && t.rejection_note && (
+                    <p className="w-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                      Motif du refus : {t.rejection_note}
+                      {t.rejected_by_name && <span className="ml-1 text-rose-600">— {t.rejected_by_name}</span>}
+                    </p>
+                  )}
 
                   <div className="flex items-center gap-2">
                     
@@ -667,8 +766,18 @@ export default function TransfersView({
                         Bon de livraison
                       </button>
                     )}
+                    {t.status === "DRAFT" && t.requested_by === currentUser.uid && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(t)}
+                        className="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modifier
+                      </button>
+                    )}
                     {/* Step 1 -> 2: Approve DRAFT */}
-                    {t.status === "DRAFT" && canApprove && (
+                    {t.status === "DRAFT" && canApprove && currentUser.uid !== t.requested_by && (
                       <button
                         type="button"
                         onClick={() => onApproveTransfer(t.id)}
@@ -678,16 +787,29 @@ export default function TransfersView({
                         Approuver le Transfert
                       </button>
                     )}
+                    {t.status === "DRAFT" && canReject && currentUser.uid !== t.requested_by && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRejectingTransfer(t);
+                          setRejectionNote("");
+                        }}
+                        className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-rose-300 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Refuser
+                      </button>
+                    )}
 
                     {/* Step 2 -> 3: Ship APPROVED -> Sets IN_TRANSIT, deducts source stock */}
-                    {t.status === "APPROVED" && canShip && (
+                    {t.status === "APPROVED" && canShip && isSourceOperator && (
                       <button
                         type="button"
                         onClick={() => onShipTransfer(t.id)}
                         className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <Truck className="h-3.5 w-3.5" />
-                        Expédier (Décrémenter Stock Source)
+                        Expédier depuis le magasin source
                       </button>
                     )}
 
@@ -815,87 +937,135 @@ export default function TransfersView({
         </div>
       )}
 
+      {rejectingTransfer && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs">
+          <form
+            onSubmit={event => {
+              event.preventDefault();
+              const note = rejectionNote.trim();
+              if (!note) return;
+              void onRejectTransfer(rejectingTransfer.id, note).then(rejected => {
+                if (rejected) {
+                  setRejectingTransfer(null);
+                  setRejectionNote("");
+                }
+              });
+            }}
+            className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl"
+          >
+            <h3 className="text-base font-bold">Refuser la demande {rejectingTransfer.transfer_number}</h3>
+            <p className="mt-1 text-sm text-slate-600">Le demandeur verra ce motif. Un refus ne modifie pas le stock.</p>
+            <label className="mt-4 block text-xs font-bold text-slate-700" htmlFor="transfer-rejection-note">Motif du refus</label>
+            <textarea
+              id="transfer-rejection-note"
+              required
+              autoFocus
+              rows={3}
+              value={rejectionNote}
+              onChange={event => setRejectionNote(event.target.value)}
+              placeholder="Indiquez pourquoi la demande est refusée…"
+              className="mt-1 w-full rounded-lg border border-slate-300 p-3 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRejectingTransfer(null)}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={!rejectionNote.trim()}
+                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                Confirmer le refus
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* CREATE TRANSFER MODAL */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl max-h-[90vh] overflow-y-auto w-full p-5 sm:p-6 border border-slate-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <ArrowRightLeft className="h-5 w-5 text-blue-600" />
-                <h3 className="font-bold text-slate-900 text-base">Initier un Nouveau Transfert</h3>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">{editingTransfer ? `Modifier le brouillon ${editingTransfer.transfer_number}` : "Nouveau transfert"}</h3>
+                  <p className="text-xs text-slate-500">{editingTransfer ? "Modifiez le trajet, les articles, les quantités ou les instructions avant approbation." : "Demandez un transfert depuis votre magasin vers un autre magasin."}</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 p-1"
+                aria-label="Fermer le formulaire de transfert"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveNewTransfer} className="mt-4 space-y-4">
-              
-              {/* Stores selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Magasin Source (Expéditeur) :
-                  </label>
-                  <select
-                    value={sourceStoreId}
-                    onChange={(e) => setSourceStoreId(e.target.value)}
-                    className="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    {stores.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.code} - {s.store_type})
-                      </option>
-                    ))}
-                  </select>
+            <form onSubmit={handleSaveNewTransfer} className="mt-5 space-y-5">
+              <section aria-labelledby="transfer-route-heading">
+                <div className="mb-2">
+                  <h4 id="transfer-route-heading" className="text-sm font-bold text-slate-800">1. Trajet</h4>
+                  <p className="text-xs text-slate-500">Recherchez par nom ou code magasin.</p>
                 </div>
+                <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">Magasin expéditeur</label>
+                    <SearchableSelect
+                      value={sourceStoreId}
+                      options={sourceStoreOptions}
+                      onChange={setSourceStoreId}
+                      placeholder="Rechercher un magasin source…"
+                      className="w-full"
+                    />
+                  </div>
+                  <ArrowRightLeft className="hidden h-5 w-5 text-slate-400 sm:block sm:mb-2.5" aria-hidden="true" />
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">Magasin destinataire</label>
+                    <SearchableSelect
+                      value={destStoreId}
+                      options={storeOptions}
+                      onChange={nextDestinationStoreId => {
+                        setDestStoreId(nextDestinationStoreId);
+                        const allowedArticles = getTransferArticles(nextDestinationStoreId);
+                        setTransferLines(lines => lines.map(line => ({
+                          ...line,
+                          article_id: allowedArticles.some(article => article.id === line.article_id) ? line.article_id : "",
+                          query: undefined
+                        })));
+                      }}
+                      placeholder="Rechercher un magasin destinataire…"
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+                {sourceStoreId === destStoreId && (
+                  <p className="mt-2 text-xs font-medium text-amber-700" role="alert">
+                    Le magasin expéditeur et le destinataire doivent être différents.
+                  </p>
+                )}
+              </section>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Magasin Destinataire :
-                  </label>
-                  <select
-                    value={destStoreId}
-                    onChange={(e) => {
-                      const nextDestinationStoreId = e.target.value;
-                      const firstAllowedArticle = getTransferArticles(nextDestinationStoreId)[0];
-                      setDestStoreId(nextDestinationStoreId);
-                      setTransferLines(lines => lines.map(line => ({
-                        ...line,
-                        article_id: getTransferArticles(nextDestinationStoreId).some(article => article.id === line.article_id)
-                          ? line.article_id
-                          : firstAllowedArticle?.id || ""
-                      })));
-                    }}
-                    className="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    {stores.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.code} - {s.store_type})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-relaxed text-blue-900">
+                <strong>À savoir :</strong> le stock source est débité à l'expédition. Le destinataire est crédité uniquement des quantités acceptées après son contrôle de réception. Les transferts en attente sont déjà déduits du stock disponible.
               </div>
 
-              {/* Notice on stock rule */}
-              <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 text-[11px] text-blue-900">
-                <strong>Règle GILEADA :</strong> À l'expédition, le stock du magasin source sera diminué de la quantité envoyée. 
-                Le magasin destinataire ne sera crédité que des quantités qu'il aura expressément acceptées lors de son contrôle de réception.
-              </div>
-
-              {/* Transfer lines */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-slate-800">Articles à transférer :</label>
+              <section aria-labelledby="transfer-items-heading">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div>
+                    <h4 id="transfer-items-heading" className="text-sm font-bold text-slate-800">2. Articles</h4>
+                    <p className="text-xs text-slate-500">Le stock disponible est vérifié automatiquement.</p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleAddTransferLine(true)}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                    className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50"
                   >
                     <Plus className="h-3.5 w-3.5" /> Ajouter une ligne
                   </button>
@@ -906,36 +1076,44 @@ export default function TransfersView({
                     <option key={a.id} value={formatArticleLabel(a)} />
                   ))}
                 </datalist>
-                <p className="text-[10px] text-slate-500 mb-1">Astuce : tapez le code, Tab pour la quantité, Entrée pour ajouter une ligne.</p>
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
                   {transferLines.map((line, idx) => {
-                    const currentStock = getArticleStock(stocks, sourceStoreId, line.article_id);
                     const selectedArticle = articles.find(article => article.id === line.article_id);
+                    const availableStock = selectedArticle ? getDispatchableStock(sourceStoreId, selectedArticle.id, editingTransfer?.id) : 0;
+                    const requestedForArticle = selectedArticle
+                      ? transferLines
+                        .filter(item => item.article_id === selectedArticle.id)
+                        .reduce((total, item) => total + Number(item.quantity), 0)
+                      : 0;
+                    const stockIsSufficient = Boolean(selectedArticle) && requestedForArticle <= availableStock;
+                    const quantityStep = getQuantityStep(selectedArticle?.unit || "");
                     return (
-                      <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                      <div key={idx} className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_9rem_auto] sm:items-start">
                         <input
                           type="text"
                           list="transfer-article-options"
                           data-transfer-article
+                          aria-label={`Article de la ligne ${idx + 1}`}
                           autoComplete="off"
-                          placeholder="Tapez le code ou le nom…"
+                          placeholder="Rechercher par code ou nom d'article…"
                           value={line.query ?? (selectedArticle ? formatArticleLabel(selectedArticle) : "")}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => {
                             const text = e.target.value;
                             const match = findTransferArticle(text);
                             setTransferLines(lines => lines.map((l, i) => i === idx
-                              ? { ...l, query: text, article_id: match ? match.id : l.article_id }
+                              ? { ...l, query: text, article_id: match?.id || "" }
                               : l));
                           }}
                           onBlur={() => setTransferLines(lines => lines.map((l, i) => i === idx ? { ...l, query: undefined } : l))}
-                          className="flex-1 text-xs bg-white border border-slate-300 rounded-lg p-2"
+                          className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                         />
 
-                        <div className="flex w-32 shrink-0 items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            min="1"
+                            min={quantityStep}
+                            step={quantityStep}
                             aria-label={`Quantité à transférer (${selectedArticle?.unit || "unité"})`}
                             value={line.quantity}
                             onFocus={(e) => e.target.select()}
@@ -946,66 +1124,83 @@ export default function TransfersView({
                               }
                             }}
                             onChange={(e) => {
-                              const newLines = [...transferLines];
-                              newLines[idx].quantity = Math.max(1, Number(e.target.value));
-                              setTransferLines(newLines);
+                              const nextQuantity = Number(e.target.value);
+                              setTransferLines(lines => lines.map((item, i) => i === idx
+                                ? { ...item, quantity: Math.max(quantityStep, nextQuantity || quantityStep) }
+                                : item));
                             }}
-                            className="min-w-0 flex-1 text-xs font-mono font-bold bg-white border border-slate-300 rounded-lg p-2 text-right"
+                            className="min-w-0 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-right font-mono text-sm font-bold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                             placeholder="Qté"
                           />
-                          <span className="max-w-16 truncate text-[10px] font-medium text-slate-600" title={selectedArticle?.unit}>{selectedArticle?.unit}</span>
+                          <span className="max-w-16 shrink-0 truncate text-xs font-medium text-slate-600" title={selectedArticle?.unit}>{selectedArticle?.unit || "Unité"}</span>
                         </div>
 
-                        <span className="min-w-0 flex-1 text-right text-[10px] text-slate-500">
-                          Dispo: {currentStock} {selectedArticle?.unit}
-                        </span>
-
-                        {transferLines.length > 1 && (
+                        <div className="flex items-center justify-between gap-2 sm:justify-end">
+                          {selectedArticle ? (
+                            <p className={`text-xs font-semibold ${stockIsSufficient ? "text-emerald-700" : "text-rose-700"}`} role="status">
+                              {stockIsSufficient
+                                ? `${formatQuantity(availableStock, selectedArticle.unit)} ${selectedArticle.unit} disponible`
+                                : `Stock insuffisant : ${formatQuantity(availableStock, selectedArticle.unit)} disponible pour ${formatQuantity(requestedForArticle, selectedArticle.unit)} demandé`}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-slate-500">Choisissez un article dans la liste.</p>
+                          )}
+                          {transferLines.length > 1 && (
                           <button
                             type="button"
                             onClick={() => handleRemoveTransferLine(idx)}
-                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"
+                            className="shrink-0 rounded-lg p-1.5 text-rose-500 hover:bg-rose-50"
                             title="Supprimer la ligne"
-                            aria-label="Supprimer la ligne"
+                            aria-label={`Supprimer la ligne ${idx + 1}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        )}
+                          )}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-              </div>
+              </section>
 
-              {/* Note */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Motif / Instructions d'acheminement :
+                <label className="mb-1 block text-xs font-bold text-slate-700">
+                  3. Motif ou instructions <span className="font-normal text-slate-500">(facultatif)</span>
                 </label>
                 <input
                   type="text"
                   value={transferNote}
                   onChange={(e) => setTransferNote(e.target.value)}
-                  placeholder="Ex: Réapprovisionnement régulier, commande spéciale..."
-                  className="w-full text-xs bg-white border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ex. : réapprovisionnement régulier, commande spéciale…"
+                  className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
-              {/* Actions */}
-              <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+              <div className="flex flex-col-reverse justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center">
+                <div aria-live="polite">
+                  {transferFormIssue && (
+                    <p className="text-xs font-medium text-rose-700">{transferFormIssue}</p>
+                  )}
+                  {!transferFormIssue && (
+                    <p className="text-xs text-slate-500">La demande sera envoyée à l'administration pour approbation.</p>
+                  )}
+                </div>
+                <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs cursor-pointer"
+                  disabled={Boolean(transferFormIssue)}
+                  className="cursor-pointer rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                 >
-                  Créer le Transfert (DRAFT)
+                  {editingTransfer ? "Enregistrer les modifications" : "Envoyer la demande"}
                 </button>
+                </div>
               </div>
 
             </form>

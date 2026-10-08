@@ -6,6 +6,7 @@ import {
   Article, 
   StoreStock, 
   UserProfile, 
+  CreditCustomer,
   PaymentMethod, 
   SaleStatus 
 } from "../types";
@@ -27,7 +28,8 @@ import {
   Building2,
   FileCheck,
   Package,
-  WalletCards
+  WalletCards,
+  Pencil
 } from "lucide-react";
 
 interface SalesViewProps {
@@ -36,7 +38,10 @@ interface SalesViewProps {
   articles: Article[];
   stocks: StoreStock[];
   currentUser: UserProfile;
+  creditCustomers: CreditCustomer[];
+  canCreateResellerSale: boolean;
   onCreateSale: (sale: Sale) => Promise<boolean>;
+  onUpdateSale: (originalSale: Sale, sale: Sale) => Promise<boolean>;
   onVerifySale: (saleId: string) => void;
   onValidateSale: (saleId: string) => void;
   onCancelSale: (saleId: string) => void;
@@ -48,7 +53,10 @@ export default function SalesView({
   articles,
   stocks,
   currentUser,
+  creditCustomers,
+  canCreateResellerSale,
   onCreateSale,
+  onUpdateSale,
   onVerifySale,
   onValidateSale,
   onCancelSale
@@ -56,15 +64,17 @@ export default function SalesView({
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
 
   // New Sale Form
-  const eligibleStores = stores.filter(s => s.store_type === "POS" || s.store_type === "RESELLER");
+  const eligibleStores = stores.filter(s => s.store_type === "POS" || (canCreateResellerSale && s.store_type === "CENTRAL_WAREHOUSE"));
   const saleArticles = articles.filter(article => article.is_active && article.article_type === "RESALE");
   const [selectedStoreId, setSelectedStoreId] = useState(eligibleStores[0]?.id || stores[0]?.id || "");
   const [customerName, setCustomerName] = useState("Client Comptoir");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerType, setCustomerType] = useState<"PARTICULIER" | "REVENDEUR" | "ENTREPRISE">("PARTICULIER");
+  const [creditCustomerId, setCreditCustomerId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [saleNotes, setSaleNotes] = useState("");
@@ -82,25 +92,28 @@ export default function SalesView({
   }>>([]);
 
   const currentStore = stores.find(s => s.id === selectedStoreId);
-  const isResellerStore = currentStore?.store_type === "RESELLER";
+  const isResellerSale = customerType === "REVENDEUR";
+  const selectedCreditCustomer = creditCustomers.find(customer => customer.id === creditCustomerId && customer.is_active);
 
   // Helper to get default unit price based on store type (Section 7)
   const getDefaultPriceForArticle = (articleId: string, storeId: string): number => {
     const art = articles.find(a => a.id === articleId);
     if (!art) return 0;
     const store = stores.find(s => s.id === storeId);
-    if (store?.store_type === "RESELLER") {
+    if (store?.store_type === "RESELLER" || (customerType === "REVENDEUR" && store?.store_type === "CENTRAL_WAREHOUSE")) {
       return art.prix_revendeur;
     }
     return art.prix_normal; // POS default
   };
 
   const handleOpenModal = () => {
+    setEditingSale(null);
     const storeId = eligibleStores[0]?.id || stores[0]?.id || "";
     setSelectedStoreId(storeId);
     setCustomerName("Client Comptoir");
     setCustomerPhone("");
     setCustomerType("PARTICULIER");
+    setCreditCustomerId("");
     setPaymentMethod("CASH");
     setSaleNotes("");
     setArticleSearch("");
@@ -115,8 +128,56 @@ export default function SalesView({
     setIsModalOpen(true);
   };
 
+  const handleOpenEditModal = (sale: Sale) => {
+    if (sale.status !== "DRAFT" || sale.seller_id !== currentUser.uid) return;
+    setEditingSale(sale);
+    setSelectedStoreId(sale.store_id);
+    setCustomerName(sale.customer_name);
+    setCustomerPhone(sale.customer_phone || "");
+    setCustomerType(sale.customer_type);
+    setCreditCustomerId(sale.credit_customer_id || "");
+    setPaymentMethod(sale.payment_method);
+    setAmountPaid(sale.amount_paid);
+    setSaleNotes(sale.notes || "");
+    setArticleSearch("");
+    setMobileSaleStep("PRODUCTS");
+    setSaleLines(sale.lines.map(line => ({
+      article_id: line.article_id,
+      quantity: line.quantity,
+      unit_price: line.unit_price,
+      discount: line.discount,
+      line_type: line.line_type,
+      label: line.line_type === "SERVICE" ? line.article_name : undefined,
+      reason: line.price_reason
+    })));
+    setIsModalOpen(true);
+  };
+
+  const handlePrintReceipt = () => {
+    const receipt = document.querySelector<HTMLElement>(".thermal-receipt");
+    if (!receipt) {
+      window.print();
+      return;
+    }
+
+    receipt.classList.add("thermal-print-sizing");
+    const contentHeightMm = Math.ceil(receipt.getBoundingClientRect().height * 25.4 / 96) + 2;
+    const pageStyle = document.createElement("style");
+    pageStyle.textContent = `@page thermal-receipt { size: 80mm ${contentHeightMm}mm; margin: 0; }`;
+    document.head.appendChild(pageStyle);
+    window.addEventListener("afterprint", () => {
+      receipt.classList.remove("thermal-print-sizing");
+      pageStyle.remove();
+    }, { once: true });
+    window.print();
+  };
+
   const handleStoreChange = (newStoreId: string) => {
     setSelectedStoreId(newStoreId);
+    if (stores.find(store => store.id === newStoreId)?.store_type !== "CENTRAL_WAREHOUSE") {
+      setCustomerType("PARTICULIER");
+      setCreditCustomerId("");
+    }
     // Update unit prices of all lines according to new store type
     setSaleLines(lines => lines.map(line => line.line_type === "SERVICE" ? line : ({
       ...line,
@@ -125,6 +186,7 @@ export default function SalesView({
   };
 
   const handleAddService = () => {
+    if (isResellerSale) return;
     setSaleLines(lines => [...lines, {
       article_id: `service-${Date.now()}-${lines.length}`,
       quantity: 1,
@@ -208,6 +270,15 @@ export default function SalesView({
 
   const hasInvalidService = saleLines.some(line => line.line_type === "SERVICE"
     && (!line.label?.trim() || !line.reason?.trim() || !(line.unit_price > 0)));
+  const creditDue = Math.max(0, netTotal - amountPaid);
+  const creditAvailable = selectedCreditCustomer
+    ? Math.max(0, selectedCreditCustomer.credit_limit - selectedCreditCustomer.outstanding_balance
+      + (editingSale?.credit_customer_id === selectedCreditCustomer.id
+        ? Math.max(0, editingSale.total - editingSale.amount_paid)
+        : 0))
+    : 0;
+  const exceedsCreditLimit = customerType === "REVENDEUR" && creditDue > 0
+    && (!selectedCreditCustomer || creditDue > creditAvailable);
 
   const handleSubmitSale = async (e: FormEvent) => {
     e.preventDefault();
@@ -224,13 +295,32 @@ export default function SalesView({
       alert("Chaque prestation doit avoir un libellé, un prix supérieur à 0 et un motif.");
       return;
     }
+    if (editingSale && netTotal < amountPaid) {
+      alert("Le total modifié ne peut pas être inférieur au montant déjà encaissé.");
+      return;
+    }
+    if (isResellerSale && (
+      !canCreateResellerSale ||
+      currentStore?.store_type !== "CENTRAL_WAREHOUSE" ||
+      saleLines.some(line => line.line_type === "SERVICE")
+    )) {
+      alert("Une demande revendeur doit être créée par un responsable du dépôt central et ne contenir que des produits de revente.");
+      return;
+    }
+    if (exceedsCreditLimit) {
+      alert(selectedCreditCustomer
+        ? `Plafond dépassé. Crédit disponible pour ${selectedCreditCustomer.name} : ${creditAvailable.toLocaleString("fr-FR")} Ar.`
+        : "Un compte revendeur actif doit être sélectionné pour une vente à crédit.");
+      return;
+    }
 
-    const saleNumber = generateRef("VTE", sales.length);
+    const saleId = editingSale?.id || `sale-${Date.now()}`;
+    const saleNumber = editingSale?.sale_number || generateRef("VTE", sales.length);
     const lines: SaleLine[] = saleLines.map((l, idx) => {
       if (l.line_type === "SERVICE") {
         return {
           id: `saleline-${Date.now()}-${idx}`,
-          sale_id: `sale-${Date.now()}`,
+          sale_id: saleId,
           article_id: l.article_id,
           article_code: "PREST",
           article_name: l.label!.trim(),
@@ -245,7 +335,7 @@ export default function SalesView({
       const art = articles.find(a => a.id === l.article_id);
       return {
         id: `saleline-${Date.now()}-${idx}`,
-        sale_id: `sale-${Date.now()}`,
+        sale_id: saleId,
         article_id: l.article_id,
         article_code: art?.code || "REF",
         article_name: art?.name || "Article",
@@ -257,12 +347,24 @@ export default function SalesView({
     });
 
     const newSale: Sale = {
-      id: `sale-${Date.now()}`,
+      id: saleId,
       sale_number: saleNumber,
       store_id: selectedStoreId,
       customer_name: customerName || "Client Comptoir",
       customer_phone: customerPhone,
       customer_type: customerType,
+      credit_customer_id: editingSale?.credit_customer_id || selectedCreditCustomer?.id,
+      credit_due_at: selectedCreditCustomer && creditDue > 0
+        ? Date.now() + selectedCreditCustomer.payment_term_days * 24 * 60 * 60 * 1000
+        : undefined,
+      credit_payments: editingSale?.credit_payments ?? (selectedCreditCustomer && amountPaid > 0 ? [{
+        id: `credit-payment-${crypto.randomUUID()}`,
+        amount: Math.min(amountPaid, netTotal),
+        method: paymentMethod,
+        paid_at: Date.now(),
+        recorded_by: currentUser.uid,
+        recorded_by_name: currentUser.displayName || currentUser.email
+      }] : undefined),
       status: "DRAFT", // Enters 4-step control cycle
       seller_id: currentUser.uid,
       seller_name: currentUser.displayName || currentUser.email,
@@ -272,15 +374,21 @@ export default function SalesView({
       tax: 0,
       total: netTotal,
       payment_method: paymentMethod,
-      payment_status: amountPaid >= netTotal ? "PAID" : "PARTIAL",
+      payment_status: amountPaid >= netTotal ? "PAID" : amountPaid > 0 ? "PARTIAL" : "PENDING",
       amount_paid: amountPaid,
       change_returned: changeReturned,
       notes: saleNotes,
       device_id: "POS-WEB-CLIENT",
-      created_at: Date.now()
+      created_at: editingSale?.created_at ?? Date.now()
     };
 
-    if (await onCreateSale(newSale)) setIsModalOpen(false);
+    const saved = editingSale
+      ? await onUpdateSale(editingSale, newSale)
+      : await onCreateSale(newSale);
+    if (saved) {
+      setIsModalOpen(false);
+      setEditingSale(null);
+    }
   };
 
   const filteredSales = sales.filter(s => {
@@ -341,8 +449,8 @@ export default function SalesView({
           </span>
           <p className="text-emerald-200/90 mt-0.5">
             • <strong>Point de Vente (POS)</strong> : Applique automatiquement le <strong>prix_normal</strong> (prix public).<br />
-            • <strong>Magasin Revendeur (RESELLER)</strong> : Applique automatiquement le <strong>prix_revendeur</strong>.<br />
-            • <strong>Validation</strong> : Déclenche immédiatement la sortie de stock dans le magasin vendeur.
+            • <strong>Demande revendeur</strong> : créée uniquement par un responsable du dépôt central, au <strong>prix revendeur</strong>.<br />
+            • <strong>Approbation</strong> : un administrateur doit valider la demande avant la sortie du stock.
           </p>
         </div>
         <div className="bg-emerald-900 px-3 py-2 rounded-xl text-center shrink-0 border border-emerald-800">
@@ -443,11 +551,27 @@ export default function SalesView({
                       }`}>
                         {sale.status}
                       </span>
+                      {sale.customer_type === "REVENDEUR" && sale.status === "VERIFIED" && (
+                        <div className="mt-1 text-[10px] font-bold text-amber-700">En attente d'approbation admin</div>
+                      )}
                     </td>
                     <td className="py-2.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         
                         {/* 4-step workflow actions */}
+                        {sale.status === "DRAFT" && (
+                          sale.seller_id === currentUser.uid && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(sale)}
+                              className="inline-flex items-center gap-1 rounded bg-slate-700 px-2 py-1 text-[10px] font-bold text-white hover:bg-slate-800"
+                              title="Modifier le brouillon"
+                            >
+                              <Pencil className="h-3 w-3" /> Modifier
+                            </button>
+                          )
+                        )}
+
                         {sale.status === "DRAFT" && (
                           <button
                             type="button"
@@ -469,13 +593,15 @@ export default function SalesView({
                         )}
 
                         {sale.status === "VERIFIED" && (
+                          sale.customer_type !== "REVENDEUR" || currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"
+                        ) && (
                           <button
                             type="button"
                             onClick={() => onValidateSale(sale.id)}
                             className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] shadow-xs flex items-center gap-1 cursor-pointer"
                           >
                             <CheckCircle2 className="h-3 w-3" />
-                            Valider Caisse & Stock
+                            {sale.customer_type === "REVENDEUR" ? "Approuver & débiter le stock" : "Valider Caisse & Stock"}
                           </button>
                         )}
 
@@ -509,8 +635,9 @@ export default function SalesView({
                     <ShoppingCart className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="truncate text-base font-black text-slate-900 md:text-lg">Nouvelle vente</h3>
-                    <p className="truncate text-[11px] text-slate-500">{currentStore?.name} · {isResellerStore ? "Tarif revendeur" : "Tarif public"}</p>
+                    <h3 className="truncate text-base font-black text-slate-900 md:text-lg">{editingSale ? `Modifier le brouillon ${editingSale.sale_number}` : "Nouvelle vente"}</h3>
+                    <p className="truncate text-[11px] text-slate-500">{currentStore?.name} · {isResellerSale ? "Demande revendeur" : "Tarif public"}</p>
+                    {isResellerSale && <p className="mt-1 text-[11px] font-semibold text-amber-700">La demande restera en brouillon jusqu'à l'approbation d'un administrateur.</p>}
                   </div>
                 </div>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer">
@@ -548,7 +675,7 @@ export default function SalesView({
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="font-bold text-slate-900">Catalogue</h4>
                     <div className="flex items-center gap-2">
-                      <button type="button" onClick={handleAddService} className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100">+ Prestation (prix libre)</button>
+                      {!isResellerSale && <button type="button" onClick={handleAddService} className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100">+ Prestation (prix libre)</button>}
                       <span className="text-xs text-slate-500">{availableSaleArticles.length} disponible(s) / {saleArticles.length}</span>
                     </div>
                   </div>
@@ -598,7 +725,7 @@ export default function SalesView({
                     <div><h4 className="font-black text-slate-900">Panier</h4><p className="text-xs text-slate-500">{saleLines.length} ligne(s)</p></div>
                     <div className="flex items-center gap-2">
                     <button type="button" onClick={handleAddLine} disabled={availableSaleArticles.length === 0} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">+ Article en stock</button>
-                    <button type="button" onClick={handleAddService} className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700">+ Prestation</button>
+                    {!isResellerSale && <button type="button" onClick={handleAddService} className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700">+ Prestation</button>}
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -679,33 +806,75 @@ export default function SalesView({
 
                   <div className="mb-4 flex items-center gap-2"><WalletCards className="h-5 w-5 text-emerald-600" /><h4 className="font-black text-slate-900">Client et paiement</h4></div>
                   <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
-                    <label className="text-xs font-bold text-slate-600">Client
-                      <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900" />
-                    </label>
                     <label className="text-xs font-bold text-slate-600">Type de client
-                      <select value={customerType} onChange={(e) => setCustomerType(e.target.value as "PARTICULIER" | "REVENDEUR" | "ENTREPRISE")} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900"><option value="PARTICULIER">Particulier</option><option value="REVENDEUR">Revendeur agréé</option><option value="ENTREPRISE">Entreprise / Clinique</option></select>
+                      <select value={customerType} disabled={Boolean(editingSale)} onChange={(e) => {
+                        const type = e.target.value as "PARTICULIER" | "REVENDEUR" | "ENTREPRISE";
+                        setCustomerType(type);
+                        if (type !== "REVENDEUR") setCreditCustomerId("");
+                        setSaleLines(lines => lines.map(line => {
+                          if (line.line_type === "SERVICE") return line;
+                          const article = articles.find(item => item.id === line.article_id);
+                          const store = stores.find(item => item.id === selectedStoreId);
+                          return {
+                            ...line,
+                            unit_price: store?.store_type === "RESELLER" || (type === "REVENDEUR" && store?.store_type === "CENTRAL_WAREHOUSE")
+                              ? article?.prix_revendeur || 0
+                              : article?.prix_normal || 0
+                          };
+                        }));
+                      }} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900"><option value="PARTICULIER">Particulier</option>{canCreateResellerSale && currentStore?.store_type === "CENTRAL_WAREHOUSE" && <option value="REVENDEUR">Revendeur agréé</option>}<option value="ENTREPRISE">Entreprise / Clinique</option></select>
                     </label>
+                    {customerType === "REVENDEUR" ? (
+                      <label className="text-xs font-bold text-slate-600">Compte revendeur
+                        <select value={creditCustomerId} disabled={Boolean(editingSale)} onChange={event => {
+                          const customer = creditCustomers.find(item => item.id === event.target.value);
+                          setCreditCustomerId(event.target.value);
+                          if (customer) {
+                            setCustomerName(customer.name);
+                            setCustomerPhone(customer.phone);
+                          }
+                        }} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900">
+                          <option value="">Sélectionner un revendeur…</option>
+                          {creditCustomers.filter(customer => customer.is_active).map(customer => (
+                            <option key={customer.id} value={customer.id}>{customer.name} · crédit dispo {Math.max(0, customer.credit_limit - customer.outstanding_balance).toLocaleString("fr-FR")} Ar</option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : (
+                      <label className="text-xs font-bold text-slate-600">Client
+                        <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900" />
+                      </label>
+                    )}
                     <label className="text-xs font-bold text-slate-600">Téléphone <span className="font-normal text-slate-400">(facultatif)</span>
                       <input type="tel" inputMode="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Ex. 034 00 000 00" className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900" />
                     </label>
                     <label className="text-xs font-bold text-slate-600">Mode de règlement
-                      <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm font-semibold text-slate-900"><option value="CASH">Espèces</option><option value="MVOLA">MVola</option><option value="AIRTEL_MONEY">Airtel Money</option><option value="ORANGE_MONEY">Orange Money</option><option value="BANK_TRANSFER">Virement bancaire</option><option value="CHECK">Chèque bancaire</option></select>
+                      <select value={paymentMethod} disabled={Boolean(editingSale)} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm font-semibold text-slate-900 disabled:bg-slate-100"><option value="CASH">Espèces</option><option value="MVOLA">MVola</option><option value="AIRTEL_MONEY">Airtel Money</option><option value="ORANGE_MONEY">Orange Money</option><option value="BANK_TRANSFER">Virement bancaire</option><option value="CHECK">Chèque bancaire</option></select>
                     </label>
                     <label className="text-xs font-bold text-slate-600">Montant encaissé (Ar)
-                      <input type="number" min="0" value={amountPaid} onChange={(e) => setAmountPaid(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-right font-mono text-base font-black text-slate-900" />
+                      <input type="number" min="0" value={amountPaid} disabled={Boolean(editingSale)} onChange={(e) => setAmountPaid(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-right font-mono text-base font-black text-slate-900 disabled:bg-slate-100" />
                     </label>
                   </div>
+                  {customerType === "REVENDEUR" && (
+                    <div className={`mt-3 rounded-xl border p-3 text-xs ${exceedsCreditLimit ? "border-rose-200 bg-rose-50 text-rose-800" : "border-teal-200 bg-teal-50 text-teal-900"}`}>
+                      {!selectedCreditCustomer
+                        ? "Sélectionnez un compte revendeur actif pour vérifier le plafond et appliquer l'échéance."
+                        : creditDue > 0
+                          ? `Solde à crédit : ${creditDue.toLocaleString("fr-FR")} Ar · Disponible après vente : ${Math.max(0, creditAvailable - creditDue).toLocaleString("fr-FR")} Ar · Échéance à ${selectedCreditCustomer.payment_term_days} jours.`
+                          : `Plafond disponible : ${creditAvailable.toLocaleString("fr-FR")} Ar · Vente réglée immédiatement.`}
+                    </div>
+                  )}
                 </div>
 
                 <div className="shrink-0 border-t border-slate-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-5">
                   {mobileSaleStep === "PRODUCTS" ? (
-                    <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0} className="hidden w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:flex"><span>Suivant · Résumer l'achat</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
+                    <button type="button" onClick={() => { if (!editingSale) setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0} className="hidden w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:flex"><span>Suivant · Résumer l'achat</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
                   ) : mobileSaleStep === "CART" ? (
-                    <button type="button" onClick={() => { setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService} className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:hidden"><span>Continuer vers le paiement</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
+                    <button type="button" onClick={() => { if (!editingSale) setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService} className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:hidden"><span>Continuer vers le paiement</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
                   ) : (
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setMobileSaleStep("CART")} className="rounded-xl border border-slate-300 px-4 py-3 font-bold text-slate-700 hover:bg-slate-50">Retour au panier</button>
-                      <button type="submit" disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService} className="flex-1 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none">Enregistrer la vente (DRAFT)</button>
+                      <button type="submit" disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService || exceedsCreditLimit} className="flex-1 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none">{editingSale ? "Enregistrer les modifications" : isResellerSale ? "Soumettre la demande (DRAFT)" : "Enregistrer la vente (DRAFT)"}</button>
                     </div>
                   )}
                   {mobileSaleStep === "PAYMENT" && stockIssues.length > 0 && (
@@ -723,7 +892,7 @@ export default function SalesView({
       {/* TICKET DE CAISSE MODAL */}
       {receiptSale && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="printable-document bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-xs">
+          <div className="printable-document thermal-receipt bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 print:hidden">
               <span className="font-bold text-slate-900">Reçu Caisse Officiel</span>
               <button
@@ -785,7 +954,7 @@ export default function SalesView({
             <div className="mt-4 flex gap-2 print:hidden">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={handlePrintReceipt}
                 className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Printer className="h-3.5 w-3.5" />

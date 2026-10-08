@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { authService } from "../../services/authService";
-import { AppRoleId, AppUser, Article, AuditLog, Category, Employee, Expense, GeneralFilters, Payslip, Purchase, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
+import { authService, hasPermission } from "../../services/authService";
+import { AppRoleId, AppUser, Article, AuditLog, Category, CreditCustomer, CreditFollowUp, CreditPayment, Employee, Expense, GeneralFilters, Payslip, Purchase, ResellerNotification, ResellerOrder, Sale, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
 import UsersView from "../UsersView";
 import RoleHomeView from "../RoleHomeView";
 import SalesView from "../SalesView";
 import StocksView from "../StocksView";
-import { Production, Sale, StockMovement, StockTransfer, Store, StoreStock } from "../../types";
-import { generateRef, updateStockQuantity } from "../../services/stockService";
+import { Production, StockMovement, StockTransfer, Store, StoreStock } from "../../types";
+import { generateRef, getArticleStock, updateStockQuantity } from "../../services/stockService";
 import {
   deleteStore,
   loadCatalogData,
@@ -23,8 +23,11 @@ import {
   saveSupplier,
   saveTransfer,
   saveTransferWithStockEffects,
+  updateDraftTransfer,
 } from "../../services/inventoryService";
-import { advanceSale, cancelSale, createProduction, createSale, loadOperationalData, saveAuditLog, validateSale } from "../../services/operationsService";
+import { advanceSale, cancelSale, createProduction, loadOperationalData, saveAuditLog, updateDraftSale, validateSale } from "../../services/operationsService";
+import { createCreditSale, loadCreditCustomerForUser, loadCreditCustomers, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
+import { createResellerOrder, loadResellerStocks, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
 import AuditView from "../AuditView";
 import StoresView from "../StoresView";
@@ -35,6 +38,8 @@ import ExpensesView from "../ExpensesView";
 import StaffView from "../StaffView";
 import { loadEmployees, saveEmployee } from "../../services/employeeService";
 import PayrollView from "../PayrollView";
+import CreditManagementView from "../CreditManagementView";
+import ResellerPortalView from "../ResellerPortalView";
 import { loadPayslips, loadSalaryAdvances, savePayslip, saveSalaryAdvance } from "../../services/payrollService";
 import TransfersView from "../TransfersView";
 import UnitsView from "../UnitsView";
@@ -56,7 +61,7 @@ import {
   Shield
 } from "lucide-react";
 
-const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "PRODUCTION", "COMPTABLE"];
+const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "PRODUCTION", "COMPTABLE", "GESTIONNAIRE_CREDIT", "REVENDEUR"];
 
 function toAppUser(user: User): AppUser {
   const roleId = APP_ROLES.includes(user.role as AppRoleId) ? user.role as AppRoleId : "VENDEUR";
@@ -65,7 +70,9 @@ function toAppUser(user: User): AppUser {
     uid: user.id,
     code: user.code,
     username: user.email.split("@")[0],
+    businessName: user.businessName,
     email: user.email,
+    phone: user.phone,
     firstName: user.firstName,
     lastName: user.lastName,
     displayName: `${user.firstName} ${user.lastName}`,
@@ -74,6 +81,7 @@ function toAppUser(user: User): AppUser {
     storeIds: user.assignedStores || [],
     permissions: user.permissions || [],
     isActive: user.status === "ACTIVE",
+    accountStatus: user.status,
     createdAt: Date.parse(user.createdAt),
     updatedAt: Date.parse(user.updatedAt)
   };
@@ -84,9 +92,12 @@ export default function AuthenticatedSessionView() {
   const [showProfile, setShowProfile] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit">("home");
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [creditCustomers, setCreditCustomers] = useState<CreditCustomer[]>([]);
+  const [resellerOrders, setResellerOrders] = useState<ResellerOrder[]>([]);
+  const [resellerNotifications, setResellerNotifications] = useState<ResellerNotification[]>([]);
   const [productions, setProductions] = useState<Production[]>([]);
   const [transfers, setTransfers] = useState<StockTransfer[]>([]);
   const [stocks, setStocks] = useState<StoreStock[]>([]);
@@ -145,24 +156,36 @@ export default function AuthenticatedSessionView() {
           loadCatalogData(),
           canManageStores ? loadProcurementData() : Promise.resolve({ suppliers: [], purchases: [] }),
           loadOperationalData({
-            sales: canManageStores || Boolean(user?.permissions.includes("sales.view")),
+            sales: canManageStores || Boolean(user?.permissions.includes("sales.view") || user?.permissions.includes("credit.manage")),
             productions: canManageStores || Boolean(user?.permissions.includes("production.view")),
             audit: true,
-            storeIds: canManageStores ? undefined : user?.assignedStores,
+            auditUserOnly: Boolean(user?.permissions.includes("credit.manage") && !canManageStores),
+            storeIds: canManageStores || user?.permissions.includes("credit.manage") ? undefined : user?.assignedStores,
             userId: user?.id || ""
           })
         ]);
         const loadedUnits = canManageStores
           ? await loadUnits(catalog.articles, user ? toAppUser(user) : undefined, entries => { unitAuditLogs = entries; })
           : [];
+        let loadedCreditCustomers: CreditCustomer[] = [];
+        if (user?.role === "REVENDEUR") {
+          const linkedCustomer = await loadCreditCustomerForUser(user.id);
+          loadedCreditCustomers = linkedCustomer ? [linkedCustomer] : [];
+        } else if (user?.permissions.includes("credit.sales") || user?.permissions.includes("credit.manage") || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") {
+          loadedCreditCustomers = await loadCreditCustomers();
+        }
+        const resellerStocks = user?.role === "REVENDEUR"
+          ? await loadResellerStocks(inventory.stores, catalog.articles)
+          : inventory.stocks;
         if (!isMounted) return;
         setInventoryStores(inventory.stores);
-        setStocks(inventory.stocks);
+        setStocks(resellerStocks);
         setMovements(inventory.movements);
         setTransfers(inventory.transfers);
         setArticles(catalog.articles);
         setCategories(catalog.categories);
         setSales(operations.sales);
+        setCreditCustomers(loadedCreditCustomers);
         setProductions(operations.productions);
         setAuditLogs([...unitAuditLogs, ...operations.auditLogs]);
         setUnits(loadedUnits);
@@ -179,6 +202,27 @@ export default function AuthenticatedSessionView() {
       isMounted = false;
     };
   }, [canManageStores, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const isReseller = user.role === "REVENDEUR";
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+    if (!isReseller && !isAdmin) return;
+    let isMounted = true;
+    const reportError = (error: Error) => {
+      console.error("Reseller portal listener failed:", error);
+      if (isMounted) window.alert(`Impossible de synchroniser le portail revendeur : ${error.message}`);
+    };
+    const unsubscribeOrders = subscribeResellerOrders(user.id, isAdmin, setResellerOrders, reportError);
+    const unsubscribeNotifications = isReseller
+      ? subscribeResellerNotifications(user.id, setResellerNotifications, reportError)
+      : undefined;
+    return () => {
+      isMounted = false;
+      unsubscribeOrders();
+      unsubscribeNotifications?.();
+    };
+  }, [user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -399,12 +443,262 @@ export default function AuthenticatedSessionView() {
 
   const handleCreateSale = async (sale: Sale) => {
     try {
-      const entry = await createSale(sale);
+      if (!currentAppUser) throw new Error("Session utilisateur invalide.");
+      if (sale.customer_type === "REVENDEUR") {
+        const store = inventoryStores.find(item => item.id === sale.store_id);
+        if (
+          currentAppUser.roleId !== "RESPONSABLE_MAGASIN" ||
+          !currentAppUser.storeIds.includes(sale.store_id) ||
+          store?.store_type !== "CENTRAL_WAREHOUSE" ||
+          !hasPermission(currentAppUser, "credit.sales") ||
+          sale.lines.some(line => line.line_type === "SERVICE" || articles.find(article => article.id === line.article_id)?.article_type !== "RESALE")
+        ) {
+          throw new Error("Seul un responsable assigné au dépôt central peut créer une demande revendeur composée de produits de revente.");
+        }
+      }
+      if (sale.customer_type === "REVENDEUR" && sale.total > sale.amount_paid && !sale.credit_customer_id) {
+        throw new Error("Sélectionnez le compte revendeur avant d'accorder un paiement à crédit.");
+      }
+      if (sale.credit_customer_id &&
+        currentAppUser.roleId !== "ADMIN" &&
+        currentAppUser.roleId !== "SUPER_ADMIN" &&
+        !hasPermission(currentAppUser, "credit.sales")) {
+        throw new Error("Vous n'êtes pas autorisé à enregistrer une vente à crédit.");
+      }
+      const entry = createAuditLog(currentAppUser, "SALE_CREATED", "SALE", sale.id, undefined, sale, sale.store_id);
+      await createCreditSale(sale, entry);
       setSales(current => [sale, ...current]);
       setAuditLogs(current => [entry, ...current]);
+      if (sale.credit_customer_id && sale.total > sale.amount_paid) {
+        const balance = sale.total - sale.amount_paid;
+        setCreditCustomers(current => current.map(customer => customer.id === sale.credit_customer_id
+          ? { ...customer, outstanding_balance: customer.outstanding_balance + balance, updated_at: sale.created_at }
+          : customer));
+      }
       return true;
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer la vente.");
+      return false;
+    }
+  };
+
+  const handleUpdateSale = async (originalSale: Sale, sale: Sale): Promise<boolean> => {
+    try {
+      if (!currentAppUser || originalSale.seller_id !== currentAppUser.uid || originalSale.status !== "DRAFT") {
+        throw new Error("Seul le créateur peut modifier sa vente tant qu'elle est en brouillon.");
+      }
+      if (sale.customer_type === "REVENDEUR") {
+        const store = inventoryStores.find(item => item.id === sale.store_id);
+        if (
+          currentAppUser.roleId !== "RESPONSABLE_MAGASIN" ||
+          !currentAppUser.storeIds.includes(sale.store_id) ||
+          store?.store_type !== "CENTRAL_WAREHOUSE" ||
+          !hasPermission(currentAppUser, "credit.sales") ||
+          sale.lines.some(line => line.line_type === "SERVICE" || articles.find(article => article.id === line.article_id)?.article_type !== "RESALE")
+        ) {
+          throw new Error("Une demande revendeur doit rester créée par un responsable assigné au dépôt central et contenir des produits de revente.");
+        }
+        if (sale.total > sale.amount_paid && !sale.credit_customer_id) {
+          throw new Error("Sélectionnez le compte revendeur avant de conserver un solde à crédit.");
+        }
+      }
+      if (sale.credit_customer_id &&
+        currentAppUser.roleId !== "ADMIN" &&
+        currentAppUser.roleId !== "SUPER_ADMIN" &&
+        !hasPermission(currentAppUser, "credit.sales")) {
+        throw new Error("Vous n'êtes pas autorisé à modifier cette vente à crédit.");
+      }
+      const result = await updateDraftSale(originalSale, sale, currentAppUser.uid, currentAppUser.displayName);
+      setSales(current => current.map(item => item.id === sale.id ? result.sale : item));
+      if (sale.credit_customer_id) {
+        const creditDelta = Math.max(0, sale.total - sale.amount_paid) - Math.max(0, originalSale.total - originalSale.amount_paid);
+        if (creditDelta !== 0) {
+          setCreditCustomers(current => current.map(customer => customer.id === sale.credit_customer_id
+            ? { ...customer, outstanding_balance: customer.outstanding_balance + creditDelta, updated_at: Date.now() }
+            : customer));
+        }
+      }
+      setAuditLogs(current => [result.auditLog, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible de modifier le brouillon de vente.");
+      return false;
+    }
+  };
+
+  const handleCreateResellerOrder = async (order: ResellerOrder): Promise<boolean> => {
+    try {
+      if (user?.role !== "REVENDEUR" || !user.businessName || order.reseller_user_id !== user.id) {
+        throw new Error("Seul un compte revendeur activé peut soumettre une commande.");
+      }
+      await createResellerOrder(order);
+      setResellerOrders(current => [order, ...current]);
+      return true;
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible d'envoyer la commande.");
+      return false;
+    }
+  };
+
+  const handleUpdateResellerOrder = async (order: ResellerOrder): Promise<boolean> => {
+    try {
+      if (user?.role !== "REVENDEUR" || order.reseller_user_id !== user.id) {
+        throw new Error("Vous ne pouvez modifier que vos propres commandes.");
+      }
+      await updateResellerOrder(order);
+      setResellerOrders(current => current.map(item => item.id === order.id ? order : item));
+      return true;
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible de renvoyer la commande.");
+      return false;
+    }
+  };
+
+  const handleReviewResellerOrder = async (
+    order: ResellerOrder,
+    decision: "APPROVED" | "REJECTED" | "REVISION_REQUESTED",
+    message: string
+  ): Promise<boolean> => {
+    try {
+      if (!currentAppUser || (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN")) {
+        throw new Error("Seul un administrateur peut traiter une commande revendeur.");
+      }
+      const linkedCreditCustomer = creditCustomers.find(customer => customer.linked_user_id === order.reseller_user_id);
+      const result = await reviewResellerOrder(
+        order,
+        decision,
+        message,
+        currentAppUser.uid,
+        currentAppUser.displayName,
+        stocks,
+        articles,
+        linkedCreditCustomer
+      );
+      setResellerOrders(current => current.map(item => item.id === order.id ? result.order : item));
+      if (result.sale) setSales(current => [result.sale!, ...current]);
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
+      if (result.customer) {
+        setCreditCustomers(current => current.map(customer => customer.id === result.customer!.id ? result.customer! : customer));
+      }
+      return true;
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible de traiter la commande revendeur.");
+      return false;
+    }
+  };
+
+  const handleMarkResellerNotificationsRead = async (): Promise<void> => {
+    try {
+      await markResellerNotificationsRead(resellerNotifications);
+      setResellerNotifications(current => current.map(notification => ({ ...notification, is_read: true })));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible de mettre à jour les notifications.");
+    }
+  };
+
+  const handleRecordResellerCashPayment = async (order: ResellerOrder): Promise<boolean> => {
+    try {
+      if (!currentAppUser || (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN")) {
+        throw new Error("Seul un administrateur peut confirmer le paiement.");
+      }
+      const result = await recordResellerCashPayment(order, currentAppUser.uid, currentAppUser.displayName);
+      setResellerOrders(current => current.map(item => item.id === order.id ? result.order : item));
+      setSales(current => current.map(item => item.id === result.sale.id ? result.sale : item));
+      return true;
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Impossible d'enregistrer le paiement comptant.");
+      return false;
+    }
+  };
+
+  const handleSaveCreditCustomer = async (customer: CreditCustomer): Promise<boolean> => {
+    if (!currentAppUser || (
+      currentAppUser.roleId !== "ADMIN" &&
+      currentAppUser.roleId !== "SUPER_ADMIN" &&
+      !hasPermission(currentAppUser, "credit.manage")
+    )) {
+      alert("Seul le gestionnaire de crédit ou un administrateur peut gérer les comptes revendeurs.");
+      return false;
+    }
+    if (!customer.name.trim() || !Number.isFinite(customer.credit_limit) || customer.credit_limit < customer.outstanding_balance
+      || !Number.isInteger(customer.payment_term_days) || customer.payment_term_days < 1) {
+      alert("Vérifiez le nom, le plafond (au moins égal à l'encours) et le délai de paiement.");
+      return false;
+    }
+    const existing = creditCustomers.find(item => item.id === customer.id);
+    if (!existing && creditCustomers.some(item => item.name.trim().toLocaleLowerCase("fr") === customer.name.trim().toLocaleLowerCase("fr"))) {
+      alert("Un compte revendeur porte déjà ce nom.");
+      return false;
+    }
+    const updated = {
+      ...customer,
+      created_at: existing?.created_at || customer.created_at,
+      updated_at: Date.now()
+    };
+    const auditLog = createAuditLog(currentAppUser, "CREDIT_CUSTOMER_UPDATED", "CREDIT_CUSTOMER", customer.id, existing, updated);
+    try {
+      await saveCreditCustomer(updated, auditLog);
+      setCreditCustomers(current => existing
+        ? current.map(item => item.id === customer.id ? updated : item)
+        : [...current, updated]);
+      setAuditLogs(current => [auditLog, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer le compte revendeur.");
+      return false;
+    }
+  };
+
+  const handleRecordCreditPayment = async (sale: Sale, payment: CreditPayment): Promise<boolean> => {
+    if (!currentAppUser || (
+      currentAppUser.roleId !== "ADMIN" &&
+      currentAppUser.roleId !== "SUPER_ADMIN" &&
+      !hasPermission(currentAppUser, "credit.manage")
+    )) {
+      alert("Seul le gestionnaire de crédit ou un administrateur peut enregistrer un règlement.");
+      return false;
+    }
+    const auditLog = createAuditLog(currentAppUser, "CREDIT_PAYMENT_RECORDED", "SALE", sale.id, sale, {
+      payment,
+      balance: sale.total - sale.amount_paid - payment.amount
+    }, sale.store_id);
+    try {
+      const updated = await recordCreditPayment(sale, payment, auditLog);
+      setSales(current => current.map(item => item.id === sale.id ? updated : item));
+      setCreditCustomers(current => current.map(customer => customer.id === sale.credit_customer_id
+        ? { ...customer, outstanding_balance: Math.max(0, customer.outstanding_balance - payment.amount), updated_at: payment.paid_at }
+        : customer));
+      setAuditLogs(current => [auditLog, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer le paiement du revendeur.");
+      return false;
+    }
+  };
+
+  const handleRecordCreditFollowUp = async (sale: Sale, followUp: CreditFollowUp): Promise<boolean> => {
+    if (!currentAppUser || (
+      currentAppUser.roleId !== "ADMIN" &&
+      currentAppUser.roleId !== "SUPER_ADMIN" &&
+      !hasPermission(currentAppUser, "credit.manage")
+    )) {
+      alert("Seul le gestionnaire de crédit ou un administrateur peut consigner une relance.");
+      return false;
+    }
+    const updatedSnapshot = {
+      ...sale,
+      credit_followups: [...(sale.credit_followups || []), followUp]
+    };
+    const auditLog = createAuditLog(currentAppUser, "CREDIT_FOLLOW_UP_RECORDED", "SALE", sale.id, sale, updatedSnapshot, sale.store_id);
+    try {
+      const updated = await recordCreditFollowUp(sale, followUp, auditLog);
+      setSales(current => current.map(item => item.id === sale.id ? updated : item));
+      setAuditLogs(current => [auditLog, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la relance du revendeur.");
       return false;
     }
   };
@@ -425,6 +719,10 @@ export default function AuthenticatedSessionView() {
   const handleValidateSale = async (saleId: string) => {
     const sale = sales.find(item => item.id === saleId);
     if (!sale || !currentAppUser) return;
+    if (sale.customer_type === "REVENDEUR" && currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN") {
+      alert("Seul un administrateur peut approuver une demande revendeur.");
+      return;
+    }
     try {
       const result = await validateSale(sale, stocks, currentAppUser.uid, currentAppUser.displayName);
       setSales(current => current.map(item => item.id === saleId ? result.sale : item));
@@ -443,6 +741,12 @@ export default function AuthenticatedSessionView() {
     try {
       const result = await cancelSale(sale, currentAppUser.uid, currentAppUser.displayName);
       setSales(current => current.map(item => item.id === saleId ? result.sale : item));
+      if (sale.credit_customer_id) {
+        const amountReleased = Math.max(0, sale.total - sale.amount_paid);
+        setCreditCustomers(current => current.map(customer => customer.id === sale.credit_customer_id
+          ? { ...customer, outstanding_balance: Math.max(0, customer.outstanding_balance - amountReleased), updated_at: Date.now() }
+          : customer));
+      }
       setAuditLogs(current => [result.auditLog, ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'annuler la vente.");
@@ -472,20 +776,83 @@ export default function AuthenticatedSessionView() {
     });
   };
 
-  const handleCreateTransfer = async (transfer: StockTransfer) => {
-    if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
-      alert("Seul un administrateur peut créer un transfert de stock.");
-      return;
+  const handleSaveTransfer = async (transfer: StockTransfer, originalTransfer?: StockTransfer): Promise<boolean> => {
+    if (!currentAppUser || (
+      currentAppUser.roleId !== "ADMIN" &&
+      currentAppUser.roleId !== "SUPER_ADMIN" &&
+      !hasPermission(currentAppUser, "transfers.create")
+    )) {
+      alert("Vous n'avez pas la permission de demander un transfert.");
+      return false;
+    }
+    const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
+    const sourceStore = inventoryStores.find(store => store.id === transfer.source_store_id);
+    const destinationStore = inventoryStores.find(store => store.id === transfer.destination_store_id);
+    if ((!isAdmin && !currentAppUser.storeIds.includes(transfer.source_store_id))
+      || transfer.source_store_id === transfer.destination_store_id
+      || !sourceStore?.is_active
+      || !destinationStore?.is_active) {
+      alert("Choisissez un magasin source qui vous est attribué et un autre magasin destinataire.");
+      return false;
+    }
+    if (transfer.status !== "DRAFT" || transfer.requested_by !== currentAppUser.uid || transfer.lines.length === 0) {
+      alert("La demande de transfert est invalide.");
+      return false;
+    }
+    if (originalTransfer && (
+      originalTransfer.status !== "DRAFT" ||
+      originalTransfer.requested_by !== currentAppUser.uid ||
+      transfer.id !== originalTransfer.id ||
+      transfer.transfer_number !== originalTransfer.transfer_number ||
+      transfer.created_at !== originalTransfer.created_at
+    )) {
+      alert("Seul le demandeur peut modifier un transfert encore en brouillon.");
+      return false;
+    }
+    const allowedArticles = destinationStore.store_type === "POS" || destinationStore.store_type === "RESELLER"
+      ? articles.filter(article => article.article_type === "RESALE" && article.is_active)
+      : articles.filter(article => article.is_active);
+    const requestedByArticle = new Map<string, number>();
+    for (const line of transfer.lines) {
+      if (!allowedArticles.some(article => article.id === line.article_id)
+        || !Number.isFinite(line.quantity_sent)
+        || line.quantity_sent <= 0) {
+        alert("La demande contient un article ou une quantité invalide pour le magasin destinataire.");
+        return false;
+      }
+      requestedByArticle.set(line.article_id, (requestedByArticle.get(line.article_id) || 0) + line.quantity_sent);
+    }
+    for (const [articleId, requestedQuantity] of requestedByArticle) {
+      const physicalStock = getArticleStock(stocks, sourceStore.id, articleId);
+      const pendingQuantity = transfers
+        .filter(item => item.id !== transfer.id && item.source_store_id === sourceStore.id && ["DRAFT", "APPROVED"].includes(item.status))
+        .flatMap(item => item.lines)
+        .filter(line => line.article_id === articleId)
+        .reduce((total, line) => total + line.quantity_sent, 0);
+      const dispatchableStock = Math.max(0, physicalStock - pendingQuantity);
+      if (requestedQuantity > dispatchableStock) {
+        const article = articles.find(item => item.id === articleId);
+        alert(`Stock insuffisant pour ${article?.name || "cet article"}. Demandé : ${requestedQuantity}. Disponible après les demandes en attente : ${dispatchableStock}.`);
+        return false;
+      }
     }
     try {
-      const auditLog = createAuditLog(currentAppUser!, "TRANSFER_CREATED", "TRANSFER", transfer.id, undefined, transfer, transfer.source_store_id);
-      await saveTransfer(transfer, auditLog);
-      setTransfers(current => [transfer, ...current]);
+      const auditLog = createAuditLog(currentAppUser, originalTransfer ? "TRANSFER_DRAFT_UPDATED" : "TRANSFER_CREATED", "TRANSFER", transfer.id, originalTransfer, transfer, transfer.source_store_id);
+      if (originalTransfer) await updateDraftTransfer(originalTransfer, transfer, auditLog);
+      else await saveTransfer(transfer, auditLog);
+      setTransfers(current => originalTransfer
+        ? current.map(item => item.id === transfer.id ? transfer : item)
+        : [transfer, ...current]);
       setAuditLogs(current => [auditLog, ...current]);
+      return true;
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer le transfert dans Firestore.");
+      return false;
     }
   };
+
+  const handleCreateTransfer = (transfer: StockTransfer) => handleSaveTransfer(transfer);
+  const handleUpdateTransfer = (originalTransfer: StockTransfer, transfer: StockTransfer) => handleSaveTransfer(transfer, originalTransfer);
 
   const handleApproveTransfer = async (transferId: string) => {
     if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
@@ -494,6 +861,10 @@ export default function AuthenticatedSessionView() {
     }
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "DRAFT") return;
+    if (transfer.requested_by === currentAppUser.uid) {
+      alert("Un administrateur différent du demandeur doit approuver ce transfert.");
+      return;
+    }
     const timestamp = Date.now();
     const updatedTransfer: StockTransfer = {
       ...transfer,
@@ -513,13 +884,56 @@ export default function AuthenticatedSessionView() {
     }
   };
 
-  const handleShipTransfer = async (transferId: string) => {
+  const handleRejectTransfer = async (transferId: string, rejectionNote: string): Promise<boolean> => {
     if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
-      alert("Seul un administrateur peut expédier un transfert.");
+      alert("Seul un administrateur peut refuser un transfert.");
+      return false;
+    }
+    const transfer = transfers.find(item => item.id === transferId);
+    const note = rejectionNote.trim();
+    if (!transfer || transfer.status !== "DRAFT") return false;
+    if (transfer.requested_by === currentAppUser.uid) {
+      alert("Un administrateur différent du demandeur doit traiter ce transfert.");
+      return false;
+    }
+    if (!note) {
+      alert("Indiquez le motif du refus.");
+      return false;
+    }
+    const timestamp = Date.now();
+    const updatedTransfer: StockTransfer = {
+      ...transfer,
+      status: "REJECTED",
+      rejected_by: currentAppUser.uid,
+      rejected_by_name: currentAppUser.displayName,
+      rejected_at: timestamp,
+      rejection_note: note,
+      updated_at: timestamp
+    };
+    try {
+      const auditLog = createAuditLog(currentAppUser, "TRANSFER_REJECTED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.source_store_id);
+      await saveTransfer(updatedTransfer, auditLog);
+      setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+      setAuditLogs(current => [auditLog, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer le refus du transfert dans Firestore.");
+      return false;
+    }
+  };
+
+  const handleShipTransfer = async (transferId: string) => {
+    if (!currentAppUser || !hasPermission(currentAppUser, "transfers.ship")) {
+      alert("Vous n'avez pas la permission d'expédier un transfert.");
       return;
     }
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "APPROVED") return;
+    const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
+    if (!isAdmin && !currentAppUser.storeIds.includes(transfer.source_store_id)) {
+      alert("Seul un utilisateur autorisé du magasin source peut expédier ce transfert.");
+      return;
+    }
     let updatedStocks = stocks;
     const movements: StockMovement[] = [];
     for (const line of transfer.lines) {
@@ -574,11 +988,13 @@ export default function AuthenticatedSessionView() {
   const handleReceiveTransfer = async (transferId: string, updatedLines: StockTransferLine[], receiverNote?: string) => {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "IN_TRANSIT") return;
-    const isAssignedReceiver = currentAppUser?.roleId === "RESPONSABLE_MAGASIN"
-      && currentAppUser.storeIds.includes(transfer.destination_store_id)
-      && currentAppUser.uid !== transfer.requested_by;
+    const isAssignedReceiver = Boolean(currentAppUser)
+      && hasPermission(currentAppUser!, "transfers.receive")
+      && currentAppUser!.storeIds.includes(transfer.destination_store_id)
+      && currentAppUser!.uid !== transfer.requested_by
+      && currentAppUser!.uid !== transfer.approved_by;
     if (!isAssignedReceiver) {
-      alert("Seul le responsable du magasin destinataire, différent de l'initiateur, peut valider cette réception.");
+      alert("Un utilisateur autorisé du magasin destinataire, différent du demandeur et de l'approbateur, doit valider cette réception.");
       return;
     }
     if (updatedLines.some(line => line.quantity_received < 0 || line.quantity_received > line.quantity_sent || line.quantity_accepted < 0 || line.quantity_accepted > line.quantity_received)) {
@@ -1048,7 +1464,34 @@ export default function AuthenticatedSessionView() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {activeModule === "sales" && currentAppUser ? (
+        {activeModule === "resellerPortal" && currentAppUser && (
+          currentAppUser.roleId === "REVENDEUR" ||
+          currentAppUser.roleId === "ADMIN" ||
+          currentAppUser.roleId === "SUPER_ADMIN"
+        ) ? (
+          <section className="space-y-4">
+            {currentAppUser.roleId !== "REVENDEUR" && (
+              <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">
+                ← Retour à l'accueil
+              </button>
+            )}
+            <ResellerPortalView
+              user={currentAppUser}
+              isAdmin={currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN"}
+              orders={resellerOrders}
+              notifications={resellerNotifications}
+              articles={articles}
+              stores={inventoryStores}
+              stocks={stocks}
+              creditCustomers={creditCustomers}
+              onCreateOrder={handleCreateResellerOrder}
+              onUpdateOrder={handleUpdateResellerOrder}
+              onReviewOrder={handleReviewResellerOrder}
+              onRecordCashPayment={handleRecordResellerCashPayment}
+              onMarkNotificationsRead={handleMarkResellerNotificationsRead}
+            />
+          </section>
+        ) : activeModule === "sales" && currentAppUser ? (
           <section className="space-y-4">
             <button
               type="button"
@@ -1059,11 +1502,16 @@ export default function AuthenticatedSessionView() {
             </button>
             <SalesView
               sales={sales}
+              creditCustomers={creditCustomers}
               stores={accessibleStores}
               articles={articles}
               stocks={stocks}
               currentUser={currentAppUser}
+              canCreateResellerSale={currentAppUser.roleId === "RESPONSABLE_MAGASIN"
+                && hasPermission(currentAppUser, "credit.sales")
+                && currentAppUser.storeIds.some(storeId => inventoryStores.some(store => store.id === storeId && store.store_type === "CENTRAL_WAREHOUSE"))}
               onCreateSale={handleCreateSale}
+              onUpdateSale={handleUpdateSale}
               onVerifySale={handleVerifySale}
               onValidateSale={handleValidateSale}
               onCancelSale={handleCancelSale}
@@ -1156,17 +1604,20 @@ export default function AuthenticatedSessionView() {
             </button>
             <TransfersView
               transfers={visibleTransfers}
-              stores={accessibleStores}
+              stores={inventoryStores}
               articles={articles.filter(article => article.is_active)}
               stocks={stocks}
               currentUser={currentAppUser}
-              canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
+              canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "transfers.create")}
               canApprove={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
-              canShip={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
-              canReceive={currentAppUser.roleId === "RESPONSABLE_MAGASIN" || currentAppUser.permissions.includes("transfers.receive")}
+              canReject={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
+              canShip={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "transfers.ship")}
+              canReceive={hasPermission(currentAppUser, "transfers.receive")}
               canResolveDiscrepancy={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               onCreateTransfer={handleCreateTransfer}
+              onUpdateTransfer={handleUpdateTransfer}
               onApproveTransfer={handleApproveTransfer}
+              onRejectTransfer={handleRejectTransfer}
               onShipTransfer={handleShipTransfer}
               onReceiveAndValidateTransfer={handleReceiveTransfer}
               onResolveDiscrepancy={handleResolveTransferDiscrepancy}
@@ -1292,6 +1743,29 @@ export default function AuthenticatedSessionView() {
               onCreateExpense={handleCreateExpense}
             />
           </section>
+        ) : activeModule === "credit" && currentAppUser && (
+          currentAppUser.roleId === "ADMIN" ||
+          currentAppUser.roleId === "SUPER_ADMIN" ||
+          hasPermission(currentAppUser, "credit.manage")
+        ) ? (
+          <section className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveModule("home")}
+              className="text-sm font-semibold text-slate-300 hover:text-white"
+            >
+              ← Retour à l'accueil
+            </button>
+            <CreditManagementView
+              customers={creditCustomers}
+              sales={sales}
+              currentUser={currentAppUser}
+              resellerUsers={managedUsers.filter(managedUser => managedUser.roleId === "REVENDEUR")}
+              onSaveCustomer={handleSaveCreditCustomer}
+              onRecordPayment={handleRecordCreditPayment}
+              onRecordFollowUp={handleRecordCreditFollowUp}
+            />
+          </section>
         ) : activeModule === "staff" && currentAppUser && canManageStores ? (
           <section className="space-y-4">
             <button
@@ -1327,6 +1801,7 @@ export default function AuthenticatedSessionView() {
             stores={inventoryStores}
             sales={sales}
             expenses={expenses}
+            auditLogs={auditLogs}
             onOpenUsers={openUserManagement}
             onOpenSales={() => setActiveModule("sales")}
             onOpenStocks={() => setActiveModule("stocks")}
@@ -1336,6 +1811,9 @@ export default function AuthenticatedSessionView() {
             onOpenProcurement={() => setActiveModule("procurement")}
             onOpenExpenses={() => setActiveModule("expenses")}
             onOpenTransfers={() => setActiveModule("transfers")}
+            onOpenCredit={() => setActiveModule("credit")}
+            onOpenResellerOrders={() => setActiveModule("resellerPortal")}
+            pendingResellerOrders={resellerOrders.filter(order => order.status === "PENDING").length}
             onOpenUnits={() => setActiveModule("units")}
             onOpenStaff={() => setActiveModule("staff")}
             onOpenReports={() => setActiveModule("reports")}

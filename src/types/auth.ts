@@ -3,6 +3,7 @@ export type UserStatus = "PENDING" | "ACTIVE" | "DISABLED";
 export interface User {
   id: string;
   code?: string;
+  businessName?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -29,6 +30,15 @@ export interface SignUpPayload {
   position: string;
   email: string;
   phone?: string;
+  password: string;
+}
+
+export interface ResellerSignUpPayload {
+  businessName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
   password: string;
 }
 

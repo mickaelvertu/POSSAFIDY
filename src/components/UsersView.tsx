@@ -91,7 +91,7 @@ export default function UsersView({
       // Search text
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+        const fullName = `${user.firstName} ${user.lastName} ${user.businessName || ""}`.toLowerCase();
         const username = user.username.toLowerCase();
         const email = (user.email || "").toLowerCase();
         if (!fullName.includes(q) && !username.includes(q) && !email.includes(q)) {
@@ -449,6 +449,7 @@ export default function UsersView({
                                     </span>
                                   )}
                                 </div>
+                                {user.businessName && <div className="text-xs font-semibold text-orange-700">{user.businessName}</div>}
                                 <div className="text-xs text-slate-500 flex items-center gap-2">
                                   {user.code && <span className="font-mono font-semibold text-slate-700">{user.code}</span>}
                                   {user.code && <span>•</span>}
@@ -530,7 +531,9 @@ export default function UsersView({
                               />
                             </button>
                             <div className="text-[10px] font-medium mt-0.5">
-                              {user.isActive ? (
+                              {user.accountStatus === "PENDING" ? (
+                                <span className="text-amber-700 font-semibold">EN ATTENTE</span>
+                              ) : user.isActive ? (
                                 <span className="text-emerald-700 font-semibold">ACTIF</span>
                               ) : (
                                 <span className="text-slate-400 font-semibold">INACTIF</span>

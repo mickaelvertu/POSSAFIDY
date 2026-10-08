@@ -74,6 +74,40 @@ export async function saveTransfer(transfer: StockTransfer, auditLog?: AuditLog)
   await batch.commit();
 }
 
+export async function updateDraftTransfer(
+  original: StockTransfer,
+  updated: StockTransfer,
+  auditLog: AuditLog
+): Promise<void> {
+  if (
+    original.status !== "DRAFT" ||
+    updated.status !== "DRAFT" ||
+    original.requested_by !== updated.requested_by ||
+    original.id !== updated.id ||
+    original.transfer_number !== updated.transfer_number ||
+    original.created_at !== updated.created_at
+  ) {
+    throw new Error("Seul le demandeur peut modifier un transfert encore en brouillon.");
+  }
+
+  await runTransaction(db, async transaction => {
+    const transferRef = doc(db, TRANSFERS_COLLECTION, original.id);
+    const snapshot = await transaction.get(transferRef);
+    if (!snapshot.exists()) throw new Error("Ce transfert n'existe plus.");
+    const current = snapshot.data() as StockTransfer;
+    if (
+      current.status !== "DRAFT" ||
+      current.requested_by !== original.requested_by ||
+      current.updated_at !== original.updated_at ||
+      JSON.stringify(current.lines) !== JSON.stringify(original.lines)
+    ) {
+      throw new Error("Le transfert a changé depuis son ouverture. Rechargez les données avant de le modifier.");
+    }
+    transaction.set(transferRef, omitUndefined(updated));
+    transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  });
+}
+
 // Persists a transfer status change together with the stock/movement side effects it triggers (ship or receive).
 export async function saveTransferWithStockEffects(
   transfer: StockTransfer,
