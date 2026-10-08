@@ -14,6 +14,10 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Keep the same object when a session refresh returns identical data, so effects keyed on `user` don't reload everything.
+const keepStableUser = (next: User | null) => (previous: User | null): User | null =>
+  previous && next && JSON.stringify(previous) === JSON.stringify(next) ? previous : next;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(authService.getToken());
@@ -32,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const currentUser = firebaseUser ? await authService.restoreSession() : null;
         if (!isMounted) return;
-        setUser(currentUser);
+        setUser(keepStableUser(currentUser));
         setToken(authService.getToken());
       } catch (err) {
         console.error("Firebase session restoration failed:", err);
@@ -72,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleRefreshUser = async (): Promise<void> => {
     const current = await authService.getCurrentUser();
-    setUser(current);
+    setUser(keepStableUser(current));
     setToken(authService.getToken());
   };
 
