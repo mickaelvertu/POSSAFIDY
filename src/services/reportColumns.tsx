@@ -243,9 +243,9 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
         { key: "number", label: "N° Ordre Fab", value: p => p.production_number },
         { key: "date", label: "Date Réalisation", value: p => p.created_at, render: p => new Date(p.created_at).toLocaleDateString("fr-FR") },
         { key: "store", label: "Atelier", value: p => getStoreName(p.manufacturer_store_id) },
-        { key: "consumptions", label: "Matières Consommées", value: p => p.consumptions.map(c => `${c.article_name}: ${c.quantity} ${c.unit}`).join(", "), render: p => (
+        { key: "consumptions", label: "Matières Consommées", value: p => p.consumptions.map(c =>         `${c.article_name}${c.source === "RECYCLED" ? " (recyclé)" : ""}: ${c.quantity} ${c.unit}`).join(", "), render: p => (
           <ul className="list-disc list-inside text-rose-700 font-medium">
-            {p.consumptions.map(c => <li key={c.id}>{c.article_name} : <span className="font-mono font-bold">{c.quantity} {c.unit}</span></li>)}
+                    {p.consumptions.map(c => <li key={c.id}>{c.article_name}{c.source === "RECYCLED" ? " ♻" : ""} : <span className="font-mono font-bold">{c.quantity} {c.unit}</span></li>)}
           </ul>
         ) },
         { key: "outputs", label: "Produits Fabriqués (Sortie)", value: p => p.outputs.map(o => `${o.article_name}: ${o.quantity} ${o.unit}`).join(", "), render: p => (

@@ -1,14 +1,15 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Check, Pencil, Printer, ReceiptText } from "lucide-react";
-import { Employee, PaymentMethod, Payslip, SalaryAdvance } from "../types";
+import { Employee, InventoryCount, PaymentMethod, Payslip, SalaryAdvance } from "../types";
 import SalaryAdvancesPanel from "./SalaryAdvancesPanel";
 
 interface PayrollViewProps {
   employees: Employee[];
   payslips: Payslip[];
   advances: SalaryAdvance[];
+  inventoryCounts?: InventoryCount[];
   currentUserId: string;
-  onSavePayslip: (payslip: Payslip, isNew: boolean, settledAdvances: SalaryAdvance[]) => Promise<void>;
+  onSavePayslip: (payslip: Payslip, isNew: boolean, settledAdvances: SalaryAdvance[], settledCounts?: InventoryCount[]) => Promise<void>;
   onSaveAdvance: (advance: SalaryAdvance) => Promise<void>;
 }
 
@@ -36,7 +37,7 @@ const periodLabel = (period: string) => {
 };
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
 
-export default function PayrollView({ employees, payslips, advances, currentUserId, onSavePayslip, onSaveAdvance }: PayrollViewProps) {
+export default function PayrollView({ employees, payslips, advances, inventoryCounts = [], currentUserId, onSavePayslip, onSaveAdvance }: PayrollViewProps) {
   const activeEmployees = useMemo(() => employees.filter(employee => employee.is_active), [employees]);
   const [editing, setEditing] = useState<Payslip | null>(null);
   const [employeeId, setEmployeeId] = useState("");
@@ -59,6 +60,12 @@ export default function PayrollView({ employees, payslips, advances, currentUser
     : advances.filter(advance => advance.employee_id === employeeId && advance.status === "OUTSTANDING");
   const outstandingTotal = outstandingAdvances.reduce((total, advance) => total + advance.amount, 0);
   const advancesAmount = editing ? editing.advances_deducted || 0 : deductAdvances ? outstandingTotal : 0;
+  const [deductInventory, setDeductInventory] = useState(true);
+  const pendingInventory = editing || !selectedEmployee?.user_id
+    ? []
+    : inventoryCounts.filter(count => count.status === "VALIDATED" && !count.charge_settlement && (count.total_charged_amount || 0) > 0 && count.created_by === selectedEmployee.user_id);
+  const pendingInventoryTotal = pendingInventory.reduce((total, count) => total + (count.total_charged_amount || 0), 0);
+  const inventoryAmount = editing ? editing.inventory_charges_deducted || 0 : deductInventory ? pendingInventoryTotal : 0;
 
   const resetForm = () => {
     setEditing(null);
@@ -107,8 +114,8 @@ export default function PayrollView({ employees, payslips, advances, currentUser
       setFormError("Le salaire, les primes et les retenues doivent être des montants positifs ou nuls.");
       return;
     }
-    if (deductionAmount + advancesAmount > salary + bonusAmount) {
-      setFormError("Les retenues et avances ne peuvent pas dépasser le salaire brut.");
+    if (deductionAmount + advancesAmount + inventoryAmount > salary + bonusAmount) {
+      setFormError("Les retenues, avances et retenues d'inventaire ne peuvent pas dépasser le salaire brut.");
       return;
     }
     if (paymentStatus === "PAID" && !paymentDate) {
@@ -134,7 +141,9 @@ export default function PayrollView({ employees, payslips, advances, currentUser
       deductions: deductionAmount,
       advances_deducted: advancesAmount,
       advance_ids: editing ? editing.advance_ids : deductAdvances ? outstandingAdvances.map(advance => advance.id) : [],
-      net_salary: salary + bonusAmount - deductionAmount - advancesAmount,
+      net_salary: salary + bonusAmount - deductionAmount - advancesAmount - inventoryAmount,
+      inventory_charges_deducted: editing ? editing.inventory_charges_deducted : inventoryAmount || undefined,
+      inventory_count_ids: editing ? editing.inventory_count_ids : inventoryAmount > 0 ? pendingInventory.map(count => count.id) : undefined,
       payment_status: paymentStatus,
       payment_date: paymentStatus === "PAID" ? new Date(`${paymentDate}T12:00:00`).getTime() : undefined,
       payment_method: paymentStatus === "PAID" ? paymentMethod : undefined,
@@ -148,7 +157,7 @@ export default function PayrollView({ employees, payslips, advances, currentUser
       const settled = !editing && deductAdvances
         ? outstandingAdvances.map(advance => ({ ...advance, status: "DEDUCTED" as const, payslip_id: id, updated_at: timestamp }))
         : [];
-      await onSavePayslip(payslip, !editing, settled);
+      await onSavePayslip(payslip, !editing, settled, !editing && deductInventory ? pendingInventory : []);
       resetForm();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Impossible d'enregistrer cette fiche de paie.");
@@ -222,9 +231,16 @@ export default function PayrollView({ employees, payslips, advances, currentUser
           </label>
         )}
         {editing && advancesAmount > 0 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Avances déjà déduites : <strong>{money(advancesAmount)}</strong></p>}
+        {!editing && pendingInventoryTotal > 0 && (
+          <label className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-900">
+            <input type="checkbox" checked={deductInventory} onChange={event => setDeductInventory(event.target.checked)} />
+            Déduire les retenues d'inventaire ({pendingInventory.length}) : <strong>{money(pendingInventoryTotal)}</strong>
+          </label>
+        )}
+        {editing && inventoryAmount > 0 && <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-900">Retenues d'inventaire déjà déduites : <strong>{money(inventoryAmount)}</strong></p>}
         <div className="rounded-lg bg-slate-50 p-3 text-sm">
           <span className="text-slate-600">Net à payer </span>
-          <strong>{money((Number(baseSalary) || 0) + (Number(bonuses) || 0) - (Number(deductions) || 0) - advancesAmount)}</strong>
+          <strong>{money((Number(baseSalary) || 0) + (Number(bonuses) || 0) - (Number(deductions) || 0) - advancesAmount - inventoryAmount)}</strong>
           <p className="mt-1 text-xs text-slate-500">Calcul : salaire de base + primes − retenues − avances. Les retenues sont saisies manuellement.</p>
         </div>
         {formError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{formError}</p>}
@@ -287,6 +303,7 @@ export default function PayrollView({ employees, payslips, advances, currentUser
                 <tr><td className="border-b border-slate-200 py-3">Primes et indemnités</td><td className="border-b border-slate-200 py-3 text-right">{money(printing.bonuses)}</td></tr>
                 <tr><td className="border-b border-slate-200 py-3">Retenues</td><td className="border-b border-slate-200 py-3 text-right">− {money(printing.deductions)}</td></tr>
                 {(printing.advances_deducted || 0) > 0 && <tr><td className="border-b border-slate-200 py-3">Avances sur salaire</td><td className="border-b border-slate-200 py-3 text-right">− {money(printing.advances_deducted || 0)}</td></tr>}
+                {(printing.inventory_charges_deducted || 0) > 0 && <tr><td className="border-b border-slate-200 py-3">Retenues d'inventaire</td><td className="border-b border-slate-200 py-3 text-right">− {money(printing.inventory_charges_deducted || 0)}</td></tr>}
                 <tr className="text-base font-black"><td className="py-4">NET À PAYER</td><td className="py-4 text-right">{money(printing.net_salary)}</td></tr>
               </tbody>
             </table>

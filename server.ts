@@ -40,7 +40,7 @@ const ALL_PERMISSIONS = [
   "transfers.receive", "transfers.validate", "production.view", "production.create",
   "production.validate", "reports.view", "reports.export", "audit.view",
   "users.view", "users.create", "users.edit", "users.delete", "users.permissions",
-  "expenses.view", "expenses.create", "units.manage"
+  "expenses.view", "expenses.create", "units.manage", "inventory.count", "inventory.review"
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -48,7 +48,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ADMIN: ALL_PERMISSIONS.filter(permission => permission !== "users.delete"),
   VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit"],
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
-  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "transfers.view", "transfers.create", "transfers.receive", "reports.view"],
+  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "transfers.view", "transfers.create", "transfers.receive", "reports.view", "inventory.count"],
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"]
 };

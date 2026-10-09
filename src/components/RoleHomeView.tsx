@@ -38,6 +38,7 @@ interface RoleHomeViewProps {
   onOpenStaff: () => void;
   onOpenReports: () => void;
   onOpenAudit: () => void;
+  onOpenInventory: () => void;
   stores: Store[];
   sales: Sale[];
   expenses: Expense[];
@@ -227,6 +228,7 @@ const roleLabels: Record<string, string> = {
   VENDEUR: "Vendeur POS",
   MAGASINIER: "Magasinier",
   RESPONSABLE_MAGASIN: "Responsable magasin",
+  CONTROLEUR: "Contrôleur",
   PRODUCTION: "Responsable production",
   COMPTABLE: "Comptable",
   GESTIONNAIRE_CREDIT: "Gestionnaire crédit",
@@ -239,6 +241,7 @@ const roleDescriptions: Record<string, string> = {
   VENDEUR: "Accès rapide à la caisse, aux articles et au stock de votre magasin.",
   MAGASINIER: "Suivi du stock et préparation des flux entre magasins.",
   RESPONSABLE_MAGASIN: "Pilotage des ventes, du stock et des transferts de votre magasin.",
+  CONTROLEUR: "Comptage physique des magasins assignés et contrôle des stocks.",
   PRODUCTION: "Suivi des ordres de production et des matières premières.",
   COMPTABLE: "Contrôle des ventes, des indicateurs et des rapports.",
   GESTIONNAIRE_CREDIT: "Gestion des comptes revendeurs, plafonds, règlements et relances.",
@@ -250,6 +253,7 @@ const accessCards = [
   { permission: "credit.manage", title: "Crédits revendeurs", description: "Gérer les plafonds, échéances, paiements et relances", icon: HandCoins, accent: "teal" },
   { permission: "reseller.orders", title: "Commandes revendeurs", description: "Examiner les commandes et notifier les décisions", icon: ShoppingCart, accent: "amber", adminOnly: true },
   { permission: "stock.view", title: "Stocks", description: "Suivre les disponibilités par magasin", icon: Boxes, accent: "blue" },
+  { permission: "inventory.control", title: "Contrôle d'inventaire", description: "Compter le stock, justifier les écarts et valider les ajustements", icon: ClipboardList, accent: "teal" },
   { permission: "transfers.view", title: "Transferts", description: "Suivre les mouvements inter-magasins", icon: ArrowRightLeft, accent: "amber" },
   { permission: "production.view", title: "Production", description: "Suivre les fabrications et consommations", icon: Factory, accent: "indigo" },
   { permission: "reports.view", title: "Rapports", description: "Analyser les performances et les écarts", icon: BarChart3, accent: "violet" },
@@ -273,7 +277,7 @@ const accentClasses: Record<string, string> = {
   teal: "bg-teal-50 text-teal-700 border-teal-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenInventory, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -299,6 +303,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
         : "Production";
   const availableCards = accessCards.filter(card => {
     if (card.permission === "reseller.orders") return isAdmin;
+    if (card.permission === "inventory.control") return isAdmin || role === "RESPONSABLE_MAGASIN" || hasPermission(user, "inventory.count") || hasPermission(user, "inventory.review");
     if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage" || card.permission === "staff.manage") return isAdmin;
     if (card.permission === "expenses.view") return isAdmin || hasPermission(user, "expenses.view") || hasPermission(user, "expenses.create");
     if (card.permission === "transfers.view" && isAdmin) return true;
@@ -566,12 +571,13 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isAuditCard = card.permission === "audit.view";
               const isStaffCard = card.permission === "staff.manage";
               const isResellerOrdersCard = card.permission === "reseller.orders";
-              const isActionable = isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
+              const isInventoryCard = card.permission === "inventory.control";
+              const isActionable = isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
               return (
                 <button
                   key={card.permission}
                   type="button"
-                  onClick={isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
+                  onClick={isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >

@@ -132,13 +132,14 @@ export async function saveTransferWithStockEffects(
   transfer: StockTransfer,
   updatedStocks: StoreStock[],
   movements: StockMovement[],
-  auditLog?: AuditLog
+  auditLog?: AuditLog,
+  options: { recyclingDecision?: boolean } = {}
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[] }> {
   const persistedStocks: StoreStock[] = [];
   const persistedMovements: StockMovement[] = [];
   const groupedMovements = new Map<string, StockMovement>();
   movements.forEach(movement => {
-    const key = `${movement.store_id}:${movement.article_id}`;
+    const key = `${movement.store_id}:${movement.article_id}:${movement.stock_bucket || ""}`;
     const existing = groupedMovements.get(key);
     groupedMovements.set(key, existing
       ? { ...existing, quantity: existing.quantity + movement.quantity }
@@ -149,8 +150,16 @@ export async function saveTransferWithStockEffects(
     const transferSnapshot = await transaction.get(transferRef);
     if (!transferSnapshot.exists()) throw new Error("Transfert introuvable.");
     const currentTransfer = transferSnapshot.data() as StockTransfer;
-    const validTransition = currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT"
-      || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status);
+    const validTransition = options.recyclingDecision
+      ? currentTransfer.type === "RECYCLING"
+        && ["VALIDATED", "DISCREPANCY"].includes(currentTransfer.status)
+        && currentTransfer.status === transfer.status
+        && !transfer.lines.some(line => {
+          const persisted = currentTransfer.lines.find(item => item.id === line.id);
+          return Boolean(persisted?.recycling_decision) && persisted?.recycling_decided_at !== line.recycling_decided_at;
+        })
+      : currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT"
+        || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status);
     if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");
 
     const targets = [...groupedMovements.values()].map(movement => {
@@ -160,14 +169,18 @@ export async function saveTransferWithStockEffects(
     const stockSnapshots = await Promise.all(targets.map(target => transaction.get(target.reference)));
     targets.forEach((target, index) => {
       const current = stockSnapshots[index].exists() ? stockSnapshots[index].data() as StoreStock : undefined;
-      const before = current?.quantity || 0;
+      const quarantine = target.movement.stock_bucket === "QUARANTINE";
+      const before = (quarantine ? current?.quarantine_quantity : current?.quantity) || 0;
       const after = before + target.movement.quantity;
       if (after < 0) throw new Error(`Stock insuffisant pour l'article ${target.movement.article_id}. Disponible : ${before}.`);
       const stock: StoreStock = {
         id: current?.id || target.reference.id,
         store_id: target.movement.store_id,
         article_id: target.movement.article_id,
-        quantity: after,
+        quantity: quarantine ? current?.quantity || 0 : after,
+        ...(quarantine || current?.quarantine_quantity !== undefined
+          ? { quarantine_quantity: quarantine ? after : current?.quarantine_quantity }
+          : {}),
         reserved_quantity: current?.reserved_quantity || 0,
         updated_at: transfer.updated_at
       };

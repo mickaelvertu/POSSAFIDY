@@ -7,8 +7,8 @@ import UsersView from "../UsersView";
 import RoleHomeView from "../RoleHomeView";
 import SalesView from "../SalesView";
 import StocksView from "../StocksView";
-import { Production, StockMovement, StockTransfer, Store, StoreStock } from "../../types";
-import { generateRef, getArticleStock, updateStockQuantity } from "../../services/stockService";
+import { Production, RECYCLING_DECISION_LABELS, RETURN_REASON_LABELS, RecyclingDecision, StockMovement, StockTransfer, Store, StoreStock } from "../../types";
+import { generateRef, getArticleStock, updateQuarantineQuantity, updateStockQuantity } from "../../services/stockService";
 import {
   deleteStore,
   deleteDraftTransfer,
@@ -31,6 +31,9 @@ import { advanceSale, cancelSale, createProduction, deleteDraftSale, deleteDraft
 import { createCreditSale, loadCreditCustomerForUser, loadCreditCustomers, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
 import { createResellerOrder, loadResellerStocks, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
+import InventoryControlView from "../InventoryControlView";
+import { deleteInventoryCountDraft, loadInventoryCounts, refuseInventorySignature, rejectInventoryCount, saveInventoryCount, settleInventoryCharges, signInventoryCount, validateInventoryCount } from "../../services/inventoryCountService";
+import type { InventoryCount, InventoryReasonDecision } from "../../types";
 import AuditView from "../AuditView";
 import StoresView from "../StoresView";
 import CatalogView from "../CatalogView";
@@ -46,6 +49,7 @@ import { loadPayslips, loadSalaryAdvances, savePayslip, saveSalaryAdvance } from
 import TransfersView from "../TransfersView";
 import UnitsView from "../UnitsView";
 import ReportsView from "../ReportsView";
+import UserAuditReport from "../UserAuditReport";
 import ReportViewer from "../ReportViewer";
 import ThemeSwitcher from "../ThemeSwitcher";
 import { deleteExpense, loadExpenses, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
@@ -63,7 +67,7 @@ import {
   Shield
 } from "lucide-react";
 
-const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "PRODUCTION", "COMPTABLE", "GESTIONNAIRE_CREDIT", "REVENDEUR"];
+const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "CONTROLEUR", "PRODUCTION", "COMPTABLE", "GESTIONNAIRE_CREDIT", "REVENDEUR"];
 
 function toAppUser(user: User): AppUser {
   const roleId = APP_ROLES.includes(user.role as AppRoleId) ? user.role as AppRoleId : "VENDEUR";
@@ -94,7 +98,8 @@ export default function AuthenticatedSessionView() {
   const [showProfile, setShowProfile] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [inventoryCounts, setInventoryCounts] = useState<InventoryCount[]>([]);
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [creditCustomers, setCreditCustomers] = useState<CreditCustomer[]>([]);
@@ -210,6 +215,9 @@ export default function AuthenticatedSessionView() {
               setPurchases(procurement.purchases);
             })
           : Promise.resolve(),
+        withRetry("Inventory counts", () => loadInventoryCounts(canManageStores ? undefined : user.assignedStores)).then(loaded => {
+          if (isMounted && loaded) setInventoryCounts(loaded);
+        }),
         withRetry("Operations", () => loadOperationalData({
           sales: canManageStores || Boolean(user.permissions.includes("sales.view") || canManageCredit),
           productions: canManageStores || Boolean(user.permissions.includes("production.view")),
@@ -320,7 +328,10 @@ export default function AuthenticatedSessionView() {
     setAuditLogs(current => [auditLog, ...current]);
   };
 
-  const handleSavePayslip = async (payslip: Payslip, isNew: boolean, settledAdvances: SalaryAdvance[]) => {
+  const handleSavePayslip = async (payslip: Payslip, isNew: boolean, settledAdvances: SalaryAdvance[], settledCounts: InventoryCount[] = []) => {
+    if (settledCounts.length > 0) {
+      await settleInventoryCounts(settledCounts, "PAYSLIP", `Paie ${payslip.period} - ${payslip.employee_name}`, "", payslip.id);
+    }
     const previous = payslips.find(item => item.id === payslip.id);
     const auditLog = createAuditLog(
       currentAppUser!,
@@ -441,6 +452,13 @@ export default function AuthenticatedSessionView() {
   };
 
   const currentAppUser = user ? toAppUser(user) : null;
+  const isInventoryAdmin = currentAppUser?.roleId === "SUPER_ADMIN" || currentAppUser?.roleId === "ADMIN";
+  const canReviewInventory = Boolean(currentAppUser && (isInventoryAdmin || hasPermission(currentAppUser, "inventory.review")));
+  const canCountInventory = Boolean(currentAppUser && (isInventoryAdmin || currentAppUser.storeIds.length > 0)
+    && (isInventoryAdmin || currentAppUser.roleId === "RESPONSABLE_MAGASIN" || currentAppUser.roleId === "CONTROLEUR" || hasPermission(currentAppUser, "inventory.count")));
+  const inventoryScopeStores = isInventoryAdmin || !currentAppUser
+    ? inventoryStores
+    : inventoryStores.filter(store => currentAppUser.storeIds.includes(store.id));
   const accessibleStores = user && user.assignedStores.length > 0 && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"
     ? inventoryStores.filter(store => user.assignedStores.includes(store.id))
     : inventoryStores;
@@ -1043,19 +1061,22 @@ export default function AuthenticatedSessionView() {
     }
     let updatedStocks = stocks;
     const movements: StockMovement[] = [];
+    const shipFromQuarantine = transfer.type === "RECYCLING";
     for (const line of transfer.lines) {
-      const available = updatedStocks.find(stock => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id)?.quantity || 0;
+      const stockRow = updatedStocks.find(stock => stock.store_id === transfer.source_store_id && stock.article_id === line.article_id);
+      const available = (shipFromQuarantine ? stockRow?.quarantine_quantity : stockRow?.quantity) || 0;
       if (line.quantity_sent <= 0 || available - line.quantity_sent < 0) {
         alert(`Stock insuffisant pour ${line.article_name}. Disponible : ${available}.`);
         return;
       }
-      const { newStocks, beforeQty, afterQty } = updateStockQuantity(updatedStocks, transfer.source_store_id, line.article_id, -line.quantity_sent);
+      const { newStocks, beforeQty, afterQty } = (shipFromQuarantine ? updateQuarantineQuantity : updateStockQuantity)(updatedStocks, transfer.source_store_id, line.article_id, -line.quantity_sent);
       updatedStocks = newStocks;
       movements.push({
         id: `movement-${transfer.id}-ship-${line.article_id}`,
         store_id: transfer.source_store_id,
         article_id: line.article_id,
         movement_type: transfer.type,
+        ...(shipFromQuarantine ? { stock_bucket: "QUARANTINE" as const } : {}),
         quantity: -line.quantity_sent,
         reference_type: "TRANSFER",
         reference_id: transfer.id,
@@ -1110,15 +1131,17 @@ export default function AuthenticatedSessionView() {
     }
     let updatedStocks = stocks;
     const movements: StockMovement[] = [];
+    const receiveIntoQuarantine = transfer.type === "STORE_RETURN" || transfer.type === "RECYCLING";
     updatedLines.forEach(line => {
       if (line.quantity_accepted > 0) {
-        const { newStocks, beforeQty, afterQty } = updateStockQuantity(updatedStocks, transfer.destination_store_id, line.article_id, line.quantity_accepted);
+        const { newStocks, beforeQty, afterQty } = (receiveIntoQuarantine ? updateQuarantineQuantity : updateStockQuantity)(updatedStocks, transfer.destination_store_id, line.article_id, line.quantity_accepted);
         updatedStocks = newStocks;
         movements.push({
           id: `movement-${transfer.id}-receive-${line.article_id}`,
           store_id: transfer.destination_store_id,
           article_id: line.article_id,
           movement_type: transfer.type,
+          ...(receiveIntoQuarantine ? { stock_bucket: "QUARANTINE" as const } : {}),
           quantity: line.quantity_accepted,
           reference_type: "TRANSFER",
           reference_id: transfer.id,
@@ -1182,6 +1205,83 @@ export default function AuthenticatedSessionView() {
     }
   };
 
+  const handleDecideRecycling = async (
+    transferId: string,
+    decisions: Array<{ lineId: string; decision: RecyclingDecision; note?: string }>
+  ): Promise<boolean> => {
+    const transfer = transfers.find(item => item.id === transferId);
+    if (!currentAppUser || !transfer || transfer.type !== "RECYCLING" || !["VALIDATED", "DISCREPANCY"].includes(transfer.status)) return false;
+    const canDecide = (hasPermission(currentAppUser, "production.create") || hasPermission(currentAppUser, "production.validate"))
+      && currentAppUser.storeIds.includes(transfer.destination_store_id);
+    if (!canDecide) {
+      alert("Seul le magasin de production destinataire peut décider du sort de ces articles.");
+      return false;
+    }
+    const timestamp = Date.now();
+    let updatedStocks = stocks;
+    const movements: StockMovement[] = [];
+    let decidedCount = 0;
+    const lines = transfer.lines.map(line => {
+      const choice = decisions.find(item => item.lineId === line.id);
+      if (!choice || line.recycling_decision || line.quantity_accepted <= 0) return line;
+      const decidedFields = {
+        recycling_decision: choice.decision,
+        recycling_decided_by: currentAppUser.uid,
+        recycling_decided_by_name: currentAppUser.displayName || currentAppUser.email,
+        recycling_decided_at: timestamp,
+        recycling_note: choice.note || ""
+      };
+      // « Recyclé » : le stock reste à recycler et sera consommé par un ordre de fabrication.
+      if (choice.decision === "RECYCLED") {
+        decidedCount += 1;
+        return { ...line, ...decidedFields, recycled_available: true };
+      }
+      decidedCount += 1;
+      const { newStocks, beforeQty, afterQty } = updateQuarantineQuantity(updatedStocks, transfer.destination_store_id, line.article_id, -line.quantity_accepted);
+      if (afterQty < 0) throw new Error(`Stock à recycler insuffisant en production pour ${line.article_name}. Disponible : ${beforeQty}.`);
+      updatedStocks = newStocks;
+      movements.push({
+        id: `movement-${transfer.id}-recycling-${line.id}`,
+        store_id: transfer.destination_store_id,
+        article_id: line.article_id,
+        stock_bucket: "QUARANTINE",
+        movement_type: "LOSS",
+        quantity: -line.quantity_accepted,
+        reference_type: "RECYCLING",
+        reference_id: transfer.id,
+        reference_number: transfer.transfer_number,
+        before_quantity: beforeQty,
+        after_quantity: afterQty,
+        created_by: currentAppUser.uid,
+        created_by_name: currentAppUser.displayName || currentAppUser.email || "Utilisateur",
+        notes: `${RECYCLING_DECISION_LABELS[choice.decision]}${line.return_reason ? ` — ${RETURN_REASON_LABELS[line.return_reason]}` : ""}${choice.note ? ` — ${choice.note}` : ""}`,
+        created_at: timestamp
+      });
+      return {
+        ...line,
+        ...decidedFields
+      };
+    });
+    if (decidedCount === 0) return false;
+    const updatedTransfer: StockTransfer = { ...transfer, lines, updated_at: Math.max(timestamp, transfer.updated_at + 1) };
+    const changedStocks = updatedStocks.filter(stock =>
+      movements.some(movement => movement.store_id === stock.store_id && movement.article_id === stock.article_id)
+    );
+    try {
+      const auditLog = createAuditLog(currentAppUser, "RECYCLING_DECIDED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.destination_store_id);
+      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements, auditLog, { recyclingDecision: true });
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
+      setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+      setAuditLogs(current => [auditLog, ...current]);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la décision de recyclage.");
+      return false;
+    }
+  };
+
   const handleAdjustStock = async (storeId: string, articleId: string, newQty: number, reason: string, isDeposit = false) => {
     const targetStore = inventoryStores.find(store => store.id === storeId);
     const canManageCentralStock = (currentAppUser?.roleId === "ADMIN" || currentAppUser?.roleId === "SUPER_ADMIN") && targetStore?.store_type === "CENTRAL_WAREHOUSE";
@@ -1220,6 +1320,90 @@ export default function AuthenticatedSessionView() {
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'ajustement dans Firestore.");
     }
+  };
+
+  const handleSaveInventoryCount = async (count: InventoryCount, submit: boolean) => {
+    if (!currentAppUser || !canCountInventory || user?.status !== "ACTIVE") throw new Error("Vous n'êtes pas autorisé à saisir un inventaire.");
+    if ((!isInventoryAdmin && !currentAppUser.storeIds.includes(count.store_id)) || count.created_by !== currentAppUser.uid) throw new Error("Ce magasin n'est pas dans votre périmètre.");
+    const previous = inventoryCounts.find(item => item.id === count.id);
+    if (previous && previous.status !== "DRAFT") throw new Error("Cet inventaire n'est plus modifiable.");
+    if (submit && !count.manager_id) throw new Error("Désignez le responsable du magasin qui doit signer.");
+    const auditLog = createAuditLog(currentAppUser, submit ? "INVENTORY_COUNT_SENT_FOR_SIGNATURE" : "INVENTORY_COUNT_DRAFT_SAVED", "INVENTORY_COUNT", count.id, previous, count, count.store_id);
+    await saveInventoryCount(count, auditLog);
+    setInventoryCounts(current => [count, ...current.filter(item => item.id !== count.id)]);
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleSignInventoryCount = async (count: InventoryCount) => {
+    if (!currentAppUser || user?.status !== "ACTIVE" || count.manager_id !== currentAppUser.uid) throw new Error("Seul le responsable désigné peut signer ce comptage.");
+    const name = currentAppUser.displayName || currentAppUser.email;
+    const auditLog = createAuditLog(currentAppUser, "INVENTORY_COUNT_SIGNED", "INVENTORY_COUNT", count.id, { status: count.status }, { status: "SUBMITTED", presence_attested_by: name }, count.store_id);
+    const signed = await signInventoryCount(count, { id: currentAppUser.uid, name }, auditLog);
+    setInventoryCounts(current => current.map(item => item.id === count.id ? signed : item));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleRefuseInventorySignature = async (count: InventoryCount, note: string) => {
+    if (!currentAppUser || user?.status !== "ACTIVE" || count.manager_id !== currentAppUser.uid) throw new Error("Seul le responsable désigné peut refuser ce comptage.");
+    const auditLog = createAuditLog(currentAppUser, "INVENTORY_COUNT_SIGNATURE_REFUSED", "INVENTORY_COUNT", count.id, { status: count.status }, { status: "REJECTED", note }, count.store_id);
+    const refused = await refuseInventorySignature(count, { id: currentAppUser.uid, name: currentAppUser.displayName || currentAppUser.email }, note, auditLog);
+    setInventoryCounts(current => current.map(item => item.id === count.id ? refused : item));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleDeleteInventoryDraft = async (count: InventoryCount) => {
+    if (!currentAppUser || count.created_by !== currentAppUser.uid) throw new Error("Vous ne pouvez supprimer que vos brouillons.");
+    await deleteInventoryCountDraft(count);
+    setInventoryCounts(current => current.filter(item => item.id !== count.id));
+  };
+
+  const handleValidateInventoryCount = async (count: InventoryCount, decisions: Record<string, InventoryReasonDecision>, note: string) => {
+    if (!currentAppUser || !canReviewInventory || user?.status !== "ACTIVE") throw new Error("Seul un administrateur peut valider un inventaire.");
+    const result = await validateInventoryCount(
+      count,
+      decisions,
+      { id: currentAppUser.uid, name: currentAppUser.displayName || currentAppUser.email },
+      note,
+      stocks,
+      validated => createAuditLog(currentAppUser, "INVENTORY_COUNT_VALIDATED", "INVENTORY_COUNT", count.id, { status: count.status }, {
+        status: validated.status,
+        total_charged_amount: validated.total_charged_amount,
+        charged_to: validated.charged_to_name,
+        rejected_reasons: validated.lines.filter(line => line.decision === "REJECTED").map(line => line.article_name)
+      }, count.store_id)
+    );
+    setInventoryCounts(current => current.map(item => item.id === count.id ? result.count : item));
+    setStocks(current => {
+      const updated = new Map(result.stocks.map(stock => [stock.id, stock]));
+      const known = new Set(current.map(stock => stock.id));
+      return [...current.map(stock => updated.get(stock.id) || stock), ...result.stocks.filter(stock => !known.has(stock.id))];
+    });
+    setMovements(current => [...result.movements, ...current]);
+  };
+
+  const handleRejectInventoryCount = async (count: InventoryCount, note: string) => {
+    if (!currentAppUser || !canReviewInventory || user?.status !== "ACTIVE") throw new Error("Seul un administrateur peut rejeter un inventaire.");
+    const auditLog = createAuditLog(currentAppUser, "INVENTORY_COUNT_REJECTED", "INVENTORY_COUNT", count.id, { status: count.status }, { status: "REJECTED", note }, count.store_id);
+    const rejected = await rejectInventoryCount(count, { id: currentAppUser.uid, name: currentAppUser.displayName || currentAppUser.email }, note, auditLog);
+    setInventoryCounts(current => current.map(item => item.id === count.id ? rejected : item));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const settleInventoryCounts = async (counts: InventoryCount[], method: "PAYSLIP" | "ADVANCE" | "OTHER", reference: string, note: string, payslipId?: string) => {
+    if (!currentAppUser || !canReviewInventory || user?.status !== "ACTIVE") throw new Error("Seul un administrateur peut marquer une retenue comme déduite.");
+    const settlement = {
+      settled_at: Date.now(),
+      settled_by: currentAppUser.uid,
+      settled_by_name: currentAppUser.displayName || currentAppUser.email,
+      method,
+      reference,
+      payslip_id: payslipId,
+      note: note || undefined
+    };
+    const auditLog = createAuditLog(currentAppUser, "INVENTORY_CHARGE_SETTLED", "INVENTORY_COUNT", counts.map(count => count.id).join(","), undefined, { ...settlement, counts: counts.map(count => count.count_number) });
+    const updated = await settleInventoryCharges(counts, settlement, auditLog);
+    setInventoryCounts(current => current.map(item => updated.find(count => count.id === item.id) || item));
+    setAuditLogs(current => [auditLog, ...current]);
   };
 
   const handleCreateStore = async (store: Store) => {
@@ -1682,6 +1866,29 @@ export default function AuthenticatedSessionView() {
               onSyncStocks={handleSyncStocks}
             />
           </section>
+        ) : activeModule === "inventory" && currentAppUser && (canCountInventory || canReviewInventory) ? (
+          <section className="space-y-4">
+            <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">
+              ← Retour à l'accueil
+            </button>
+            <InventoryControlView
+              currentUser={currentAppUser}
+              stores={inventoryScopeStores}
+              articles={articles}
+              stocks={stocks}
+              counts={inventoryCounts}
+              canCount={canCountInventory}
+              canReview={canReviewInventory}
+              onSaveCount={handleSaveInventoryCount}
+              onDeleteDraft={handleDeleteInventoryDraft}
+              onValidateCount={handleValidateInventoryCount}
+              onRejectCount={handleRejectInventoryCount}
+              onSignCount={handleSignInventoryCount}
+              onRefuseSignature={handleRefuseInventorySignature}
+              loadStoreManagers={storeId => authService.listStoreManagers(storeId)}
+              onSettleCharges={(counts, method, reference, note) => settleInventoryCounts(counts, method, reference, note)}
+            />
+          </section>
         ) : activeModule === "stores" && currentAppUser && canManageStores ? (
           <section className="space-y-4">
             <button
@@ -1778,6 +1985,7 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <ReportsView
+              userAuditReport={canManageStores ? <UserAuditReport users={managedUsers} employees={employees} sales={sales} advances={salaryAdvances} payslips={payslips} counts={inventoryCounts} stores={accessibleStores} /> : undefined}
               stores={accessibleStores}
               categories={categories}
               articles={articles}
@@ -1847,6 +2055,8 @@ export default function AuthenticatedSessionView() {
               onUpdateDraftProduction={handleUpdateDraftProduction}
               onDeleteDraftProduction={handleDeleteDraftProduction}
               onInitiateReturn={handleInitiateProductionReturn}
+              transfers={transfers}
+              onDecideRecycling={handleDecideRecycling}
             />
           </section>
         ) : activeModule === "procurement" && currentAppUser && canManageStores ? (
@@ -1940,6 +2150,7 @@ export default function AuthenticatedSessionView() {
               employees={employees}
               payslips={payslips}
               advances={salaryAdvances}
+              inventoryCounts={inventoryCounts}
               currentUserId={currentAppUser.uid}
               onSavePayslip={handleSavePayslip}
               onSaveAdvance={handleSaveAdvance}
@@ -1968,6 +2179,7 @@ export default function AuthenticatedSessionView() {
             onOpenStaff={() => setActiveModule("staff")}
             onOpenReports={() => setActiveModule("reports")}
             onOpenAudit={() => setActiveModule("audit")}
+            onOpenInventory={() => setActiveModule("inventory")}
           />
         )}
 

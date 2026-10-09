@@ -366,9 +366,13 @@ export async function createProduction(
   production: Production,
   knownStocks: StoreStock[]
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[]; auditLog: AuditLog }> {
-  const deltas = new Map<string, number>();
-  production.consumptions.forEach(line => deltas.set(line.article_id, (deltas.get(line.article_id) || 0) - line.quantity));
-  production.outputs.forEach(line => deltas.set(line.article_id, (deltas.get(line.article_id) || 0) + line.quantity));
+  const deltas = new Map<string, { normal: number; recycled: number }>();
+  const addDelta = (articleId: string, key: "normal" | "recycled", value: number) => {
+    const current = deltas.get(articleId) || { normal: 0, recycled: 0 };
+    deltas.set(articleId, { ...current, [key]: current[key] + value });
+  };
+  production.consumptions.forEach(line => addDelta(line.article_id, line.source === "RECYCLED" ? "recycled" : "normal", -line.quantity));
+  production.outputs.forEach(line => addDelta(line.article_id, "normal", line.quantity));
   const targets = [...deltas].map(([articleId, delta]) => ({ articleId, delta, ...stockReference(knownStocks, production.manufacturer_store_id, articleId) }));
   const timestamp = Date.now();
   const entry = audit("PRODUCTION_COMPLETED", "PRODUCTION", production.id, production.created_by, production.created_by_name, production.manufacturer_store_id, undefined, production);
@@ -383,36 +387,60 @@ export async function createProduction(
     targets.forEach((target, index) => {
       const current = snapshots[index].exists() ? snapshots[index].data() as StoreStock : target.fallback;
       const before = current?.quantity || 0;
-      if (!Number.isFinite(target.delta) || target.delta === 0 || before + target.delta < 0) {
+      const quarantineBefore = current?.quarantine_quantity || 0;
+      if (!Number.isFinite(target.delta.normal) || !Number.isFinite(target.delta.recycled) || before + target.delta.normal < 0) {
         throw new Error(`Stock insuffisant ou quantité invalide pour l'article ${target.articleId}.`);
+      }
+      if (quarantineBefore + target.delta.recycled < 0) {
+        throw new Error(`Stock à recycler insuffisant pour l'article ${target.articleId}. Disponible : ${quarantineBefore}.`);
       }
       const stock: StoreStock = {
         id: current?.id || target.reference.id,
         store_id: production.manufacturer_store_id,
         article_id: target.articleId,
-        quantity: before + target.delta,
+        quantity: before + target.delta.normal,
+        ...(current?.quarantine_quantity !== undefined || target.delta.recycled !== 0 ? { quarantine_quantity: quarantineBefore + target.delta.recycled } : {}),
         reserved_quantity: current?.reserved_quantity || 0,
         updated_at: timestamp
       };
-      const movement: StockMovement = {
-        id: `movement-${production.id}-${target.articleId}`,
+      const baseMovement = {
         store_id: production.manufacturer_store_id,
         article_id: target.articleId,
-        movement_type: target.delta < 0 ? "CONSUMPTION" : "PRODUCTION",
-        quantity: target.delta,
-        reference_type: "PRODUCTION",
+        reference_type: "PRODUCTION" as const,
         reference_id: production.id,
         reference_number: production.production_number,
-        before_quantity: before,
-        after_quantity: stock.quantity,
         created_by: production.created_by,
         created_by_name: production.created_by_name,
         created_at: timestamp
       };
       updatedStocks.push(stock);
-      movements.push(movement);
-      transaction.set(target.reference, stock);
-      transaction.set(doc(db, MOVEMENTS, movement.id), movement);
+      transaction.set(target.reference, clean(stock));
+      if (target.delta.normal !== 0) {
+        const movement: StockMovement = {
+          ...baseMovement,
+          id: `movement-${production.id}-${target.articleId}`,
+          movement_type: target.delta.normal < 0 ? "CONSUMPTION" : "PRODUCTION",
+          quantity: target.delta.normal,
+          before_quantity: before,
+          after_quantity: stock.quantity
+        };
+        movements.push(movement);
+        transaction.set(doc(db, MOVEMENTS, movement.id), movement);
+      }
+      if (target.delta.recycled !== 0) {
+        const movement: StockMovement = {
+          ...baseMovement,
+          id: `movement-${production.id}-${target.articleId}-recycled`,
+          stock_bucket: "QUARANTINE",
+          movement_type: "CONSUMPTION",
+          quantity: target.delta.recycled,
+          before_quantity: quarantineBefore,
+          after_quantity: quarantineBefore + target.delta.recycled,
+          notes: "Recyclage : consommé depuis le stock à recycler"
+        };
+        movements.push(movement);
+        transaction.set(doc(db, MOVEMENTS, movement.id), movement);
+      }
     });
     transaction.set(productionRef, clean(production));
     transaction.set(doc(db, AUDIT_LOGS, entry.id), entry);

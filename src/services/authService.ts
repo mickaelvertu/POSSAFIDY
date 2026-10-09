@@ -15,8 +15,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  query,
   setDoc,
   updateDoc,
+  where,
   writeBatch
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -29,6 +31,7 @@ export const ROLE_DEFINITIONS: Record<AppRoleId, { id: AppRoleId; name: string; 
   VENDEUR: { id: "VENDEUR", name: "Vendeur", description: "Ventes du magasin assigné", bgLight: "bg-emerald-100 text-emerald-800 border-emerald-300" },
   MAGASINIER: { id: "MAGASINIER", name: "Magasinier", description: "Stocks et transferts", bgLight: "bg-cyan-100 text-cyan-800 border-cyan-300" },
   RESPONSABLE_MAGASIN: { id: "RESPONSABLE_MAGASIN", name: "Responsable magasin", description: "Pilotage d'un magasin", bgLight: "bg-amber-100 text-amber-800 border-amber-300" },
+  CONTROLEUR: { id: "CONTROLEUR", name: "Contrôleur", description: "Comptage physique et contrôle des stocks", bgLight: "bg-rose-100 text-rose-800 border-rose-300" },
   PRODUCTION: { id: "PRODUCTION", name: "Production", description: "Production et consommation", bgLight: "bg-indigo-100 text-indigo-800 border-indigo-300" },
   COMPTABLE: { id: "COMPTABLE", name: "Comptable", description: "Ventes et rapports", bgLight: "bg-slate-100 text-slate-800 border-slate-300" },
   GESTIONNAIRE_CREDIT: { id: "GESTIONNAIRE_CREDIT", name: "Gestionnaire crédit", description: "Plafonds, encaissements et relances revendeurs", bgLight: "bg-teal-100 text-teal-800 border-teal-300" },
@@ -40,7 +43,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   ADMIN: ALL_PERMISSIONS.filter(permission => permission !== "users.delete"),
   VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit", "credit.sales", "transfers.view", "transfers.create"],
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
-  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive", "reports.view"],
+  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count"],
+  CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count"],
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"],
   GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
@@ -56,6 +60,7 @@ const permissionDefinition = (code: string) => ({
 export const PERMISSION_GROUPS = [
   { id: "dashboard", label: "Tableau de bord", description: "Accès aux indicateurs", permissions: ["dashboard.view"] },
   { id: "catalog", label: "Produits et stocks", description: "Catalogue et inventaire", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("products.") || permission.startsWith("stock.")) },
+  { id: "inventory", label: "Contrôle d'inventaire", description: "Comptage et validation des écarts", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("inventory.")) },
   { id: "units", label: "Unités de mesure", description: "Gérer les unités des articles", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("units.")) },
   { id: "sales", label: "Ventes", description: "Cycle de vente", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("sales.")) },
   { id: "credit", label: "Crédits revendeurs", description: "Gérer les plafonds, paiements et relances", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("credit.")) },
@@ -292,6 +297,20 @@ export class AuthService {
 
   async restoreSession(): Promise<User | null> {
     return this.getCurrentUser();
+  }
+
+  async listStoreManagers(storeId: string): Promise<{ id: string; name: string }[]> {
+    const snapshot = await getDocs(query(collection(db, "users"), where("role", "==", "RESPONSABLE_MAGASIN")));
+    return snapshot.docs
+      .filter(item => {
+        const data = item.data();
+        return data.status === "ACTIVE" && Array.isArray(data.assignedStores) && data.assignedStores.includes(storeId);
+      })
+      .map(item => {
+        const data = item.data();
+        const name = `${data.firstName || ""} ${data.lastName || ""}`.trim() || String(data.email || item.id);
+        return { id: item.id, name };
+      });
   }
 
   async listManagedUsers(): Promise<ApiResponse<{ users: User[] }>> {

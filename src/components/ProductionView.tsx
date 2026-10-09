@@ -7,7 +7,10 @@ import {
   Article, 
   StoreStock, 
   UserProfile, 
-  StockTransfer 
+  StockTransfer,
+  RecyclingDecision,
+  RETURN_REASON_LABELS,
+  RECYCLING_DECISION_LABELS
 } from "../types";
 import { generateRef, getArticleStock } from "../services/stockService";
 import { 
@@ -36,6 +39,11 @@ interface ProductionViewProps {
   onUpdateDraftProduction: (original: Production, updated: Production) => Promise<boolean>;
   onDeleteDraftProduction: (production: Production) => Promise<void>;
   onInitiateReturn: (transfer: StockTransfer) => void;
+  transfers: StockTransfer[];
+  onDecideRecycling: (
+    transferId: string,
+    decisions: Array<{ lineId: string; decision: RecyclingDecision; note?: string }>
+  ) => Promise<boolean>;
 }
 
 export default function ProductionView({
@@ -47,8 +55,50 @@ export default function ProductionView({
   onCreateProduction,
   onUpdateDraftProduction,
   onDeleteDraftProduction,
-  onInitiateReturn
+  onInitiateReturn,
+  transfers,
+  onDecideRecycling
 }: ProductionViewProps) {
+  const [recyclingChoices, setRecyclingChoices] = useState<Record<string, { decision: RecyclingDecision; note: string }>>({});
+  const recyclingTransfers = transfers.filter(transfer =>
+    transfer.type === "RECYCLING"
+    && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
+    && currentUser.storeIds.includes(transfer.destination_store_id)
+    && transfer.lines.some(line => line.quantity_accepted > 0 && !line.recycling_decision)
+  );
+  const recyclingSummary = Object.entries(
+    transfers
+      .filter(transfer => transfer.type === "RECYCLING" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status))
+      .flatMap(transfer => transfer.lines)
+      .reduce<Record<string, { received: number; recycled: number; destroyed: number; destroyedValue: number }>>((summary, line) => {
+        const key = line.return_reason || "NONE";
+        const row = summary[key] || { received: 0, recycled: 0, destroyed: 0, destroyedValue: 0 };
+        row.received += line.quantity_accepted;
+        if (line.recycling_decision === "RECYCLED") row.recycled += line.quantity_accepted;
+        if (line.recycling_decision === "DESTROYED") {
+          row.destroyed += line.quantity_accepted;
+          row.destroyedValue += line.quantity_accepted * (articles.find(article => article.id === line.article_id)?.prix_achat || 0);
+        }
+        summary[key] = row;
+        return summary;
+      }, {})
+  );
+  const handleDecide = async (transfer: StockTransfer) => {
+    const decisions = transfer.lines
+      .filter(line => line.quantity_accepted > 0 && !line.recycling_decision && recyclingChoices[line.id])
+      .map(line => ({ lineId: line.id, decision: recyclingChoices[line.id].decision, note: recyclingChoices[line.id].note.trim() || undefined }));
+    if (decisions.length === 0) {
+      alert("Choisissez une décision pour au moins une ligne.");
+      return;
+    }
+    if (await onDecideRecycling(transfer.id, decisions)) {
+      setRecyclingChoices(current => {
+        const next = { ...current };
+        decisions.forEach(item => delete next[item.lineId]);
+        return next;
+      });
+    }
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [editingProduction, setEditingProduction] = useState<Production | null>(null);
@@ -74,7 +124,29 @@ export default function ProductionView({
   const [returnQuantity, setReturnQuantity] = useState(5);
   const [returnReason, setReturnReason] = useState("Surplus de production non consommé");
 
+  const [recycledConsumptions, setRecycledConsumptions] = useState<Array<{ article_id: string; quantity: number }>>([]);
+  const recycledAvailability = (articleId: string) => {
+    const approved = transfers
+      .filter(transfer => transfer.type === "RECYCLING" && transfer.destination_store_id === manufStore?.id)
+      .flatMap(transfer => transfer.lines)
+      .filter(line => line.article_id === articleId && line.recycled_available && line.recycling_decision === "RECYCLED")
+      .reduce((sum, line) => sum + line.quantity_accepted, 0);
+    const used = productions
+      .filter(production => production.id !== editingProduction?.id && production.manufacturer_store_id === manufStore?.id)
+      .flatMap(production => production.consumptions)
+      .filter(line => line.source === "RECYCLED" && line.article_id === articleId)
+      .reduce((sum, line) => sum + line.quantity, 0);
+    const quarantine = stocks.find(stock => stock.store_id === manufStore?.id && stock.article_id === articleId)?.quarantine_quantity || 0;
+    return Math.max(0, Math.min(approved - used, quarantine));
+  };
+  const recycledArticles = articles.filter(article => recycledAvailability(article.id) > 0);
+  const recycledConsumedTotal = productions
+    .flatMap(production => production.consumptions)
+    .filter(line => line.source === "RECYCLED")
+    .reduce((sum, line) => sum + line.quantity, 0);
+
   const handleOpenProductionModal = () => {
+    setRecycledConsumptions([]);
     setEditingProduction(null);
     setConsumptions([{ article_id: rawArticles[0]?.id || "", quantity: 10 }]);
     setOutputs([{ article_id: resaleArticles[0]?.id || "", quantity: 5 }]);
@@ -85,7 +157,9 @@ export default function ProductionView({
   const handleOpenEditProductionModal = (production: Production) => {
     if (production.status !== "DRAFT" || production.created_by !== currentUser.uid) return;
     setEditingProduction(production);
-    setConsumptions(production.consumptions.map(line => ({ article_id: line.article_id, quantity: line.quantity })));
+    const rawLines = production.consumptions.filter(line => line.source !== "RECYCLED");
+    setConsumptions(rawLines.length > 0 ? rawLines.map(line => ({ article_id: line.article_id, quantity: line.quantity })) : []);
+    setRecycledConsumptions(production.consumptions.filter(line => line.source === "RECYCLED").map(line => ({ article_id: line.article_id, quantity: line.quantity })));
     setOutputs(production.outputs.map(line => ({ article_id: line.article_id, quantity: line.quantity })));
     setBatchNote(production.notes || "");
     setIsModalOpen(true);
@@ -101,9 +175,18 @@ export default function ProductionView({
 
   const handleSubmitProduction = async (e: FormEvent) => {
     e.preventDefault();
+    const recycledTotals = recycledConsumptions.reduce<Record<string, number>>((totals, line) => {
+      totals[line.article_id] = (totals[line.article_id] || 0) + line.quantity;
+      return totals;
+    }, {});
+    if (Object.entries(recycledTotals).some(([articleId, total]) => Number(total) > recycledAvailability(articleId))) {
+      alert("La quantité recyclée demandée dépasse le stock à recycler disponible.");
+      return;
+    }
     if (
-      consumptions.length === 0 ||
+      consumptions.length + recycledConsumptions.length === 0 ||
       outputs.length === 0 ||
+      recycledConsumptions.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !line.article_id) ||
       consumptions.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !rawArticles.some(article => article.id === line.article_id)) ||
       outputs.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !resaleArticles.some(article => article.id === line.article_id))
     ) {
@@ -113,7 +196,10 @@ export default function ProductionView({
 
     const prodNumber = generateRef("PRD", productions.length);
 
-    const consumptionLines: ProductionConsumptionLine[] = consumptions.map((c, idx) => {
+    const consumptionLines: ProductionConsumptionLine[] = [
+      ...consumptions.map(c => ({ ...c, recycled: false })),
+      ...recycledConsumptions.map(c => ({ ...c, recycled: true }))
+    ].map((c, idx) => {
       const art = articles.find(a => a.id === c.article_id);
       return {
         id: editingProduction?.consumptions[idx]?.id || `cons-${Date.now()}-${idx}`,
@@ -121,7 +207,8 @@ export default function ProductionView({
         article_code: art?.code || "MP",
         article_name: art?.name || "Matière Première",
         unit: art?.unit || "Kg",
-        quantity: Number(c.quantity)
+        quantity: Number(c.quantity),
+        ...(c.recycled ? { source: "RECYCLED" as const } : {})
       };
     });
 
@@ -265,6 +352,91 @@ export default function ProductionView({
         </div>
       </div>
 
+      {recyclingTransfers.length > 0 && (
+        <div className="bg-white rounded-2xl border border-amber-300 p-5 shadow-xs space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Articles retournés à traiter (recyclage)</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Reçus du dépôt, ces articles restent en stock de production tant qu'aucune décision n'est prise. « Recyclé » les met à disposition des ordres de fabrication (consommation tracée), « Détruit » les passe en perte.
+            </p>
+          </div>
+          {recyclingTransfers.map(transfer => (
+            <div key={transfer.id} className="rounded-xl border border-slate-200 p-3 space-y-2">
+              <div className="font-mono text-xs font-black text-indigo-900">{transfer.transfer_number}</div>
+              {transfer.lines.filter(line => line.quantity_accepted > 0 && !line.recycling_decision).map(line => (
+                <div key={line.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2 items-center text-xs">
+                  <div>
+                    <span className="font-semibold text-slate-900">{line.article_name}</span>
+                    <span className="text-slate-500"> — {line.quantity_accepted} {line.unit}</span>
+                    {line.return_reason && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 font-bold text-amber-800">{RETURN_REASON_LABELS[line.return_reason]}</span>}
+                    {line.expiry_date && <span className="ml-2 text-slate-500">DLC {line.expiry_date}</span>}
+                  </div>
+                  <select
+                    value={recyclingChoices[line.id]?.decision || ""}
+                    onChange={event => setRecyclingChoices(current => ({
+                      ...current,
+                      [line.id]: { decision: event.target.value as RecyclingDecision, note: current[line.id]?.note || "" }
+                    }))}
+                    className="rounded-lg border border-slate-300 px-2 py-1.5"
+                  >
+                    <option value="" disabled>Décision…</option>
+                    {(Object.keys(RECYCLING_DECISION_LABELS) as RecyclingDecision[]).map(decision => (
+                      <option key={decision} value={decision}>{RECYCLING_DECISION_LABELS[decision]}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Note (optionnel)"
+                    value={recyclingChoices[line.id]?.note || ""}
+                    disabled={!recyclingChoices[line.id]}
+                    onChange={event => setRecyclingChoices(current => ({ ...current, [line.id]: { ...current[line.id], note: event.target.value } }))}
+                    className="rounded-lg border border-slate-300 px-2 py-1.5 disabled:bg-slate-50"
+                  />
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => void handleDecide(transfer)}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold"
+              >
+                Valider les décisions
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {recyclingSummary.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 mb-2">Bilan des retours par motif</h3>
+          <p className="mb-2 text-[11px] text-emerald-700">♻ Recyclé consommé en fabrication : <span className="font-mono font-bold">{recycledConsumedTotal}</span></p>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-slate-500 border-b border-slate-100">
+                <th className="py-1.5">Motif</th>
+                <th className="py-1.5 text-right">Reçu</th>
+                <th className="py-1.5 text-right">Recyclé</th>
+                <th className="py-1.5 text-right">Détruit</th>
+                <th className="py-1.5 text-right">À traiter</th>
+                <th className="py-1.5 text-right">Perte (Ar)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recyclingSummary.map(([reason, row]) => (
+                <tr key={reason} className="border-b border-slate-50">
+                  <td className="py-1.5 font-semibold text-slate-800">{reason === "NONE" ? "Non précisé" : RETURN_REASON_LABELS[reason as keyof typeof RETURN_REASON_LABELS]}</td>
+                  <td className="py-1.5 text-right font-mono">{row.received}</td>
+                  <td className="py-1.5 text-right font-mono text-emerald-700">{row.recycled}</td>
+                  <td className="py-1.5 text-right font-mono text-rose-700">{row.destroyed}</td>
+                  <td className="py-1.5 text-right font-mono text-amber-700">{row.received - row.recycled - row.destroyed}</td>
+                  <td className="py-1.5 text-right font-mono text-rose-700">{row.destroyedValue.toLocaleString("fr-FR")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Production History */}
       <div className="space-y-4">
         {productions.map((p) => (
@@ -311,7 +483,7 @@ export default function ProductionView({
                 <div className="space-y-1.5">
                   {p.consumptions.map((c) => (
                     <div key={c.id} className="flex justify-between items-center">
-                      <span className="font-medium text-slate-800">[{c.article_code}] {c.article_name}</span>
+                      <span className="font-medium text-slate-800">[{c.article_code}] {c.article_name}{c.source === "RECYCLED" && <span className="ml-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">♻ recyclé</span>}</span>
                       <span className="font-mono font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
                         -{c.quantity} {c.unit}
                       </span>
@@ -435,6 +607,57 @@ export default function ProductionView({
                       </div>
                     );
                   })}
+                </div>
+
+                <div className="mt-3 border-t border-rose-200 pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-emerald-800">♻ Articles recyclés à consommer (stock à recycler) :</span>
+                    <button
+                      type="button"
+                      disabled={recycledArticles.length === 0}
+                      onClick={() => setRecycledConsumptions([...recycledConsumptions, { article_id: recycledArticles[0].id, quantity: 1 }])}
+                      className="font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer disabled:opacity-40"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Ajouter recyclé
+                    </button>
+                  </div>
+                  {recycledArticles.length === 0 && recycledConsumptions.length === 0 && (
+                    <p className="text-[11px] text-slate-500">Aucun article recyclé disponible.</p>
+                  )}
+                  <div className="space-y-2">
+                    {recycledConsumptions.map((c, idx) => {
+                      const available = recycledAvailability(c.article_id);
+                      return (
+                        <div key={idx} className="flex items-center gap-2">
+                          <select
+                            value={c.article_id}
+                            onChange={(e) => setRecycledConsumptions(recycledConsumptions.map((line, i) => i === idx ? { ...line, article_id: e.target.value } : line))}
+                            className="flex-1 bg-white border border-slate-300 rounded-lg p-2 font-medium"
+                          >
+                            {articles.filter(a => recycledAvailability(a.id) > 0 || a.id === c.article_id).map(a => (
+                              <option key={a.id} value={a.id}>[{a.code}] {a.name} ({a.unit})</option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            min="1"
+                            max={available}
+                            value={c.quantity}
+                            onChange={(e) => setRecycledConsumptions(recycledConsumptions.map((line, i) => i === idx ? { ...line, quantity: Math.max(1, Number(e.target.value)) } : line))}
+                            className="w-24 text-right font-mono font-bold text-slate-900 bg-white border border-slate-300 rounded-lg p-2"
+                          />
+                          <span className="text-[10px] text-slate-400 font-mono w-24 text-right">À recycler: {available}</span>
+                          <button
+                            type="button"
+                            onClick={() => setRecycledConsumptions(recycledConsumptions.filter((_, i) => i !== idx))}
+                            className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 

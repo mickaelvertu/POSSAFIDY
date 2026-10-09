@@ -64,6 +64,37 @@ export function updateStockQuantity(
   return { newStocks, beforeQty, afterQty };
 }
 
+export function getQuarantineStock(stocks: StoreStock[], storeId: string, articleId: string): number {
+  return stocks.find(s => s.store_id === storeId && s.article_id === articleId)?.quarantine_quantity || 0;
+}
+
+// Same as updateStockQuantity, but on the separate "to recycle" bucket that is never sellable.
+export function updateQuarantineQuantity(
+  stocks: StoreStock[],
+  storeId: string,
+  articleId: string,
+  delta: number
+): { newStocks: StoreStock[]; beforeQty: number; afterQty: number } {
+  const index = stocks.findIndex(s => s.store_id === storeId && s.article_id === articleId);
+  const beforeQty = index >= 0 ? stocks[index].quarantine_quantity || 0 : 0;
+  const afterQty = beforeQty + delta;
+  const newStocks = [...stocks];
+  if (index >= 0) {
+    newStocks[index] = { ...stocks[index], quarantine_quantity: Math.max(0, afterQty), updated_at: Date.now() };
+  } else {
+    newStocks.push({
+      id: `stock-${storeId}-${articleId}-${Date.now()}`,
+      store_id: storeId,
+      article_id: articleId,
+      quantity: 0,
+      quarantine_quantity: Math.max(0, afterQty),
+      reserved_quantity: 0,
+      updated_at: Date.now()
+    });
+  }
+  return { newStocks, beforeQty, afterQty };
+}
+
 // Filter stocks, movements, sales, transfers according to Section 12 criteria
 export function filterItems<T>(
   items: T[],

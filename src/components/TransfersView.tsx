@@ -10,9 +10,11 @@ import {
   UserProfile, 
   TransferStatus,
   TransferTypeCode,
+  ReturnReason,
+  RETURN_REASON_LABELS,
   StockMovementType 
 } from "../types";
-import { generateRef, getArticleStock } from "../services/stockService";
+import { generateRef, getArticleStock, getQuarantineStock } from "../services/stockService";
 import { 
   ArrowRightLeft, 
   Plus, 
@@ -115,9 +117,10 @@ export default function TransfersView({
   // New transfer form state
   const [sourceStoreId, setSourceStoreId] = useState(stores[0]?.id || "");
   const [destStoreId, setDestStoreId] = useState(stores[1]?.id || "");
-  const [transferLines, setTransferLines] = useState<Array<{ article_id: string; quantity: number; query?: string }>>([
+  const [transferLines, setTransferLines] = useState<Array<{ article_id: string; quantity: number; query?: string; return_reason?: ReturnReason; batch_number?: string; expiry_date?: string }>>([
     { article_id: articles[0]?.id || "", quantity: 10 }
   ]);
+  const [transferKind, setTransferKind] = useState<"STANDARD" | "STORE_RETURN" | "RECYCLING">("STANDARD");
   const [transferNote, setTransferNote] = useState("");
 
   // Inspection form state for reception
@@ -133,13 +136,14 @@ export default function TransfersView({
     ? activeStores
     : activeStores.filter(store => currentUser.storeIds.includes(store.id));
   const getTransferArticles = (destinationStoreId: string) => {
+    if (transferKind !== "STANDARD") return articles.filter(article => article.article_type === "RESALE");
     const destination = stores.find(store => store.id === destinationStoreId);
     return destination?.store_type === "POS" || destination?.store_type === "RESELLER"
       ? articles.filter(article => article.article_type === "RESALE")
       : articles;
   };
   const getDispatchableStock = (storeId: string, articleId: string, excludeTransferId?: string) => {
-    const stock = getArticleStock(stocks, storeId, articleId);
+    const stock = transferKind === "RECYCLING" ? getQuarantineStock(stocks, storeId, articleId) : getArticleStock(stocks, storeId, articleId);
     const pending = transfers
       .filter(transfer => transfer.id !== excludeTransferId && transfer.source_store_id === storeId && ["DRAFT", "APPROVED"].includes(transfer.status))
       .flatMap(transfer => transfer.lines)
@@ -271,6 +275,26 @@ export default function TransfersView({
   };
 
   // Filter transfers
+  const returnsByStore = Object.values(
+    transfers
+      .filter(transfer => transfer.type === "STORE_RETURN" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status))
+      .flatMap(transfer => transfer.lines.map(line => ({ transfer, line })))
+      .filter(({ line }) => line.quantity_accepted > 0)
+      .reduce<Record<string, { key: string; storeName: string; reasonLabel: string; quantity: number; value: number }>>((rows, { transfer, line }) => {
+        const key = `${transfer.source_store_id}:${line.return_reason || ""}`;
+        const row = rows[key] || {
+          key,
+          storeName: getStoreName(transfer.source_store_id),
+          reasonLabel: line.return_reason ? RETURN_REASON_LABELS[line.return_reason] : "Non précisé",
+          quantity: 0,
+          value: 0
+        };
+        row.quantity += line.quantity_accepted;
+        row.value += line.quantity_accepted * (articles.find(article => article.id === line.article_id)?.prix_achat || 0);
+        rows[key] = row;
+        return rows;
+      }, {})
+  );
   const filteredTransfers = transfers.filter(t => {
     if (filterStatus !== "ALL" && t.status !== filterStatus) return false;
     if (searchQuery.trim() !== "") {
@@ -283,8 +307,20 @@ export default function TransfersView({
     return true;
   });
 
+  const manufacturerStores = stores.filter(store => store.store_type === "MANUFACTURER" && store.is_active);
+  const changeTransferKind = (kind: "STANDARD" | "STORE_RETURN" | "RECYCLING") => {
+    setTransferKind(kind);
+    if (kind === "STORE_RETURN" && primaryCentralStore) setDestStoreId(primaryCentralStore.id);
+    if (kind === "RECYCLING") {
+      if (manufacturerStores[0]) setDestStoreId(manufacturerStores[0].id);
+      if (primaryCentralStore && sourceStores.some(store => store.id === primaryCentralStore.id)) setSourceStoreId(primaryCentralStore.id);
+    }
+    setTransferLines(lines => lines.map(line => ({ ...line, article_id: "", query: undefined })));
+  };
+
   const handleOpenCreateModal = () => {
     setEditingTransfer(null);
+    setTransferKind("STANDARD");
     const sourceStoreId = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"
       ? primaryCentralStore?.id || sourceStores[0]?.id || ""
       : sourceStores[0]?.id || "";
@@ -301,11 +337,15 @@ export default function TransfersView({
   const handleOpenEditModal = (transfer: StockTransfer) => {
     if (transfer.status !== "DRAFT" || transfer.requested_by !== currentUser.uid) return;
     setEditingTransfer(transfer);
+    setTransferKind(transfer.type === "STORE_RETURN" || transfer.type === "RECYCLING" ? transfer.type : "STANDARD");
     setSourceStoreId(transfer.source_store_id);
     setDestStoreId(transfer.destination_store_id);
     setTransferLines(transfer.lines.map(line => ({
       article_id: line.article_id,
-      quantity: line.quantity_sent
+      quantity: line.quantity_sent,
+      return_reason: line.return_reason,
+      batch_number: line.batch_number,
+      expiry_date: line.expiry_date
     })));
     setTransferNote(transfer.note || "");
     setIsCreateModalOpen(true);
@@ -348,6 +388,21 @@ export default function TransfersView({
     }
 
     const destinationStore = stores.find(store => store.id === destStoreId);
+    const sourceStore = stores.find(store => store.id === sourceStoreId);
+    if (transferKind === "STORE_RETURN") {
+      if (destinationStore?.store_type !== "CENTRAL_WAREHOUSE" || sourceStore?.store_type === "CENTRAL_WAREHOUSE") {
+        alert("Un retour doit être envoyé d'un magasin vers un entrepôt.");
+        return;
+      }
+      if (transferLines.some(line => !line.return_reason)) {
+        alert("Indiquez le motif de retour de chaque article.");
+        return;
+      }
+    }
+    if (transferKind === "RECYCLING" && (sourceStore?.store_type !== "CENTRAL_WAREHOUSE" || destinationStore?.store_type !== "MANUFACTURER")) {
+      alert("Un transfert de recyclage doit aller d'un entrepôt vers un magasin de production.");
+      return;
+    }
     const transferArticles = getTransferArticles(destStoreId);
     if (destinationStore?.store_type === "POS" || destinationStore?.store_type === "RESELLER") {
       const rawMaterialLine = transferLines.find(line => articles.find(article => article.id === line.article_id)?.article_type === "RAW_MATERIAL");
@@ -377,7 +432,7 @@ export default function TransfersView({
       return;
     }
 
-    const type = getTransferTypeCode(sourceStoreId, destStoreId);
+    const type = transferKind === "STANDARD" ? getTransferTypeCode(sourceStoreId, destStoreId) : transferKind;
     const transferNumber = generateRef("TRF", transfers.length);
     const transferId = editingTransfer?.id || `trf-${crypto.randomUUID()}`;
 
@@ -394,6 +449,9 @@ export default function TransfersView({
         quantity_received: 0,
         quantity_accepted: 0,
         quantity_rejected: 0,
+        ...(transferKind !== "STANDARD" && line.return_reason ? { return_reason: line.return_reason } : {}),
+        ...(transferKind !== "STANDARD" && line.batch_number?.trim() ? { batch_number: line.batch_number.trim() } : {}),
+        ...(transferKind !== "STANDARD" && line.expiry_date ? { expiry_date: line.expiry_date } : {})
       };
     });
 
@@ -428,7 +486,9 @@ export default function TransfersView({
 
   const transferFormIssue = sourceStoreId === destStoreId
     ? "Choisissez deux magasins différents pour créer le transfert."
-    : transferLines.some(line => !line.article_id)
+    : transferKind === "STORE_RETURN" && transferLines.some(line => !line.return_reason)
+      ? "Indiquez le motif de retour de chaque article."
+      : transferLines.some(line => !line.article_id)
       ? "Sélectionnez un article dans chaque ligne avant de continuer."
       : transferLines.some(line => {
         const requested = transferLines
@@ -577,6 +637,32 @@ export default function TransfersView({
 
       </div>
 
+      {returnsByStore.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 mb-2">Retours reçus par magasin source</h3>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-slate-500 border-b border-slate-100">
+                <th className="py-1.5">Magasin</th>
+                <th className="py-1.5">Motif</th>
+                <th className="py-1.5 text-right">Quantité</th>
+                <th className="py-1.5 text-right">Valeur (prix d'achat, Ar)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {returnsByStore.map(row => (
+                <tr key={row.key} className="border-b border-slate-50">
+                  <td className="py-1.5 font-semibold text-slate-800">{row.storeName}</td>
+                  <td className="py-1.5">{row.reasonLabel}</td>
+                  <td className="py-1.5 text-right font-mono">{row.quantity}</td>
+                  <td className="py-1.5 text-right font-mono">{row.value.toLocaleString("fr-FR")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Transfers List */}
       <div className="space-y-4">
         {filteredTransfers.length > 0 ? (
@@ -612,7 +698,7 @@ export default function TransfersView({
                       {t.transfer_number}
                     </span>
                     <span className="text-xs font-semibold text-slate-500 font-mono">
-                      Type: {t.type}
+                      Type: {{ STORE_RETURN: "Retour magasin", RECYCLING: "Recyclage" }[t.type as string] || t.type}
                     </span>
                     <span className="text-xs text-slate-400">
                       {new Date(t.created_at).toLocaleDateString("fr-FR")}
@@ -1026,6 +1112,23 @@ export default function TransfersView({
             </div>
 
             <form onSubmit={handleSaveNewTransfer} className="mt-5 space-y-5">
+              <section aria-labelledby="transfer-kind-heading">
+                <h4 id="transfer-kind-heading" className="mb-2 text-sm font-bold text-slate-800">Nature du transfert</h4>
+                <select
+                  value={transferKind}
+                  disabled={Boolean(editingTransfer)}
+                  onChange={event => changeTransferKind(event.target.value as "STANDARD" | "STORE_RETURN" | "RECYCLING")}
+                  className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 disabled:bg-slate-100"
+                >
+                  <option value="STANDARD">Transfert standard</option>
+                  <option value="STORE_RETURN">Retour magasin → entrepôt (défaut, péremption, étiquette usée)</option>
+                  <option value="RECYCLING">Entrepôt → magasin de production (recyclage)</option>
+                </select>
+                {transferKind === "STORE_RETURN" && (
+                  <p className="mt-2 text-xs text-slate-500">L'entrepôt réceptionne les articles, puis les envoie en production, qui décide : recycler ou détruire.</p>
+                )}
+              </section>
+
               <section aria-labelledby="transfer-route-heading">
                 <div className="mb-2">
                   <h4 id="transfer-route-heading" className="text-sm font-bold text-slate-800">1. Trajet</h4>
@@ -1174,6 +1277,38 @@ export default function TransfersView({
                           </button>
                           )}
                         </div>
+                        {transferKind !== "STANDARD" && (
+                          <div className="grid grid-cols-1 gap-2 sm:col-span-3 sm:grid-cols-3">
+                            <select
+                              aria-label={`Motif de la ligne ${idx + 1}`}
+                              value={line.return_reason || ""}
+                              onChange={event => setTransferLines(lines => lines.map((item, i) => i === idx
+                                ? { ...item, return_reason: (event.target.value || undefined) as ReturnReason | undefined }
+                                : item))}
+                              className="rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-900"
+                            >
+                              <option value="">Motif{transferKind === "STORE_RETURN" ? " (obligatoire)" : ""}…</option>
+                              {(Object.keys(RETURN_REASON_LABELS) as ReturnReason[]).map(reason => (
+                                <option key={reason} value={reason}>{RETURN_REASON_LABELS[reason]}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              aria-label={`Lot de la ligne ${idx + 1}`}
+                              placeholder="N° de lot (optionnel)"
+                              value={line.batch_number || ""}
+                              onChange={event => setTransferLines(lines => lines.map((item, i) => i === idx ? { ...item, batch_number: event.target.value } : item))}
+                              className="rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-900"
+                            />
+                            <input
+                              type="date"
+                              aria-label={`Date de péremption de la ligne ${idx + 1}`}
+                              value={line.expiry_date || ""}
+                              onChange={event => setTransferLines(lines => lines.map((item, i) => i === idx ? { ...item, expiry_date: event.target.value } : item))}
+                              className="rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-900"
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
