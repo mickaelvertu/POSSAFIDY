@@ -500,12 +500,14 @@ export interface AuditLog {
 }
 
 // 10. Filtres généraux obligatoires
+export type MovementDirection = "ALL" | "IN" | "OUT";
 export interface GeneralFilters {
   startDate?: string;
   endDate?: string;
   storeIds: string[]; // multi-sélection
   statuses: string[]; // multi-sélection
   movementTypes: StockMovementType[]; // multi-sélection
+  movementDirection?: MovementDirection;
   categoryIds: string[]; // multi-sélection
   articleType?: "ALL" | ArticleTypeCode;
   searchRef?: string;
@@ -520,6 +522,7 @@ export interface GeneralFilters {
 export type ReportType = 
   | "STOCK_STATUS"
   | "STOCK_MOVEMENTS"
+  | "STOCK_LEDGER"
   | "TRANSFERS"
   | "RECEIPTS"
   | "DISCREPANCIES"

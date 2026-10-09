@@ -68,7 +68,8 @@ export default function SalesView({
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
 
   // New Sale Form
-  const eligibleStores = stores.filter(s => s.store_type === "POS" || (canCreateResellerSale && s.store_type === "CENTRAL_WAREHOUSE"));
+  // Sales are made from POS and reseller stores; the central warehouse only appears for the reseller-request flow.
+  const eligibleStores = stores.filter(s => s.store_type === "POS" || s.store_type === "RESELLER" || (canCreateResellerSale && s.store_type === "CENTRAL_WAREHOUSE"));
   const saleArticles = articles.filter(article => article.is_active && article.article_type === "RESALE");
   const [selectedStoreId, setSelectedStoreId] = useState(eligibleStores[0]?.id || stores[0]?.id || "");
   const [customerName, setCustomerName] = useState("Client Comptoir");

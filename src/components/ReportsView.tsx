@@ -13,6 +13,7 @@ import {
   AuditLog, 
   UserProfile,
   StockMovementType,
+  MovementDirection,
   ArticleTypeCode
 } from "../types";
 import { filterReportData, getReportKpis } from "../services/reportService";
@@ -72,6 +73,7 @@ export default function ReportsView({
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedMovementTypes, setSelectedMovementTypes] = useState<StockMovementType[]>([]);
+  const [movementDirection, setMovementDirection] = useState<MovementDirection>("ALL");
   const [articleType, setArticleType] = useState<"ALL" | ArticleTypeCode>("ALL");
   const [searchRef, setSearchRef] = useState<string>("");
   const [minQty, setMinQty] = useState<number | undefined>(undefined);
@@ -88,6 +90,7 @@ export default function ReportsView({
   }> = [
     { type: "STOCK_STATUS", number: 1, title: "État du stock", description: "Quantités disponibles par magasin, catégorie et valorisation", icon: Boxes, color: "text-blue-600 bg-blue-50 border-blue-200" },
     { type: "STOCK_MOVEMENTS", number: 2, title: "Mouvements de stock", description: "Traçabilité des 14 types de flux avec stocks avant/après", icon: SlidersHorizontal, color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
+    { type: "STOCK_LEDGER", number: 14, title: "Grille des mouvements (Excel)", description: "Par article : stock avant, puis chaque variation (+4 transfert, −1 vente…) et stock après", icon: SlidersHorizontal, color: "text-cyan-600 bg-cyan-50 border-cyan-200" },
     { type: "TRANSFERS", number: 3, title: "Transferts", description: "Registre des expéditions entre dépôt central et points de vente", icon: ArrowRightLeft, color: "text-amber-600 bg-amber-50 border-amber-200" },
     { type: "RECEIPTS", number: 4, title: "Réceptions", description: "Rapport de conformité des réceptions contrôlées", icon: Truck, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
     { type: "DISCREPANCIES", number: 5, title: "Écarts", description: "Anomalies, rejets de livraison et avaries de transport", icon: AlertTriangle, color: "text-rose-600 bg-rose-50 border-rose-200" },
@@ -107,13 +110,14 @@ export default function ReportsView({
     storeIds: selectedStoreIds,
     statuses: selectedStatuses,
     movementTypes: selectedMovementTypes,
+    movementDirection,
     categoryIds: selectedCategoryIds,
     articleType,
     searchRef: searchRef || undefined,
     minQty,
     maxQty,
     customerName: customerName || undefined
-  }), [startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
+  }), [startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
 
   const filteredData = useMemo(() => filterReportData({
     articles,
@@ -185,7 +189,7 @@ export default function ReportsView({
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-blue-600" />
             <h2 className="text-lg font-bold text-slate-900 font-serif">
-              Les 13 Rapports PDF Officiels GILEADA
+              Les 14 Rapports Officiels GILEADA
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1">
@@ -271,6 +275,7 @@ export default function ReportsView({
               setSelectedCategoryIds([]);
               setSelectedStatuses([]);
               setSelectedMovementTypes([]);
+              setMovementDirection("ALL");
               setArticleType("ALL");
               setSearchRef("");
               setMinQty(undefined);
@@ -286,7 +291,7 @@ export default function ReportsView({
         {/* Row 1: Date Range, Article Type, Search Ref */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           
-          {statusOptions.length > 0 && <div>
+          {(statusOptions.length > 0 || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
             <label className="block font-bold text-slate-700 mb-1">Date Début :</label>
             <input
               type="date"
@@ -432,7 +437,17 @@ export default function ReportsView({
               })}
             </div>
           </div>
-          {selectedReport === "STOCK_MOVEMENTS" && movementTypeOptions.length > 0 && (
+          {(selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && (
+            <div>
+              <p className="mb-2 text-xs font-bold text-slate-700">Sens du mouvement :</p>
+              <div className="flex flex-wrap gap-2">
+                {([["ALL", "Entrées et sorties"], ["IN", "Entrées (+)"], ["OUT", "Sorties (−)"]] as Array<[MovementDirection, string]>).map(([direction, label]) => (
+                  <button key={direction} type="button" aria-pressed={movementDirection === direction} onClick={() => setMovementDirection(direction)} className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold ${movementDirection === direction ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{label}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {(selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && movementTypeOptions.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-bold text-slate-700">Types de mouvement :</p>
               <div className="flex flex-wrap gap-2">

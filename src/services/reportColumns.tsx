@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { formatSignedQuantity, LedgerBlock } from "./stockLedger";
 import {
   Article,
   AuditLog,
@@ -35,6 +36,7 @@ export interface ReportColumnsContext {
   getArticle: (id: string) => Article | undefined;
   reportStocks: StoreStock[];
   reportMovements: StockMovement[];
+  reportLedger: LedgerBlock[];
   reportTransfers: StockTransfer[];
   reportSales: Sale[];
   reportProductions: Production[];
@@ -92,6 +94,29 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
         { key: "ref", label: "Réf / Opérateur", value: m => m.reference_number, render: m => <span><span className="font-mono font-semibold">{m.reference_number}</span> ({m.created_by_name})</span> }
       ];
       return { columns, rows, rowKey: m => m.id };
+    }
+
+    case "STOCK_LEDGER": {
+      type Row = { key: string; article: string; store: string; date: string; label: string; change: number | string; balance: number; reference: string };
+      const dateText = (timestamp: number) => new Date(timestamp).toLocaleString("fr-FR");
+      const rows: Row[] = ctx.reportLedger.flatMap(block => {
+        const base = { article: block.articleName + (block.articleCode ? " [" + block.articleCode + "]" : ""), store: block.storeName };
+        return [
+          { ...base, key: block.key + "::before", date: dateText(block.firstDate), label: "Stock avant", change: "", balance: block.before, reference: "" },
+          ...block.entries.map(entry => ({ ...base, key: entry.id, date: dateText(entry.date), label: entry.cause, change: formatSignedQuantity(entry.change), balance: entry.balanceAfter, reference: entry.reference })),
+          { ...base, key: block.key + "::after", date: dateText(block.lastDate), label: "Stock après", change: "", balance: block.after, reference: "" }
+        ];
+      });
+      const columns: ReportColumn<Row>[] = [
+        { key: "article", label: "Article", value: r => r.article },
+        { key: "store", label: "Magasin", value: r => r.store },
+        { key: "date", label: "Date", value: r => r.date },
+        { key: "label", label: "Opération", value: r => r.label },
+        { key: "change", label: "Variation", align: "right", value: r => r.change },
+        { key: "balance", label: "Stock", align: "right", value: r => r.balance },
+        { key: "ref", label: "Référence", value: r => r.reference }
+      ];
+      return { columns, rows, rowKey: r => r.key };
     }
 
     case "TRANSFERS": {

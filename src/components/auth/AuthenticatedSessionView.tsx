@@ -13,6 +13,7 @@ import {
   deleteStore,
   loadCatalogData,
   loadInventoryData,
+  loadStores,
   loadProcurementData,
   receivePurchase,
   recordSupplierPayment,
@@ -148,56 +149,94 @@ export default function AuthenticatedSessionView() {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadInventory() {
-      try {
-        let unitAuditLogs: AuditLog[] = [];
-        const [inventory, catalog, procurement, operations] = await Promise.all([
-          loadInventoryData(canManageStores ? undefined : user?.assignedStores),
-          loadCatalogData(),
-          canManageStores ? loadProcurementData() : Promise.resolve({ suppliers: [], purchases: [] }),
-          loadOperationalData({
-            sales: canManageStores || Boolean(user?.permissions.includes("sales.view") || user?.permissions.includes("credit.manage")),
-            productions: canManageStores || Boolean(user?.permissions.includes("production.view")),
-            audit: true,
-            auditUserOnly: Boolean(user?.permissions.includes("credit.manage") && !canManageStores),
-            storeIds: canManageStores || user?.permissions.includes("credit.manage") ? undefined : user?.assignedStores,
-            userId: user?.id || ""
-          })
-        ]);
-        const loadedUnits = canManageStores
-          ? await loadUnits(catalog.articles, user ? toAppUser(user) : undefined, entries => { unitAuditLogs = entries; })
-          : [];
-        let loadedCreditCustomers: CreditCustomer[] = [];
-        if (user?.role === "REVENDEUR") {
-          const linkedCustomer = await loadCreditCustomerForUser(user.id);
-          loadedCreditCustomers = linkedCustomer ? [linkedCustomer] : [];
-        } else if (user?.permissions.includes("credit.sales") || user?.permissions.includes("credit.manage") || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") {
-          loadedCreditCustomers = await loadCreditCustomers();
+    const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+    // Bounded retry with backoff: a transient Firestore failure must not leave a screen empty, and must never loop forever.
+    const withRetry = async <T,>(label: string, task: () => Promise<T>, attempts = 3): Promise<T | undefined> => {
+      for (let attempt = 1; attempt <= attempts && isMounted; attempt++) {
+        try {
+          return await task();
+        } catch (error) {
+          console.error(`${label} Firestore load failed (attempt ${attempt}/${attempts}):`, error);
+          if (attempt < attempts) await wait(1000 * 2 ** (attempt - 1));
         }
-        const resellerStocks = user?.role === "REVENDEUR"
-          ? await loadResellerStocks(inventory.stores, catalog.articles)
-          : inventory.stocks;
-        if (!isMounted) return;
-        setInventoryStores(inventory.stores);
-        setStocks(resellerStocks);
-        setMovements(inventory.movements);
-        setTransfers(inventory.transfers);
-        setArticles(catalog.articles);
-        setCategories(catalog.categories);
-        setSales(operations.sales);
-        setCreditCustomers(loadedCreditCustomers);
-        setProductions(operations.productions);
-        setAuditLogs([...unitAuditLogs, ...operations.auditLogs]);
-        setUnits(loadedUnits);
-        if (canManageStores) {
-          setSuppliers(procurement.suppliers);
-          setPurchases(procurement.purchases);
-        }
-      } catch (error) {
-        console.error("Inventory Firestore load failed:", error);
       }
+      return undefined;
+    };
+
+    async function loadInventory() {
+      if (!user) return;
+      const isReseller = user.role === "REVENDEUR";
+      const canManageCredit = Boolean(user.permissions.includes("credit.manage"));
+      let unitAuditLogs: AuditLog[] = [];
+
+      // Each block is independent: stores appear as soon as they load, even if another collection fails.
+      const storesPromise = withRetry("Stores", loadStores);
+      const catalogPromise = withRetry("Catalog", async () => {
+        const catalog = await loadCatalogData();
+        const loadedUnits = canManageStores
+          ? await loadUnits(catalog.articles, toAppUser(user), entries => { unitAuditLogs = entries; })
+          : [];
+        return { catalog, loadedUnits };
+      });
+
+      await Promise.all([
+        storesPromise.then(loadedStores => {
+          if (isMounted && loadedStores) setInventoryStores(loadedStores);
+        }),
+        catalogPromise.then(result => {
+          if (!isMounted || !result) return;
+          setArticles(result.catalog.articles);
+          setCategories(result.catalog.categories);
+          setUnits(result.loadedUnits);
+        }),
+        withRetry("Inventory", () => loadInventoryData(canManageStores ? undefined : user.assignedStores)).then(async inventory => {
+          if (!isMounted || !inventory) return;
+          setMovements(inventory.movements);
+          setTransfers(inventory.transfers);
+          if (!isReseller) {
+            setStocks(inventory.stocks);
+            return;
+          }
+          const [loadedStores, result] = await Promise.all([storesPromise, catalogPromise]);
+          if (!loadedStores || !result) return;
+          const resellerStocks = await withRetry("Reseller stocks", () => loadResellerStocks(loadedStores, result.catalog.articles));
+          if (isMounted && resellerStocks) setStocks(resellerStocks);
+        }),
+        canManageStores
+          ? withRetry("Procurement", loadProcurementData).then(procurement => {
+              if (!isMounted || !procurement) return;
+              setSuppliers(procurement.suppliers);
+              setPurchases(procurement.purchases);
+            })
+          : Promise.resolve(),
+        withRetry("Operations", () => loadOperationalData({
+          sales: canManageStores || Boolean(user.permissions.includes("sales.view") || canManageCredit),
+          productions: canManageStores || Boolean(user.permissions.includes("production.view")),
+          audit: true,
+          auditUserOnly: Boolean(canManageCredit && !canManageStores),
+          storeIds: canManageStores || canManageCredit ? undefined : user.assignedStores,
+          userId: user.id || ""
+        })).then(async operations => {
+          if (!operations) return;
+          await catalogPromise;
+          if (!isMounted) return;
+          setSales(operations.sales);
+          setProductions(operations.productions);
+          setAuditLogs([...unitAuditLogs, ...operations.auditLogs]);
+        }),
+        withRetry("Credit customers", async () => {
+          if (isReseller) {
+            const linkedCustomer = await loadCreditCustomerForUser(user.id);
+            return linkedCustomer ? [linkedCustomer] : [];
+          }
+          if (user.permissions.includes("credit.sales") || canManageCredit || canManageStores) return loadCreditCustomers();
+          return [] as CreditCustomer[];
+        }).then(customers => {
+          if (isMounted && customers) setCreditCustomers(customers);
+        })
+      ]);
     }
-    if (user) loadInventory();
+    void loadInventory();
     return () => {
       isMounted = false;
     };

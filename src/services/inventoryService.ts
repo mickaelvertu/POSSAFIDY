@@ -37,6 +37,10 @@ function omitUndefined<T>(value: T): T {
   return value;
 }
 
+export async function loadStores(): Promise<Store[]> {
+  return (await getDocs(collection(db, STORES_COLLECTION))).docs.map(snapshot => snapshot.data() as Store);
+}
+
 export async function loadInventoryData(storeIds?: string[]): Promise<{ stores: Store[]; stocks: StoreStock[]; movements: StockMovement[]; transfers: StockTransfer[] }> {
   const restricted = storeIds !== undefined;
   const loadRestricted = async <T>(collectionName: string, field: string): Promise<T[]> => {

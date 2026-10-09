@@ -76,6 +76,7 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
     const store = storeById.get(movement.store_id);
     return matchesStore(movement.store_id) && isInPeriod(movement.created_at, filters) &&
       (!filters.movementTypes.length || filters.movementTypes.includes(movement.movement_type)) &&
+      (!filters.movementDirection || filters.movementDirection === "ALL" || (filters.movementDirection === "IN" ? movement.quantity > 0 : movement.quantity < 0)) &&
       matchesArticle(movement.article_id) && matchesQuantity(Math.abs(movement.quantity), filters) &&
       matchesQuery(movement.reference_number, movement.reference_type, movement.notes, article?.code, article?.name, store?.name);
   });
@@ -157,6 +158,7 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Magasins concernés", value: String(new Set(data.stocks.map(stock => stock.store_id)).size) }
       ];
     case "STOCK_MOVEMENTS":
+    case "STOCK_LEDGER":
       return [
         { label: "Mouvements", value: String(data.movements.length) },
         { label: "Entrées", value: String(movementEntries) },

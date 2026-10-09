@@ -15,6 +15,8 @@ import {
 import { filterReportData } from "../services/reportService";
 import { downloadReportCsv, getReportTableConfig } from "../services/reportColumns";
 import ReportDataTable, { ReportSortState } from "./ReportDataTable";
+import StockLedgerGrid from "./StockLedgerGrid";
+import { buildStockLedger } from "../services/stockLedger";
 import { 
   Printer, 
   Download, 
@@ -69,6 +71,14 @@ export default function ReportViewer({
   const reportStocks = filteredData.stocks;
   const reportTransfers = filteredData.transfers;
   const reportMovements = filteredData.movements;
+  // The ledger needs every movement (balances), so the direction filter is applied afterwards, per entry.
+  const reportLedger = useMemo(() => reportType === "STOCK_LEDGER"
+    ? buildStockLedger(
+        filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs }, { ...filters, movementDirection: "ALL" }).movements,
+        { getArticle, getStore: id => stores.find(store => store.id === id), transfers, sales },
+        filters.movementDirection || "ALL"
+      )
+    : [], [reportType, articles, stores, stocks, transfers, movements, sales, productions, auditLogs, filters]);
   const reportSales = filteredData.sales;
   const reportProductions = filteredData.productions;
   const reportAuditLogs = filteredData.auditLogs;
@@ -115,6 +125,7 @@ export default function ReportViewer({
     getArticle,
     reportStocks,
     reportMovements,
+    reportLedger,
     reportTransfers,
     reportSales,
     reportProductions,
@@ -123,7 +134,7 @@ export default function ReportViewer({
     salesByArticle,
     salesByCategory,
     filteredSalesLines
-  }), [reportType, reportStocks, reportMovements, reportTransfers, reportSales, reportProductions, reportAuditLogs, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
+  }), [reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
 
   const hiddenKeys = useMemo(() => new Set(hiddenKeysByReport[reportType] || []), [hiddenKeysByReport, reportType]);
 
@@ -168,6 +179,8 @@ export default function ReportViewer({
     if (filters.statuses.length > 0) {
       parts.push(`Statuts: ${filters.statuses.join(", ")}`);
     }
+    if (filters.movementDirection === "IN") parts.push("Mouvements: entrées uniquement");
+    if (filters.movementDirection === "OUT") parts.push("Mouvements: sorties uniquement");
     return parts;
   };
 
@@ -175,6 +188,7 @@ export default function ReportViewer({
   const REPORT_TITLES: Record<ReportType, string> = {
     STOCK_STATUS: "RAPPORT OFFICIEL DE L'ÉTAT DU STOCK MULTI-MAGASINS",
     STOCK_MOVEMENTS: "JOURNAL DÉTAILLÉ DES MOUVEMENTS DE STOCK (TOUS FLUX)",
+    STOCK_LEDGER: "GRILLE DES MOUVEMENTS DE STOCK PAR ARTICLE (VUE EXCEL)",
     TRANSFERS: "REGISTRE GÉNÉRAL DES EXPÉDITIONS & TRANSFERTS",
     RECEIPTS: "JOURNAL DE RÉCEPTION & CONTRÔLE DES MARCHANDISES",
     DISCREPANCIES: "RAPPORT DES ÉCARTS, AVARIES ET REJETS DE LIVRAISON",
@@ -208,7 +222,7 @@ export default function ReportViewer({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative print:hidden">
+            {reportType !== "STOCK_LEDGER" && <div className="relative print:hidden">
               <button
                 type="button"
                 onClick={() => setIsColumnMenuOpen(open => !open)}
@@ -232,7 +246,7 @@ export default function ReportViewer({
                   ))}
                 </div>
               )}
-            </div>
+            </div>}
             <button
               type="button"
               onClick={handleExport}
@@ -320,14 +334,18 @@ export default function ReportViewer({
           </div>
 
           {/* REPORT CONTENT (colonnes modulables, triables & exportables) */}
-          <ReportDataTable
-            columns={tableConfig.columns}
-            rows={tableConfig.rows}
-            rowKey={tableConfig.rowKey}
-            hiddenKeys={hiddenKeys}
-            sort={sort}
-            onSort={handleSort}
-          />
+          {reportType === "STOCK_LEDGER" ? (
+            <StockLedgerGrid blocks={reportLedger} />
+          ) : (
+            <ReportDataTable
+              columns={tableConfig.columns}
+              rows={tableConfig.rows}
+              rowKey={tableConfig.rowKey}
+              hiddenKeys={hiddenKeys}
+              sort={sort}
+              onSort={handleSort}
+            />
+          )}
 
           {/* Footer & Signature Section */}
           <div className="mt-12 pt-6 border-t-2 border-slate-300 flex justify-between items-end text-xs text-slate-600">
