@@ -653,7 +653,7 @@ export default function SalesView({
                   </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-base font-black text-slate-900 md:text-lg">{editingSale ? `Modifier le brouillon ${editingSale.sale_number}` : "Nouvelle vente"}</h3>
-                    <p className="truncate text-[11px] text-slate-500">{currentStore?.name} · {isResellerSale ? "Demande revendeur" : "Tarif public"}</p>
+                    <p className="truncate text-[11px] text-slate-500">{currentStore?.name} · {currentStore?.store_type === "RESELLER" ? "Tarif revendeur" : isResellerSale ? "Demande revendeur" : "Tarif public"}</p>
                     {isResellerSale && <p className="mt-1 text-[11px] font-semibold text-amber-700">La demande restera en brouillon jusqu'à l'approbation d'un administrateur.</p>}
                   </div>
                 </div>
