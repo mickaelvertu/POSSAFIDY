@@ -7,7 +7,10 @@ interface ExpensesViewProps {
   stores: Store[];
   currentUser: UserProfile;
   canCreate: boolean;
+  onValidateExpense: (expense: Expense) => Promise<void>;
+  onDeleteExpense: (expense: Expense) => Promise<void>;
   onCreateExpense: (expense: Expense) => Promise<void>;
+  onUpdateExpense: (original: Expense, updated: Expense) => Promise<void>;
 }
 
 const CATEGORIES: Array<{ value: ExpenseCategory; label: string }> = [
@@ -40,8 +43,9 @@ const dateLabel = (timestamp: number) => new Date(timestamp).toLocaleDateString(
 const categoryLabel = (category: ExpenseCategory) => CATEGORIES.find(item => item.value === category)?.label || "Autres frais";
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
 
-export default function ExpensesView({ expenses, stores, currentUser, canCreate, onCreateExpense }: ExpensesViewProps) {
+export default function ExpensesView({ expenses, stores, currentUser, canCreate, onCreateExpense, onUpdateExpense, onValidateExpense, onDeleteExpense }: ExpensesViewProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [category, setCategory] = useState<ExpenseCategory>("RENT");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -56,7 +60,50 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
   const [monthFilter, setMonthFilter] = useState("");
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const canUseGlobalExpense = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN";
+  const [actionError, setActionError] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const canValidate = canCreate;
+  const canDelete = currentUser.roleId === "SUPER_ADMIN";
+  const openCreateForm = () => {
+    setEditingExpense(null);
+    setCategory("RENT");
+    setDescription("");
+    setAmount("");
+    setExpenseDate(dateInputValue(Date.now()));
+    setStoreId("");
+    setPayee("");
+    setPaymentMethod("CASH");
+    setPaymentStatus("PAID");
+    setReference("");
+    setNotes("");
+    setFormError("");
+    setIsFormOpen(true);
+  };
+  const openEditForm = (expense: Expense) => {
+    if (expense.status !== "DRAFT" || expense.created_by !== currentUser.uid) return;
+    setEditingExpense(expense);
+    setCategory(expense.category);
+    setDescription(expense.description);
+    setAmount(String(expense.amount));
+    setExpenseDate(dateInputValue(expense.expense_date));
+    setStoreId(expense.store_id || "");
+    setPayee(expense.payee || "");
+    setPaymentMethod(expense.payment_method);
+    setPaymentStatus(expense.payment_status);
+    setReference(expense.reference || "");
+    setNotes(expense.notes || "");
+    setFormError("");
+    setIsFormOpen(true);
+  };
+  const runAction = async (expense: Expense, action: "validate" | "delete") => {
+    if (action === "delete" && !window.confirm("Supprimer la dépense " + expense.expense_number + " ?")) return;
+    setBusyId(expense.id);
+    setActionError("");
+    try { await (action === "validate" ? onValidateExpense(expense) : onDeleteExpense(expense)); }
+    catch (error) { setActionError(error instanceof Error ? error.message : "Impossible de réaliser cette opération."); }
+    finally { setBusyId(null); }
+  };
+  const canUseGlobalExpense = currentUser.roleId === "SUPER_ADMIN";
 
   const visibleExpenses = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("fr-FR");
@@ -70,12 +117,13 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
   }, [expenses, monthFilter, search]);
 
   const currentMonthExpenses = expenses.filter(expense => {
+    if (expense.status === "DRAFT") return false;
     const date = new Date(expense.expense_date);
     const now = new Date();
     return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
   });
   const monthTotal = currentMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const pendingTotal = expenses.filter(expense => expense.payment_status === "PENDING").reduce((sum, expense) => sum + expense.amount, 0);
+  const pendingTotal = expenses.filter(expense => expense.status !== "DRAFT" && expense.payment_status === "PENDING").reduce((sum, expense) => sum + expense.amount, 0);
 
   const handleCreateExpense = async (event: FormEvent) => {
     event.preventDefault();
@@ -92,8 +140,10 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
 
     const timestamp = Date.now();
     const expense: Expense = {
-      id: `expense-${crypto.randomUUID()}`,
-      expense_number: `DEP-${new Date(timestamp).getFullYear()}-${String(timestamp).slice(-6)}`,
+      ...editingExpense,
+      status: "DRAFT",
+      id: editingExpense?.id || `expense-${crypto.randomUUID()}`,
+      expense_number: editingExpense?.expense_number || `DEP-${new Date(timestamp).getFullYear()}-${String(timestamp).slice(-6)}`,
       category,
       description: description.trim(),
       amount: numericAmount,
@@ -105,15 +155,16 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
       payment_status: paymentStatus,
       reference: reference.trim() || undefined,
       notes: notes.trim() || undefined,
-      created_by: currentUser.uid,
-      created_by_name: currentUser.displayName || currentUser.email,
-      created_at: timestamp
+      created_by: editingExpense?.created_by || currentUser.uid,
+      created_by_name: editingExpense?.created_by_name || currentUser.displayName || currentUser.email,
+      created_at: editingExpense?.created_at || timestamp
     };
 
     setIsSaving(true);
     setFormError("");
     try {
-      await onCreateExpense(expense);
+      if (editingExpense) await onUpdateExpense(editingExpense, expense);
+      else await onCreateExpense(expense);
       setDescription("");
       setAmount("");
       setPayee("");
@@ -121,6 +172,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
       setNotes("");
       setPaymentStatus("PAID");
       setExpenseDate(dateInputValue(Date.now()));
+      setEditingExpense(null);
       setIsFormOpen(false);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Impossible d'enregistrer cette dépense.");
@@ -139,9 +191,10 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
           </div>
           <p className="mt-1 text-xs text-slate-500">Suivi des charges, paiements et dépenses par magasin.</p>
         </div>
-        {canCreate && <button type="button" onClick={() => { setFormError(""); setIsFormOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800"><Plus className="h-4 w-4" /> Enregistrer une dépense</button>}
+        {canCreate && <button type="button" onClick={openCreateForm} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800"><Plus className="h-4 w-4" /> Enregistrer une dépense</button>}
       </header>
 
+      {actionError && <p role="alert" className="text-sm text-rose-700">{actionError}</p>}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white p-4"><p className="text-xs font-semibold text-slate-500">Dépenses du mois</p><p className="mt-1 text-xl font-bold text-slate-900">{money(monthTotal)}</p></div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-semibold text-amber-800">Reste à payer</p><p className="mt-1 text-xl font-bold text-amber-950">{money(pendingTotal)}</p></div>
@@ -162,7 +215,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-xs">
-              <thead className="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th className="px-4 py-3 font-bold">Dépense</th><th className="px-4 py-3 font-bold">Date / Magasin</th><th className="px-4 py-3 font-bold">Bénéficiaire</th><th className="px-4 py-3 font-bold">Paiement</th><th className="px-4 py-3 text-right font-bold">Montant</th></tr></thead>
+              <thead className="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th className="px-4 py-3 font-bold">Dépense</th><th className="px-4 py-3 font-bold">Date / Magasin</th><th className="px-4 py-3 font-bold">Bénéficiaire</th><th className="px-4 py-3 font-bold">Paiement</th><th className="px-4 py-3 text-right font-bold">Montant</th><th className="px-4 py-3 font-bold">Validation / Actions</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {visibleExpenses.map(expense => (
                   <tr key={expense.id} className="hover:bg-slate-50/70">
@@ -171,6 +224,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
                     <td className="px-4 py-3 text-slate-700">{expense.payee || "—"}<p className="mt-1 text-[10px] text-slate-500">{expense.reference || "Sans référence"}</p></td>
                     <td className="px-4 py-3 text-slate-700">{PAYMENT_METHODS.find(method => method.value === expense.payment_method)?.label || expense.payment_method}<p className={`mt-1 text-[10px] font-semibold ${expense.payment_status === "PAID" ? "text-emerald-700" : "text-amber-700"}`}>{expense.payment_status === "PAID" ? "Payée" : "À payer"}</p></td>
                     <td className="px-4 py-3 text-right font-bold text-slate-900">{money(expense.amount)}</td>
+                    <td className="px-4 py-3"><p className={expense.status === "DRAFT" ? "text-amber-700" : "text-emerald-700"}>{expense.status === "DRAFT" ? "Brouillon" : "Validée"}</p><div className="mt-2 flex gap-2">{canCreate && expense.status === "DRAFT" && expense.created_by === currentUser.uid && <button type="button" disabled={busyId !== null} onClick={() => openEditForm(expense)} className="font-semibold text-slate-700 disabled:opacity-50">Modifier</button>}{canValidate && (canDelete || expense.created_by === currentUser.uid) && expense.status === "DRAFT" && <button type="button" disabled={busyId !== null} onClick={() => runAction(expense, "validate")} className="font-semibold text-emerald-700 disabled:opacity-50">Valider</button>}{canDelete && <button type="button" disabled={busyId !== null} onClick={() => runAction(expense, "delete")} className="font-semibold text-rose-700 disabled:opacity-50">Supprimer</button>}</div></td>
                   </tr>
                 ))}
               </tbody>
@@ -182,21 +236,21 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setIsFormOpen(false); }}>
           <form onSubmit={handleCreateExpense} className="my-auto w-full max-w-2xl space-y-4 rounded-xl bg-white p-5 shadow-2xl sm:p-6">
-            <div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-bold text-slate-900">Nouvelle dépense</h3><p className="mt-1 text-xs text-slate-500">Saisissez les détails de la charge à suivre.</p></div><button type="button" onClick={() => setIsFormOpen(false)} aria-label="Fermer" className="rounded-md px-2 py-1 text-lg text-slate-500 hover:bg-slate-100">×</button></div>
+            <div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-bold text-slate-900">{editingExpense ? "Modifier le brouillon de dépense" : "Nouvelle dépense"}</h3><p className="mt-1 text-xs text-slate-500">La dépense sera enregistrée en brouillon et prise en compte après votre validation.</p></div><button type="button" onClick={() => setIsFormOpen(false)} aria-label="Fermer" className="rounded-md px-2 py-1 text-lg text-slate-500 hover:bg-slate-100">×</button></div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-xs font-semibold text-slate-700">Catégorie<select value={category} onChange={event => setCategory(event.target.value as ExpenseCategory)} className={inputClass}>{CATEGORIES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Montant (Ar)<input required type="number" min="1" step="any" value={amount} onChange={event => setAmount(event.target.value)} placeholder="0" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Motif / description (facultatif)<input value={description} onChange={event => setDescription(event.target.value)} placeholder="Facultatif" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Date<input required type="date" value={expenseDate} onChange={event => setExpenseDate(event.target.value)} className={inputClass} /></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense && <option value="">Tous magasins / siège</option>}{stores.filter(store => store.is_active).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense ? <option value="">Tous magasins / siège</option> : <option value="">Sélectionner un magasin</option>}{stores.filter(store => store.is_active && (canUseGlobalExpense || currentUser.storeIds.includes(store.id))).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Bénéficiaire / fournisseur<input value={payee} onChange={event => setPayee(event.target.value)} placeholder="Nom du bailleur ou prestataire" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Mode de paiement<select value={paymentMethod} onChange={event => setPaymentMethod(event.target.value as PaymentMethod)} className={inputClass}>{PAYMENT_METHODS.map(method => <option key={method.value} value={method.value}>{method.label}</option>)}</select></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Statut<select value={paymentStatus} onChange={event => setPaymentStatus(event.target.value as Expense["payment_status"])} className={inputClass}><option value="PAID">Payée</option><option value="PENDING">À payer</option></select></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700">Statut du paiement<select value={paymentStatus} onChange={event => setPaymentStatus(event.target.value as Expense["payment_status"])} className={inputClass}><option value="PAID">Payée</option><option value="PENDING">À payer</option></select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">N° facture / référence<input value={reference} onChange={event => setReference(event.target.value)} placeholder="Référence du justificatif" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Notes<textarea rows={2} value={notes} onChange={event => setNotes(event.target.value)} placeholder="Détails complémentaires" className={inputClass} /></label>
             </div>
             {formError && <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{formError}</p>}
-            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => setIsFormOpen(false)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Annuler</button><button disabled={isSaving} type="submit" className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50">{isSaving ? "Enregistrement..." : "Enregistrer la dépense"}</button></div>
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => setIsFormOpen(false)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Annuler</button><button disabled={isSaving} type="submit" className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50">{isSaving ? "Enregistrement..." : editingExpense ? "Enregistrer les modifications" : "Enregistrer le brouillon"}</button></div>
           </form>
         </div>
       )}

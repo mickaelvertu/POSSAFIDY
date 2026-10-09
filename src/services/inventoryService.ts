@@ -112,6 +112,21 @@ export async function updateDraftTransfer(
   });
 }
 
+export async function deleteDraftTransfer(transfer: StockTransfer, auditLog: AuditLog): Promise<void> {
+  await runTransaction(db, async transaction => {
+    const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
+    const snapshot = await transaction.get(transferRef);
+    if (!snapshot.exists() || (snapshot.data() as StockTransfer).status !== "DRAFT") {
+      throw new Error("Seul un transfert en brouillon peut être supprimé.");
+    }
+    transaction.delete(transferRef);
+    transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined({
+      ...auditLog,
+      old_value: snapshot.data()
+    }));
+  });
+}
+
 // Persists a transfer status change together with the stock/movement side effects it triggers (ship or receive).
 export async function saveTransferWithStockEffects(
   transfer: StockTransfer,

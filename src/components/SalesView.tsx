@@ -42,6 +42,7 @@ interface SalesViewProps {
   canCreateResellerSale: boolean;
   onCreateSale: (sale: Sale) => Promise<boolean>;
   onUpdateSale: (originalSale: Sale, sale: Sale) => Promise<boolean>;
+  onDeleteSale: (sale: Sale) => Promise<void>;
   onVerifySale: (saleId: string) => void;
   onValidateSale: (saleId: string) => void;
   onCancelSale: (saleId: string) => void;
@@ -57,6 +58,7 @@ export default function SalesView({
   canCreateResellerSale,
   onCreateSale,
   onUpdateSale,
+  onDeleteSale,
   onVerifySale,
   onValidateSale,
   onCancelSale
@@ -571,6 +573,20 @@ export default function SalesView({
                               <Pencil className="h-3 w-3" /> Modifier
                             </button>
                           )
+                        )}
+                        {sale.status === "DRAFT" && currentUser.roleId === "SUPER_ADMIN" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Supprimer le brouillon ${sale.sale_number} ?`)) {
+                                void onDeleteSale(sale);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 rounded border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50"
+                            title="Supprimer le brouillon (super administrateur)"
+                          >
+                            <Trash2 className="h-3 w-3" /> Supprimer
+                          </button>
                         )}
 
                         {sale.status === "DRAFT" && (
