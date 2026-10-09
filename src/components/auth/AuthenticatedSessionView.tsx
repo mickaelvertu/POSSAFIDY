@@ -67,7 +67,7 @@ import {
   Shield
 } from "lucide-react";
 
-const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "CONTROLEUR", "PRODUCTION", "COMPTABLE", "GESTIONNAIRE_CREDIT", "REVENDEUR"];
+const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "CONTROLEUR", "PRODUCTION", "COMPTABLE", "GESTIONNAIRE_CREDIT", "STAFF", "REVENDEUR"];
 
 function toAppUser(user: User): AppUser {
   const roleId = APP_ROLES.includes(user.role as AppRoleId) ? user.role as AppRoleId : "VENDEUR";

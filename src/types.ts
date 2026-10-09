@@ -12,6 +12,7 @@ export type AppRoleId =
   | "PRODUCTION"
   | "COMPTABLE"
   | "GESTIONNAIRE_CREDIT"
+  | "STAFF"
   | "REVENDEUR";
 
 export type AppPermission = string;

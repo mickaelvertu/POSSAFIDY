@@ -137,7 +137,7 @@ service cloud.firestore {
     }
 
     match /employees/{employeeId} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || (isActiveUser() && resource.data.get('user_id', null) == request.auth.uid);
       allow create: if isAdmin() || (
         request.auth.uid == employeeId &&
         request.resource.data.keys().hasOnly([
@@ -170,11 +170,15 @@ service cloud.firestore {
     }
 
     match /payroll/{payslipId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || (isActiveUser() &&
+        get(/databases/$(database)/documents/employees/$(resource.data.employee_id)).data.get('user_id', null) == request.auth.uid);
+      allow write: if isAdmin();
     }
 
     match /salaryAdvances/{advanceId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || (isActiveUser() &&
+        get(/databases/$(database)/documents/employees/$(resource.data.employee_id)).data.get('user_id', null) == request.auth.uid);
+      allow write: if isAdmin();
     }
 
     match /purchases/{purchaseId} {
@@ -408,7 +412,7 @@ service cloud.firestore {
         );
       }
 
-      allow read: if isAdmin() || (isActiveUser() && hasStoreAccess(resource.data.store_id));
+      allow read: if isAdmin() || (isActiveUser() && (hasStoreAccess(resource.data.store_id) || resource.data.get('charged_to', null) == request.auth.uid));
       allow create: if isCounter() &&
         request.resource.data.id == countId &&
         request.resource.data.created_by == request.auth.uid &&

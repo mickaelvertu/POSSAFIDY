@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppUser, AuditLog, Expense, Sale, Store } from "../types";
 import { hasPermission } from "../services/authService";
+import MyInfoView from "./MyInfoView";
 import {
   ArrowRightLeft,
   BarChart3,
@@ -232,6 +233,7 @@ const roleLabels: Record<string, string> = {
   PRODUCTION: "Responsable production",
   COMPTABLE: "Comptable",
   GESTIONNAIRE_CREDIT: "Gestionnaire crédit",
+  STAFF: "Staff",
   REVENDEUR: "Revendeur"
 };
 
@@ -245,6 +247,7 @@ const roleDescriptions: Record<string, string> = {
   PRODUCTION: "Suivi des ordres de production et des matières premières.",
   COMPTABLE: "Contrôle des ventes, des indicateurs et des rapports.",
   GESTIONNAIRE_CREDIT: "Gestion des comptes revendeurs, plafonds, règlements et relances.",
+  STAFF: "Bienvenue dans votre espace collaborateur : retrouvez votre profil, vos magasins et les informations de l'équipe.",
   REVENDEUR: "Votre demande de compte revendeur est en cours d'examen."
 };
 
@@ -287,6 +290,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
   const role = user.role || "UNASSIGNED";
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   const pointOfSales = stores.filter(store => store.store_type === "POS" && store.is_active);
+  const staffStores = stores.filter(store => store.is_active && user.storeIds.includes(store.id));
   const resellerStores = stores.filter(store => store.store_type === "RESELLER" && store.is_active);
   const today = new Date();
   const isToday = (timestamp: number) => {
@@ -358,6 +362,44 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
           </div>
         </div>
       </div>
+
+      {role === "STAFF" && (
+        <section className="grid gap-4 md:grid-cols-2">
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900">Mon profil</h2>
+            <dl className="mt-3 space-y-2 text-xs">
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">Nom</dt><dd className="font-bold text-slate-900">{user.displayName || `${user.firstName} ${user.lastName}`}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">Identifiant</dt><dd className="font-mono font-semibold text-slate-700">{user.code || user.username}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">E-mail</dt><dd className="font-semibold text-slate-700">{user.email}</dd></div>
+              {user.phone && <div className="flex justify-between gap-3"><dt className="text-slate-500">Téléphone</dt><dd className="font-semibold text-slate-700">{user.phone}</dd></div>}
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">Statut</dt><dd className={`rounded-full px-2 py-0.5 font-bold ${user.isActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>{user.isActive ? "Actif" : "Inactif"}</dd></div>
+              {user.lastLoginAt && <div className="flex justify-between gap-3"><dt className="text-slate-500">Dernière connexion</dt><dd className="font-semibold text-slate-700">{new Date(user.lastLoginAt).toLocaleString("fr-FR")}</dd></div>}
+            </dl>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900">Mes lieux de travail</h2>
+            {staffStores.length === 0 ? (
+              <p className="mt-3 text-xs text-slate-500">Aucun magasin ne vous est encore affecté.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {staffStores.map(store => (
+                  <li key={store.id} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
+                    <p className="font-bold text-slate-900">{store.name}</p>
+                    <p className="font-mono text-[11px] text-slate-500">{store.code} · {storeTypeLabel(store)}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+          {user.isActive && <MyInfoView user={user} />}
+          <article className="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-xs text-sky-900 md:col-span-2">
+            <p className="font-bold">Accès limité</p>
+            <p className="mt-1">Votre compte Staff est actif mais ne donne accès à aucun module de gestion. Pour obtenir de nouveaux droits (ventes, stock, transferts…), demandez à un administrateur de vous attribuer un rôle.</p>
+          </article>
+        </section>
+      )}
+
+      {role !== "STAFF" && role !== "SUPER_ADMIN" && user.isActive && role !== "REVENDEUR" && <MyInfoView user={user} />}
 
       {isAdmin && pointOfSales.length > 0 && (
         <section>

@@ -35,6 +35,7 @@ export const ROLE_DEFINITIONS: Record<AppRoleId, { id: AppRoleId; name: string; 
   PRODUCTION: { id: "PRODUCTION", name: "Production", description: "Production et consommation", bgLight: "bg-indigo-100 text-indigo-800 border-indigo-300" },
   COMPTABLE: { id: "COMPTABLE", name: "Comptable", description: "Ventes et rapports", bgLight: "bg-slate-100 text-slate-800 border-slate-300" },
   GESTIONNAIRE_CREDIT: { id: "GESTIONNAIRE_CREDIT", name: "Gestionnaire crédit", description: "Plafonds, encaissements et relances revendeurs", bgLight: "bg-teal-100 text-teal-800 border-teal-300" },
+  STAFF: { id: "STAFF", name: "Staff", description: "Collaborateur actif sans rôle administratif : espace personnel en lecture seule", bgLight: "bg-sky-100 text-sky-800 border-sky-300" },
   REVENDEUR: { id: "REVENDEUR", name: "Revendeur", description: "Compte revendeur en attente d'activation", bgLight: "bg-orange-100 text-orange-800 border-orange-300" }
 };
 
@@ -48,6 +49,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"],
   GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
+  STAFF: ["dashboard.view"],
   REVENDEUR: []
 };
 

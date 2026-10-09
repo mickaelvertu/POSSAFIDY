@@ -28,6 +28,11 @@ export async function loadInventoryCounts(storeIds?: string[]): Promise<Inventor
   return snapshots.flatMap(snapshot => snapshot.docs.map(item => item.data() as InventoryCount));
 }
 
+export async function loadMyInventoryCharges(userId: string): Promise<InventoryCount[]> {
+  const snapshot = await getDocs(query(collection(db, COUNTS_COLLECTION), where("charged_to", "==", userId)));
+  return snapshot.docs.map(item => item.data() as InventoryCount);
+}
+
 export async function saveInventoryCount(count: InventoryCount, auditLog?: AuditLog): Promise<void> {
   await setDoc(doc(db, COUNTS_COLLECTION, count.id), omitUndefined(count));
   if (auditLog) await setDoc(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
