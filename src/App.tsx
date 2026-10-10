@@ -2,6 +2,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import AuthPortal from "./components/auth/AuthPortal";
 import AuthenticatedSessionView from "./components/auth/AuthenticatedSessionView";
 import { ThemeProvider } from "./context/ThemeContext";
+import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
 
 function AuthApp() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -33,10 +34,12 @@ function AuthApp() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AuthApp />
-      </AuthProvider>
-    </ThemeProvider>
+    <AppErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthApp />
+        </AuthProvider>
+      </ThemeProvider>
+    </AppErrorBoundary>
   );
 }

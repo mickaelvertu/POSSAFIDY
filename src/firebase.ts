@@ -2,19 +2,40 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getDatabase } from "firebase/database";
-import { doc, getDocFromServer, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { doc, getDocFromServer, getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore } from "firebase/firestore";
 import firebaseConfig from "../firebase-applet-config.json";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const realtimeDb = getDatabase(app);
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-});
+let firestore: Firestore;
+
+try {
+  firestore = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+} catch (error) {
+  if (typeof error === "object" && error !== null && "code" in error && error.code === "failed-precondition") {
+    firestore = getFirestore(app);
+  } else {
+    throw error;
+  }
+}
+
+export const db = firestore;
 export const database = db;
 
-export const analyticsPromise = isSupported().then((supported) => supported ? getAnalytics(app) : null);
+const isLocalDevelopment = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+export const analyticsPromise = !isLocalDevelopment
+  ? isSupported()
+      .then(supported => supported ? getAnalytics(app) : null)
+      .catch(error => {
+        console.warn("Firebase Analytics initialization failed:", error);
+        return null;
+      })
+  : Promise.resolve(null);
 
 // Connection test as required by Firebase skill
 async function testConnection() {

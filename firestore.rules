@@ -58,6 +58,24 @@ service cloud.firestore {
       );
     }
 
+    function signupCodeConsumed(codeType) {
+      let code = getAfter(/databases/$(database)/documents/signupCodes/$(request.resource.data.signupCode)).data;
+      return code.type == codeType && code.used == true && code.usedBy == request.auth.uid;
+    }
+
+    match /signupCodes/{codeId} {
+      allow read, create, delete: if isSuperAdmin();
+      allow get: if isSignedIn();
+      allow update: if isSuperAdmin() || (
+        isSignedIn() &&
+        resource.data.used == false &&
+        resource.data.expiresAt > request.time.toMillis() &&
+        request.resource.data.used == true &&
+        request.resource.data.usedBy == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used', 'usedBy', 'usedAt'])
+      );
+    }
+
     // User collection access rules
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
