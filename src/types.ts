@@ -584,6 +584,7 @@ export interface InventoryCount {
   manager_signed_at?: number; // signature = présence attestée lors du comptage
   manager_signed_by?: string;
   manager_signed_by_name?: string;
+  signature_waived?: boolean; // aucun responsable inscrit : envoyé sans signature, contrôle renforcé par l'administrateur
   reviewed_by?: string;
   reviewed_by_name?: string;
   reviewed_at?: number;

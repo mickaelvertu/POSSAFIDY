@@ -189,7 +189,7 @@ export default function InventoryControlView({
     setError("");
   };
 
-  const buildCount = (status: InventoryCountStatus): InventoryCount => {
+  const buildCount = (status: InventoryCountStatus, waived = false): InventoryCount => {
     const existing = counts.find(count => count.id === draftId);
     const now = Date.now();
     return {
@@ -204,24 +204,26 @@ export default function InventoryControlView({
       created_by_name: existing?.created_by_name || currentUser.displayName || currentUser.email,
       created_at: existing?.created_at || now,
       updated_at: now,
-      ...(status === "AWAITING_SIGNATURE" ? { submitted_at: now } : {}),
-      ...(managerId ? { manager_id: managerId, manager_name: storeManagers.find(item => item.id === managerId)?.name || existing?.manager_name } : {})
+      ...(status === "AWAITING_SIGNATURE" || status === "SUBMITTED" ? { submitted_at: now } : {}),
+      ...(waived ? { signature_waived: true } : {}),
+      ...(managerId && !waived ? { manager_id: managerId, manager_name: storeManagers.find(item => item.id === managerId)?.name || existing?.manager_name } : {})
     };
   };
 
-  const persist = async (submit: boolean) => {
+  const persist = async (submit: boolean, withoutSignature = false) => {
     setError("");
     if (!store) return setError("Choisissez un magasin.");
     if (invalidInputs.length > 0) return setError("Certaines quantités comptées sont invalides (nombre positif attendu).");
     if (currentLines.length === 0) return setError("Saisissez au moins une quantité comptée.");
     if (submit) {
-      if (!managerId) return setError("Désignez le responsable du magasin qui doit signer le comptage.");
+      if (withoutSignature && storeManagers.length > 0) return setError("Un responsable est inscrit pour ce magasin : la signature est requise.");
+      if (!withoutSignature && !managerId) return setError("Désignez le responsable du magasin qui doit signer le comptage.");
       const missing = missingReasons(currentLines);
       if (missing.length > 0) return setError(`Un motif (5 caractères minimum) est obligatoire pour chaque anomalie : ${missing.map(line => line.article_name).join(", ")}.`);
     }
     setBusy(true);
     try {
-      const count = buildCount(submit ? "AWAITING_SIGNATURE" : "DRAFT");
+      const count = buildCount(submit ? (withoutSignature ? "SUBMITTED" : "AWAITING_SIGNATURE") : "DRAFT", withoutSignature);
       await onSaveCount(count, submit);
       if (submit) resetEditor(); else setDraftId(count.id);
     } catch (saveError) {
@@ -451,7 +453,7 @@ export default function InventoryControlView({
                 <option value="">— Choisir le responsable —</option>
                 {storeManagers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
-              {storeManagers.length === 0 && <span className="mt-1 block font-normal text-amber-700">Aucun responsable de magasin actif n'est assigné à ce magasin.</span>}
+              {storeManagers.length === 0 && <span className="mt-1 block font-normal text-amber-700">Aucun responsable de magasin actif n'est assigné à ce magasin : vous pouvez envoyer le comptage directement à l'administrateur, sans signature.</span>}
             </label>
             <label className="block text-xs font-semibold text-slate-600">Remarque générale (optionnelle)
               <textarea value={notes} onChange={event => setNotes(event.target.value)} rows={2} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
@@ -460,7 +462,11 @@ export default function InventoryControlView({
               <p className="text-xs text-slate-500">Manque estimé : <strong className="text-rose-700">{money(summary.shortageValue)}</strong> · Excédent : <strong className="text-emerald-700">{money(summary.surplusValue)}</strong></p>
               <div className="flex gap-2">
                 <button type="button" disabled={busy} onClick={() => void persist(false)} className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Save className="h-4 w-4" />Enregistrer en brouillon</button>
-                <button type="button" disabled={busy} onClick={() => void persist(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"><Send className="h-4 w-4" />Envoyer au responsable pour signature</button>
+                {storeManagers.length === 0 ? (
+                  <button type="button" disabled={busy} onClick={() => void persist(true, true)} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"><Send className="h-4 w-4" />Envoyer à l'administrateur (sans signature)</button>
+                ) : (
+                  <button type="button" disabled={busy} onClick={() => void persist(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"><Send className="h-4 w-4" />Envoyer au responsable pour signature</button>
+                )}
               </div>
             </div>
           </div>
@@ -625,9 +631,15 @@ export default function InventoryControlView({
                 <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
                   Motif jugé exact : le stock est ajusté sans conséquence. Motif jugé inexact : le stock est ajusté, mais le manque est retenu au nom de <strong>{reviewCount.manager_signed_by_name || reviewCount.created_by_name}</strong>.
                 </p>
-                <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
-                  Présence attestée : <strong>{reviewCount.manager_signed_by_name || "—"}</strong> a signé le {formatDate(reviewCount.manager_signed_at)}.
-                </p>
+                {reviewCount.signature_waived ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                    Aucune signature : aucun responsable de magasin n'était inscrit. Le comptage de <strong>{reviewCount.created_by_name}</strong> n'a pas été attesté, contrôlez-le avec attention.
+                  </p>
+                ) : (
+                  <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
+                    Présence attestée : <strong>{reviewCount.manager_signed_by_name || "—"}</strong> a signé le {formatDate(reviewCount.manager_signed_at)}.
+                  </p>
+                )}
                 {reviewCount.created_by === currentUser.uid && <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">Vous avez réalisé ce comptage : un autre administrateur doit l'approuver.</p>}
                 {anomalyLines(reviewCount.lines).length === 0 ? (
                   <p className="text-xs text-emerald-700">Aucune anomalie : le comptage correspond au stock théorique.</p>

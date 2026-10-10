@@ -1387,8 +1387,8 @@ export default function AuthenticatedSessionView() {
     if ((!isInventoryAdmin && !currentAppUser.storeIds.includes(count.store_id)) || count.created_by !== currentAppUser.uid) throw new Error("Ce magasin n'est pas dans votre périmètre.");
     const previous = inventoryCounts.find(item => item.id === count.id);
     if (previous && previous.status !== "DRAFT") throw new Error("Cet inventaire n'est plus modifiable.");
-    if (submit && !count.manager_id) throw new Error("Désignez le responsable du magasin qui doit signer.");
-    const auditLog = createAuditLog(currentAppUser, submit ? "INVENTORY_COUNT_SENT_FOR_SIGNATURE" : "INVENTORY_COUNT_DRAFT_SAVED", "INVENTORY_COUNT", count.id, previous, count, count.store_id);
+    if (submit && !count.manager_id && !count.signature_waived) throw new Error("Désignez le responsable du magasin qui doit signer.");
+    const auditLog = createAuditLog(currentAppUser, submit ? (count.signature_waived ? "INVENTORY_COUNT_SUBMITTED_WITHOUT_SIGNATURE" : "INVENTORY_COUNT_SENT_FOR_SIGNATURE") : "INVENTORY_COUNT_DRAFT_SAVED", "INVENTORY_COUNT", count.id, previous, count, count.store_id);
     await saveInventoryCount(count, auditLog);
     setInventoryCounts(current => [count, ...current.filter(item => item.id !== count.id)]);
     setAuditLogs(current => [auditLog, ...current]);

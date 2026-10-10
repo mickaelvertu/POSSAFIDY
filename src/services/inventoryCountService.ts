@@ -184,7 +184,7 @@ export async function validateInventoryCount(
       throw new Error("Cet inventaire n'est plus en attente de contrôle.");
     }
     const live = countSnapshot.data() as InventoryCount;
-    if (!live.manager_signed_at) throw new Error("Le responsable du magasin n'a pas signé ce comptage.");
+    if (!live.manager_signed_at && !live.signature_waived) throw new Error("Le responsable du magasin n'a pas signé ce comptage.");
     if (live.created_by === reviewer.id) throw new Error("Vous ne pouvez pas approuver un comptage que vous avez réalisé.");
     const adjusted = lines.filter(line => line.variance !== 0);
     const targets = adjusted.map(line => {

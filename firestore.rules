@@ -538,16 +538,16 @@ service cloud.firestore {
         request.resource.data.id == countId &&
         request.resource.data.created_by == request.auth.uid &&
         (isAdmin() || hasStoreAccess(request.resource.data.store_id)) &&
-        request.resource.data.status in ['DRAFT', 'AWAITING_SIGNATURE'] &&
-        (request.resource.data.status == 'DRAFT' || request.resource.data.manager_id is string);
+        request.resource.data.status in ['DRAFT', 'AWAITING_SIGNATURE', 'SUBMITTED'] &&
+        (request.resource.data.status == 'DRAFT' || (request.resource.data.status == 'AWAITING_SIGNATURE' && request.resource.data.manager_id is string) || (request.resource.data.status == 'SUBMITTED' && request.resource.data.get('signature_waived', false) == true && !('manager_signed_at' in request.resource.data)));
       allow update: if (
         isCounter() &&
         resource.data.status == 'DRAFT' &&
         resource.data.created_by == request.auth.uid &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.store_id == resource.data.store_id &&
-        request.resource.data.status in ['DRAFT', 'AWAITING_SIGNATURE'] &&
-        (request.resource.data.status == 'DRAFT' || request.resource.data.manager_id is string)
+        request.resource.data.status in ['DRAFT', 'AWAITING_SIGNATURE', 'SUBMITTED'] &&
+        (request.resource.data.status == 'DRAFT' || (request.resource.data.status == 'AWAITING_SIGNATURE' && request.resource.data.manager_id is string) || (request.resource.data.status == 'SUBMITTED' && request.resource.data.get('signature_waived', false) == true && !('manager_signed_at' in request.resource.data)))
       ) || (
         // Le responsable désigné signe (présence attestée) ou refuse de signer.
         isActiveUser() && resource.data.status == 'AWAITING_SIGNATURE' &&
@@ -561,7 +561,7 @@ service cloud.firestore {
       ) || (
         isAdmin() && resource.data.status == 'SUBMITTED' &&
         resource.data.created_by != request.auth.uid &&
-        'manager_signed_at' in resource.data &&
+        ('manager_signed_at' in resource.data || resource.data.get('signature_waived', false) == true) &&
         request.resource.data.status in ['VALIDATED', 'REJECTED'] &&
         request.resource.data.store_id == resource.data.store_id
       ) || (
