@@ -78,7 +78,7 @@ export default function InventoryControlView({
   onSaveCount, onDeleteDraft, onValidateCount, onRejectCount, onSettleCharges, onSignCount, onRefuseSignature, loadStoreManagers
 }: InventoryControlViewProps) {
   const [tab, setTab] = useState<"count" | "review" | "charges">(canCount ? "count" : "review");
-  const activeStores = useMemo(() => stores.filter(store => store.is_active && store.store_type !== "RESELLER"), [stores]);
+  const activeStores = useMemo(() => stores.filter(store => store.is_active), [stores]);
   const [storeId, setStoreId] = useState(activeStores[0]?.id || "");
   const [draftId, setDraftId] = useState<string | null>(null);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
