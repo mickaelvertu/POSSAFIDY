@@ -1,12 +1,9 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { authService, DEFAULT_ARTICLE_VISIBILITY, hasPermission } from "../../services/authService";
 import { AppRoleId, AppUser, Article, AuditLog, Category, CreditCustomer, CreditFollowUp, CreditPayment, Employee, Expense, GeneralFilters, Payslip, Purchase, ResellerNotification, ResellerOrder, Sale, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
-import UsersView from "../UsersView";
 import RoleHomeView from "../RoleHomeView";
-import SalesView from "../SalesView";
-import StocksView from "../StocksView";
 import { Production, RECYCLING_DECISION_LABELS, RETURN_REASON_LABELS, RecyclingDecision, StockMovement, StockTransfer, Store, StoreStock } from "../../types";
 import { generateRef, getArticleStock, updateQuarantineQuantity, updateStockQuantity } from "../../services/stockService";
 import {
@@ -32,32 +29,35 @@ import { advanceSale, cancelSale, createProduction, deleteDraftSale, deleteDraft
 import { createCreditSale, loadCreditCustomerForUser, loadCreditCustomers, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
 import { createResellerOrder, loadResellerStocks, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
-import InventoryControlView from "../InventoryControlView";
 import { deleteInventoryCountDraft, loadInventoryCounts, refuseInventorySignature, rejectInventoryCount, saveInventoryCount, settleInventoryCharges, signInventoryCount, validateInventoryCount } from "../../services/inventoryCountService";
 import type { InventoryCount, InventoryReasonDecision } from "../../types";
-import AuditView from "../AuditView";
-import StoresView from "../StoresView";
-import CatalogView from "../CatalogView";
-import ProductionView from "../ProductionView";
-import ProcurementView from "../ProcurementView";
-import ExpensesView from "../ExpensesView";
-import StaffView from "../StaffView";
 import { loadEmployees, saveEmployee } from "../../services/employeeService";
-import PayrollView from "../PayrollView";
-import CreditManagementView from "../CreditManagementView";
-import ResellerPortalView from "../ResellerPortalView";
 import { loadPayslips, loadSalaryAdvances, savePayslip, saveSalaryAdvance } from "../../services/payrollService";
-import TransfersView from "../TransfersView";
-import UnitsView from "../UnitsView";
-import ReportsView from "../ReportsView";
 import UserAuditReport from "../UserAuditReport";
-import ReportViewer from "../ReportViewer";
 import ThemeSwitcher from "../ThemeSwitcher";
 import { deleteExpense, loadExpenses, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { applyStockSnapshot, importInitialStocks } from "../../services/stockImportService";
 import type { StockSyncRow } from "../../services/stockSyncValidation";
 import type { InitialStockImportRow } from "../../services/stockImportValidation";
+const UsersView = lazy(() => import("../UsersView"));
+const SalesView = lazy(() => import("../SalesView"));
+const StocksView = lazy(() => import("../StocksView"));
+const InventoryControlView = lazy(() => import("../InventoryControlView"));
+const AuditView = lazy(() => import("../AuditView"));
+const StoresView = lazy(() => import("../StoresView"));
+const CatalogView = lazy(() => import("../CatalogView"));
+const ProductionView = lazy(() => import("../ProductionView"));
+const ProcurementView = lazy(() => import("../ProcurementView"));
+const ExpensesView = lazy(() => import("../ExpensesView"));
+const StaffView = lazy(() => import("../StaffView"));
+const PayrollView = lazy(() => import("../PayrollView"));
+const CreditManagementView = lazy(() => import("../CreditManagementView"));
+const ResellerPortalView = lazy(() => import("../ResellerPortalView"));
+const TransfersView = lazy(() => import("../TransfersView"));
+const UnitsView = lazy(() => import("../UnitsView"));
+const ReportsView = lazy(() => import("../ReportsView"));
+const ReportViewer = lazy(() => import("../ReportViewer"));
 import { 
   ShieldCheck, 
   LogOut, 
@@ -403,23 +403,23 @@ export default function AuthenticatedSessionView() {
     try {
       await saveAuditLog(auditLog);
     } catch (error) {
-      throw new Error(`Le compte a Ã©tÃ© crÃ©Ã©, mais sa trace d'audit n'a pas pu Ãªtre enregistrÃ©e : ${error instanceof Error ? error.message : "erreur inconnue"}`);
+      throw new Error(`Le compte a été créé, mais sa trace d'audit n'a pas pu être enregistrée : ${error instanceof Error ? error.message : "erreur inconnue"}`);
     }
     setManagedUsers(current => [...current, toAppUser(response.data!.user)]);
     setAuditLogs(current => [auditLog, ...current]);
-    alert(`Utilisateur crÃ©Ã©. Mot de passe temporaire : ${response.data.temporaryPassword}`);
+    alert(`Utilisateur créé. Mot de passe temporaire : ${response.data.temporaryPassword}`);
   };
 
   const handleUpdateManagedUser = async (updatedUser: AppUser) => {
     if (updatedUser.id === user?.id) {
-      alert("Pour votre sÃ©curitÃ©, un administrateur ne peut pas modifier son propre rÃ´le, son statut ou ses permissions.");
+      alert("Pour votre sécurité, un administrateur ne peut pas modifier son propre rôle, son statut ou ses permissions.");
       return;
     }
     const existingUser = managedUsers.find(item => item.id === updatedUser.id);
     const activeSuperAdmins = managedUsers.filter(item => item.roleId === "SUPER_ADMIN" && item.isActive);
     if (existingUser?.roleId === "SUPER_ADMIN" && activeSuperAdmins.length <= 1 &&
       (updatedUser.roleId !== "SUPER_ADMIN" || !updatedUser.isActive)) {
-      alert("Le dernier super administrateur actif ne peut pas Ãªtre dÃ©sactivÃ© ou rÃ©trogradÃ©.");
+      alert("Le dernier super administrateur actif ne peut pas être désactivé ou rétrogradé.");
       return;
     }
     const response = await authService.updateManagedUser(updatedUser.id, {
@@ -448,7 +448,7 @@ export default function AuthenticatedSessionView() {
     try {
       await saveAuditLog(auditLog);
     } catch (error) {
-      throw new Error(`Le compte a Ã©tÃ© modifiÃ©, mais sa trace d'audit n'a pas pu Ãªtre enregistrÃ©e : ${error instanceof Error ? error.message : "erreur inconnue"}`);
+      throw new Error(`Le compte a été modifié, mais sa trace d'audit n'a pas pu être enregistrée : ${error instanceof Error ? error.message : "erreur inconnue"}`);
     }
     setManagedUsers(current => current.map(item => item.id === updatedUser.id ? savedUser : item));
     setAuditLogs(current => [auditLog, ...current]);
@@ -470,7 +470,7 @@ export default function AuthenticatedSessionView() {
     try {
       await saveAuditLog(auditLog);
     } catch (error) {
-      throw new Error(`Le compte a Ã©tÃ© dÃ©sactivÃ©, mais sa trace d'audit n'a pas pu Ãªtre enregistrÃ©e : ${error instanceof Error ? error.message : "erreur inconnue"}`);
+      throw new Error(`Le compte a été désactivé, mais sa trace d'audit n'a pas pu être enregistrée : ${error instanceof Error ? error.message : "erreur inconnue"}`);
     }
     setManagedUsers(current => current.map(item => item.id === userId
       ? { ...item, isActive: false, permissions: [], storeIds: [] }
@@ -554,17 +554,17 @@ export default function AuthenticatedSessionView() {
           !hasPermission(currentAppUser, "credit.sales") ||
           sale.lines.some(line => line.line_type === "SERVICE" || articles.find(article => article.id === line.article_id)?.article_type !== "RESALE")
         ) {
-          throw new Error("Seul un responsable assignÃ© au dÃ©pÃ´t central peut crÃ©er une demande revendeur composÃ©e de produits de revente.");
+          throw new Error("Seul un responsable assigné au dépôt central peut créer une demande revendeur composée de produits de revente.");
         }
       }
       if (sale.customer_type === "REVENDEUR" && sale.total > sale.amount_paid && !sale.credit_customer_id) {
-        throw new Error("SÃ©lectionnez le compte revendeur avant d'accorder un paiement Ã  crÃ©dit.");
+        throw new Error("Sélectionnez le compte revendeur avant d'accorder un paiement à crédit.");
       }
       if (sale.credit_customer_id &&
         currentAppUser.roleId !== "ADMIN" &&
         currentAppUser.roleId !== "SUPER_ADMIN" &&
         !hasPermission(currentAppUser, "credit.sales")) {
-        throw new Error("Vous n'Ãªtes pas autorisÃ© Ã  enregistrer une vente Ã  crÃ©dit.");
+        throw new Error("Vous n'êtes pas autorisé à enregistrer une vente à crédit.");
       }
       const entry = createAuditLog(currentAppUser, "SALE_CREATED", "SALE", sale.id, undefined, sale, sale.store_id);
       await createCreditSale(sale, entry);
@@ -586,7 +586,7 @@ export default function AuthenticatedSessionView() {
   const handleUpdateSale = async (originalSale: Sale, sale: Sale): Promise<boolean> => {
     try {
       if (!currentAppUser || originalSale.seller_id !== currentAppUser.uid || originalSale.status !== "DRAFT") {
-        throw new Error("Seul le crÃ©ateur peut modifier sa vente tant qu'elle est en brouillon.");
+        throw new Error("Seul le créateur peut modifier sa vente tant qu'elle est en brouillon.");
       }
       if (sale.customer_type === "REVENDEUR") {
         const store = inventoryStores.find(item => item.id === sale.store_id);
@@ -597,17 +597,17 @@ export default function AuthenticatedSessionView() {
           !hasPermission(currentAppUser, "credit.sales") ||
           sale.lines.some(line => line.line_type === "SERVICE" || articles.find(article => article.id === line.article_id)?.article_type !== "RESALE")
         ) {
-          throw new Error("Une demande revendeur doit rester crÃ©Ã©e par un responsable assignÃ© au dÃ©pÃ´t central et contenir des produits de revente.");
+          throw new Error("Une demande revendeur doit rester créée par un responsable assigné au dépôt central et contenir des produits de revente.");
         }
         if (sale.total > sale.amount_paid && !sale.credit_customer_id) {
-          throw new Error("SÃ©lectionnez le compte revendeur avant de conserver un solde Ã  crÃ©dit.");
+          throw new Error("Sélectionnez le compte revendeur avant de conserver un solde à crédit.");
         }
       }
       if (sale.credit_customer_id &&
         currentAppUser.roleId !== "ADMIN" &&
         currentAppUser.roleId !== "SUPER_ADMIN" &&
         !hasPermission(currentAppUser, "credit.sales")) {
-        throw new Error("Vous n'Ãªtes pas autorisÃ© Ã  modifier cette vente Ã  crÃ©dit.");
+        throw new Error("Vous n'êtes pas autorisé à modifier cette vente à crédit.");
       }
       const result = await updateDraftSale(originalSale, sale, currentAppUser.uid, currentAppUser.displayName);
       setSales(current => current.map(item => item.id === sale.id ? result.sale : item));
@@ -630,7 +630,7 @@ export default function AuthenticatedSessionView() {
   const handleCreateResellerOrder = async (order: ResellerOrder): Promise<boolean> => {
     try {
       if (user?.role !== "REVENDEUR" || !user.businessName || order.reseller_user_id !== user.id) {
-        throw new Error("Seul un compte revendeur activÃ© peut soumettre une commande.");
+        throw new Error("Seul un compte revendeur activé peut soumettre une commande.");
       }
       await createResellerOrder(order);
       setResellerOrders(current => [order, ...current]);
@@ -695,7 +695,7 @@ export default function AuthenticatedSessionView() {
       await markResellerNotificationsRead(resellerNotifications);
       setResellerNotifications(current => current.map(notification => ({ ...notification, is_read: true })));
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Impossible de mettre Ã  jour les notifications.");
+      window.alert(error instanceof Error ? error.message : "Impossible de mettre à jour les notifications.");
     }
   };
 
@@ -720,17 +720,17 @@ export default function AuthenticatedSessionView() {
       currentAppUser.roleId !== "SUPER_ADMIN" &&
       !hasPermission(currentAppUser, "credit.manage")
     )) {
-      alert("Seul le gestionnaire de crÃ©dit ou un administrateur peut gÃ©rer les comptes revendeurs.");
+      alert("Seul le gestionnaire de crédit ou un administrateur peut gérer les comptes revendeurs.");
       return false;
     }
     if (!customer.name.trim() || !Number.isFinite(customer.credit_limit) || customer.credit_limit < customer.outstanding_balance
       || !Number.isInteger(customer.payment_term_days) || customer.payment_term_days < 1) {
-      alert("VÃ©rifiez le nom, le plafond (au moins Ã©gal Ã  l'encours) et le dÃ©lai de paiement.");
+      alert("Vérifiez le nom, le plafond (au moins égal à l'encours) et le délai de paiement.");
       return false;
     }
     const existing = creditCustomers.find(item => item.id === customer.id);
     if (!existing && creditCustomers.some(item => item.name.trim().toLocaleLowerCase("fr") === customer.name.trim().toLocaleLowerCase("fr"))) {
-      alert("Un compte revendeur porte dÃ©jÃ  ce nom.");
+      alert("Un compte revendeur porte déjà ce nom.");
       return false;
     }
     const updated = {
@@ -758,7 +758,7 @@ export default function AuthenticatedSessionView() {
       currentAppUser.roleId !== "SUPER_ADMIN" &&
       !hasPermission(currentAppUser, "credit.manage")
     )) {
-      alert("Seul le gestionnaire de crÃ©dit ou un administrateur peut enregistrer un rÃ¨glement.");
+      alert("Seul le gestionnaire de crédit ou un administrateur peut enregistrer un règlement.");
       return false;
     }
     const auditLog = createAuditLog(currentAppUser, "CREDIT_PAYMENT_RECORDED", "SALE", sale.id, sale, {
@@ -785,7 +785,7 @@ export default function AuthenticatedSessionView() {
       currentAppUser.roleId !== "SUPER_ADMIN" &&
       !hasPermission(currentAppUser, "credit.manage")
     )) {
-      alert("Seul le gestionnaire de crÃ©dit ou un administrateur peut consigner une relance.");
+      alert("Seul le gestionnaire de crédit ou un administrateur peut consigner une relance.");
       return false;
     }
     const updatedSnapshot = {
@@ -856,7 +856,7 @@ export default function AuthenticatedSessionView() {
 
   const handleDeleteSale = async (sale: Sale) => {
     if (currentAppUser?.roleId !== "SUPER_ADMIN") {
-      alert("Suppression rÃ©servÃ©e aux super administrateurs.");
+      alert("Suppression réservée aux super administrateurs.");
       return;
     }
     try {
@@ -897,7 +897,7 @@ export default function AuthenticatedSessionView() {
         currentAppUser.uid !== original.created_by ||
         original.status !== "DRAFT"
       ) {
-        throw new Error("Seul le crÃ©ateur peut modifier une production en brouillon.");
+        throw new Error("Seul le créateur peut modifier une production en brouillon.");
       }
       const auditLog = createAuditLog(currentAppUser, "PRODUCTION_DRAFT_UPDATED", "PRODUCTION", production.id, original, production, production.manufacturer_store_id);
       const updated = await updateDraftProduction(original, production, currentAppUser.uid, auditLog);
@@ -912,7 +912,7 @@ export default function AuthenticatedSessionView() {
 
   const handleDeleteDraftProduction = async (production: Production) => {
     if (currentAppUser?.roleId !== "SUPER_ADMIN") {
-      alert("Suppression rÃ©servÃ©e aux super administrateurs.");
+      alert("Suppression réservée aux super administrateurs.");
       return;
     }
     try {
@@ -949,7 +949,7 @@ export default function AuthenticatedSessionView() {
       || transfer.source_store_id === transfer.destination_store_id
       || !sourceStore?.is_active
       || !destinationStore?.is_active) {
-      alert("Choisissez un magasin source qui vous est attribuÃ© et un autre magasin destinataire.");
+      alert("Choisissez un magasin source qui vous est attribué et un autre magasin destinataire.");
       return false;
     }
     if (transfer.status !== "DRAFT" || transfer.requested_by !== currentAppUser.uid || transfer.lines.length === 0) {
@@ -974,7 +974,7 @@ export default function AuthenticatedSessionView() {
       if (!allowedArticles.some(article => article.id === line.article_id)
         || !Number.isFinite(line.quantity_sent)
         || line.quantity_sent <= 0) {
-        alert("La demande contient un article ou une quantitÃ© invalide pour le magasin destinataire.");
+        alert("La demande contient un article ou une quantité invalide pour le magasin destinataire.");
         return false;
       }
       requestedByArticle.set(line.article_id, (requestedByArticle.get(line.article_id) || 0) + line.quantity_sent);
@@ -989,7 +989,7 @@ export default function AuthenticatedSessionView() {
       const dispatchableStock = Math.max(0, physicalStock - pendingQuantity);
       if (requestedQuantity > dispatchableStock) {
         const article = articles.find(item => item.id === articleId);
-        alert(`Stock insuffisant pour ${article?.name || "cet article"}. DemandÃ© : ${requestedQuantity}. Disponible aprÃ¨s les demandes en attente : ${dispatchableStock}.`);
+        alert(`Stock insuffisant pour ${article?.name || "cet article"}. Demandé : ${requestedQuantity}. Disponible après les demandes en attente : ${dispatchableStock}.`);
         return false;
       }
     }
@@ -1013,7 +1013,7 @@ export default function AuthenticatedSessionView() {
 
   const handleDeleteTransfer = async (transfer: StockTransfer) => {
     if (currentAppUser?.roleId !== "SUPER_ADMIN") {
-      alert("Suppression rÃ©servÃ©e aux super administrateurs.");
+      alert("Suppression réservée aux super administrateurs.");
       return;
     }
     try {
@@ -1034,7 +1034,7 @@ export default function AuthenticatedSessionView() {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "DRAFT") return;
     if (transfer.requested_by === currentAppUser.uid) {
-      alert("Un administrateur diffÃ©rent du demandeur doit approuver ce transfert.");
+      alert("Un administrateur différent du demandeur doit approuver ce transfert.");
       return;
     }
     const timestamp = Date.now();
@@ -1065,7 +1065,7 @@ export default function AuthenticatedSessionView() {
     const note = rejectionNote.trim();
     if (!transfer || transfer.status !== "DRAFT") return false;
     if (transfer.requested_by === currentAppUser.uid) {
-      alert("Un administrateur diffÃ©rent du demandeur doit traiter ce transfert.");
+      alert("Un administrateur différent du demandeur doit traiter ce transfert.");
       return false;
     }
     if (!note) {
@@ -1096,14 +1096,14 @@ export default function AuthenticatedSessionView() {
 
   const handleShipTransfer = async (transferId: string) => {
     if (!currentAppUser || !hasPermission(currentAppUser, "transfers.ship")) {
-      alert("Vous n'avez pas la permission d'expÃ©dier un transfert.");
+      alert("Vous n'avez pas la permission d'expédier un transfert.");
       return;
     }
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "APPROVED") return;
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
     if (!isAdmin && !currentAppUser.storeIds.includes(transfer.source_store_id)) {
-      alert("Seul un utilisateur autorisÃ© du magasin source peut expÃ©dier ce transfert.");
+      alert("Seul un utilisateur autorisé du magasin source peut expédier ce transfert.");
       return;
     }
     let updatedStocks = stocks;
@@ -1156,7 +1156,7 @@ export default function AuthenticatedSessionView() {
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
       setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'expÃ©dition du transfert dans Firestore.");
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer l'expédition du transfert dans Firestore.");
     }
   };
 
@@ -1169,11 +1169,11 @@ export default function AuthenticatedSessionView() {
       && currentAppUser!.uid !== transfer.requested_by
       && currentAppUser!.uid !== transfer.approved_by;
     if (!isAssignedReceiver) {
-      alert("Un utilisateur autorisÃ© du magasin destinataire, diffÃ©rent du demandeur et de l'approbateur, doit valider cette rÃ©ception.");
+      alert("Un utilisateur autorisé du magasin destinataire, différent du demandeur et de l'approbateur, doit valider cette réception.");
       return;
     }
     if (updatedLines.some(line => line.quantity_received < 0 || line.quantity_received > line.quantity_sent || line.quantity_accepted < 0 || line.quantity_accepted > line.quantity_received)) {
-      alert("VÃ©rifiez les quantitÃ©s reÃ§ues et acceptÃ©es : elles ne peuvent pas dÃ©passer la quantitÃ© expÃ©diÃ©e.");
+      alert("Vérifiez les quantités reçues et acceptées : elles ne peuvent pas dépasser la quantité expédiée.");
       return;
     }
     let updatedStocks = stocks;
@@ -1198,7 +1198,7 @@ export default function AuthenticatedSessionView() {
           after_quantity: afterQty,
           created_by: currentAppUser?.uid || "",
           created_by_name: currentAppUser?.displayName || currentAppUser?.email || "Utilisateur",
-          notes: isSupplierDelivery ? `RÃ©ception achat fournisseur ${transfer.supplier_name || transfer.source_name || ""}` : undefined,
+          notes: isSupplierDelivery ? `Réception achat fournisseur ${transfer.supplier_name || transfer.source_name || ""}` : undefined,
           created_at: Date.now()
         });
       }
@@ -1242,7 +1242,7 @@ export default function AuthenticatedSessionView() {
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
       setAuditLogs(current => [auditLog, ...(purchaseAuditLog ? [purchaseAuditLog] : []), ...current]);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la rÃ©ception du transfert dans Firestore.");
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du transfert dans Firestore.");
     }
   };
 
@@ -1261,7 +1261,7 @@ export default function AuthenticatedSessionView() {
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
       setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la rÃ©solution de l'Ã©cart dans Firestore.");
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la résolution de l'écart dans Firestore.");
     }
   };
 
@@ -1274,7 +1274,7 @@ export default function AuthenticatedSessionView() {
     const canDecide = (hasPermission(currentAppUser, "production.create") || hasPermission(currentAppUser, "production.validate"))
       && currentAppUser.storeIds.includes(transfer.destination_store_id);
     if (!canDecide) {
-      alert("Seul le magasin de production destinataire peut dÃ©cider du sort de ces articles.");
+      alert("Seul le magasin de production destinataire peut décider du sort de ces articles.");
       return false;
     }
     const timestamp = Date.now();
@@ -1291,14 +1291,14 @@ export default function AuthenticatedSessionView() {
         recycling_decided_at: timestamp,
         recycling_note: choice.note || ""
       };
-      // Â« RecyclÃ© Â» : le stock reste Ã  recycler et sera consommÃ© par un ordre de fabrication.
+      // « Recyclé » : le stock reste à recycler et sera consommé par un ordre de fabrication.
       if (choice.decision === "RECYCLED") {
         decidedCount += 1;
         return { ...line, ...decidedFields, recycled_available: true };
       }
       decidedCount += 1;
       const { newStocks, beforeQty, afterQty } = updateQuarantineQuantity(updatedStocks, transfer.destination_store_id, line.article_id, -line.quantity_accepted);
-      if (afterQty < 0) throw new Error(`Stock Ã  recycler insuffisant en production pour ${line.article_name}. Disponible : ${beforeQty}.`);
+      if (afterQty < 0) throw new Error(`Stock à recycler insuffisant en production pour ${line.article_name}. Disponible : ${beforeQty}.`);
       updatedStocks = newStocks;
       movements.push({
         id: `movement-${transfer.id}-recycling-${line.id}`,
@@ -1314,7 +1314,7 @@ export default function AuthenticatedSessionView() {
         after_quantity: afterQty,
         created_by: currentAppUser.uid,
         created_by_name: currentAppUser.displayName || currentAppUser.email || "Utilisateur",
-        notes: `${RECYCLING_DECISION_LABELS[choice.decision]}${line.return_reason ? ` â€” ${RETURN_REASON_LABELS[line.return_reason]}` : ""}${choice.note ? ` â€” ${choice.note}` : ""}`,
+        notes: `${RECYCLING_DECISION_LABELS[choice.decision]}${line.return_reason ? ` — ${RETURN_REASON_LABELS[line.return_reason]}` : ""}${choice.note ? ` — ${choice.note}` : ""}`,
         created_at: timestamp
       });
       return {
@@ -1337,7 +1337,7 @@ export default function AuthenticatedSessionView() {
       setAuditLogs(current => [auditLog, ...current]);
       return true;
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la dÃ©cision de recyclage.");
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la décision de recyclage.");
       return false;
     }
   };
@@ -1346,7 +1346,7 @@ export default function AuthenticatedSessionView() {
     const targetStore = inventoryStores.find(store => store.id === storeId);
     const canManageCentralStock = (currentAppUser?.roleId === "ADMIN" || currentAppUser?.roleId === "SUPER_ADMIN") && targetStore?.store_type === "CENTRAL_WAREHOUSE";
     if (!canManageCentralStock) {
-      alert("Le stock ne peut Ãªtre crÃ©Ã© ou ajustÃ© que par un administrateur dans le dÃ©pÃ´t central.");
+      alert("Le stock ne peut être créé ou ajusté que par un administrateur dans le dépôt central.");
       return;
     }
     const currentQty = stocks.find(stock => stock.store_id === storeId && stock.article_id === articleId)?.quantity || 0;
@@ -1383,11 +1383,11 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleSaveInventoryCount = async (count: InventoryCount, submit: boolean) => {
-    if (!currentAppUser || !canCountInventory || user?.status !== "ACTIVE") throw new Error("Vous n'Ãªtes pas autorisÃ© Ã  saisir un inventaire.");
-    if ((!isInventoryAdmin && !currentAppUser.storeIds.includes(count.store_id)) || count.created_by !== currentAppUser.uid) throw new Error("Ce magasin n'est pas dans votre pÃ©rimÃ¨tre.");
+    if (!currentAppUser || !canCountInventory || user?.status !== "ACTIVE") throw new Error("Vous n'êtes pas autorisé à saisir un inventaire.");
+    if ((!isInventoryAdmin && !currentAppUser.storeIds.includes(count.store_id)) || count.created_by !== currentAppUser.uid) throw new Error("Ce magasin n'est pas dans votre périmètre.");
     const previous = inventoryCounts.find(item => item.id === count.id);
     if (previous && previous.status !== "DRAFT") throw new Error("Cet inventaire n'est plus modifiable.");
-    if (submit && !count.manager_id) throw new Error("DÃ©signez le responsable du magasin qui doit signer.");
+    if (submit && !count.manager_id) throw new Error("Désignez le responsable du magasin qui doit signer.");
     const auditLog = createAuditLog(currentAppUser, submit ? "INVENTORY_COUNT_SENT_FOR_SIGNATURE" : "INVENTORY_COUNT_DRAFT_SAVED", "INVENTORY_COUNT", count.id, previous, count, count.store_id);
     await saveInventoryCount(count, auditLog);
     setInventoryCounts(current => [count, ...current.filter(item => item.id !== count.id)]);
@@ -1395,7 +1395,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleSignInventoryCount = async (count: InventoryCount) => {
-    if (!currentAppUser || user?.status !== "ACTIVE" || count.manager_id !== currentAppUser.uid) throw new Error("Seul le responsable dÃ©signÃ© peut signer ce comptage.");
+    if (!currentAppUser || user?.status !== "ACTIVE" || count.manager_id !== currentAppUser.uid) throw new Error("Seul le responsable désigné peut signer ce comptage.");
     const name = currentAppUser.displayName || currentAppUser.email;
     const auditLog = createAuditLog(currentAppUser, "INVENTORY_COUNT_SIGNED", "INVENTORY_COUNT", count.id, { status: count.status }, { status: "SUBMITTED", presence_attested_by: name }, count.store_id);
     const signed = await signInventoryCount(count, { id: currentAppUser.uid, name }, auditLog);
@@ -1404,7 +1404,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleRefuseInventorySignature = async (count: InventoryCount, note: string) => {
-    if (!currentAppUser || user?.status !== "ACTIVE" || count.manager_id !== currentAppUser.uid) throw new Error("Seul le responsable dÃ©signÃ© peut refuser ce comptage.");
+    if (!currentAppUser || user?.status !== "ACTIVE" || count.manager_id !== currentAppUser.uid) throw new Error("Seul le responsable désigné peut refuser ce comptage.");
     const auditLog = createAuditLog(currentAppUser, "INVENTORY_COUNT_SIGNATURE_REFUSED", "INVENTORY_COUNT", count.id, { status: count.status }, { status: "REJECTED", note }, count.store_id);
     const refused = await refuseInventorySignature(count, { id: currentAppUser.uid, name: currentAppUser.displayName || currentAppUser.email }, note, auditLog);
     setInventoryCounts(current => current.map(item => item.id === count.id ? refused : item));
@@ -1450,7 +1450,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const settleInventoryCounts = async (counts: InventoryCount[], method: "PAYSLIP" | "ADVANCE" | "OTHER", reference: string, note: string, payslipId?: string) => {
-    if (!currentAppUser || !canReviewInventory || user?.status !== "ACTIVE") throw new Error("Seul un administrateur peut marquer une retenue comme dÃ©duite.");
+    if (!currentAppUser || !canReviewInventory || user?.status !== "ACTIVE") throw new Error("Seul un administrateur peut marquer une retenue comme déduite.");
     const settlement = {
       settled_at: Date.now(),
       settled_by: currentAppUser.uid,
@@ -1502,7 +1502,7 @@ export default function AuthenticatedSessionView() {
 
   const handleCreateArticle = async (article: Article) => {
     const allowedTypes = user?.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user?.role as AppRoleId] ?? [];
-    if (!allowedTypes.includes(article.article_type)) throw new Error("Vous ne pouvez pas crÃ©er ce type d'article.");
+    if (!allowedTypes.includes(article.article_type)) throw new Error("Vous ne pouvez pas créer ce type d'article.");
     const auditLog = createAuditLog(currentAppUser!, "ARTICLE_CREATED", "ARTICLE", article.id, undefined, article);
     await saveArticle(article, auditLog);
     setArticles(current => [...current, article]);
@@ -1540,7 +1540,7 @@ export default function AuthenticatedSessionView() {
 
   const handleToggleUnit = async (unit: UnitOfMeasure) => {
     if (!unit.is_active && articles.some(article => article.unit.toLocaleLowerCase("fr-FR") === unit.name.toLocaleLowerCase("fr-FR"))) {
-      throw new Error("Cette unitÃ© est encore associÃ©e Ã  un article et ne peut pas Ãªtre dÃ©sactivÃ©e.");
+      throw new Error("Cette unité est encore associée à un article et ne peut pas être désactivée.");
     }
     const previous = units.find(item => item.id === unit.id);
     const auditLog = createAuditLog(currentAppUser!, "UNIT_UPDATED", "UNIT", unit.id, previous, unit);
@@ -1553,7 +1553,7 @@ export default function AuthenticatedSessionView() {
     const unit = units.find(item => item.id === unitId);
     if (!unit) return;
     if (articles.some(article => article.unit.toLocaleLowerCase("fr-FR") === unit.name.toLocaleLowerCase("fr-FR"))) {
-      throw new Error("Cette unitÃ© est encore associÃ©e Ã  un article et ne peut pas Ãªtre supprimÃ©e.");
+      throw new Error("Cette unité est encore associée à un article et ne peut pas être supprimée.");
     }
     const auditLog = createAuditLog(currentAppUser!, "UNIT_DELETED", "UNIT", unitId, unit);
     await deleteUnit(unitId, auditLog);
@@ -1573,11 +1573,11 @@ export default function AuthenticatedSessionView() {
   
   const handleImportCatalogData = async (data: { articles: Article[]; categories: Category[] }) => {
     if (!data || !Array.isArray(data.articles) || !Array.isArray(data.categories)) {
-      throw new Error("Le fichier catalogue doit contenir les tableaux articles et catÃ©gories.");
+      throw new Error("Le fichier catalogue doit contenir les tableaux articles et catégories.");
     }
     const allowedTypes = user?.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user?.role as AppRoleId] ?? [];
     if (data.articles.some(article => !allowedTypes.includes(article.article_type))) {
-      throw new Error("Le fichier contient un type d'article que votre compte n'est pas autorisÃ© Ã  voir ou gÃ©rer.");
+      throw new Error("Le fichier contient un type d'article que votre compte n'est pas autorisé à voir ou gérer.");
     }
     const auditLogs = [
       ...data.articles.map(article => createAuditLog(
@@ -1629,7 +1629,7 @@ export default function AuthenticatedSessionView() {
   };
   
   const handleResetStores = async () => {
-    throw new Error("La rÃ©initialisation globale des magasins est dÃ©sactivÃ©e en production. DÃ©sactivez les magasins individuellement.");
+    throw new Error("La réinitialisation globale des magasins est désactivée en production. Désactivez les magasins individuellement.");
   };
 
   const handleCreateSupplier = async (supplier: Supplier) => {
@@ -1673,7 +1673,7 @@ export default function AuthenticatedSessionView() {
 
   const handleCreatePurchase = async (purchase: Purchase) => {
     if (!currentAppUser || (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN")) {
-      throw new Error("Seul un administrateur peut crÃ©er un brouillon d'achat.");
+      throw new Error("Seul un administrateur peut créer un brouillon d'achat.");
     }
     const auditLog = createAuditLog(currentAppUser, "PURCHASE_DRAFT_CREATED", "PURCHASE", purchase.id, undefined, purchase, purchase.store_id);
     await saveDraftPurchase(purchase, auditLog);
@@ -1712,7 +1712,7 @@ export default function AuthenticatedSessionView() {
       supplier_name: purchase.supplier_name,
       status: "IN_TRANSIT",
       requested_by: purchase.created_by,
-      requested_by_name: purchase.created_by_name || "Ã‰quipe achats",
+      requested_by_name: purchase.created_by_name || "Équipe achats",
       approved_by: currentAppUser.uid,
       approved_by_name: currentAppUser.displayName,
       approved_at: timestamp,
@@ -1746,7 +1746,7 @@ export default function AuthenticatedSessionView() {
   
   const handleImportUnits = async (data: UnitOfMeasure[]) => {
     if (!Array.isArray(data) || data.some(unit => !unit.id || !unit.name)) {
-      throw new Error("Le fichier unitÃ©s est invalide.");
+      throw new Error("Le fichier unités est invalide.");
     }
     const auditLogs = data.map(unit => createAuditLog(
       currentAppUser!, "UNIT_IMPORTED", "UNIT", unit.id,
@@ -1832,12 +1832,12 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateExpense = async (expense: Expense) => {
-    if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create"))) throw new Error("Vous ne disposez pas de la permission de crÃ©er une dÃ©pense.");
+    if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create"))) throw new Error("Vous ne disposez pas de la permission de créer une dépense.");
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
     if (expense.category === "SALARY_ADVANCE" && !isAdmin) throw new Error("Seul un administrateur peut enregistrer une avance sur salaire.");
     if (expense.category === "SALARY_ADVANCE") {
       const employee = employees.find(item => item.id === expense.employee_id && item.is_active);
-      if (!employee || !expense.description.trim()) throw new Error("SÃ©lectionnez un employÃ© actif et indiquez le motif de l'avance.");
+      if (!employee || !expense.description.trim()) throw new Error("Sélectionnez un employé actif et indiquez le motif de l'avance.");
       const employeeName = `${employee.first_name} ${employee.last_name}`;
       expense = {
         ...expense,
@@ -1851,7 +1851,7 @@ export default function AuthenticatedSessionView() {
     }
     const isSuperAdmin = currentAppUser.roleId === "SUPER_ADMIN";
     if (!isSuperAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id))) {
-      throw new Error("Vous ne pouvez enregistrer une dÃ©pense que pour un magasin attribuÃ© Ã  votre compte.");
+      throw new Error("Vous ne pouvez enregistrer une dépense que pour un magasin attribué à votre compte.");
     }
     expense = { ...expense, status: "DRAFT", created_by: currentAppUser!.uid, validated_by: undefined, validated_at: undefined };
     const auditLog = createAuditLog(currentAppUser!, "EXPENSE_CREATED", "EXPENSE", expense.id, undefined, expense, expense.store_id);
@@ -1870,14 +1870,14 @@ export default function AuthenticatedSessionView() {
       expense.created_by !== currentAppUser.uid ||
       (!isSuperAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))
     ) {
-      throw new Error("Vous pouvez uniquement modifier vos propres brouillons dans un magasin attribuÃ© Ã  votre compte.");
+      throw new Error("Vous pouvez uniquement modifier vos propres brouillons dans un magasin attribué à votre compte.");
     }
     if ((original.category === "SALARY_ADVANCE" || expense.category === "SALARY_ADVANCE") && !isAdmin) {
       throw new Error("Seul un administrateur peut modifier une avance sur salaire.");
     }
     if (expense.category === "SALARY_ADVANCE") {
       const employee = employees.find(item => item.id === expense.employee_id && item.is_active);
-      if (!employee || !expense.description.trim()) throw new Error("SÃ©lectionnez un employÃ© actif et indiquez le motif de l'avance.");
+      if (!employee || !expense.description.trim()) throw new Error("Sélectionnez un employé actif et indiquez le motif de l'avance.");
       const employeeName = `${employee.first_name} ${employee.last_name}`;
       expense = {
         ...expense,
@@ -1897,7 +1897,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleValidateExpense = async (expense: Expense) => {
-    if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || (currentAppUser.roleId !== "SUPER_ADMIN" && (expense.created_by !== currentAppUser.uid || !expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))) throw new Error("Vous pouvez uniquement valider vos propres dÃ©penses avec la permission de crÃ©ation.");
+    if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || (currentAppUser.roleId !== "SUPER_ADMIN" && (expense.created_by !== currentAppUser.uid || !expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))) throw new Error("Vous pouvez uniquement valider vos propres dépenses avec la permission de création.");
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
     let salaryAdvance: SalaryAdvance | undefined;
     let salaryAdvanceAuditLog: AuditLog | undefined;
@@ -1905,7 +1905,7 @@ export default function AuthenticatedSessionView() {
       if (!isAdmin) throw new Error("Seul un administrateur peut valider une avance sur salaire.");
       const employee = employees.find(item => item.id === expense.employee_id && item.is_active);
       if (!employee || expense.payment_status !== "PAID" || !expense.description.trim()) {
-        throw new Error("L'employÃ©, le motif ou le paiement de cette avance n'est pas valide.");
+        throw new Error("L'employé, le motif ou le paiement de cette avance n'est pas valide.");
       }
       const timestamp = Date.now();
       const employeeName = `${employee.first_name} ${employee.last_name}`;
@@ -1956,7 +1956,7 @@ export default function AuthenticatedSessionView() {
     }
   };
   const handleDeleteExpense = async (expense: Expense) => {
-    if (currentAppUser?.roleId !== "SUPER_ADMIN") throw new Error("Suppression rÃ©servÃ©e aux super administrateurs.");
+    if (currentAppUser?.roleId !== "SUPER_ADMIN") throw new Error("Suppression réservée aux super administrateurs.");
     const auditLog = createAuditLog(currentAppUser, "EXPENSE_DELETED", "EXPENSE", expense.id, expense, undefined, expense.store_id);
     await deleteExpense(expense, auditLog);
     setExpenses(current => current.filter(item => item.id !== expense.id));
@@ -1982,10 +1982,10 @@ export default function AuthenticatedSessionView() {
         <div className="flex items-center gap-3 sm:gap-4">
           <div className={`hidden sm:inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${isOnline ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`} role="status">
             <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-emerald-400" : "bg-amber-400"}`} />
-            {isOnline ? "En ligne" : "Hors connexion Â· synchro en attente"}
+            {isOnline ? "En ligne" : "Hors connexion · synchro en attente"}
           </div>
           <ThemeSwitcher />
-          {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) && <button type="button" onClick={() => setActiveModule("expenses")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">DÃ©penses</button>}
+          {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) && <button type="button" onClick={() => setActiveModule("expenses")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Dépenses</button>}
           <button
             type="button"
             onClick={() => setShowProfile(current => !current)}
@@ -1998,18 +1998,19 @@ export default function AuthenticatedSessionView() {
           <button
             type="button"
             onClick={() => logout()}
-            aria-label="DÃ©connexion"
-            title="DÃ©connexion"
+            aria-label="Déconnexion"
+            title="Déconnexion"
             className="inline-flex items-center gap-2 rounded-lg bg-rose-500/10 px-2 py-2 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 border border-rose-500/30 cursor-pointer sm:px-3.5 sm:py-1.5"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">DÃ©connexion</span>
+            <span className="hidden sm:inline">Déconnexion</span>
           </button>
         </div>
       </header>
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <Suspense fallback={<div className="py-16 text-center text-sm text-slate-500">Chargement?</div>}>
         {activeModule === "resellerPortal" && currentAppUser && (
           currentAppUser.roleId === "REVENDEUR" ||
           currentAppUser.roleId === "ADMIN" ||
@@ -2018,7 +2019,7 @@ export default function AuthenticatedSessionView() {
           <section className="space-y-4">
             {currentAppUser.roleId !== "REVENDEUR" && (
               <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">
-                â† Retour Ã  l'accueil
+                ← Retour à l'accueil
               </button>
             )}
             <ResellerPortalView
@@ -2044,7 +2045,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <SalesView
               sales={visibleSales}
@@ -2071,7 +2072,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <StocksView
               stores={accessibleStores}
@@ -2088,7 +2089,7 @@ export default function AuthenticatedSessionView() {
         ) : activeModule === "inventory" && currentAppUser && (canCountInventory || canReviewInventory) ? (
           <section className="space-y-4">
             <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <InventoryControlView
               currentUser={currentAppUser}
@@ -2115,7 +2116,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <StoresView
               stores={inventoryStores}
@@ -2136,7 +2137,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <UnitsView units={units} articles={articles} currentUser={currentAppUser} onCreateUnit={handleCreateUnit} onToggleUnit={handleToggleUnit} onDeleteUnit={handleDeleteUnit} onImportData={handleImportUnits} onResetData={handleResetUnits} />
           </section>
@@ -2147,7 +2148,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <CatalogView
               articles={articles}
@@ -2171,7 +2172,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <TransfersView
               transfers={visibleTransfers}
@@ -2202,7 +2203,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <ReportsView
               userAuditReport={canManageStores ? <UserAuditReport users={managedUsers} employees={employees} sales={sales} advances={salaryAdvances} payslips={payslips} counts={inventoryCounts} stores={accessibleStores} /> : undefined}
@@ -2247,7 +2248,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <AuditView
               auditLogs={visibleAuditLogs}
@@ -2263,7 +2264,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <ProductionView
               productions={visibleProductions}
@@ -2286,7 +2287,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <ProcurementView
               suppliers={suppliers}
@@ -2311,7 +2312,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <ExpensesView
               expenses={expenses}
@@ -2337,7 +2338,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <CreditManagementView
               customers={creditCustomers}
@@ -2356,7 +2357,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour Ã  l'accueil
+              ← Retour à l'accueil
             </button>
             <StaffView employees={employees} stores={inventoryStores} expenses={expenses} advances={salaryAdvances} onOpenPayroll={() => setActiveModule("payroll")} onSaveEmployee={handleSaveEmployee} />
           </section>
@@ -2367,7 +2368,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("staff")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              â† Retour au personnel
+              ← Retour au personnel
             </button>
             <PayrollView
               employees={employees}
@@ -2462,11 +2463,11 @@ export default function AuthenticatedSessionView() {
 
               <div>
                 <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-0.5">
-                  TÃ©lÃ©phone
+                  Téléphone
                 </label>
                 <div className="text-slate-200 font-medium bg-slate-900/60 px-3 py-2 rounded-lg border border-slate-700/50 flex items-center gap-2">
                   <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>{user.phone || "Non renseignÃ©"}</span>
+                  <span>{user.phone || "Non renseigné"}</span>
                 </div>
               </div>
 
@@ -2476,13 +2477,13 @@ export default function AuthenticatedSessionView() {
                 </label>
                 <div className="bg-slate-900/60 px-3 py-2 rounded-lg border border-slate-700/50 flex items-center justify-between">
                   <span className="font-semibold text-emerald-400 font-mono">{user.status}</span>
-                  <span className="text-[10px] text-slate-500">Validation effectuÃ©e</span>
+                  <span className="text-[10px] text-slate-500">Validation effectuée</span>
                 </div>
               </div>
 
               <div>
                 <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-0.5">
-                  Date de CrÃ©ation
+                  Date de Création
                 </label>
                 <div className="text-slate-300 bg-slate-900/60 px-3 py-2 rounded-lg border border-slate-700/50 flex items-center gap-2">
                   <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -2497,13 +2498,13 @@ export default function AuthenticatedSessionView() {
             <div className="pt-4 border-t border-slate-700/70 space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
                 <Shield className="w-3.5 h-3.5 text-amber-400" />
-                <span>RÃ´les & Permissions (Module Admin)</span>
+                <span>Rôles & Permissions (Module Admin)</span>
               </div>
               <div className="p-3 bg-slate-900/70 border border-slate-700/60 rounded-xl space-y-1.5 text-[11px] text-slate-400">
                 <p>
-                  <strong className="text-slate-300">RÃ´le :</strong>{" "}
+                  <strong className="text-slate-300">Rôle :</strong>{" "}
                   {user.role === null ? (
-                    <span className="italic text-amber-300/80">null (aucun rÃ´le assignÃ©)</span>
+                    <span className="italic text-amber-300/80">null (aucun rôle assigné)</span>
                   ) : (
                     user.role
                   )}
@@ -2515,18 +2516,19 @@ export default function AuthenticatedSessionView() {
                   </code>
                 </p>
                 <p>
-                  <strong className="text-slate-300">Magasins assignÃ©s :</strong>{" "}
+                  <strong className="text-slate-300">Magasins assignés :</strong>{" "}
                   <code className="text-slate-400 bg-slate-800 px-1 py-0.5 rounded">
                     {JSON.stringify(user.assignedStores)}
                   </code>
                 </p>
                 <p className="text-[10px] text-slate-500 pt-1 border-t border-slate-800">
-                  Ces propriÃ©tÃ©s seront configurÃ©es lors de l'intÃ©gration du module Administration.
+                  Ces propriétés seront configurées lors de l'intégration du module Administration.
                 </p>
               </div>
             </div>
           </section>
         )}
+      </Suspense>
       </main>
     </div>
   );

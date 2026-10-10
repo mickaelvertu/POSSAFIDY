@@ -72,7 +72,7 @@ interface StockDistributionPlan {
   allocations: StoreAllocation[];
 }
 
-const getQuantityStep = (unit: string) => (/piece|unitÃ©|unite/i.test(unit) ? 1 : 0.01);
+const getQuantityStep = (unit: string) => (/piece|unité|unite/i.test(unit) ? 1 : 0.01);
 
 const formatQuantity = (quantity: number, unit: string) => quantity.toLocaleString("fr-FR", {
   maximumFractionDigits: getQuantityStep(unit) === 1 ? 0 : 2
@@ -155,7 +155,7 @@ export default function TransfersView({
     value: store.id,
     label: `${store.name} (${store.code})`,
     description: ({
-      CENTRAL_WAREHOUSE: "EntrepÃ´t central",
+      CENTRAL_WAREHOUSE: "Entrepôt central",
       POS: "Point de vente",
       RESELLER: "Revendeur",
       MANUFACTURER: "Fabricant"
@@ -234,7 +234,7 @@ export default function TransfersView({
   const handleCreateDistributionDrafts = async () => {
     const plan = calculateStockDistribution(distributionArticleId);
     if (!plan || plan.allocations.length === 0) {
-      alert("Aucun stock disponible Ã  rÃ©partir aprÃ¨s dÃ©duction des transferts en attente.");
+      alert("Aucun stock disponible à répartir après déduction des transferts en attente.");
       return;
     }
 
@@ -262,7 +262,7 @@ export default function TransfersView({
           quantity_accepted: 0,
           quantity_rejected: 0
         }],
-        note: "RÃ©partition sur demande, Ã©quilibrÃ©e selon le stock de chaque point de vente.",
+        note: "Répartition sur demande, équilibrée selon le stock de chaque point de vente.",
         has_discrepancy: false,
         created_at: timestamp,
         updated_at: timestamp
@@ -285,7 +285,7 @@ export default function TransfersView({
         const row = rows[key] || {
           key,
           storeName: getStoreName(transfer.source_store_id),
-          reasonLabel: line.return_reason ? RETURN_REASON_LABELS[line.return_reason] : "Non prÃ©cisÃ©",
+          reasonLabel: line.return_reason ? RETURN_REASON_LABELS[line.return_reason] : "Non précisé",
           quantity: 0,
           value: 0
         };
@@ -379,7 +379,7 @@ export default function TransfersView({
   const handleSaveNewTransfer = async (e: FormEvent) => {
     e.preventDefault();
     if (sourceStoreId === destStoreId) {
-      alert("Le magasin source et le magasin destination doivent Ãªtre distincts !");
+      alert("Le magasin source et le magasin destination doivent être distincts !");
       return;
     }
     if (transferLines.length === 0) {
@@ -391,7 +391,7 @@ export default function TransfersView({
     const sourceStore = stores.find(store => store.id === sourceStoreId);
     if (transferKind === "STORE_RETURN") {
       if (destinationStore?.store_type !== "CENTRAL_WAREHOUSE" || sourceStore?.store_type === "CENTRAL_WAREHOUSE") {
-        alert("Un retour doit Ãªtre envoyÃ© d'un magasin vers un entrepÃ´t.");
+        alert("Un retour doit être envoyé d'un magasin vers un entrepôt.");
         return;
       }
       if (transferLines.some(line => !line.return_reason)) {
@@ -400,19 +400,19 @@ export default function TransfersView({
       }
     }
     if (transferKind === "RECYCLING" && (sourceStore?.store_type !== "CENTRAL_WAREHOUSE" || destinationStore?.store_type !== "MANUFACTURER")) {
-      alert("Un transfert de recyclage doit aller d'un entrepÃ´t vers un magasin de production.");
+      alert("Un transfert de recyclage doit aller d'un entrepôt vers un magasin de production.");
       return;
     }
     const transferArticles = getTransferArticles(destStoreId);
     if (destinationStore?.store_type === "POS" || destinationStore?.store_type === "RESELLER") {
       const rawMaterialLine = transferLines.find(line => articles.find(article => article.id === line.article_id)?.article_type === "RAW_MATERIAL");
       if (rawMaterialLine) {
-        alert("Les matiÃ¨res premiÃ¨res ne peuvent pas Ãªtre transfÃ©rÃ©es vers un point de vente ou un magasin revendeur.");
+        alert("Les matières premières ne peuvent pas être transférées vers un point de vente ou un magasin revendeur.");
         return;
       }
     }
     if (transferLines.some(line => !transferArticles.some(article => article.id === line.article_id))) {
-      alert("L'article sÃ©lectionnÃ© n'est pas autorisÃ© pour ce magasin destinataire.");
+      alert("L'article sélectionné n'est pas autorisé pour ce magasin destinataire.");
       return;
     }
 
@@ -428,7 +428,7 @@ export default function TransfersView({
       const article = articles.find(item => item.id === invalidLine.article_id);
       const requestedQuantity = Number(invalidLine.quantity);
       const dispatchable = getDispatchableStock(sourceStoreId, invalidLine.article_id, editingTransfer?.id);
-      alert(`Stock insuffisant pour ${article?.name || "cet article"}. DemandÃ© : ${requestedQuantity}. RÃ©partissable : ${dispatchable}.`);
+      alert(`Stock insuffisant pour ${article?.name || "cet article"}. Demandé : ${requestedQuantity}. Répartissable : ${dispatchable}.`);
       return;
     }
 
@@ -444,7 +444,7 @@ export default function TransfersView({
         article_id: line.article_id,
         article_code: art?.code || "REF",
         article_name: art?.name || "Article",
-        unit: art?.unit || "UnitÃ©",
+        unit: art?.unit || "Unité",
         quantity_sent: Number(line.quantity),
         quantity_received: 0,
         quantity_accepted: 0,
@@ -485,11 +485,11 @@ export default function TransfersView({
   };
 
   const transferFormIssue = sourceStoreId === destStoreId
-    ? "Choisissez deux magasins diffÃ©rents pour crÃ©er le transfert."
+    ? "Choisissez deux magasins différents pour créer le transfert."
     : transferKind === "STORE_RETURN" && transferLines.some(line => !line.return_reason)
       ? "Indiquez le motif de retour de chaque article."
       : transferLines.some(line => !line.article_id)
-      ? "SÃ©lectionnez un article dans chaque ligne avant de continuer."
+      ? "Sélectionnez un article dans chaque ligne avant de continuer."
       : transferLines.some(line => {
         const requested = transferLines
           .filter(item => item.article_id === line.article_id)
@@ -498,9 +498,9 @@ export default function TransfersView({
           || Number(line.quantity) <= 0
           || requested > getDispatchableStock(sourceStoreId, line.article_id, editingTransfer?.id);
       })
-        ? "Le stock disponible ne couvre pas toutes les quantitÃ©s demandÃ©es."
+        ? "Le stock disponible ne couvre pas toutes les quantités demandées."
         : transferLines.some(line => !getTransferArticles(destStoreId).some(article => article.id === line.article_id))
-          ? "Un article n'est pas autorisÃ© pour le magasin destinataire."
+          ? "Un article n'est pas autorisé pour le magasin destinataire."
           : "";
 
   // Launch inspection modal
@@ -532,11 +532,11 @@ export default function TransfersView({
           <div className="flex items-center gap-2">
             <ArrowRightLeft className="h-5 w-5 text-blue-600" />
             <h2 className="text-lg font-bold text-slate-900 font-serif">
-              Transferts & RÃ©ceptions Inter-Magasins
+              Transferts & Réceptions Inter-Magasins
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            RÃ¨gle NÂ°3 : Le stock destination n'est jamais crÃ©ditÃ© Ã  l'expÃ©dition. La rÃ©ception doit Ãªtre contrÃ´lÃ©e et validÃ©e.
+            Règle N°3 : Le stock destination n'est jamais crédité à l'expédition. La réception doit être contrôlée et validée.
           </p>
         </div>
 
@@ -555,7 +555,7 @@ export default function TransfersView({
                 className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
               >
                 <ShieldCheck className="h-4 w-4" />
-                RÃ©partition sur demande
+                Répartition sur demande
               </button>
             )}
             <button
@@ -578,18 +578,18 @@ export default function TransfersView({
         </div>
         <div className="flex items-center gap-2 text-xs font-mono min-w-max">
           <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">1. Demande</span>
-          <span className="text-slate-500">â†’</span>
+          <span className="text-slate-500">→</span>
           <span className="bg-blue-950 text-blue-300 px-2.5 py-1 rounded-md border border-blue-800">2. Approbation (Admin)</span>
-          <span className="text-slate-500">â†’</span>
-          <span className="bg-indigo-950 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-800">3. ExpÃ©dition (stock source dÃ©bitÃ©)</span>
-          <span className="text-slate-500">â†’</span>
+          <span className="text-slate-500">→</span>
+          <span className="bg-indigo-950 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-800">3. Expédition (stock source débité)</span>
+          <span className="text-slate-500">→</span>
           <span className="bg-amber-950 text-amber-300 px-2.5 py-1 rounded-md border border-amber-800">4. En transit</span>
-          <span className="text-slate-500">â†’</span>
-          <span className="bg-purple-950 text-purple-300 px-2.5 py-1 rounded-md border border-purple-800">5. RÃ©ception (magasin destinataire)</span>
-          <span className="text-slate-500">â†’</span>
-          <span className="bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-800">6. ValidÃ© (stock acceptÃ© crÃ©ditÃ©)</span>
+          <span className="text-slate-500">→</span>
+          <span className="bg-purple-950 text-purple-300 px-2.5 py-1 rounded-md border border-purple-800">5. Réception (magasin destinataire)</span>
+          <span className="text-slate-500">→</span>
+          <span className="bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-800">6. Validé (stock accepté crédité)</span>
           <span className="text-slate-500">/</span>
-          <span className="bg-rose-950 text-rose-300 px-2.5 py-1 rounded-md border border-rose-800">Ã‰cart Ã  traiter</span>
+          <span className="bg-rose-950 text-rose-300 px-2.5 py-1 rounded-md border border-rose-800">Écart à traiter</span>
         </div>
       </div>
 
@@ -601,12 +601,12 @@ export default function TransfersView({
           {[
             ["ALL", "Tous"],
             ["DRAFT", "En attente"],
-            ["APPROVED", "ApprouvÃ©s"],
-            ["REJECTED", "RefusÃ©s"],
+            ["APPROVED", "Approuvés"],
+            ["REJECTED", "Refusés"],
             ["IN_TRANSIT", "En transit"],
-            ["RECEIVED", "ReÃ§us"],
-            ["VALIDATED", "ValidÃ©s"],
-            ["DISCREPANCY", "Avec Ã©cart"]
+            ["RECEIVED", "Reçus"],
+            ["VALIDATED", "Validés"],
+            ["DISCREPANCY", "Avec écart"]
           ].map(([st, label]) => (
             <button
               key={st}
@@ -628,7 +628,7 @@ export default function TransfersView({
           <Search className="h-4 w-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Rechercher rÃ©f, magasin..."
+            placeholder="Rechercher réf, magasin..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -639,13 +639,13 @@ export default function TransfersView({
 
       {returnsByStore.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-          <h3 className="text-sm font-bold text-slate-900 mb-2">Retours reÃ§us par magasin source</h3>
+          <h3 className="text-sm font-bold text-slate-900 mb-2">Retours reçus par magasin source</h3>
           <table className="w-full text-xs">
             <thead>
               <tr className="text-left text-slate-500 border-b border-slate-100">
                 <th className="py-1.5">Magasin</th>
                 <th className="py-1.5">Motif</th>
-                <th className="py-1.5 text-right">QuantitÃ©</th>
+                <th className="py-1.5 text-right">Quantité</th>
                 <th className="py-1.5 text-right">Valeur (prix d'achat, Ar)</th>
               </tr>
             </thead>
@@ -722,14 +722,14 @@ export default function TransfersView({
                     }`}>
                       {{
                         DRAFT: "En attente d'approbation",
-                        APPROVED: "ApprouvÃ©",
-                        SHIPPED: "ExpÃ©diÃ©",
+                        APPROVED: "Approuvé",
+                        SHIPPED: "Expédié",
                         IN_TRANSIT: "En transit",
-                        RECEIVED: "ReÃ§u",
-                        VALIDATED: "RÃ©ception validÃ©e",
-                        DISCREPANCY: "Ã‰cart Ã  traiter",
-                        REJECTED: "RefusÃ©",
-                        CANCELLED: "AnnulÃ©"
+                        RECEIVED: "Reçu",
+                        VALIDATED: "Réception validée",
+                        DISCREPANCY: "Écart à traiter",
+                        REJECTED: "Refusé",
+                        CANCELLED: "Annulé"
                       }[t.status]}
                     </span>
                   </div>
@@ -738,33 +738,33 @@ export default function TransfersView({
                 {/* Source & Destination Information */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3 text-xs">
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-[10px] uppercase font-bold text-slate-500">{isSupplierDelivery ? "Fournisseur :" : "ExpÃ©diteur (Source) :"}</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">{isSupplierDelivery ? "Fournisseur :" : "Expéditeur (Source) :"}</span>
                     <div className="font-bold text-slate-900 text-sm mt-0.5">{t.source_name || src?.name || t.source_store_id}</div>
-                    {src && <div className="text-slate-500 font-mono">Code: {src.code} â€¢ Type: {src.store_type}</div>}
+                    {src && <div className="text-slate-500 font-mono">Code: {src.code} • Type: {src.store_type}</div>}
                     {t.shipped_at && (
                       <div className="text-indigo-600 mt-1 font-medium">
-                        ExpÃ©diÃ© le : {new Date(t.shipped_at).toLocaleString("fr-FR")} ({t.shipped_by_name})
+                        Expédié le : {new Date(t.shipped_at).toLocaleString("fr-FR")} ({t.shipped_by_name})
                       </div>
                     )}
                     {t.approved_by_name && (
                       <div className="mt-1 font-medium text-blue-700">
-                        ApprouvÃ© par {t.approved_by_name}
+                        Approuvé par {t.approved_by_name}
                       </div>
                     )}
                   </div>
 
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-[10px] uppercase font-bold text-slate-500">Destinataire (ContrÃ´le Ã  l'arrivÃ©e) :</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Destinataire (Contrôle à l'arrivée) :</span>
                     <div className="font-bold text-slate-900 text-sm mt-0.5">{dst?.name}</div>
-                    <div className="text-slate-500 font-mono">Code: {dst?.code} â€¢ Type: {dst?.store_type}</div>
+                    <div className="text-slate-500 font-mono">Code: {dst?.code} • Type: {dst?.store_type}</div>
                     {t.validated_at ? (
                       <div className="text-emerald-700 mt-1 font-medium flex items-center gap-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        ValidÃ© le : {new Date(t.validated_at).toLocaleString("fr-FR")} ({t.validated_by_name})
+                        Validé le : {new Date(t.validated_at).toLocaleString("fr-FR")} ({t.validated_by_name})
                       </div>
                     ) : (
                       <div className="text-amber-700 mt-1 font-medium">
-                        Stock destinataire non crÃ©ditÃ© tant que non validÃ©
+                        Stock destinataire non crédité tant que non validé
                       </div>
                     )}
                   </div>
@@ -775,12 +775,12 @@ export default function TransfersView({
                   <table className="w-full text-xs text-left">
                     <thead>
                       <tr className="text-slate-500 border-b border-slate-200">
-                        <th className="py-1 px-2">RÃ©f</th>
+                        <th className="py-1 px-2">Réf</th>
                         <th className="py-1 px-2">Article</th>
-                        <th className="py-1 px-2 text-right">{isSupplierDelivery ? "QtÃ© commandÃ©e" : "QtÃ© expÃ©diÃ©e"}</th>
-                        <th className="py-1 px-2 text-right">QtÃ© ReÃ§ue</th>
-                        <th className="py-1 px-2 text-right">QtÃ© AcceptÃ©e</th>
-                        <th className="py-1 px-2 text-right text-rose-700">Ã‰cart / Rejet</th>
+                        <th className="py-1 px-2 text-right">{isSupplierDelivery ? "Qté commandée" : "Qté expédiée"}</th>
+                        <th className="py-1 px-2 text-right">Qté Reçue</th>
+                        <th className="py-1 px-2 text-right">Qté Acceptée</th>
+                        <th className="py-1 px-2 text-right text-rose-700">Écart / Rejet</th>
                         <th className="py-1 px-2">Notes / Motifs</th>
                       </tr>
                     </thead>
@@ -808,11 +808,11 @@ export default function TransfersView({
                     <div className="flex items-center gap-2 text-rose-800">
                       <AlertTriangle className="h-4 w-4 shrink-0" />
                       <div>
-                        <span className="font-bold">Ã‰cart dÃ©tectÃ© : </span>
-                        {totalRejected} unitÃ©(s) manquante(s) ou avariÃ©e(s).
+                        <span className="font-bold">Écart détecté : </span>
+                        {totalRejected} unité(s) manquante(s) ou avariée(s).
                         {t.discrepancy_resolved ? (
                           <span className="ml-2 font-semibold text-emerald-700">
-                            (RÃ©gularisÃ© : {t.discrepancy_resolution_note})
+                            (Régularisé : {t.discrepancy_resolution_note})
                           </span>
                         ) : (
                           <span className="ml-2 italic text-rose-600">
@@ -831,7 +831,7 @@ export default function TransfersView({
                         }}
                         className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs"
                       >
-                        Traiter l'Ã©cart (Admin)
+                        Traiter l'écart (Admin)
                       </button>
                     )}
                   </div>
@@ -845,7 +845,7 @@ export default function TransfersView({
                   {t.status === "REJECTED" && t.rejection_note && (
                     <p className="w-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
                       Motif du refus : {t.rejection_note}
-                      {t.rejected_by_name && <span className="ml-1 text-rose-600">â€” {t.rejected_by_name}</span>}
+                      {t.rejected_by_name && <span className="ml-1 text-rose-600">— {t.rejected_by_name}</span>}
                     </p>
                   )}
 
@@ -914,7 +914,7 @@ export default function TransfersView({
                         className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <Truck className="h-3.5 w-3.5" />
-                        ExpÃ©dier depuis le magasin source
+                        Expédier depuis le magasin source
                       </button>
                     )}
 
@@ -926,7 +926,7 @@ export default function TransfersView({
                         className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <FileCheck className="h-4 w-4" />
-                        {isSupplierDelivery ? "RÃ©ceptionner l'achat au Magasin" : "RÃ©ceptionner & Valider au Magasin"}
+                        {isSupplierDelivery ? "Réceptionner l'achat au Magasin" : "Réceptionner & Valider au Magasin"}
                       </button>
                     )}
 
@@ -934,7 +934,7 @@ export default function TransfersView({
                     {t.status === "VALIDATED" && (
                       <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        RÃ©ception ValidÃ©e & Stock CrÃ©ditÃ© ({totalAccepted} unitÃ©s)
+                        Réception Validée & Stock Crédité ({totalAccepted} unités)
                       </span>
                     )}
 
@@ -946,7 +946,7 @@ export default function TransfersView({
           })
         ) : (
           <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 text-slate-400 text-xs italic">
-            Aucun transfert trouvÃ© selon les critÃ¨res sÃ©lectionnÃ©s.
+            Aucun transfert trouvé selon les critères sélectionnés.
           </div>
         )}
       </div>
@@ -957,8 +957,8 @@ export default function TransfersView({
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div>
-                <h3 className="font-bold text-slate-900 text-base">RÃ©partition sur demande</h3>
-                <p className="text-xs text-slate-500 mt-1">Le calcul favorise les points de vente les moins approvisionnÃ©s.</p>
+                <h3 className="font-bold text-slate-900 text-base">Répartition sur demande</h3>
+                <p className="text-xs text-slate-500 mt-1">Le calcul favorise les points de vente les moins approvisionnés.</p>
               </div>
               <button type="button" onClick={() => setIsDistributionModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1" aria-label="Fermer">
                 <X className="h-5 w-5" />
@@ -967,7 +967,7 @@ export default function TransfersView({
 
             <div className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="distribution-article">Article Ã  rÃ©partir</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="distribution-article">Article à répartir</label>
                 <select
                   id="distribution-article"
                   value={distributionArticleId}
@@ -984,7 +984,7 @@ export default function TransfersView({
               </div>
 
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
-                Les transferts dÃ©jÃ  en brouillon ou approuvÃ©s sont dÃ©duits avant le calcul.
+                Les transferts déjà en brouillon ou approuvés sont déduits avant le calcul.
               </div>
 
               <button
@@ -993,20 +993,20 @@ export default function TransfersView({
                 disabled={!distributionArticleId}
                 className="px-3 py-2 bg-slate-800 hover:bg-slate-900 disabled:opacity-50 text-white rounded-lg text-xs font-semibold"
               >
-                Calculer la rÃ©partition
+                Calculer la répartition
               </button>
 
               {distributionPlan && (
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
                     <span>Stock central : <strong>{formatQuantity(distributionPlan.centralStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
-                    <span>DÃ©jÃ  engagÃ© : <strong>{formatQuantity(distributionPlan.pendingStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
-                    <span>Ã€ rÃ©partir : <strong>{formatQuantity(distributionPlan.distributableStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
+                    <span>Déjà engagé : <strong>{formatQuantity(distributionPlan.pendingStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
+                    <span>À répartir : <strong>{formatQuantity(distributionPlan.distributableStock, distributionPlan.article.unit)} {distributionPlan.article.unit}</strong></span>
                   </div>
                   <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-50 text-slate-600">
-                        <tr><th className="px-3 py-2">Point de vente</th><th className="px-3 py-2 text-right">Stock actuel</th><th className="px-3 py-2 text-right">Ã€ transfÃ©rer</th><th className="px-3 py-2 text-right">AprÃ¨s transfert</th></tr>
+                        <tr><th className="px-3 py-2">Point de vente</th><th className="px-3 py-2 text-right">Stock actuel</th><th className="px-3 py-2 text-right">À transférer</th><th className="px-3 py-2 text-right">Après transfert</th></tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {distributionPlan.allocations.map(allocation => (
@@ -1018,7 +1018,7 @@ export default function TransfersView({
                           </tr>
                         ))}
                         {distributionPlan.allocations.length === 0 && (
-                          <tr><td colSpan={4} className="px-3 py-6 text-center text-slate-500">Aucun stock disponible aprÃ¨s rÃ©serve et transferts en attente.</td></tr>
+                          <tr><td colSpan={4} className="px-3 py-6 text-center text-slate-500">Aucun stock disponible après réserve et transferts en attente.</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -1034,7 +1034,7 @@ export default function TransfersView({
                   disabled={!distributionPlan?.allocations.length}
                   className="px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 rounded-xl"
                 >
-                  CrÃ©er les transferts brouillons
+                  Créer les transferts brouillons
                 </button>
               </div>
             </div>
@@ -1068,7 +1068,7 @@ export default function TransfersView({
               rows={3}
               value={rejectionNote}
               onChange={event => setRejectionNote(event.target.value)}
-              placeholder="Indiquez pourquoi la demande est refusÃ©eâ€¦"
+              placeholder="Indiquez pourquoi la demande est refusée…"
               className="mt-1 w-full rounded-lg border border-slate-300 p-3 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
             />
             <div className="mt-4 flex justify-end gap-2">
@@ -1100,7 +1100,7 @@ export default function TransfersView({
                 <ArrowRightLeft className="h-5 w-5 text-blue-600" />
                 <div>
                   <h3 className="font-bold text-slate-900 text-base">{editingTransfer ? `Modifier le brouillon ${editingTransfer.transfer_number}` : "Nouveau transfert"}</h3>
-                  <p className="text-xs text-slate-500">{editingTransfer ? "Modifiez le trajet, les articles, les quantitÃ©s ou les instructions avant approbation." : "Demandez un transfert depuis votre magasin vers un autre magasin."}</p>
+                  <p className="text-xs text-slate-500">{editingTransfer ? "Modifiez le trajet, les articles, les quantités ou les instructions avant approbation." : "Demandez un transfert depuis votre magasin vers un autre magasin."}</p>
                 </div>
               </div>
               <button
@@ -1123,11 +1123,11 @@ export default function TransfersView({
                   className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 disabled:bg-slate-100"
                 >
                   <option value="STANDARD">Transfert standard</option>
-                  <option value="STORE_RETURN">Retour magasin â†’ entrepÃ´t (dÃ©faut, pÃ©remption, Ã©tiquette usÃ©e)</option>
-                  <option value="RECYCLING">EntrepÃ´t â†’ magasin de production (recyclage)</option>
+                  <option value="STORE_RETURN">Retour magasin → entrepôt (défaut, péremption, étiquette usée)</option>
+                  <option value="RECYCLING">Entrepôt → magasin de production (recyclage)</option>
                 </select>
                 {transferKind === "STORE_RETURN" && (
-                  <p className="mt-2 text-xs text-slate-500">L'entrepÃ´t rÃ©ceptionne les articles, puis les envoie en production, qui dÃ©cide : recycler ou dÃ©truire.</p>
+                  <p className="mt-2 text-xs text-slate-500">L'entrepôt réceptionne les articles, puis les envoie en production, qui décide : recycler ou détruire.</p>
                 )}
               </section>
 
@@ -1138,12 +1138,12 @@ export default function TransfersView({
                 </div>
                 <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">Magasin expÃ©diteur</label>
+                    <label className="block text-xs font-bold text-slate-700">Magasin expéditeur</label>
                     <SearchableSelect
                       value={sourceStoreId}
                       options={sourceStoreOptions}
                       onChange={setSourceStoreId}
-                      placeholder="Rechercher un magasin sourceâ€¦"
+                      placeholder="Rechercher un magasin source…"
                       className="w-full"
                     />
                   </div>
@@ -1162,27 +1162,27 @@ export default function TransfersView({
                           query: undefined
                         })));
                       }}
-                      placeholder="Rechercher un magasin destinataireâ€¦"
+                      placeholder="Rechercher un magasin destinataire…"
                       className="w-full"
                     />
                   </div>
                 </div>
                 {sourceStoreId === destStoreId && (
                   <p className="mt-2 text-xs font-medium text-amber-700" role="alert">
-                    Le magasin expÃ©diteur et le destinataire doivent Ãªtre diffÃ©rents.
+                    Le magasin expéditeur et le destinataire doivent être différents.
                   </p>
                 )}
               </section>
 
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-relaxed text-blue-900">
-                <strong>Ã€ savoir :</strong> le stock source est dÃ©bitÃ© Ã  l'expÃ©dition. Le destinataire est crÃ©ditÃ© uniquement des quantitÃ©s acceptÃ©es aprÃ¨s son contrÃ´le de rÃ©ception. Les transferts en attente sont dÃ©jÃ  dÃ©duits du stock disponible.
+                <strong>À savoir :</strong> le stock source est débité à l'expédition. Le destinataire est crédité uniquement des quantités acceptées après son contrôle de réception. Les transferts en attente sont déjà déduits du stock disponible.
               </div>
 
               <section aria-labelledby="transfer-items-heading">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div>
                     <h4 id="transfer-items-heading" className="text-sm font-bold text-slate-800">2. Articles</h4>
-                    <p className="text-xs text-slate-500">Le stock disponible est vÃ©rifiÃ© automatiquement.</p>
+                    <p className="text-xs text-slate-500">Le stock disponible est vérifié automatiquement.</p>
                   </div>
                   <button
                     type="button"
@@ -1217,7 +1217,7 @@ export default function TransfersView({
                           data-transfer-article
                           aria-label={`Article de la ligne ${idx + 1}`}
                           autoComplete="off"
-                          placeholder="Rechercher par code ou nom d'articleâ€¦"
+                          placeholder="Rechercher par code ou nom d'article…"
                           value={line.query ?? (selectedArticle ? formatArticleLabel(selectedArticle) : "")}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => {
@@ -1236,7 +1236,7 @@ export default function TransfersView({
                             type="number"
                             min={quantityStep}
                             step={quantityStep}
-                            aria-label={`QuantitÃ© Ã  transfÃ©rer (${selectedArticle?.unit || "unitÃ©"})`}
+                            aria-label={`Quantité à transférer (${selectedArticle?.unit || "unité"})`}
                             value={line.quantity}
                             onFocus={(e) => e.target.select()}
                             onKeyDown={(e) => {
@@ -1252,9 +1252,9 @@ export default function TransfersView({
                                 : item));
                             }}
                             className="min-w-0 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-right font-mono text-sm font-bold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                            placeholder="QtÃ©"
+                            placeholder="Qté"
                           />
-                          <span className="max-w-16 shrink-0 truncate text-xs font-medium text-slate-600" title={selectedArticle?.unit}>{selectedArticle?.unit || "UnitÃ©"}</span>
+                          <span className="max-w-16 shrink-0 truncate text-xs font-medium text-slate-600" title={selectedArticle?.unit}>{selectedArticle?.unit || "Unité"}</span>
                         </div>
 
                         <div className="flex items-center justify-between gap-2 sm:justify-end">
@@ -1262,7 +1262,7 @@ export default function TransfersView({
                             <p className={`text-xs font-semibold ${stockIsSufficient ? "text-emerald-700" : "text-rose-700"}`} role="status">
                               {stockIsSufficient
                                 ? `${formatQuantity(availableStock, selectedArticle.unit)} ${selectedArticle.unit} disponible`
-                                : `Stock insuffisant : ${formatQuantity(availableStock, selectedArticle.unit)} disponible pour ${formatQuantity(requestedForArticle, selectedArticle.unit)} demandÃ©`}
+                                : `Stock insuffisant : ${formatQuantity(availableStock, selectedArticle.unit)} disponible pour ${formatQuantity(requestedForArticle, selectedArticle.unit)} demandé`}
                             </p>
                           ) : (
                             <p className="text-xs text-slate-500">Choisissez un article dans la liste.</p>
@@ -1289,7 +1289,7 @@ export default function TransfersView({
                                 : item))}
                               className="rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-900"
                             >
-                              <option value="">Motif{transferKind === "STORE_RETURN" ? " (obligatoire)" : ""}â€¦</option>
+                              <option value="">Motif{transferKind === "STORE_RETURN" ? " (obligatoire)" : ""}…</option>
                               {(Object.keys(RETURN_REASON_LABELS) as ReturnReason[]).map(reason => (
                                 <option key={reason} value={reason}>{RETURN_REASON_LABELS[reason]}</option>
                               ))}
@@ -1297,14 +1297,14 @@ export default function TransfersView({
                             <input
                               type="text"
                               aria-label={`Lot de la ligne ${idx + 1}`}
-                              placeholder="NÂ° de lot (optionnel)"
+                              placeholder="N° de lot (optionnel)"
                               value={line.batch_number || ""}
                               onChange={event => setTransferLines(lines => lines.map((item, i) => i === idx ? { ...item, batch_number: event.target.value } : item))}
                               className="rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-900"
                             />
                             <input
                               type="date"
-                              aria-label={`Date de pÃ©remption de la ligne ${idx + 1}`}
+                              aria-label={`Date de péremption de la ligne ${idx + 1}`}
                               value={line.expiry_date || ""}
                               onChange={event => setTransferLines(lines => lines.map((item, i) => i === idx ? { ...item, expiry_date: event.target.value } : item))}
                               className="rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-900"
@@ -1325,7 +1325,7 @@ export default function TransfersView({
                   type="text"
                   value={transferNote}
                   onChange={(e) => setTransferNote(e.target.value)}
-                  placeholder="Ex. : rÃ©approvisionnement rÃ©gulier, commande spÃ©cialeâ€¦"
+                  placeholder="Ex. : réapprovisionnement régulier, commande spéciale…"
                   className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
@@ -1336,7 +1336,7 @@ export default function TransfersView({
                     <p className="text-xs font-medium text-rose-700">{transferFormIssue}</p>
                   )}
                   {!transferFormIssue && (
-                    <p className="text-xs text-slate-500">La demande sera envoyÃ©e Ã  l'administration pour approbation.</p>
+                    <p className="text-xs text-slate-500">La demande sera envoyée à l'administration pour approbation.</p>
                   )}
                 </div>
                 <div className="flex justify-end gap-2">
@@ -1371,7 +1371,7 @@ export default function TransfersView({
                 <FileCheck className="h-5 w-5 text-amber-600" />
                 <div>
                   <h3 className="font-bold text-slate-900 text-base">
-                    ContrÃ´le de RÃ©ception Obligatoire â€” {inspectingTransfer.transfer_number}
+                    Contrôle de Réception Obligatoire — {inspectingTransfer.transfer_number}
                   </h3>
                   <p className="text-xs text-slate-500">
                     Destinataire : {getStoreName(inspectingTransfer.destination_store_id)}
@@ -1389,8 +1389,8 @@ export default function TransfersView({
 
             <div className="mt-4 space-y-4 text-xs">
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 leading-relaxed">
-                <strong>Attention RÃ¨gle MÃ©tier GILEADA :</strong> Seule la <strong>quantitÃ© acceptÃ©e</strong> sera crÃ©ditÃ©e Ã  votre stock.
-                Toute diffÃ©rence entre la quantitÃ© envoyÃ©e et acceptÃ©e sera automatiquement enregistrÃ©e comme anomalie (Ã‰cart / Discrepancy) et auditÃ©e.
+                <strong>Attention Règle Métier GILEADA :</strong> Seule la <strong>quantité acceptée</strong> sera créditée à votre stock.
+                Toute différence entre la quantité envoyée et acceptée sera automatiquement enregistrée comme anomalie (Écart / Discrepancy) et auditée.
               </div>
 
               {/* Inspection lines table */}
@@ -1399,10 +1399,10 @@ export default function TransfersView({
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                       <th className="py-2 px-2">Article</th>
-                      <th className="py-2 px-2 text-right">EnvoyÃ©e</th>
-                      <th className="py-2 px-2 text-right">ReÃ§ue (Physique)</th>
-                      <th className="py-2 px-2 text-right text-emerald-800">AcceptÃ©e (CrÃ©dit)</th>
-                      <th className="py-2 px-2 text-right text-rose-800">RejetÃ©e / Manquante</th>
+                      <th className="py-2 px-2 text-right">Envoyée</th>
+                      <th className="py-2 px-2 text-right">Reçue (Physique)</th>
+                      <th className="py-2 px-2 text-right text-emerald-800">Acceptée (Crédit)</th>
+                      <th className="py-2 px-2 text-right text-rose-800">Rejetée / Manquante</th>
                       <th className="py-2 px-2">Commentaire / Justification</th>
                     </tr>
                   </thead>
@@ -1480,7 +1480,7 @@ export default function TransfersView({
                 </label>
                 <input
                   type="text"
-                  placeholder="Ã‰tat des cartons, transporteur, rÃ©serves..."
+                  placeholder="État des cartons, transporteur, réserves..."
                   value={receiverGeneralNote}
                   onChange={(e) => setReceiverGeneralNote(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500"
@@ -1500,7 +1500,7 @@ export default function TransfersView({
                   onClick={handleConfirmInspection}
                   className="px-5 py-2 font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs cursor-pointer"
                 >
-                  Valider la RÃ©ception & Mettre Ã  Jour les Stocks
+                  Valider la Réception & Mettre à Jour les Stocks
                 </button>
               </div>
 
@@ -1517,7 +1517,7 @@ export default function TransfersView({
               <div className="flex items-center gap-2 text-rose-700">
                 <AlertTriangle className="h-5 w-5" />
                 <h3 className="font-bold text-base text-slate-900">
-                  RÃ©gularisation Administrative d'Ã‰cart
+                  Régularisation Administrative d'Écart
                 </h3>
               </div>
               <button
@@ -1534,12 +1534,12 @@ export default function TransfersView({
                 Transfert : <strong className="font-mono text-slate-900">{resolvingTransfer.transfer_number}</strong>
               </p>
               <p className="text-slate-600">
-                Ã‰cart constatÃ© : {resolvingTransfer.lines.reduce((acc, l) => acc + l.quantity_rejected, 0)} unitÃ©(s) rejetÃ©e(s) ou manquante(s).
+                Écart constaté : {resolvingTransfer.lines.reduce((acc, l) => acc + l.quantity_rejected, 0)} unité(s) rejetée(s) ou manquante(s).
               </p>
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  DÃ©cision administrative & rÃ©gularisation comptable :
+                  Décision administrative & régularisation comptable :
                 </label>
                 <textarea
                   rows={3}
@@ -1561,12 +1561,12 @@ export default function TransfersView({
                 <button
                   type="button"
                   onClick={() => {
-                    onResolveDiscrepancy(resolvingTransfer.id, discrepancyNote || "RÃ©gularisÃ© par l'administration");
+                    onResolveDiscrepancy(resolvingTransfer.id, discrepancyNote || "Régularisé par l'administration");
                     setResolvingTransfer(null);
                   }}
                   className="px-4 py-2 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs"
                 >
-                  Valider la RÃ©gularisation
+                  Valider la Régularisation
                 </button>
               </div>
             </div>

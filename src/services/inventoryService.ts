@@ -105,7 +105,7 @@ export async function updateDraftTransfer(
       current.updated_at !== original.updated_at ||
       JSON.stringify(current.lines) !== JSON.stringify(original.lines)
     ) {
-      throw new Error("Le transfert a changÃ© depuis son ouverture. Rechargez les donnÃ©es avant de le modifier.");
+      throw new Error("Le transfert a changé depuis son ouverture. Rechargez les données avant de le modifier.");
     }
     transaction.set(transferRef, omitUndefined(updated));
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
@@ -117,7 +117,7 @@ export async function deleteDraftTransfer(transfer: StockTransfer, auditLog: Aud
     const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
     const snapshot = await transaction.get(transferRef);
     if (!snapshot.exists() || (snapshot.data() as StockTransfer).status !== "DRAFT") {
-      throw new Error("Seul un transfert en brouillon peut Ãªtre supprimÃ©.");
+      throw new Error("Seul un transfert en brouillon peut être supprimé.");
     }
     transaction.delete(transferRef);
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined({
@@ -161,7 +161,7 @@ export async function saveTransferWithStockEffects(
         })
       : currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT"
         || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status);
-    if (!validTransition) throw new Error("Le statut du transfert a changÃ©. Rechargez les donnÃ©es.");
+    if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");
     let purchaseRef: ReturnType<typeof doc> | undefined;
     let updatedPurchase: Purchase | undefined;
     if (currentTransfer.type === "SUPPLIER_TO_STORE") {
@@ -170,18 +170,18 @@ export async function saveTransferWithStockEffects(
         !["VALIDATED", "DISCREPANCY"].includes(transfer.status) ||
         !purchaseAuditLog
       ) {
-        throw new Error("La livraison fournisseur doit Ãªtre liÃ©e Ã  un achat approuvÃ© et auditÃ©e Ã  la rÃ©ception.");
+        throw new Error("La livraison fournisseur doit être liée à un achat approuvé et auditée à la réception.");
       }
       purchaseRef = doc(db, PURCHASES_COLLECTION, currentTransfer.purchase_id);
       const purchaseSnapshot = await transaction.get(purchaseRef);
-      if (!purchaseSnapshot.exists()) throw new Error("L'achat liÃ© Ã  cette livraison est introuvable.");
+      if (!purchaseSnapshot.exists()) throw new Error("L'achat lié à cette livraison est introuvable.");
       const currentPurchase = purchaseSnapshot.data() as Purchase;
       if (
         currentPurchase.status !== "APPROVED" ||
         currentPurchase.transfer_id !== currentTransfer.id ||
         currentPurchase.store_id !== currentTransfer.destination_store_id
       ) {
-        throw new Error("L'achat a dÃ©jÃ  Ã©tÃ© rÃ©ceptionnÃ© ou ne correspond plus Ã  cette livraison.");
+        throw new Error("L'achat a déjà été réceptionné ou ne correspond plus à cette livraison.");
       }
       updatedPurchase = {
         ...currentPurchase,
@@ -309,7 +309,7 @@ export async function saveDraftPurchase(purchase: Purchase, auditLog: AuditLog):
       line.total !== line.quantity * line.unit_cost
     )
   ) {
-    throw new Error("L'achat doit Ãªtre complet et enregistrÃ© en brouillon.");
+    throw new Error("L'achat doit être complet et enregistré en brouillon.");
   }
   const [storeSnapshot, supplierSnapshot, articleSnapshots] = await Promise.all([
     getDoc(doc(db, STORES_COLLECTION, purchase.store_id)),
@@ -321,17 +321,17 @@ export async function saveDraftPurchase(purchase: Purchase, auditLog: AuditLog):
     !["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(storeSnapshot.data().store_type) ||
     storeSnapshot.data().is_active !== true
   ) {
-    throw new Error("Les achats de matiÃ¨res premiÃ¨res doivent Ãªtre destinÃ©s Ã  un dÃ©pÃ´t central ou un magasin fabricant actif.");
+    throw new Error("Les achats de matières premières doivent être destinés à un dépôt central ou un magasin fabricant actif.");
   }
   if (!supplierSnapshot.exists() || supplierSnapshot.data().is_active !== true) {
-    throw new Error("Le fournisseur sÃ©lectionnÃ© n'existe pas ou n'est plus actif.");
+    throw new Error("Le fournisseur sélectionné n'existe pas ou n'est plus actif.");
   }
   if (articleSnapshots.some(snapshot => !snapshot.exists() || snapshot.data().article_type !== "RAW_MATERIAL" || snapshot.data().is_active !== true)) {
-    throw new Error("Un achat fournisseur ne peut contenir que des matiÃ¨res premiÃ¨res actives.");
+    throw new Error("Un achat fournisseur ne peut contenir que des matières premières actives.");
   }
   await runTransaction(db, async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
-    if ((await transaction.get(purchaseRef)).exists()) throw new Error("Cet achat existe dÃ©jÃ .");
+    if ((await transaction.get(purchaseRef)).exists()) throw new Error("Cet achat existe déjà.");
     transaction.set(purchaseRef, omitUndefined(purchase));
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   });
@@ -358,10 +358,10 @@ export async function approvePurchase(
     transfer.approved_by !== updatedPurchase.approved_by ||
     transfer.lines.length !== purchase.lines.length
   ) {
-    throw new Error("L'achat ou la livraison ne peut pas Ãªtre approuvÃ© dans son Ã©tat actuel.");
+    throw new Error("L'achat ou la livraison ne peut pas être approuvé dans son état actuel.");
   }
   if (new Set(purchase.lines.map(line => line.article_id)).size > 248) {
-    throw new Error("Une rÃ©ception ne peut pas contenir plus de 248 articles diffÃ©rents.");
+    throw new Error("Une réception ne peut pas contenir plus de 248 articles différents.");
   }
 
   const [storeSnapshot, articleSnapshots] = await Promise.all([
@@ -373,10 +373,10 @@ export async function approvePurchase(
     !storeSnapshot.data().is_active ||
     !["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(storeSnapshot.data().store_type)
   ) {
-    throw new Error("Le magasin destinataire n'est plus un dÃ©pÃ´t autorisÃ© pour ces matiÃ¨res premiÃ¨res.");
+    throw new Error("Le magasin destinataire n'est plus un dépôt autorisé pour ces matières premières.");
   }
   if (articleSnapshots.some(snapshot => !snapshot.exists() || snapshot.data().article_type !== "RAW_MATERIAL")) {
-    throw new Error("Un achat fournisseur ne peut contenir que des matiÃ¨res premiÃ¨res.");
+    throw new Error("Un achat fournisseur ne peut contenir que des matières premières.");
   }
   if (transfer.lines.some(line =>
     !purchase.lines.some(purchaseLine =>
@@ -385,7 +385,7 @@ export async function approvePurchase(
       purchaseLine.id === line.id
     )
   )) {
-    throw new Error("Les lignes du transfert doivent correspondre Ã  l'achat approuvÃ©.");
+    throw new Error("Les lignes du transfert doivent correspondre à l'achat approuvé.");
   }
 
   await runTransaction(db, async transaction => {
@@ -396,9 +396,9 @@ export async function approvePurchase(
       transaction.get(transferRef)
     ]);
     if (!purchaseSnapshot.exists() || (purchaseSnapshot.data() as Purchase).status !== "DRAFT") {
-      throw new Error("L'achat a dÃ©jÃ  Ã©tÃ© traitÃ© ou n'existe plus.");
+      throw new Error("L'achat a déjà été traité ou n'existe plus.");
     }
-    if (transferSnapshot.exists()) throw new Error("La livraison de cet achat existe dÃ©jÃ .");
+    if (transferSnapshot.exists()) throw new Error("La livraison de cet achat existe déjà.");
     transaction.set(purchaseRef, omitUndefined(updatedPurchase));
     transaction.set(transferRef, omitUndefined(transfer));
     transaction.set(doc(db, "auditLogs", purchaseAuditLog.id), omitUndefined(purchaseAuditLog));
@@ -407,17 +407,17 @@ export async function approvePurchase(
 }
 
 export async function recordSupplierPayment(purchase: Purchase, payment: SupplierPayment, auditLog?: AuditLog): Promise<Purchase> {
-  if (!Number.isFinite(payment.amount) || payment.amount <= 0) throw new Error("Le montant du paiement doit Ãªtre positif.");
+  if (!Number.isFinite(payment.amount) || payment.amount <= 0) throw new Error("Le montant du paiement doit être positif.");
   let updatedPurchase: Purchase | undefined;
   await runTransaction(db, async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
     const snapshot = await transaction.get(purchaseRef);
     if (!snapshot.exists()) throw new Error("Achat fournisseur introuvable.");
     const current = snapshot.data() as Purchase;
-    if (current.status === "DRAFT") throw new Error("Un achat doit Ãªtre approuvÃ© avant son rÃ¨glement.");
-    if (current.payments.some(item => item.id === payment.id)) throw new Error("Ce paiement existe dÃ©jÃ .");
+    if (current.status === "DRAFT") throw new Error("Un achat doit être approuvé avant son règlement.");
+    if (current.payments.some(item => item.id === payment.id)) throw new Error("Ce paiement existe déjà.");
     const amountPaid = current.amount_paid + payment.amount;
-    if (amountPaid > current.total) throw new Error("Le paiement dÃ©passe le solde de la facture.");
+    if (amountPaid > current.total) throw new Error("Le paiement dépasse le solde de la facture.");
     updatedPurchase = {
       ...current,
       amount_paid: amountPaid,
@@ -434,7 +434,7 @@ export async function recordSupplierPayment(purchase: Purchase, payment: Supplie
       }));
     }
   });
-  if (!updatedPurchase) throw new Error("Le paiement n'a pas pu Ãªtre enregistrÃ©.");
+  if (!updatedPurchase) throw new Error("Le paiement n'a pas pu être enregistré.");
   return updatedPurchase;
 }
 
