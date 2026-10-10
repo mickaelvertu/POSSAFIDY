@@ -1,14 +1,17 @@
+import { storeLabel } from "../services/storeLabel";
 import { useState, useMemo } from "react";
 import { 
   AppUser, 
   AppRoleId, 
   AppPermission, 
   Store, 
+  ArticleTypeCode,
   ALL_PERMISSIONS 
 } from "../types";
 import { 
   ROLE_DEFINITIONS, 
   DEFAULT_ROLE_PERMISSIONS, 
+  DEFAULT_ARTICLE_VISIBILITY,
   PERMISSION_GROUPS, 
   hasPermission
 } from "../services/authService";
@@ -76,6 +79,7 @@ export default function UsersView({
   const [formIsActive, setFormIsActive] = useState(true);
   const [formStoreIds, setFormStoreIds] = useState<string[]>([]);
   const [formPermissions, setFormPermissions] = useState<AppPermission[]>([]);
+  const [formVisibleArticleTypes, setFormVisibleArticleTypes] = useState<ArticleTypeCode[]>([]);
 
   // Permissions of current user
   // Account creation stays self-service through Firebase Auth. Creating Auth users
@@ -131,6 +135,7 @@ export default function UsersView({
     setFormIsActive(user.isActive);
     setFormStoreIds([...(user.storeIds || [])]);
     setFormPermissions([...(user.permissions || [])]);
+    setFormVisibleArticleTypes([...(user.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user.roleId])]);
     setModalTab("general");
   };
 
@@ -146,6 +151,7 @@ export default function UsersView({
     setFormIsActive(true);
     setFormStoreIds([]);
     setFormPermissions([...DEFAULT_ROLE_PERMISSIONS.VENDEUR]);
+    setFormVisibleArticleTypes([...DEFAULT_ARTICLE_VISIBILITY.VENDEUR]);
     setModalTab("general");
   };
 
@@ -193,6 +199,7 @@ export default function UsersView({
         isActive: formIsActive,
         storeIds: formStoreIds,
         permissions: formPermissions,
+        visibleArticleTypes: formVisibleArticleTypes,
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -208,6 +215,7 @@ export default function UsersView({
         isActive: formIsActive,
         storeIds: formStoreIds,
         permissions: formPermissions,
+        visibleArticleTypes: formVisibleArticleTypes,
         updatedAt: Date.now()
       };
       onUpdateUser(updated);
@@ -226,6 +234,7 @@ export default function UsersView({
     setFormRoleId(newRole);
     // Apply role default permissions
     setFormPermissions([...DEFAULT_ROLE_PERMISSIONS[newRole]]);
+    setFormVisibleArticleTypes([...DEFAULT_ARTICLE_VISIBILITY[newRole]]);
   };
 
   // Toggle single permission ON/OFF
@@ -250,6 +259,13 @@ export default function UsersView({
   // Reset to role defaults
   const handleResetToRoleDefaults = () => {
     setFormPermissions([...DEFAULT_ROLE_PERMISSIONS[formRoleId]]);
+    setFormVisibleArticleTypes([...DEFAULT_ARTICLE_VISIBILITY[formRoleId]]);
+  };
+
+  const handleToggleArticleType = (articleType: ArticleTypeCode) => {
+    setFormVisibleArticleTypes(current => current.includes(articleType)
+      ? current.filter(type => type !== articleType)
+      : [...current, articleType]);
   };
 
   // Enable / Disable all
@@ -372,7 +388,7 @@ export default function UsersView({
               >
                 <option value="ALL">Tous les Magasins / PV</option>
                 {stores.map(st => (
-                  <option key={st.id} value={st.id}>{st.name} ({st.code})</option>
+                  <option key={st.id} value={st.id}>{storeLabel(st)}</option>
                 ))}
               </select>
             </div>
@@ -420,8 +436,12 @@ export default function UsersView({
                       const isStoreListExpanded = expandedStoreUsers.has(user.id);
                       const visibleStores = isStoreListExpanded ? assignedStores : assignedStores.slice(0, 3);
                       const defaultPerms = DEFAULT_ROLE_PERMISSIONS[user.roleId] || [];
-                      const isCustomPerms = user.permissions.length !== defaultPerms.length || 
-                        !user.permissions.every(p => defaultPerms.includes(p));
+                      const visibleTypes = user.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user.roleId];
+                      const defaultVisibleTypes = DEFAULT_ARTICLE_VISIBILITY[user.roleId];
+                      const isCustomPerms = user.permissions.length !== defaultPerms.length ||
+                        !user.permissions.every(p => defaultPerms.includes(p)) ||
+                        visibleTypes.length !== defaultVisibleTypes.length ||
+                        !visibleTypes.every(type => defaultVisibleTypes.includes(type));
 
                       return (
                         <tr 
@@ -553,6 +573,16 @@ export default function UsersView({
                                 <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded-full font-medium">
                                   Personnalisé
                                 </span>
+                              )}
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {visibleTypes.map(type => (
+                                <span key={type} className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
+                                  {type === "RAW_MATERIAL" ? "Matières premières" : "Revente"}
+                                </span>
+                              ))}
+                              {visibleTypes.length === 0 && (
+                                <span className="text-[10px] text-slate-500">Aucun article visible</span>
                               )}
                             </div>
                           </td>
@@ -907,6 +937,38 @@ export default function UsersView({
               {/* TAB 3: Granular Permissions (ON/OFF) */}
               {modalTab === "permissions" && (
                 <div className="space-y-6">
+                  <section className="space-y-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Visibilité des articles</h3>
+                      <p className="mt-1 text-xs text-slate-600">Choisissez les types d'articles que cet utilisateur peut voir dans le catalogue, les stocks, les ventes, la production, les transferts et les rapports. Désactivez les deux pour ne montrer aucun article.</p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {([
+                        { type: "RAW_MATERIAL" as const, label: "Matières premières", description: "Articles utilisés en production" },
+                        { type: "RESALE" as const, label: "Produits de revente", description: "Articles vendus ou distribués" }
+                      ]).map(option => {
+                        const enabled = formVisibleArticleTypes.includes(option.type);
+                        return (
+                          <button
+                            key={option.type}
+                            type="button"
+                            role="switch"
+                            aria-checked={enabled}
+                            onClick={() => handleToggleArticleType(option.type)}
+                            className={`flex items-center justify-between gap-3 rounded-lg border p-3 text-left transition ${enabled ? "border-emerald-400 bg-white" : "border-slate-200 bg-white/70"}`}
+                          >
+                            <span><span className="block text-xs font-semibold text-slate-900">{option.label}</span><span className="mt-0.5 block text-[11px] text-slate-500">{option.description}</span></span>
+                            <span className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${enabled ? "bg-emerald-600" : "bg-slate-300"}`}><span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-4" : "translate-x-0.5"}`} /></span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] font-medium text-slate-600">
+                      Autorisés : {formVisibleArticleTypes.length === 0
+                        ? "aucun type d'article"
+                        : formVisibleArticleTypes.map(type => type === "RAW_MATERIAL" ? "matières premières" : "produits de revente").join(" et ")}
+                    </p>
+                  </section>
                   {/* Action Toolbar */}
                   <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <div className="text-xs font-semibold text-slate-700">

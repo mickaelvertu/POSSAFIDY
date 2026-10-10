@@ -1,3 +1,4 @@
+import { storeLabel } from "../services/storeLabel";
 import { FormEvent, useState } from "react";
 import { AppUser, Article, CreditCustomer, ResellerNotification, ResellerOrder, SaleLine, Store, StoreStock } from "../types";
 import { Bell, CheckCircle2, Clock3, Package, Plus, Send, ShoppingBag, Trash2, XCircle } from "lucide-react";
@@ -237,7 +238,7 @@ export default function ResellerPortalView({
               <h2 className="text-lg font-black text-slate-900">{editingOrder ? "Modifier la commande" : "Nouvelle commande"}</h2>
               <label className="text-xs font-bold text-slate-600">Dépôt de préparation
                 <select required value={storeId} onChange={event => setStoreId(event.target.value)} className="ml-2 rounded-lg border border-slate-300 bg-white p-2 text-sm">
-                  {centralStores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}
+                  {centralStores.map(store => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}
                 </select>
               </label>
             </div>

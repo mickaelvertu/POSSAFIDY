@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { authService, hasPermission } from "../../services/authService";
+import { authService, DEFAULT_ARTICLE_VISIBILITY, hasPermission } from "../../services/authService";
 import { AppRoleId, AppUser, Article, AuditLog, Category, CreditCustomer, CreditFollowUp, CreditPayment, Employee, Expense, GeneralFilters, Payslip, Purchase, ResellerNotification, ResellerOrder, Sale, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
 import UsersView from "../UsersView";
@@ -16,8 +16,9 @@ import {
   loadInventoryData,
   loadStores,
   loadProcurementData,
-  receivePurchase,
+  approvePurchase,
   recordSupplierPayment,
+  saveDraftPurchase,
   saveArticle,
   saveCategory,
   saveStockAdjustment,
@@ -82,11 +83,25 @@ function toAppUser(user: User): AppUser {
     roleId,
     storeIds: user.assignedStores || [],
     permissions: user.permissions || [],
+    visibleArticleTypes: user.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[roleId],
     isActive: user.status === "ACTIVE",
     accountStatus: user.status,
     createdAt: Date.parse(user.createdAt),
     updatedAt: Date.parse(user.updatedAt)
   };
+}
+
+function containsHiddenArticleReference(value: unknown, visibleArticleIds: Set<string>): boolean {
+  if (Array.isArray(value)) return value.some(item => containsHiddenArticleReference(item, visibleArticleIds));
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  if (typeof record.article_id === "string" && !visibleArticleIds.has(record.article_id)) return true;
+  if (
+    (record.article_type === "RAW_MATERIAL" || record.article_type === "RESALE") &&
+    typeof record.id === "string" &&
+    !visibleArticleIds.has(record.id)
+  ) return true;
+  return Object.values(record).some(item => containsHiddenArticleReference(item, visibleArticleIds));
 }
 
 export default function AuthenticatedSessionView() {
@@ -136,7 +151,10 @@ export default function AuthenticatedSessionView() {
   const canManageStores = Boolean(user && (user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
 
   useEffect(() => {
-    if (!canManageUsers) return;
+    if (!canManageUsers) {
+      setManagedUsers([]);
+      return;
+    }
     authService.listManagedUsers().then(response => {
       if (response.success && response.data) {
         setManagedUsers(response.data.users.map(toAppUser));
@@ -166,14 +184,22 @@ export default function AuthenticatedSessionView() {
 
     async function loadInventory() {
       if (!user) return;
+      setArticles([]);
+      setStocks([]);
+      setMovements([]);
+      setTransfers([]);
+      setSales([]);
+      setProductions([]);
+      setAuditLogs([]);
       const isReseller = user.role === "REVENDEUR";
       const canManageCredit = Boolean(user.permissions.includes("credit.manage"));
       let unitAuditLogs: AuditLog[] = [];
 
       // Each block is independent: stores appear as soon as they load, even if another collection fails.
       const storesPromise = withRetry("Stores", loadStores);
+      const visibleArticleTypes = user.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user.role as AppRoleId] ?? [];
       const catalogPromise = withRetry("Catalog", async () => {
-        const catalog = await loadCatalogData();
+        const catalog = await loadCatalogData(visibleArticleTypes);
         const loadedUnits = canManageStores
           ? await loadUnits(catalog.articles, toAppUser(user), entries => { unitAuditLogs = entries; })
           : [];
@@ -192,15 +218,18 @@ export default function AuthenticatedSessionView() {
         }),
         withRetry("Inventory", () => loadInventoryData(canManageStores ? undefined : user.assignedStores)).then(async inventory => {
           if (!isMounted || !inventory) return;
-          setMovements(inventory.movements);
-          setTransfers(inventory.transfers);
+          const catalogResult = await catalogPromise;
+          if (!isMounted || !catalogResult) return;
+          const articleIds = new Set(catalogResult.catalog.articles.map(article => article.id));
+          setMovements(inventory.movements.filter(movement => articleIds.has(movement.article_id)));
+          setTransfers(inventory.transfers.filter(transfer => transfer.lines.every(line => articleIds.has(line.article_id))));
           if (!isReseller) {
-            setStocks(inventory.stocks);
+            setStocks(inventory.stocks.filter(stock => articleIds.has(stock.article_id)));
             return;
           }
-          const [loadedStores, result] = await Promise.all([storesPromise, catalogPromise]);
-          if (!loadedStores || !result) return;
-          const resellerStocks = await withRetry("Reseller stocks", () => loadResellerStocks(loadedStores, result.catalog.articles));
+          const loadedStores = await storesPromise;
+          if (!loadedStores) return;
+          const resellerStocks = await withRetry("Reseller stocks", () => loadResellerStocks(loadedStores, catalogResult.catalog.articles));
           if (isMounted && resellerStocks) setStocks(resellerStocks);
         }),
         canManageStores
@@ -343,6 +372,7 @@ export default function AuthenticatedSessionView() {
       email: newUser.email,
       role: newUser.roleId,
       permissions: newUser.permissions,
+      visibleArticleTypes: newUser.visibleArticleTypes || [],
       assignedStores: newUser.storeIds,
       status: newUser.isActive ? "ACTIVE" : "PENDING"
     });
@@ -387,6 +417,7 @@ export default function AuthenticatedSessionView() {
       email: updatedUser.email,
       role: updatedUser.roleId,
       permissions: updatedUser.permissions,
+      visibleArticleTypes: updatedUser.visibleArticleTypes || [],
       assignedStores: updatedUser.storeIds,
       status: updatedUser.isActive ? "ACTIVE" : "DISABLED"
     });
@@ -445,11 +476,27 @@ export default function AuthenticatedSessionView() {
     ? inventoryStores.filter(store => user.assignedStores.includes(store.id))
     : inventoryStores;
   // Non-admin roles only see transfers involving one of their assigned stores.
+  const visibleArticleIds = new Set<string>(articles.map(article => article.id));
   const visibleTransfers = currentAppUser && currentAppUser.roleId !== "SUPER_ADMIN" && currentAppUser.roleId !== "ADMIN"
     ? transfers.filter(transfer =>
-        currentAppUser.storeIds.includes(transfer.source_store_id) || currentAppUser.storeIds.includes(transfer.destination_store_id)
+        (currentAppUser.storeIds.includes(transfer.source_store_id) || currentAppUser.storeIds.includes(transfer.destination_store_id)) &&
+        transfer.lines.every(line => visibleArticleIds.has(line.article_id))
       )
-    : transfers;
+    : transfers.filter(transfer => transfer.lines.every(line => visibleArticleIds.has(line.article_id)));
+  const visibleSales = sales.filter(sale => sale.lines.every(line =>
+    line.line_type === "SERVICE" || visibleArticleIds.has(line.article_id)
+  ));
+  const visibleResellerOrders = resellerOrders.filter(order =>
+    order.lines.every(line => visibleArticleIds.has(line.article_id))
+  );
+  const visibleProductions = productions.filter(production =>
+    [...production.consumptions, ...production.outputs].every(line => visibleArticleIds.has(line.article_id))
+  );
+  const visiblePurchases = purchases.filter(purchase => purchase.lines.every(line => visibleArticleIds.has(line.article_id)));
+  const visibleAuditLogs = auditLogs.filter(entry =>
+    (entry.entity_type !== "ARTICLE" || visibleArticleIds.has(entry.entity_id)) &&
+    !containsHiddenArticleReference([entry.old_value, entry.new_value], visibleArticleIds)
+  );
 
   const handleImportInitialStocks = async (rows: InitialStockImportRow[]) => {
     if (!currentAppUser || currentAppUser.roleId !== "SUPER_ADMIN") {
@@ -1114,19 +1161,21 @@ export default function AuthenticatedSessionView() {
       if (line.quantity_accepted > 0) {
         const { newStocks, beforeQty, afterQty } = updateStockQuantity(updatedStocks, transfer.destination_store_id, line.article_id, line.quantity_accepted);
         updatedStocks = newStocks;
+        const isSupplierDelivery = transfer.type === "SUPPLIER_TO_STORE";
         movements.push({
           id: `movement-${transfer.id}-receive-${line.article_id}`,
           store_id: transfer.destination_store_id,
           article_id: line.article_id,
-          movement_type: transfer.type,
+          movement_type: isSupplierDelivery ? "PURCHASE" : transfer.type,
           quantity: line.quantity_accepted,
-          reference_type: "TRANSFER",
-          reference_id: transfer.id,
-          reference_number: transfer.transfer_number,
+          reference_type: isSupplierDelivery ? "PURCHASE" : "TRANSFER",
+          reference_id: isSupplierDelivery ? transfer.purchase_id! : transfer.id,
+          reference_number: isSupplierDelivery ? transfer.purchase_number || transfer.transfer_number : transfer.transfer_number,
           before_quantity: beforeQty,
           after_quantity: afterQty,
           created_by: currentAppUser?.uid || "",
           created_by_name: currentAppUser?.displayName || currentAppUser?.email || "Utilisateur",
+          notes: isSupplierDelivery ? `Réception achat fournisseur ${transfer.supplier_name || transfer.source_name || ""}` : undefined,
           created_at: Date.now()
         });
       }
@@ -1152,12 +1201,23 @@ export default function AuthenticatedSessionView() {
     );
     try {
       const auditLog = createAuditLog(currentAppUser, hasDiscrepancy ? "TRANSFER_DISCREPANCY_RECORDED" : "TRANSFER_RECEIVED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.destination_store_id);
-      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements, auditLog);
+      const purchaseAuditLog = transfer.purchase_id
+        ? createAuditLog(
+            currentAppUser,
+            "PURCHASE_RECEIVED",
+            "PURCHASE",
+            transfer.purchase_id,
+            { status: "APPROVED", transfer_id: transfer.id },
+            { status: "RECEIVED", transfer_id: transfer.id, received_by: currentAppUser.uid, received_by_name: currentAppUser.displayName, received_at: timestamp },
+            transfer.destination_store_id
+          )
+        : undefined;
+      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements, auditLog, purchaseAuditLog);
       setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
         .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
       setMovements(current => [...result.movements, ...current]);
       setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
-      setAuditLogs(current => [auditLog, ...current]);
+      setAuditLogs(current => [auditLog, ...(purchaseAuditLog ? [purchaseAuditLog] : []), ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du transfert dans Firestore.");
     }
@@ -1257,6 +1317,8 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateArticle = async (article: Article) => {
+    const allowedTypes = user?.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user?.role as AppRoleId] ?? [];
+    if (!allowedTypes.includes(article.article_type)) throw new Error("Vous ne pouvez pas créer ce type d'article.");
     const auditLog = createAuditLog(currentAppUser!, "ARTICLE_CREATED", "ARTICLE", article.id, undefined, article);
     await saveArticle(article, auditLog);
     setArticles(current => [...current, article]);
@@ -1264,6 +1326,8 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleUpdateArticle = async (article: Article) => {
+    const allowedTypes = user?.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user?.role as AppRoleId] ?? [];
+    if (!allowedTypes.includes(article.article_type)) throw new Error("Vous ne pouvez pas modifier ce type d'article.");
     const previous = articles.find(item => item.id === article.id);
     const auditLog = createAuditLog(currentAppUser!, "ARTICLE_UPDATED", "ARTICLE", article.id, previous, article);
     await saveArticle(article, auditLog);
@@ -1326,6 +1390,10 @@ export default function AuthenticatedSessionView() {
   const handleImportCatalogData = async (data: { articles: Article[]; categories: Category[] }) => {
     if (!data || !Array.isArray(data.articles) || !Array.isArray(data.categories)) {
       throw new Error("Le fichier catalogue doit contenir les tableaux articles et catégories.");
+    }
+    const allowedTypes = user?.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user?.role as AppRoleId] ?? [];
+    if (data.articles.some(article => !allowedTypes.includes(article.article_type))) {
+      throw new Error("Le fichier contient un type d'article que votre compte n'est pas autorisé à voir ou gérer.");
     }
     const auditLogs = [
       ...data.articles.map(article => createAuditLog(
@@ -1419,12 +1487,77 @@ export default function AuthenticatedSessionView() {
     setAuditLogs(current => [...auditLogs, ...current]);
   };
 
-  const handleReceivePurchase = async (purchase: Purchase) => {
-    const auditLog = createAuditLog(currentAppUser!, "PURCHASE_RECEIVED", "PURCHASE", purchase.id, undefined, purchase, purchase.store_id);
-    const updatedStocks = await receivePurchase(purchase, stocks, auditLog);
-    setStocks(updatedStocks);
+  const handleCreatePurchase = async (purchase: Purchase) => {
+    if (!currentAppUser || (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN")) {
+      throw new Error("Seul un administrateur peut créer un brouillon d'achat.");
+    }
+    const auditLog = createAuditLog(currentAppUser, "PURCHASE_DRAFT_CREATED", "PURCHASE", purchase.id, undefined, purchase, purchase.store_id);
+    await saveDraftPurchase(purchase, auditLog);
     setPurchases(current => [purchase, ...current]);
     setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleApprovePurchase = async (purchase: Purchase) => {
+    if (!currentAppUser || (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN")) {
+      throw new Error("Seul un administrateur peut approuver un achat.");
+    }
+    if (purchase.status !== "DRAFT" || !purchase.created_by || purchase.created_by === currentAppUser.uid) {
+      throw new Error("Un autre administrateur doit approuver ce brouillon d'achat.");
+    }
+    const timestamp = Date.now();
+    const transferId = `trf-purchase-${purchase.id}`;
+    const updatedPurchase: Purchase = {
+      ...purchase,
+      status: "APPROVED",
+      approved_by: currentAppUser.uid,
+      approved_by_name: currentAppUser.displayName,
+      approved_at: timestamp,
+      transfer_id: transferId,
+      updated_at: timestamp
+    };
+    const transfer: StockTransfer = {
+      id: transferId,
+      transfer_number: generateRef("TRF", transfers.length),
+      type: "SUPPLIER_TO_STORE",
+      source_store_id: `supplier-${purchase.supplier_id}`,
+      source_name: purchase.supplier_name,
+      destination_store_id: purchase.store_id,
+      purchase_id: purchase.id,
+      purchase_number: purchase.purchase_number,
+      supplier_id: purchase.supplier_id,
+      supplier_name: purchase.supplier_name,
+      status: "IN_TRANSIT",
+      requested_by: purchase.created_by,
+      requested_by_name: purchase.created_by_name || "Équipe achats",
+      approved_by: currentAppUser.uid,
+      approved_by_name: currentAppUser.displayName,
+      approved_at: timestamp,
+      shipped_by: `supplier-${purchase.supplier_id}`,
+      shipped_by_name: purchase.supplier_name,
+      shipped_at: timestamp,
+      lines: purchase.lines.map(line => ({
+        id: line.id,
+        transfer_id: transferId,
+        article_id: line.article_id,
+        article_code: line.article_code,
+        article_name: line.article_name,
+        unit: line.unit,
+        quantity_sent: line.quantity,
+        quantity_received: 0,
+        quantity_accepted: 0,
+        quantity_rejected: 0
+      })),
+      note: purchase.notes,
+      has_discrepancy: false,
+      created_at: timestamp,
+      updated_at: timestamp
+    };
+    const purchaseAuditLog = createAuditLog(currentAppUser, "PURCHASE_APPROVED", "PURCHASE", purchase.id, purchase, updatedPurchase, purchase.store_id);
+    const transferAuditLog = createAuditLog(currentAppUser, "PURCHASE_DELIVERY_CREATED", "TRANSFER", transfer.id, undefined, transfer, purchase.store_id);
+    await approvePurchase(purchase, updatedPurchase, transfer, purchaseAuditLog, transferAuditLog);
+    setPurchases(current => current.map(item => item.id === purchase.id ? updatedPurchase : item));
+    setTransfers(current => [transfer, ...current]);
+    setAuditLogs(current => [purchaseAuditLog, transferAuditLog, ...current]);
   };
   
   const handleImportUnits = async (data: UnitOfMeasure[]) => {
@@ -1516,6 +1649,22 @@ export default function AuthenticatedSessionView() {
 
   const handleCreateExpense = async (expense: Expense) => {
     if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create"))) throw new Error("Vous ne disposez pas de la permission de créer une dépense.");
+    const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
+    if (expense.category === "SALARY_ADVANCE" && !isAdmin) throw new Error("Seul un administrateur peut enregistrer une avance sur salaire.");
+    if (expense.category === "SALARY_ADVANCE") {
+      const employee = employees.find(item => item.id === expense.employee_id && item.is_active);
+      if (!employee || !expense.description.trim()) throw new Error("Sélectionnez un employé actif et indiquez le motif de l'avance.");
+      const employeeName = `${employee.first_name} ${employee.last_name}`;
+      expense = {
+        ...expense,
+        employee_name: employeeName,
+        payee: employeeName,
+        salary_advance_id: `advance-${expense.id}`,
+        payment_status: "PAID"
+      };
+    } else {
+      expense = { ...expense, employee_id: undefined, employee_name: undefined, salary_advance_id: undefined };
+    }
     const isSuperAdmin = currentAppUser.roleId === "SUPER_ADMIN";
     if (!isSuperAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id))) {
       throw new Error("Vous ne pouvez enregistrer une dépense que pour un magasin attribué à votre compte.");
@@ -1528,6 +1677,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleUpdateExpense = async (original: Expense, expense: Expense) => {
+    const isAdmin = currentAppUser?.roleId === "ADMIN" || currentAppUser?.roleId === "SUPER_ADMIN";
     const isSuperAdmin = currentAppUser?.roleId === "SUPER_ADMIN";
     if (
       user?.status !== "ACTIVE" ||
@@ -1538,6 +1688,23 @@ export default function AuthenticatedSessionView() {
     ) {
       throw new Error("Vous pouvez uniquement modifier vos propres brouillons dans un magasin attribué à votre compte.");
     }
+    if ((original.category === "SALARY_ADVANCE" || expense.category === "SALARY_ADVANCE") && !isAdmin) {
+      throw new Error("Seul un administrateur peut modifier une avance sur salaire.");
+    }
+    if (expense.category === "SALARY_ADVANCE") {
+      const employee = employees.find(item => item.id === expense.employee_id && item.is_active);
+      if (!employee || !expense.description.trim()) throw new Error("Sélectionnez un employé actif et indiquez le motif de l'avance.");
+      const employeeName = `${employee.first_name} ${employee.last_name}`;
+      expense = {
+        ...expense,
+        employee_name: employeeName,
+        payee: employeeName,
+        salary_advance_id: `advance-${expense.id}`,
+        payment_status: "PAID"
+      };
+    } else {
+      expense = { ...expense, employee_id: undefined, employee_name: undefined, salary_advance_id: undefined };
+    }
     const auditLog = createAuditLog(currentAppUser, "EXPENSE_DRAFT_UPDATED", "EXPENSE", expense.id, original, expense, expense.store_id);
     const updated = await updateDraftExpense(original, expense, currentAppUser.uid, auditLog);
     setExpenses(current => current.map(item => item.id === updated.id ? updated : item)
@@ -1547,10 +1714,62 @@ export default function AuthenticatedSessionView() {
 
   const handleValidateExpense = async (expense: Expense) => {
     if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || (currentAppUser.roleId !== "SUPER_ADMIN" && (expense.created_by !== currentAppUser.uid || !expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))) throw new Error("Vous pouvez uniquement valider vos propres dépenses avec la permission de création.");
+    const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
+    let salaryAdvance: SalaryAdvance | undefined;
+    let salaryAdvanceAuditLog: AuditLog | undefined;
+    if (expense.category === "SALARY_ADVANCE") {
+      if (!isAdmin) throw new Error("Seul un administrateur peut valider une avance sur salaire.");
+      const employee = employees.find(item => item.id === expense.employee_id && item.is_active);
+      if (!employee || expense.payment_status !== "PAID" || !expense.description.trim()) {
+        throw new Error("L'employé, le motif ou le paiement de cette avance n'est pas valide.");
+      }
+      const timestamp = Date.now();
+      const employeeName = `${employee.first_name} ${employee.last_name}`;
+      salaryAdvance = {
+        id: expense.salary_advance_id || `advance-${expense.id}`,
+        employee_id: employee.id,
+        employee_name: employeeName,
+        amount: expense.amount,
+        advance_date: expense.expense_date,
+        payment_method: expense.payment_method,
+        reason: expense.description,
+        status: "OUTSTANDING",
+        expense_id: expense.id,
+        created_at: timestamp,
+        updated_at: timestamp,
+        created_by: currentAppUser.uid
+      };
+      salaryAdvanceAuditLog = createAuditLog(
+        currentAppUser,
+        "SALARY_ADVANCE_CREATED",
+        "SALARY_ADVANCE",
+        salaryAdvance.id,
+        undefined,
+        salaryAdvance,
+        expense.store_id
+      );
+    }
     const auditLog = createAuditLog(currentAppUser, "EXPENSE_VALIDATED", "EXPENSE", expense.id, expense, undefined, expense.store_id);
-    const updated = await validateExpense(expense, currentAppUser.uid, auditLog, currentAppUser.roleId === "SUPER_ADMIN");
+    const updated = await validateExpense(
+      expense,
+      currentAppUser.uid,
+      auditLog,
+      currentAppUser.roleId === "SUPER_ADMIN",
+      isAdmin,
+      salaryAdvance,
+      salaryAdvanceAuditLog
+    );
     setExpenses(current => current.map(item => item.id === updated.id ? updated : item));
+    if (salaryAdvance) {
+      const createdAdvance = salaryAdvance;
+      setSalaryAdvances(current => [createdAdvance, ...current.filter(item => item.id !== createdAdvance.id)]);
+    }
     setAuditLogs(current => [{ ...auditLog, new_value: updated }, ...current]);
+    if (salaryAdvance && salaryAdvanceAuditLog) {
+      const createdAdvance = salaryAdvance;
+      const advanceAudit = salaryAdvanceAuditLog;
+      setAuditLogs(current => [{ ...advanceAudit, new_value: createdAdvance }, ...current]);
+    }
   };
   const handleDeleteExpense = async (expense: Expense) => {
     if (currentAppUser?.roleId !== "SUPER_ADMIN") throw new Error("Suppression réservée aux super administrateurs.");
@@ -1621,7 +1840,7 @@ export default function AuthenticatedSessionView() {
             <ResellerPortalView
               user={currentAppUser}
               isAdmin={currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN"}
-              orders={resellerOrders}
+              orders={visibleResellerOrders}
               notifications={resellerNotifications}
               articles={articles}
               stores={inventoryStores}
@@ -1644,7 +1863,7 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <SalesView
-              sales={sales}
+              sales={visibleSales}
               creditCustomers={creditCustomers}
               stores={accessibleStores}
               articles={articles}
@@ -1728,6 +1947,7 @@ export default function AuthenticatedSessionView() {
               categories={categories}
               units={units}
               currentUser={currentAppUser}
+              visibleArticleTypes={currentAppUser.visibleArticleTypes || []}
               onCreateArticle={handleCreateArticle}
               onUpdateArticle={handleUpdateArticle}
               onToggleArticleStatus={handleToggleArticleStatus}
@@ -1784,9 +2004,9 @@ export default function AuthenticatedSessionView() {
               stocks={stocks}
               transfers={visibleTransfers}
               movements={movements}
-              sales={sales}
-              productions={productions}
-              auditLogs={auditLogs}
+              sales={visibleSales}
+              productions={visibleProductions}
+              auditLogs={visibleAuditLogs}
               currentUser={currentAppUser}
               onOpenReportViewer={(type, filters) => setReportRequest({ type, filters })}
             />
@@ -1800,9 +2020,9 @@ export default function AuthenticatedSessionView() {
                 stocks={stocks}
                 transfers={visibleTransfers}
                 movements={movements}
-                sales={sales}
-                productions={productions}
-                auditLogs={auditLogs}
+                sales={visibleSales}
+                productions={visibleProductions}
+                auditLogs={visibleAuditLogs}
                 currentUser={currentAppUser}
                 onClose={() => setReportRequest(null)}
               />
@@ -1822,7 +2042,7 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <AuditView
-              auditLogs={auditLogs}
+              auditLogs={visibleAuditLogs}
               stores={accessibleStores}
               users={managedUsers}
               canViewConnectionStatus={canManageStores}
@@ -1838,7 +2058,7 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <ProductionView
-              productions={productions}
+              productions={visibleProductions}
               stores={accessibleStores}
               articles={articles}
               stocks={stocks}
@@ -1860,14 +2080,15 @@ export default function AuthenticatedSessionView() {
             </button>
             <ProcurementView
               suppliers={suppliers}
-              purchases={purchases}
+              purchases={visiblePurchases}
               stores={inventoryStores}
               articles={articles}
               stocks={stocks}
               currentUser={currentAppUser}
               onCreateSupplier={handleCreateSupplier}
               onToggleSupplier={handleToggleSupplier}
-              onReceivePurchase={handleReceivePurchase}
+              onCreatePurchase={handleCreatePurchase}
+              onApprovePurchase={handleApprovePurchase}
               onRecordPayment={handleRecordSupplierPayment}
               onImportData={handleImportSuppliers}
               onResetData={handleResetSuppliers}
@@ -1884,9 +2105,11 @@ export default function AuthenticatedSessionView() {
             </button>
             <ExpensesView
               expenses={expenses}
+              employees={employees}
               stores={accessibleStores}
               currentUser={currentAppUser}
               canCreate={user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create"))}
+              canCreateSalaryAdvance={user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN")}
               onValidateExpense={handleValidateExpense}
               onDeleteExpense={handleDeleteExpense}
               onCreateExpense={handleCreateExpense}
@@ -1908,7 +2131,7 @@ export default function AuthenticatedSessionView() {
             </button>
             <CreditManagementView
               customers={creditCustomers}
-              sales={sales}
+              sales={visibleSales}
               currentUser={currentAppUser}
               resellerUsers={managedUsers.filter(managedUser => managedUser.roleId === "REVENDEUR")}
               onSaveCustomer={handleSaveCreditCustomer}
@@ -1925,7 +2148,7 @@ export default function AuthenticatedSessionView() {
             >
               ← Retour à l'accueil
             </button>
-            <StaffView employees={employees} stores={inventoryStores} onOpenPayroll={() => setActiveModule("payroll")} onSaveEmployee={handleSaveEmployee} />
+            <StaffView employees={employees} stores={inventoryStores} expenses={expenses} advances={salaryAdvances} onOpenPayroll={() => setActiveModule("payroll")} onSaveEmployee={handleSaveEmployee} />
           </section>
         ) : activeModule === "payroll" && currentAppUser && canManageStores ? (
           <section className="space-y-4">
@@ -1949,9 +2172,9 @@ export default function AuthenticatedSessionView() {
           <RoleHomeView
             user={toAppUser(user)}
             stores={inventoryStores}
-            sales={sales}
+            sales={visibleSales}
             expenses={expenses}
-            auditLogs={auditLogs}
+            auditLogs={visibleAuditLogs}
             onOpenUsers={openUserManagement}
             onOpenSales={() => setActiveModule("sales")}
             onOpenStocks={() => setActiveModule("stocks")}

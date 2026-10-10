@@ -164,9 +164,10 @@ export default function SalesView({
     }
 
     receipt.classList.add("thermal-print-sizing");
-    const contentHeightMm = Math.ceil(receipt.getBoundingClientRect().height * 25.4 / 96) + 2;
+    const contentHeightMm = Math.ceil(receipt.getBoundingClientRect().height * 25.4 / 96) + 1;
     const pageStyle = document.createElement("style");
-    pageStyle.textContent = `@page thermal-receipt { size: 80mm ${contentHeightMm}mm; margin: 0; }`;
+    // Unnamed @page too: some engines (Android WebView, older browsers) ignore named pages and fall back to the 15mm default.
+    pageStyle.textContent = `@page { size: 80mm ${contentHeightMm}mm; margin: 0; } @page thermal-receipt { size: 80mm ${contentHeightMm}mm; margin: 0; } @media print { html, body { margin: 0 !important; padding: 0 !important; height: auto !important; min-height: 0 !important; } }`;
     document.head.appendChild(pageStyle);
     window.addEventListener("afterprint", () => {
       receipt.classList.remove("thermal-print-sizing");
@@ -909,8 +910,8 @@ export default function SalesView({
       {/* TICKET DE CAISSE MODAL */}
       {receiptSale && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="printable-document thermal-receipt bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 print:hidden">
+          <div className="printable-document thermal-receipt bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-xs max-h-[90vh] overflow-y-auto print:max-h-none">
+            <div className="sticky -top-6 -mx-6 -mt-6 px-6 pt-6 z-10 bg-white flex items-center justify-between pb-3 border-b border-slate-200 print:hidden">
               <span className="font-bold text-slate-900">Reçu Caisse Officiel</span>
               <button
                 type="button"
@@ -922,8 +923,8 @@ export default function SalesView({
             </div>
 
             {/* Receipt Content */}
-            <div className="my-4 text-center border-b border-dashed border-slate-300 pb-3">
-              <img src="/branding/gileada-logo.png" alt="GILEADA Madagascar" className="mx-auto mb-2 h-20 w-44 object-contain" />
+            <div className="my-4 print:mt-0 print:mb-1 text-center border-b border-dashed border-slate-300 pb-3">
+              <img src="/branding/gileada-logo.png" alt="GILEADA Madagascar" className="mx-auto mb-1 h-20 w-44 object-contain print:h-12 print:w-32" />
               <p className="text-[10px] text-slate-500">Soins Naturels & Remèdes Thérapeutiques</p>
               <p className="text-[10px] font-mono text-slate-400 mt-1">Ticket N° {receiptSale.sale_number}</p>
               <p className="text-[10px] text-slate-500">
@@ -948,7 +949,7 @@ export default function SalesView({
               ))}
             </div>
 
-            <div className="my-3 space-y-1 text-right font-mono">
+            <div className="my-3 print:my-1 space-y-1 text-right font-mono">
               <div className="flex justify-between text-slate-600">
                 <span>Total Net :</span>
                 <span className="font-bold text-slate-900">{receiptSale.total.toLocaleString("fr-FR")} Ar</span>
@@ -968,7 +969,7 @@ export default function SalesView({
               <p className="font-mono mt-0.5">Vendeur: {receiptSale.seller_name}</p>
             </div>
 
-            <div className="mt-4 flex gap-2 print:hidden">
+            <div className="sticky -bottom-6 -mx-6 -mb-6 mt-4 px-6 py-3 z-10 bg-white border-t border-slate-200 flex gap-2 print:hidden">
               <button
                 type="button"
                 onClick={handlePrintReceipt}

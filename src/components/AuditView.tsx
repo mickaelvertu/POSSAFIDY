@@ -1,3 +1,4 @@
+import { storeLabel } from "../services/storeLabel";
 import { useEffect, useMemo, useState } from "react";
 import { AuditLog, AppUser, Store } from "../types";
 import { subscribeUserConnections, UserConnection } from "../services/presenceService";
@@ -332,7 +333,7 @@ export default function AuditView({
           <select value={selectedStore} onChange={event => setSelectedStore(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-900">
             <option value="ALL">Tous les magasins</option>
             <option value="GLOBAL">Système global</option>
-            {stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}
+            {stores.map(store => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}
           </select>
         </label>
         <label className="text-xs font-semibold text-slate-600">

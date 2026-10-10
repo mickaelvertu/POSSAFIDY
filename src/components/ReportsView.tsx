@@ -1,3 +1,4 @@
+import { storeLabel } from "../services/storeLabel";
 import { useMemo, useState } from "react";
 import { 
   ReportType, 
@@ -357,7 +358,7 @@ export default function ReportsView({
                   }`}
                 >
                   {isChecked ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
-                  {s.name} ({s.code})
+                  {storeLabel(s)}
                 </button>
               );
             })}

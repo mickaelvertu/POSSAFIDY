@@ -1,9 +1,12 @@
+import { storeLabel } from "../services/storeLabel";
 import { FormEvent, useMemo, useState } from "react";
-import { Banknote, Pencil, Plus, Search, UserCheck, UserX, Users } from "lucide-react";
-import { Employee, EmployeeContractType, Store } from "../types";
+import { Banknote, Eye, Pencil, Plus, Search, UserCheck, UserX, Users, X } from "lucide-react";
+import { Employee, EmployeeContractType, Expense, SalaryAdvance, Store } from "../types";
 
 interface StaffViewProps {
   employees: Employee[];
+  expenses: Expense[];
+  advances: SalaryAdvance[];
   stores: Store[];
   onOpenPayroll: () => void;
   onSaveEmployee: (employee: Employee, isNew: boolean) => Promise<void>;
@@ -42,8 +45,9 @@ const emptyForm = (): FormState => ({
   hireDate: dateInputValue(Date.now()), contractType: "CDI", salary: "", notes: ""
 });
 
-export default function StaffView({ employees, stores, onOpenPayroll, onSaveEmployee }: StaffViewProps) {
+export default function StaffView({ employees, expenses, advances, stores, onOpenPayroll, onSaveEmployee }: StaffViewProps) {
   const [editing, setEditing] = useState<Employee | null>(null);
+  const [profileEmployeeId, setProfileEmployeeId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [search, setSearch] = useState("");
@@ -66,6 +70,17 @@ export default function StaffView({ employees, stores, onOpenPayroll, onSaveEmpl
 
   const active = employees.filter(employee => employee.is_active);
   const payroll = active.reduce((total, employee) => total + (employee.salary || 0), 0);
+  const profileEmployee = employees.find(employee => employee.id === profileEmployeeId);
+  const profileExpenses = expenses.filter(expense => expense.employee_id === profileEmployeeId)
+    .sort((left, right) => right.expense_date - left.expense_date);
+  const profileAdvances = advances.filter(advance => advance.employee_id === profileEmployeeId)
+    .sort((left, right) => right.advance_date - left.advance_date);
+  const profileExpenseTotal = profileExpenses
+    .filter(expense => expense.status !== "DRAFT")
+    .reduce((total, expense) => total + expense.amount, 0);
+  const outstandingAdvanceTotal = profileAdvances
+    .filter(advance => advance.status === "OUTSTANDING")
+    .reduce((total, advance) => total + advance.amount, 0);
 
   const openCreate = () => {
     setEditing(null);
@@ -173,6 +188,48 @@ export default function StaffView({ employees, stores, onOpenPayroll, onSaveEmpl
         <div className="rounded-xl bg-white p-4 shadow-sm"><dt className="text-xs text-slate-500">Masse salariale mensuelle</dt><dd className="mt-1 text-2xl font-black text-slate-900">{money(payroll)}</dd></div>
       </dl>
 
+      {profileEmployee && (
+        <section className="space-y-4 rounded-xl bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Fiche de {profileEmployee.first_name} {profileEmployee.last_name}</h3>
+              <p className="mt-1 text-xs text-slate-500">{profileEmployee.position} · {storeName(profileEmployee.store_id)}</p>
+            </div>
+            <button type="button" onClick={() => setProfileEmployeeId(null)} aria-label="Fermer la fiche" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+          </div>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg bg-slate-50 p-3"><dt className="text-xs text-slate-500">Dépenses associées validées</dt><dd className="mt-1 font-bold text-slate-900">{money(profileExpenseTotal)}</dd></div>
+            <div className="rounded-lg bg-amber-50 p-3"><dt className="text-xs text-amber-800">Avances restant à déduire en paie</dt><dd className="mt-1 font-bold text-amber-950">{money(outstandingAdvanceTotal)}</dd></div>
+          </dl>
+          <div>
+            <h4 className="mb-2 text-sm font-semibold text-slate-800">Dépenses enregistrées à son nom</h4>
+            {profileExpenses.length ? (
+              <ul className="divide-y divide-slate-100">
+                {profileExpenses.map(expense => (
+                  <li key={expense.id} className="flex items-center justify-between gap-3 py-2 text-xs">
+                    <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{expense.description || "Dépense"}{expense.category === "SALARY_ADVANCE" ? " · Avance sur salaire" : ""}</span><span className="text-slate-500">{new Date(expense.expense_date).toLocaleDateString("fr-FR")} · {expense.status === "DRAFT" ? "Brouillon" : "Validée"}</span></span>
+                    <span className="shrink-0 font-semibold text-slate-900">{money(expense.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-xs text-slate-500">Aucune dépense enregistrée à son nom.</p>}
+          </div>
+          <div>
+            <h4 className="mb-2 text-sm font-semibold text-slate-800">Historique des avances sur salaire</h4>
+            {profileAdvances.length ? (
+              <ul className="divide-y divide-slate-100">
+                {profileAdvances.map(advance => (
+                  <li key={advance.id} className="flex items-center justify-between gap-3 py-2 text-xs">
+                    <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{advance.reason || "Avance sur salaire"}</span><span className="text-slate-500">{new Date(advance.advance_date).toLocaleDateString("fr-FR")} · {advance.status === "OUTSTANDING" ? "À déduire" : "Déduite"}{advance.expense_id ? " · enregistrée dans les dépenses" : ""}</span></span>
+                    <span className="shrink-0 font-semibold text-slate-900">{money(advance.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-xs text-slate-500">Aucune avance sur salaire.</p>}
+          </div>
+        </section>
+      )}
+
       {isFormOpen && (
         <form onSubmit={handleSubmit} className="space-y-4 rounded-xl bg-white p-5 shadow-sm">
           <h3 className="text-sm font-bold text-slate-900">{editing ? `Modifier ${editing.first_name} ${editing.last_name}` : "Nouvel employé"}</h3>
@@ -183,7 +240,7 @@ export default function StaffView({ employees, stores, onOpenPayroll, onSaveEmpl
             <label className="space-y-1 text-xs font-semibold text-slate-600">Magasin d'affectation
               <select className={inputClass} value={form.storeId} onChange={event => setField("storeId", event.target.value)}>
                 <option value="">Non affecté</option>
-                {stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}
+                {stores.map(store => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}
               </select>
             </label>
             <label className="space-y-1 text-xs font-semibold text-slate-600">Téléphone<input className={inputClass} value={form.phone} onChange={event => setField("phone", event.target.value)} /></label>
@@ -215,7 +272,7 @@ export default function StaffView({ employees, stores, onOpenPayroll, onSaveEmpl
           </div>
           <select className={`${inputClass} sm:w-52`} value={storeFilter} onChange={event => setStoreFilter(event.target.value)}>
             <option value="">Tous les magasins</option>
-            {stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}
+            {stores.map(store => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}
           </select>
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
             <input type="checkbox" checked={showInactive} onChange={event => setShowInactive(event.target.checked)} />Afficher aussi les inactifs
@@ -242,6 +299,7 @@ export default function StaffView({ employees, stores, onOpenPayroll, onSaveEmpl
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-1">
                       <button type="button" onClick={() => openEdit(employee)} title="Modifier" className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100"><Pencil className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => setProfileEmployeeId(employee.id)} title="Voir la fiche dépenses et avances" className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100"><Eye className="h-4 w-4" /></button>
                       <button type="button" onClick={() => toggleActive(employee)} disabled={isSaving} title={employee.is_active ? "Désactiver" : "Réactiver"} className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 disabled:opacity-50">
                         {employee.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                       </button>

@@ -737,7 +737,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                       {expandedItem === expense.id && (
                         <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg bg-slate-50 p-3 text-slate-700">
                           <dt className="text-slate-500">N° de dépense</dt><dd className="text-right">{expense.expense_number}</dd>
-                          <dt className="text-slate-500">Catégorie</dt><dd className="text-right">{expense.category}</dd>
+                          <dt className="text-slate-500">Catégorie</dt><dd className="text-right">{expense.category === "SALARY_ADVANCE" ? "Avance sur salaire" : expense.category}</dd>
                           <dt className="text-slate-500">Date</dt><dd className="text-right">{new Date(expense.expense_date).toLocaleString("fr-FR")}</dd>
                           {expense.payee && <><dt className="text-slate-500">Bénéficiaire</dt><dd className="text-right">{expense.payee}</dd></>}
                           <dt className="text-slate-500">Paiement</dt><dd className="text-right">{expense.payment_method}</dd>

@@ -132,7 +132,8 @@ export async function saveTransferWithStockEffects(
   transfer: StockTransfer,
   updatedStocks: StoreStock[],
   movements: StockMovement[],
-  auditLog?: AuditLog
+  auditLog?: AuditLog,
+  purchaseAuditLog?: AuditLog
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[] }> {
   const persistedStocks: StoreStock[] = [];
   const persistedMovements: StockMovement[] = [];
@@ -152,6 +153,36 @@ export async function saveTransferWithStockEffects(
     const validTransition = currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT"
       || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status);
     if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");
+    let purchaseRef: ReturnType<typeof doc> | undefined;
+    let updatedPurchase: Purchase | undefined;
+    if (currentTransfer.type === "SUPPLIER_TO_STORE") {
+      if (
+        !currentTransfer.purchase_id ||
+        !["VALIDATED", "DISCREPANCY"].includes(transfer.status) ||
+        !purchaseAuditLog
+      ) {
+        throw new Error("La livraison fournisseur doit être liée à un achat approuvé et auditée à la réception.");
+      }
+      purchaseRef = doc(db, PURCHASES_COLLECTION, currentTransfer.purchase_id);
+      const purchaseSnapshot = await transaction.get(purchaseRef);
+      if (!purchaseSnapshot.exists()) throw new Error("L'achat lié à cette livraison est introuvable.");
+      const currentPurchase = purchaseSnapshot.data() as Purchase;
+      if (
+        currentPurchase.status !== "APPROVED" ||
+        currentPurchase.transfer_id !== currentTransfer.id ||
+        currentPurchase.store_id !== currentTransfer.destination_store_id
+      ) {
+        throw new Error("L'achat a déjà été réceptionné ou ne correspond plus à cette livraison.");
+      }
+      updatedPurchase = {
+        ...currentPurchase,
+        status: "RECEIVED",
+        received_by: transfer.received_by,
+        received_by_name: transfer.received_by_name,
+        received_at: transfer.received_at,
+        updated_at: transfer.updated_at
+      };
+    }
 
     const targets = [...groupedMovements.values()].map(movement => {
       const fallback = updatedStocks.find(stock => stock.store_id === movement.store_id && stock.article_id === movement.article_id);
@@ -178,19 +209,30 @@ export async function saveTransferWithStockEffects(
       transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
     });
     transaction.set(transferRef, omitUndefined(transfer));
+    if (purchaseRef && updatedPurchase) {
+      transaction.set(purchaseRef, omitUndefined(updatedPurchase));
+      transaction.set(doc(db, "auditLogs", purchaseAuditLog!.id), omitUndefined({
+        ...purchaseAuditLog,
+        new_value: updatedPurchase
+      }));
+    }
     if (auditLog) transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   });
   return { stocks: persistedStocks, movements: persistedMovements };
 }
 
-export async function loadCatalogData(): Promise<{ articles: Article[]; categories: Category[] }> {
+export async function loadCatalogData(articleTypes?: Article["article_type"][]): Promise<{ articles: Article[]; categories: Category[] }> {
   const [articlesSnapshot, categoriesSnapshot] = await Promise.all([
-    getDocs(collection(db, ARTICLES_COLLECTION)),
+    articleTypes === undefined
+      ? getDocs(collection(db, ARTICLES_COLLECTION))
+      : articleTypes.length === 0
+        ? Promise.resolve(undefined)
+        : getDocs(query(collection(db, ARTICLES_COLLECTION), where("article_type", "in", articleTypes))),
     getDocs(collection(db, CATEGORIES_COLLECTION))
   ]);
 
   return {
-    articles: articlesSnapshot.docs.map(snapshot => snapshot.data() as Article),
+    articles: articlesSnapshot?.docs.map(snapshot => snapshot.data() as Article) || [],
     categories: categoriesSnapshot.docs.map(snapshot => snapshot.data() as Category)
   };
 }
@@ -240,81 +282,115 @@ export async function saveSupplier(supplier: Supplier, auditLog?: AuditLog): Pro
   await batch.commit();
 }
 
-export async function receivePurchase(purchase: Purchase, stocks: StoreStock[], auditLog?: AuditLog): Promise<StoreStock[]> {
+export async function saveDraftPurchase(purchase: Purchase, auditLog: AuditLog): Promise<void> {
+  if (
+    purchase.status !== "DRAFT" ||
+    purchase.lines.length === 0 ||
+    !Number.isFinite(purchase.total) ||
+    purchase.total < 0 ||
+    purchase.lines.some(line =>
+      !Number.isFinite(line.quantity) ||
+      line.quantity <= 0 ||
+      !Number.isFinite(line.unit_cost) ||
+      line.unit_cost < 0 ||
+      line.total !== line.quantity * line.unit_cost
+    )
+  ) {
+    throw new Error("L'achat doit être complet et enregistré en brouillon.");
+  }
+  const [storeSnapshot, supplierSnapshot, articleSnapshots] = await Promise.all([
+    getDoc(doc(db, STORES_COLLECTION, purchase.store_id)),
+    getDoc(doc(db, SUPPLIERS_COLLECTION, purchase.supplier_id)),
+    Promise.all(purchase.lines.map(line => getDoc(doc(db, ARTICLES_COLLECTION, line.article_id))))
+  ]);
+  if (
+    !storeSnapshot.exists() ||
+    !["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(storeSnapshot.data().store_type) ||
+    storeSnapshot.data().is_active !== true
+  ) {
+    throw new Error("Les achats de matières premières doivent être destinés à un dépôt central ou un magasin fabricant actif.");
+  }
+  if (!supplierSnapshot.exists() || supplierSnapshot.data().is_active !== true) {
+    throw new Error("Le fournisseur sélectionné n'existe pas ou n'est plus actif.");
+  }
+  if (articleSnapshots.some(snapshot => !snapshot.exists() || snapshot.data().article_type !== "RAW_MATERIAL" || snapshot.data().is_active !== true)) {
+    throw new Error("Un achat fournisseur ne peut contenir que des matières premières actives.");
+  }
+  await runTransaction(db, async transaction => {
+    const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
+    if ((await transaction.get(purchaseRef)).exists()) throw new Error("Cet achat existe déjà.");
+    transaction.set(purchaseRef, omitUndefined(purchase));
+    transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  });
+}
+
+export async function approvePurchase(
+  purchase: Purchase,
+  updatedPurchase: Purchase,
+  transfer: StockTransfer,
+  purchaseAuditLog: AuditLog,
+  transferAuditLog: AuditLog
+): Promise<void> {
+  if (
+    purchase.status !== "DRAFT" ||
+    !purchase.created_by ||
+    purchase.created_by === updatedPurchase.approved_by ||
+    updatedPurchase.status !== "APPROVED" ||
+    updatedPurchase.transfer_id !== transfer.id ||
+    transfer.type !== "SUPPLIER_TO_STORE" ||
+    transfer.status !== "IN_TRANSIT" ||
+    transfer.purchase_id !== purchase.id ||
+    transfer.destination_store_id !== purchase.store_id ||
+    transfer.requested_by !== purchase.created_by ||
+    transfer.approved_by !== updatedPurchase.approved_by ||
+    transfer.lines.length !== purchase.lines.length
+  ) {
+    throw new Error("L'achat ou la livraison ne peut pas être approuvé dans son état actuel.");
+  }
+  if (new Set(purchase.lines.map(line => line.article_id)).size > 248) {
+    throw new Error("Une réception ne peut pas contenir plus de 248 articles différents.");
+  }
+
   const [storeSnapshot, articleSnapshots] = await Promise.all([
     getDoc(doc(db, STORES_COLLECTION, purchase.store_id)),
     Promise.all(purchase.lines.map(line => getDoc(doc(db, ARTICLES_COLLECTION, line.article_id))))
   ]);
-  if (!storeSnapshot.exists() || storeSnapshot.data().store_type !== "CENTRAL_WAREHOUSE") {
-    throw new Error("La réception d'un achat fournisseur est autorisée uniquement dans un dépôt central.");
+  if (
+    !storeSnapshot.exists() ||
+    !storeSnapshot.data().is_active ||
+    !["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(storeSnapshot.data().store_type)
+  ) {
+    throw new Error("Le magasin destinataire n'est plus un dépôt autorisé pour ces matières premières.");
   }
   if (articleSnapshots.some(snapshot => !snapshot.exists() || snapshot.data().article_type !== "RAW_MATERIAL")) {
     throw new Error("Un achat fournisseur ne peut contenir que des matières premières.");
   }
-
-  const groupedLines = new Map<string, PurchaseLine[]>();
-  purchase.lines.forEach(line => {
-    const lines = groupedLines.get(line.article_id) || [];
-    lines.push(line);
-    groupedLines.set(line.article_id, lines);
-  });
-
-  if (groupedLines.size > 249) {
-    throw new Error("Une réception ne peut pas contenir plus de 249 articles différents.");
+  if (transfer.lines.some(line =>
+    !purchase.lines.some(purchaseLine =>
+      purchaseLine.article_id === line.article_id &&
+      purchaseLine.quantity === line.quantity_sent &&
+      purchaseLine.id === line.id
+    )
+  )) {
+    throw new Error("Les lignes du transfert doivent correspondre à l'achat approuvé.");
   }
 
-  const targets = [...groupedLines].map(([articleId, lines]) => {
-    const known = stocks.find(stock => stock.store_id === purchase.store_id && stock.article_id === articleId);
-    return {
-      articleId,
-      lines,
-      quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
-      reference: doc(db, STOCKS_COLLECTION, known?.id || `stock-${purchase.store_id}-${articleId}`)
-    };
-  });
-  const persistedStocks: StoreStock[] = [];
   await runTransaction(db, async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
-    const purchaseSnapshot = await transaction.get(purchaseRef);
-    if (purchaseSnapshot.exists()) throw new Error("Cette réception fournisseur existe déjà.");
-    const stockSnapshots = await Promise.all(targets.map(target => transaction.get(target.reference)));
-    targets.forEach((target, index) => {
-      const existing = stockSnapshots[index].exists() ? stockSnapshots[index].data() as StoreStock : undefined;
-      const beforeQuantity = existing?.quantity || 0;
-      if (!Number.isFinite(target.quantity) || target.quantity <= 0) throw new Error("Les quantités reçues doivent être positives.");
-      const updatedStock: StoreStock = {
-        id: existing?.id || target.reference.id,
-        store_id: purchase.store_id,
-        article_id: target.articleId,
-        quantity: beforeQuantity + target.quantity,
-        reserved_quantity: existing?.reserved_quantity || 0,
-        updated_at: purchase.received_at
-      };
-      const movement: StockMovement = {
-        id: `movement-${purchase.id}-${target.articleId}`,
-        store_id: purchase.store_id,
-        article_id: target.articleId,
-        movement_type: "PURCHASE",
-        quantity: target.quantity,
-        reference_type: "PURCHASE",
-        reference_id: purchase.id,
-        reference_number: purchase.purchase_number,
-        before_quantity: beforeQuantity,
-        after_quantity: updatedStock.quantity,
-        created_by: purchase.received_by,
-        created_by_name: purchase.received_by_name,
-        notes: `Réception fournisseur ${purchase.supplier_name} · ${target.lines[0].article_code}`,
-        created_at: purchase.received_at
-      };
-      persistedStocks.push(updatedStock);
-      transaction.set(target.reference, omitUndefined(updatedStock));
-      transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
-    });
-    transaction.set(purchaseRef, omitUndefined(purchase));
-    if (auditLog) transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+    const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
+    const [purchaseSnapshot, transferSnapshot] = await Promise.all([
+      transaction.get(purchaseRef),
+      transaction.get(transferRef)
+    ]);
+    if (!purchaseSnapshot.exists() || (purchaseSnapshot.data() as Purchase).status !== "DRAFT") {
+      throw new Error("L'achat a déjà été traité ou n'existe plus.");
+    }
+    if (transferSnapshot.exists()) throw new Error("La livraison de cet achat existe déjà.");
+    transaction.set(purchaseRef, omitUndefined(updatedPurchase));
+    transaction.set(transferRef, omitUndefined(transfer));
+    transaction.set(doc(db, "auditLogs", purchaseAuditLog.id), omitUndefined(purchaseAuditLog));
+    transaction.set(doc(db, "auditLogs", transferAuditLog.id), omitUndefined(transferAuditLog));
   });
-  return stocks.map(stock => persistedStocks.find(updated => updated.id === stock.id) || stock)
-    .concat(persistedStocks.filter(updated => !stocks.some(stock => stock.id === updated.id)));
 }
 
 export async function recordSupplierPayment(purchase: Purchase, payment: SupplierPayment, auditLog?: AuditLog): Promise<Purchase> {
@@ -325,6 +401,7 @@ export async function recordSupplierPayment(purchase: Purchase, payment: Supplie
     const snapshot = await transaction.get(purchaseRef);
     if (!snapshot.exists()) throw new Error("Achat fournisseur introuvable.");
     const current = snapshot.data() as Purchase;
+    if (current.status === "DRAFT") throw new Error("Un achat doit être approuvé avant son règlement.");
     if (current.payments.some(item => item.id === payment.id)) throw new Error("Ce paiement existe déjà.");
     const amountPaid = current.amount_paid + payment.amount;
     if (amountPaid > current.total) throw new Error("Le paiement dépasse le solde de la facture.");

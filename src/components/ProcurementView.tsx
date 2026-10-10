@@ -32,7 +32,8 @@ interface ProcurementViewProps {
   currentUser: UserProfile;
   onCreateSupplier: (supplier: Supplier) => Promise<void>;
   onToggleSupplier: (supplier: Supplier) => Promise<void>;
-  onReceivePurchase: (purchase: Purchase) => Promise<void>;
+  onCreatePurchase: (purchase: Purchase) => Promise<void>;
+  onApprovePurchase: (purchase: Purchase) => Promise<void>;
   onRecordPayment: (purchase: Purchase, payment: SupplierPayment) => Promise<void>;
   onImportData: (data: Supplier[]) => Promise<void>;
   onResetData: () => Promise<void>;
@@ -58,7 +59,7 @@ const money = (amount: number) => `${amount.toLocaleString("fr-FR")} Ar`;
 const dateLabel = (timestamp: number) => new Date(timestamp).toLocaleDateString("fr-FR");
 const articleOptionLabel = (article: Article) => `${article.code} · ${article.name}`;
 const supplierOptionLabel = (supplier: Supplier) => `${supplier.name}${supplier.phone ? ` · ${supplier.phone}` : ""}`;
-const warehouseOptionLabel = (store: Store) => `${store.code} · ${store.name}`;
+const receivingStoreOptionLabel = (store: Store) => `${store.code} · ${store.name}`;
 
 export default function ProcurementView({
   suppliers,
@@ -69,7 +70,8 @@ export default function ProcurementView({
   currentUser,
   onCreateSupplier,
   onToggleSupplier,
-  onReceivePurchase,
+  onCreatePurchase,
+  onApprovePurchase,
   onRecordPayment,
   onImportData,
   onResetData
@@ -100,10 +102,10 @@ export default function ProcurementView({
 
   const activeSuppliers = suppliers.filter(supplier => supplier.is_active);
   const activeArticles = articles.filter(article => article.is_active && article.article_type === "RAW_MATERIAL");
-  const centralWarehouses = stores.filter(store => store.is_active && store.store_type === "CENTRAL_WAREHOUSE");
+  const receivingStores = stores.filter(store => store.is_active && ["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(store.store_type));
   const purchaseTotal = draftLines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0);
   const pendingPurchases = useMemo(
-    () => purchases.filter(purchase => purchase.payment_status !== "PAID").sort((a, b) => a.expected_payment_at - b.expected_payment_at),
+    () => purchases.filter(purchase => purchase.status !== "DRAFT" && purchase.payment_status !== "PAID").sort((a, b) => a.expected_payment_at - b.expected_payment_at),
     [purchases]
   );
   const overdueTotal = pendingPurchases
@@ -119,6 +121,12 @@ export default function ProcurementView({
 
   const getStockQuantity = (storeId: string, articleId: string) =>
     stocks.find(stock => stock.store_id === storeId && stock.article_id === articleId)?.quantity || 0;
+  const purchaseStatusLabel = (purchase: Purchase) => {
+    if (purchase.status === "DRAFT") return "Brouillon";
+    if (purchase.status === "APPROVED") return "Approuvé · livraison en attente";
+    if (purchase.status === "RECEIVED" || !purchase.status) return "Réceptionné";
+    return purchase.status;
+  };
 
   const startNewPurchase = () => {
     setFormError("");
@@ -167,12 +175,12 @@ export default function ProcurementView({
     }
   };
 
-  const handleReceivePurchase = async (event: FormEvent) => {
+  const handleSavePurchaseDraft = async (event: FormEvent) => {
     event.preventDefault();
     const supplier = activeSuppliers.find(item => item.id === purchaseSupplierId);
-    const receivingStore = centralWarehouses.find(item => item.id === purchaseStoreId);
+    const receivingStore = receivingStores.find(item => item.id === purchaseStoreId);
     if (!supplier || !receivingStore || !invoiceNumber.trim() || !expectedPaymentDate || draftLines.length === 0) {
-      setFormError("Fournisseur, magasin, référence, échéance et au moins un article sont obligatoires.");
+      setFormError("Fournisseur, magasin destinataire, référence, échéance et au moins un article sont obligatoires.");
       return;
     }
     if (draftLines.some(line => !activeArticles.some(article => article.id === line.articleId) || line.quantity <= 0 || line.unitCost < 0)) {
@@ -203,6 +211,9 @@ export default function ProcurementView({
       supplier_id: supplier.id,
       supplier_name: supplier.name,
       store_id: purchaseStoreId,
+      status: "DRAFT",
+      created_by: currentUser.uid,
+      created_by_name: currentUser.displayName || currentUser.email,
       invoice_number: invoiceNumber.trim(),
       lines,
       total: lines.reduce((sum, line) => sum + line.total, 0),
@@ -211,9 +222,6 @@ export default function ProcurementView({
       expected_payment_at: new Date(`${expectedPaymentDate}T12:00:00`).getTime(),
       payments: [],
       notes: purchaseNotes.trim() || undefined,
-      received_by: currentUser.uid,
-      received_by_name: currentUser.displayName || currentUser.email,
-      received_at: timestamp,
       created_at: timestamp,
       updated_at: timestamp
     };
@@ -221,10 +229,10 @@ export default function ProcurementView({
     setIsSaving(true);
     setFormError("");
     try {
-      await onReceivePurchase(purchase);
+      await onCreatePurchase(purchase);
       setIsPurchaseModalOpen(false);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Impossible d'enregistrer la réception.");
+      setFormError(error instanceof Error ? error.message : "Impossible d'enregistrer le brouillon d'achat.");
     } finally {
       setIsSaving(false);
     }
@@ -232,7 +240,7 @@ export default function ProcurementView({
 
   const handleRecordPayment = async (event: FormEvent) => {
     event.preventDefault();
-    if (!payingPurchase || paymentAmount <= 0 || paymentAmount > payingPurchase.total - payingPurchase.amount_paid) {
+    if (!payingPurchase || payingPurchase.status === "DRAFT" || paymentAmount <= 0 || paymentAmount > payingPurchase.total - payingPurchase.amount_paid) {
       setFormError("Le montant doit être supérieur à zéro et ne pas dépasser le solde dû.");
       return;
     }
@@ -288,14 +296,14 @@ export default function ProcurementView({
           <button type="button" onClick={() => { setFormError(""); setIsSupplierModalOpen(true); }} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
             <UserRound className="h-4 w-4" /> Nouveau fournisseur
           </button>
-          <button type="button" onClick={startNewPurchase} disabled={activeSuppliers.length === 0 || activeArticles.length === 0 || centralWarehouses.length === 0} className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">
-            <Plus className="h-4 w-4" /> Achat / réception
+          <button type="button" onClick={startNewPurchase} disabled={activeSuppliers.length === 0 || activeArticles.length === 0 || receivingStores.length === 0} className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">
+            <Plus className="h-4 w-4" /> Nouveau brouillon d'achat
           </button>
         </div>
       </header>
-      {(centralWarehouses.length === 0 || activeArticles.length === 0 || activeSuppliers.length === 0) && (
+      {(receivingStores.length === 0 || activeArticles.length === 0 || activeSuppliers.length === 0) && (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-          Pour saisir un achat, ajoutez au moins un fournisseur actif, une matière première active et un dépôt central actif.
+          Pour saisir un achat, ajoutez un fournisseur actif, une matière première active et un dépôt central ou magasin fabricant actif.
         </p>
       )}
 
@@ -327,7 +335,7 @@ export default function ProcurementView({
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
             <CalendarDays className="h-4 w-4 text-teal-700" />
-            <h3 className="text-sm font-bold text-slate-900">Calendrier des paiements à venir</h3>
+            <h3 className="text-sm font-bold text-slate-900">Calendrier des paiements à venir (achats approuvés)</h3>
           </div>
           {pendingPurchases.length === 0 ? (
             <p className="px-4 py-6 text-center text-xs text-slate-500">Aucune échéance en attente.</p>
@@ -369,13 +377,13 @@ export default function ProcurementView({
       )}
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-4 py-3"><h3 className="text-sm font-bold text-slate-900">Historique des achats réceptionnés</h3></div>
+        <div className="border-b border-slate-200 px-4 py-3"><h3 className="text-sm font-bold text-slate-900">Suivi des achats · brouillon → approbation → réception</h3></div>
         {purchases.length === 0 ? <p className="px-4 py-6 text-center text-xs text-slate-500">Aucun achat enregistré.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600"><tr><th className="px-4 py-2">Date réception</th><th className="px-4 py-2">Référence</th><th className="px-4 py-2">Fournisseur</th><th className="px-4 py-2">Lignes</th><th className="px-4 py-2">Échéance</th><th className="px-4 py-2 text-right">Total</th><th className="px-4 py-2">Paiement</th></tr></thead>
+            <table className="w-full min-w-[1120px] text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600"><tr><th className="px-4 py-2">Créé le</th><th className="px-4 py-2">Référence</th><th className="px-4 py-2">Fournisseur</th><th className="px-4 py-2">Magasin destinataire</th><th className="px-4 py-2">Lignes</th><th className="px-4 py-2">Échéance</th><th className="px-4 py-2 text-right">Total</th><th className="px-4 py-2">État</th><th className="px-4 py-2">Paiement</th><th className="px-4 py-2">Action</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
-                {[...purchases].sort((a, b) => b.received_at - a.received_at).map(purchase => <tr
+                {[...purchases].sort((a, b) => b.created_at - a.created_at).map(purchase => <tr
                   key={purchase.id}
                   tabIndex={0}
                   role="button"
@@ -389,7 +397,7 @@ export default function ProcurementView({
                   }}
                   className="cursor-pointer hover:bg-teal-50 focus:bg-teal-50 focus:outline-none"
                 >
-                  <td className="px-4 py-3 text-slate-600">{dateLabel(purchase.received_at)}</td><td className="px-4 py-3 font-mono font-bold text-teal-800">{purchase.purchase_number}<span className="block font-normal text-slate-400">Facture {purchase.invoice_number}</span></td><td className="px-4 py-3 font-semibold text-slate-800">{purchase.supplier_name}</td><td className="px-4 py-3 text-slate-600">{purchase.lines.length} article(s)</td><td className="px-4 py-3 text-slate-600">{dateLabel(purchase.expected_payment_at)}</td><td className="px-4 py-3 text-right font-mono font-bold text-slate-900">{money(purchase.total)}</td><td className="px-4 py-3"><span className={`rounded px-2 py-1 text-[10px] font-bold ${purchase.payment_status === "PAID" ? "bg-emerald-100 text-emerald-800" : purchase.payment_status === "PARTIAL" ? "bg-amber-100 text-amber-800" : "bg-rose-100 text-rose-800"}`}>{purchase.payment_status === "PAID" ? "Payé" : purchase.payment_status === "PARTIAL" ? `Partiel · reste ${money(purchase.total - purchase.amount_paid)}` : "Non payé"}</span></td>
+                  <td className="px-4 py-3 text-slate-600">{dateLabel(purchase.created_at)}</td><td className="px-4 py-3 font-mono font-bold text-teal-800">{purchase.purchase_number}<span className="block font-normal text-slate-400">Facture {purchase.invoice_number}</span></td><td className="px-4 py-3 font-semibold text-slate-800">{purchase.supplier_name}</td><td className="px-4 py-3 text-slate-600">{stores.find(store => store.id === purchase.store_id)?.name || "Magasin supprimé"}</td><td className="px-4 py-3 text-slate-600">{purchase.lines.length} article(s)</td><td className="px-4 py-3 text-slate-600">{dateLabel(purchase.expected_payment_at)}</td><td className="px-4 py-3 text-right font-mono font-bold text-slate-900">{money(purchase.total)}</td><td className="px-4 py-3 font-semibold text-slate-700">{purchaseStatusLabel(purchase)}</td><td className="px-4 py-3"><span className={`rounded px-2 py-1 text-[10px] font-bold ${purchase.payment_status === "PAID" ? "bg-emerald-100 text-emerald-800" : purchase.payment_status === "PARTIAL" ? "bg-amber-100 text-amber-800" : "bg-rose-100 text-rose-800"}`}>{purchase.payment_status === "PAID" ? "Payé" : purchase.payment_status === "PARTIAL" ? `Partiel · reste ${money(purchase.total - purchase.amount_paid)}` : "Non payé"}</span></td><td className="px-4 py-3">{purchase.status === "DRAFT" && purchase.created_by !== currentUser.uid && <button type="button" onClick={event => { event.stopPropagation(); void onApprovePurchase(purchase).catch(error => window.alert(error instanceof Error ? error.message : "Impossible d'approuver l'achat.")); }} className="whitespace-nowrap rounded bg-teal-700 px-2 py-1.5 font-bold text-white hover:bg-teal-800">Approuver & envoyer</button>}{purchase.status === "DRAFT" && purchase.created_by === currentUser.uid && <span className="text-[10px] text-slate-500">Approbation par un autre administrateur</span>}{purchase.status === "APPROVED" && <span className="text-[10px] font-semibold text-amber-700">À réceptionner dans Transferts</span>}</td>
                 </tr>)}
               </tbody>
             </table>
@@ -409,10 +417,11 @@ export default function ProcurementView({
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
-              <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">Réception</p><p className="mt-1 font-semibold">{dateLabel(viewingPurchase.received_at)}</p></div>
-              <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">Dépôt central</p><p className="mt-1 font-semibold">{stores.find(store => store.id === viewingPurchase.store_id)?.name || "Dépôt supprimé"}</p></div>
+              <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">État de l'achat</p><p className="mt-1 font-semibold">{purchaseStatusLabel(viewingPurchase)}</p></div>
+              <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">Magasin destinataire</p><p className="mt-1 font-semibold">{stores.find(store => store.id === viewingPurchase.store_id)?.name || "Magasin supprimé"}</p></div>
               <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">Échéance</p><p className="mt-1 font-semibold">{dateLabel(viewingPurchase.expected_payment_at)}</p></div>
-              <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">Réceptionné par</p><p className="mt-1 font-semibold">{viewingPurchase.received_by_name}</p></div>
+              <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">{viewingPurchase.received_at ? "Réceptionné le" : "Créé le"}</p><p className="mt-1 font-semibold">{dateLabel(viewingPurchase.received_at || viewingPurchase.created_at)}</p></div>
+              <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">Responsable réception</p><p className="mt-1 font-semibold">{viewingPurchase.received_by_name || "En attente de réception"}</p></div>
             </div>
 
             <div className="mt-5 overflow-x-auto rounded-lg border border-slate-200">
@@ -464,28 +473,28 @@ export default function ProcurementView({
       {isPurchaseModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4">
           <div className="my-auto w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3"><div><h3 className="text-base font-bold">Achat de matières premières</h3><p className="mt-1 text-xs text-slate-500">La réception crédite uniquement le dépôt central sélectionné.</p></div><button type="button" onClick={() => setIsPurchaseModalOpen(false)} aria-label="Fermer"><X className="h-5 w-5 text-slate-500" /></button></div>
-            <form onSubmit={handleReceivePurchase} className="space-y-4 text-xs">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3"><div><h3 className="text-base font-bold">Brouillon d'achat de matières premières</h3><p className="mt-1 text-xs text-slate-500">Après approbation, le magasin destinataire réceptionnera la livraison dans « Transferts ».</p></div><button type="button" onClick={() => setIsPurchaseModalOpen(false)} aria-label="Fermer"><X className="h-5 w-5 text-slate-500" /></button></div>
+            <form onSubmit={handleSavePurchaseDraft} className="space-y-4 text-xs">
               {formError && <p role="alert" className="rounded border border-red-200 bg-red-50 p-2 text-red-700">{formError}</p>}
               <datalist id="purchase-suppliers">{activeSuppliers.map(supplier => <option key={supplier.id} value={supplierOptionLabel(supplier)} />)}</datalist>
               <datalist id="purchase-raw-materials">{activeArticles.map(article => <option key={article.id} value={articleOptionLabel(article)} />)}</datalist>
-              <datalist id="purchase-central-warehouses">{centralWarehouses.map(store => <option key={store.id} value={warehouseOptionLabel(store)} />)}</datalist>
+              <datalist id="purchase-receiving-stores">{receivingStores.map(store => <option key={store.id} value={receivingStoreOptionLabel(store)} />)}</datalist>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="font-bold text-slate-700">Fournisseur<input required list="purchase-suppliers" value={supplierQuery} onChange={event => { const value = event.target.value; setSupplierQuery(value); setPurchaseSupplierId(activeSuppliers.find(supplier => supplierOptionLabel(supplier) === value)?.id || ""); }} placeholder="Fournisseur..." className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal text-slate-900 placeholder:text-slate-400" /></label>
-                <label className="font-bold text-slate-700">Dépôt central de réception<input required list="purchase-central-warehouses" value={warehouseQuery} onChange={event => { const value = event.target.value; setWarehouseQuery(value); setPurchaseStoreId(centralWarehouses.find(store => warehouseOptionLabel(store) === value)?.id || ""); }} placeholder="Dépôt central..." className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal text-slate-900 placeholder:text-slate-400" /></label>
+                <label className="font-bold text-slate-700">Magasin destinataire<input required list="purchase-receiving-stores" value={warehouseQuery} onChange={event => { const value = event.target.value; setWarehouseQuery(value); setPurchaseStoreId(receivingStores.find(store => receivingStoreOptionLabel(store) === value)?.id || ""); }} placeholder="Dépôt ou fabricant..." className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal text-slate-900 placeholder:text-slate-400" /></label>
                 <label className="font-bold text-slate-700">N° facture / bon<input required value={invoiceNumber} onChange={event => setInvoiceNumber(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal text-slate-900" /></label>
                 <label className="font-bold text-slate-700">Échéance de paiement<input required type="date" value={expectedPaymentDate} onChange={event => setExpectedPaymentDate(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal text-slate-900" /></label>
               </div>
 
               <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full min-w-[620px] text-left"><thead className="bg-slate-50 text-slate-600"><tr><th className="px-3 py-2">Matière première</th><th className="px-3 py-2">Stock au dépôt</th><th className="px-3 py-2">Quantité reçue</th><th className="px-3 py-2">Prix unitaire</th><th className="px-3 py-2 text-right">Total</th><th className="px-2 py-2" /></tr></thead><tbody className="divide-y divide-slate-100">{draftLines.map((line, index) => {
+                <table className="w-full min-w-[620px] text-left"><thead className="bg-slate-50 text-slate-600"><tr><th className="px-3 py-2">Matière première</th><th className="px-3 py-2">Stock actuel</th><th className="px-3 py-2">Quantité commandée</th><th className="px-3 py-2">Prix unitaire</th><th className="px-3 py-2 text-right">Total</th><th className="px-2 py-2" /></tr></thead><tbody className="divide-y divide-slate-100">{draftLines.map((line, index) => {
                   const article = articles.find(item => item.id === line.articleId);
                   return <tr key={index}><td className="px-3 py-2"><input list="purchase-raw-materials" value={line.articleQuery} onChange={event => { const value = event.target.value; const selected = activeArticles.find(item => articleOptionLabel(item) === value); updateDraftLine(index, { articleQuery: value, articleId: selected?.id || "", unitCost: selected?.prix_achat ?? line.unitCost }); }} placeholder="Matière première..." className="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 placeholder:text-slate-400" /></td><td className="px-3 py-2 text-center font-mono text-slate-600">{getStockQuantity(purchaseStoreId, line.articleId)}</td><td className="px-3 py-2"><input min="1" type="number" value={line.quantity} onChange={event => updateDraftLine(index, { quantity: Number(event.target.value) })} className="w-24 rounded border border-slate-300 bg-white p-2 text-right text-slate-900" /></td><td className="px-3 py-2"><input min="0" type="number" value={line.unitCost} onChange={event => updateDraftLine(index, { unitCost: Number(event.target.value) })} className="w-32 rounded border border-slate-300 bg-white p-2 text-right text-slate-900" /></td><td className="px-3 py-2 text-right font-mono font-bold text-slate-900">{money(line.quantity * line.unitCost)}</td><td className="px-2 py-2"><button type="button" disabled={draftLines.length === 1} onClick={() => setDraftLines(current => current.filter((_, lineIndex) => lineIndex !== index))} aria-label="Retirer la ligne" className="px-2 font-bold text-rose-700 disabled:opacity-30">×</button></td></tr>;
                 })}</tbody></table>
               </div>
               <button type="button" disabled={draftLines.length >= 100} onClick={() => setDraftLines(current => [...current, { articleId: "", articleQuery: "", quantity: 1, unitCost: 0 }])} className="font-bold text-teal-800 hover:underline disabled:opacity-50">+ Ajouter une ligne</button>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="font-bold text-slate-700">Notes<input value={purchaseNotes} onChange={event => setPurchaseNotes(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal text-slate-900" /></label><div className="flex items-end justify-between rounded-lg bg-slate-50 px-3 py-2"><span className="font-bold text-slate-700">Total achat</span><strong className="font-mono text-base text-slate-900">{money(purchaseTotal)}</strong></div></div>
-              <div className="flex justify-end gap-2 border-t border-slate-200 pt-3"><button type="button" onClick={() => setIsPurchaseModalOpen(false)} className="rounded-lg px-3 py-2 font-semibold text-slate-600 hover:bg-slate-100">Annuler</button><button disabled={isSaving} className="rounded-lg bg-teal-700 px-4 py-2 font-bold text-white disabled:opacity-50">{isSaving ? "Réception..." : "Enregistrer et réceptionner"}</button></div>
+              <div className="flex justify-end gap-2 border-t border-slate-200 pt-3"><button type="button" onClick={() => setIsPurchaseModalOpen(false)} className="rounded-lg px-3 py-2 font-semibold text-slate-600 hover:bg-slate-100">Annuler</button><button disabled={isSaving} className="rounded-lg bg-teal-700 px-4 py-2 font-bold text-white disabled:opacity-50">{isSaving ? "Enregistrement..." : "Enregistrer le brouillon"}</button></div>
             </form>
           </div>
         </div>

@@ -27,6 +27,7 @@ interface CatalogViewProps {
   categories: Category[];
   units: UnitOfMeasure[];
   currentUser: UserProfile;
+  visibleArticleTypes: ArticleTypeCode[];
   onCreateArticle: (art: Article) => Promise<void>;
   onUpdateArticle: (art: Article) => Promise<void>;
   onToggleArticleStatus: (articleId: string) => Promise<void>;
@@ -41,6 +42,7 @@ export default function CatalogView({
   categories,
   units,
   currentUser,
+  visibleArticleTypes,
   onCreateArticle,
   onUpdateArticle,
   onToggleArticleStatus,
@@ -78,12 +80,13 @@ export default function CatalogView({
   const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   const handleOpenNewArticle = () => {
+    if (visibleArticleTypes.length === 0) return;
     setArticleError("");
     setEditingArticle(null);
     setArtCode("");
     setArtName("");
     setArtCatId(categories[0]?.id || "");
-    setArtType("RESALE");
+    setArtType(visibleArticleTypes.includes("RESALE") ? "RESALE" : visibleArticleTypes[0]);
     setArtUnit(
       units.find(unit => unit.is_active && unit.name.toLocaleLowerCase("fr-FR") === "unité")?.name ||
       units.find(unit => unit.is_active)?.name ||
@@ -116,6 +119,10 @@ export default function CatalogView({
     const normalizedCode = artCode.trim().toUpperCase();
     if (!normalizedCode || !artName.trim() || !artCatId) {
       setArticleError("Le code, la désignation et la catégorie sont requis.");
+      return;
+    }
+    if (!visibleArticleTypes.includes(artType)) {
+      setArticleError("Vous n'êtes pas autorisé à gérer ce type d'article.");
       return;
     }
     if (articles.some(article => article.id !== editingArticle?.id && article.code.trim().toUpperCase() === normalizedCode)) {
@@ -266,14 +273,14 @@ export default function CatalogView({
             <FolderPlus className="h-4 w-4" />
             Nouvelle Catégorie
           </button>
-          <button
+          {visibleArticleTypes.length > 0 && <button
             type="button"
             onClick={handleOpenNewArticle}
             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             Nouvel Article
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -322,27 +329,27 @@ export default function CatalogView({
             </div>
 
             <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg text-xs">
-              <button
+              {visibleArticleTypes.length > 1 && <button
                 type="button"
                 onClick={() => setSelectedType("ALL")}
                 className={`px-2.5 py-1 rounded font-bold transition ${selectedType === "ALL" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600"}`}
               >
                 Tous
-              </button>
-              <button
+              </button>}
+              {visibleArticleTypes.includes("RESALE") && <button
                 type="button"
                 onClick={() => setSelectedType("RESALE")}
                 className={`px-2.5 py-1 rounded font-bold transition ${selectedType === "RESALE" ? "bg-white text-emerald-800 shadow-xs" : "text-slate-600"}`}
               >
                 RESALE (Revente)
-              </button>
-              <button
+              </button>}
+              {visibleArticleTypes.includes("RAW_MATERIAL") && <button
                 type="button"
                 onClick={() => setSelectedType("RAW_MATERIAL")}
                 className={`px-2.5 py-1 rounded font-bold transition ${selectedType === "RAW_MATERIAL" ? "bg-white text-purple-800 shadow-xs" : "text-slate-600"}`}
               >
                 RAW_MATERIAL (Matière Première)
-              </button>
+              </button>}
             </div>
 
             <div className="relative w-full sm:w-64">
@@ -525,8 +532,8 @@ export default function CatalogView({
                     onChange={(e) => setArtType(e.target.value as ArticleTypeCode)}
                     className="w-full text-slate-900 bg-white border border-slate-300 rounded-lg p-2 font-bold"
                   >
-                    <option value="RESALE">RESALE (Article de Revente)</option>
-                    <option value="RAW_MATERIAL">RAW_MATERIAL (Matière Première)</option>
+                    {visibleArticleTypes.includes("RESALE") && <option value="RESALE">RESALE (Article de Revente)</option>}
+                    {visibleArticleTypes.includes("RAW_MATERIAL") && <option value="RAW_MATERIAL">RAW_MATERIAL (Matière Première)</option>}
                   </select>
                 </div>
               </div>

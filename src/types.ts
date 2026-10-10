@@ -47,6 +47,7 @@ export interface UserProfile {
   storeId?: string;
   storeIds: string[];
   permissions: AppPermission[];
+  visibleArticleTypes?: ArticleTypeCode[];
   isActive: boolean;
   accountStatus?: "PENDING" | "ACTIVE" | "DISABLED";
   createdAt: number;
@@ -154,7 +155,7 @@ export interface SupplierPayment {
   reference?: string;
 }
 
-export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "FOOD" | "OTHER";
+export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "FOOD" | "SALARY_ADVANCE" | "OTHER";
 
 export interface Expense {
   status?: "DRAFT" | "VALIDATED";
@@ -169,6 +170,9 @@ export interface Expense {
   store_id?: string;
   store_name?: string;
   payee?: string;
+  employee_id?: string;
+  employee_name?: string;
+  salary_advance_id?: string;
   payment_method: PaymentMethod;
   payment_status: "PAID" | "PENDING";
   reference?: string;
@@ -179,11 +183,18 @@ export interface Expense {
 }
 
 export interface Purchase {
+  status?: "DRAFT" | "APPROVED" | "RECEIVED";
   id: string;
   purchase_number: string;
   supplier_id: string;
   supplier_name: string;
   store_id: string;
+  created_by?: string;
+  created_by_name?: string;
+  approved_by?: string;
+  approved_by_name?: string;
+  approved_at?: number;
+  transfer_id?: string;
   invoice_number: string;
   lines: PurchaseLine[];
   total: number;
@@ -192,9 +203,9 @@ export interface Purchase {
   expected_payment_at: number;
   payments: SupplierPayment[];
   notes?: string;
-  received_by: string;
-  received_by_name: string;
-  received_at: number;
+  received_by?: string;
+  received_by_name?: string;
+  received_at?: number;
   created_at: number;
   updated_at: number;
 }
@@ -222,6 +233,7 @@ export type TransferStatus =
   | "CANCELLED";
 
 export type TransferTypeCode = 
+  | "SUPPLIER_TO_STORE"
   | "CENTRAL_TO_POS"
   | "CENTRAL_TO_RESELLER"
   | "CENTRAL_TO_MANUFACTURER"
@@ -250,7 +262,12 @@ export interface StockTransfer {
   transfer_number: string; // ex: TRF-2026-0001
   type: TransferTypeCode;
   source_store_id: string;
+  source_name?: string;
   destination_store_id: string;
+  purchase_id?: string;
+  purchase_number?: string;
+  supplier_id?: string;
+  supplier_name?: string;
   status: TransferStatus;
   requested_by: string;
   requested_by_name: string;
@@ -570,6 +587,7 @@ export interface SalaryAdvance {
   reason?: string;
   status: "OUTSTANDING" | "DEDUCTED";
   payslip_id?: string;
+  expense_id?: string;
   created_at: number;
   updated_at: number;
   created_by: string;

@@ -1,3 +1,4 @@
+import { storeLabel } from "../services/storeLabel";
 import { useState } from "react";
 import { 
   StockMovement, 
@@ -141,7 +142,7 @@ export default function MovementsView({
             <option value="ALL">Tous les Magasins</option>
             {stores.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name} ({s.code})
+                {storeLabel(s)}
               </option>
             ))}
           </select>

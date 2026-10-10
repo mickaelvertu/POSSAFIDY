@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, query, runTransaction, setDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
-import { AuditLog, Expense } from "../types";
+import { AuditLog, Expense, SalaryAdvance } from "../types";
 
 const EXPENSES_COLLECTION = "expenses";
 
@@ -22,15 +22,74 @@ export async function loadExpenses(storeIds?: string[], userId?: string): Promis
     .sort((left, right) => right.expense_date - left.expense_date);
 }
 
-export async function validateExpense(expense: Expense, userId: string, auditLog: AuditLog, isSuperAdmin = false): Promise<Expense> {
+export async function validateExpense(
+  expense: Expense,
+  userId: string,
+  auditLog: AuditLog,
+  isSuperAdmin = false,
+  isAdmin = false,
+  salaryAdvance?: SalaryAdvance,
+  salaryAdvanceAuditLog?: AuditLog
+): Promise<Expense> {
   return runTransaction(db, async transaction => {
     const ref = doc(db, EXPENSES_COLLECTION, expense.id);
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists() || snapshot.data().status !== "DRAFT") throw new Error("Cette dépense n'est plus un brouillon.");
     if (!isSuperAdmin && snapshot.data().created_by !== userId) throw new Error("Vous pouvez uniquement valider vos propres dépenses.");
-    const updated = { ...snapshot.data(), status: "VALIDATED", validated_by: userId, validated_at: Date.now() } as Expense;
+    const current = snapshot.data() as Expense;
+    if (current.category === "SALARY_ADVANCE") {
+      if (!isAdmin || !salaryAdvance || !salaryAdvanceAuditLog) {
+        throw new Error("Seul un administrateur peut valider une avance sur salaire.");
+      }
+      if (
+        current.payment_status !== "PAID" ||
+        !current.employee_id ||
+        current.salary_advance_id !== `advance-${current.id}` ||
+        current.salary_advance_id !== salaryAdvance.id ||
+        salaryAdvance.expense_id !== current.id ||
+        salaryAdvance.employee_id !== current.employee_id ||
+        salaryAdvance.amount !== current.amount ||
+        salaryAdvance.advance_date !== current.expense_date ||
+        salaryAdvance.payment_method !== current.payment_method ||
+        salaryAdvance.reason !== current.description ||
+        salaryAdvance.status !== "OUTSTANDING" ||
+        salaryAdvance.created_by !== userId
+      ) {
+        throw new Error("Les données de l'avance ne correspondent plus au brouillon de dépense.");
+      }
+      const employeeRef = doc(db, "employees", current.employee_id);
+      const advanceRef = doc(db, "salaryAdvances", salaryAdvance.id);
+      const [employeeSnapshot, advanceSnapshot] = await Promise.all([
+        transaction.get(employeeRef),
+        transaction.get(advanceRef)
+      ]);
+      if (!employeeSnapshot.exists() || !employeeSnapshot.data().is_active) {
+        throw new Error("L'employé sélectionné est introuvable ou inactif.");
+      }
+      if (advanceSnapshot.exists()) {
+        throw new Error("Une avance existe déjà pour cette dépense.");
+      }
+      const employee = employeeSnapshot.data();
+      const employeeName = `${employee.first_name} ${employee.last_name}`;
+      if (current.employee_name !== employeeName || salaryAdvance.employee_name !== employeeName) {
+        throw new Error("L'employé associé à cette avance a changé. Rechargez la dépense.");
+      }
+    } else if (salaryAdvance || salaryAdvanceAuditLog) {
+      throw new Error("Une avance ne peut être créée qu'à partir d'une dépense de type avance sur salaire.");
+    }
+
+    const validatedAt = Date.now();
+    const updated = { ...current, status: "VALIDATED", validated_by: userId, validated_at: validatedAt } as Expense;
     transaction.update(ref, { status: updated.status, validated_by: updated.validated_by, validated_at: updated.validated_at });
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined({ ...auditLog, old_value: snapshot.data(), new_value: updated }));
+    if (salaryAdvance && salaryAdvanceAuditLog) {
+      transaction.set(doc(db, "salaryAdvances", salaryAdvance.id), omitUndefined(salaryAdvance));
+      transaction.set(doc(db, "auditLogs", salaryAdvanceAuditLog.id), omitUndefined({
+        ...salaryAdvanceAuditLog,
+        old_value: undefined,
+        new_value: salaryAdvance
+      }));
+    }
     return updated;
   });
 }
@@ -55,7 +114,8 @@ export async function updateDraftExpense(
 
   const editableFields: Array<keyof Expense> = [
     "category", "description", "amount", "expense_date", "store_id", "store_name",
-    "payee", "payment_method", "payment_status", "reference", "notes"
+    "payee", "employee_id", "employee_name", "salary_advance_id",
+    "payment_method", "payment_status", "reference", "notes"
   ];
   return runTransaction(db, async transaction => {
     const expenseRef = doc(db, EXPENSES_COLLECTION, original.id);

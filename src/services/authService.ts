@@ -1,5 +1,5 @@
 import { SignUpPayload, ResellerSignUpPayload, LoginPayload, ApiResponse, User } from "../types/auth";
-import { ALL_PERMISSIONS, AppPermission, AppRoleId, AppUser } from "../types";
+import { ALL_PERMISSIONS, AppPermission, AppRoleId, AppUser, ArticleTypeCode } from "../types";
 import { initializeApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
@@ -47,6 +47,18 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   REVENDEUR: []
 };
 
+export const DEFAULT_ARTICLE_VISIBILITY: Record<AppRoleId, ArticleTypeCode[]> = {
+  SUPER_ADMIN: ["RAW_MATERIAL", "RESALE"],
+  ADMIN: ["RAW_MATERIAL", "RESALE"],
+  VENDEUR: ["RESALE"],
+  MAGASINIER: ["RAW_MATERIAL", "RESALE"],
+  RESPONSABLE_MAGASIN: ["RAW_MATERIAL", "RESALE"],
+  PRODUCTION: ["RAW_MATERIAL", "RESALE"],
+  COMPTABLE: [],
+  GESTIONNAIRE_CREDIT: ["RESALE"],
+  REVENDEUR: ["RESALE"]
+};
+
 const permissionDefinition = (code: string) => ({
   code,
   label: code.split(".").map(part => part[0].toUpperCase() + part.slice(1)).join(" "),
@@ -77,6 +89,7 @@ export async function syncUserToFirestore(user: AppUser): Promise<void> {
     email: user.email,
     role: user.roleId,
     permissions: user.permissions,
+    visibleArticleTypes: user.visibleArticleTypes || [],
     assignedStores: user.storeIds,
     status: user.isActive ? "ACTIVE" : "DISABLED"
   });
@@ -121,6 +134,9 @@ export class AuthService {
       status: profile.status || "PENDING",
       role: profile.role || null,
       permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+      visibleArticleTypes: Array.isArray(profile.visibleArticleTypes)
+        ? profile.visibleArticleTypes.filter((type): type is ArticleTypeCode => type === "RAW_MATERIAL" || type === "RESALE")
+        : DEFAULT_ARTICLE_VISIBILITY[profile.role as AppRoleId] || [],
       assignedStores: Array.isArray(profile.assignedStores) ? profile.assignedStores : [],
       createdAt: profile.createdAt || now,
       updatedAt: profile.updatedAt || now
@@ -325,6 +341,7 @@ export class AuthService {
         status: payload.status || "PENDING",
         role: payload.role || null,
         permissions: payload.permissions || [],
+        visibleArticleTypes: payload.visibleArticleTypes || [],
         assignedStores: payload.assignedStores || [],
         createdAt: now,
         updatedAt: now

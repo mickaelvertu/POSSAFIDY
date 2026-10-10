@@ -276,7 +276,7 @@ export default function TransfersView({
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       const matchNum = t.transfer_number.toLowerCase().includes(q);
-      const matchSrc = getStoreName(t.source_store_id).toLowerCase().includes(q);
+      const matchSrc = (t.source_name || getStoreName(t.source_store_id)).toLowerCase().includes(q);
       const matchDst = getStoreName(t.destination_store_id).toLowerCase().includes(q);
       if (!matchNum && !matchSrc && !matchDst) return false;
     }
@@ -590,9 +590,10 @@ export default function TransfersView({
             const isReceiver = currentUser.storeIds.includes(t.destination_store_id)
               && currentUser.uid !== t.requested_by
               && currentUser.uid !== t.approved_by;
+            const isSupplierDelivery = t.type === "SUPPLIER_TO_STORE";
             const isSourceOperator = currentUser.roleId === "ADMIN"
               || currentUser.roleId === "SUPER_ADMIN"
-              || currentUser.storeIds.includes(t.source_store_id);
+              || (!isSupplierDelivery && currentUser.storeIds.includes(t.source_store_id));
 
             return (
               <div 
@@ -612,8 +613,9 @@ export default function TransfersView({
                       {t.transfer_number}
                     </span>
                     <span className="text-xs font-semibold text-slate-500 font-mono">
-                      Type: {t.type}
+                      Type: {isSupplierDelivery ? "Achat fournisseur" : t.type}
                     </span>
+                    {isSupplierDelivery && t.purchase_number && <span className="text-xs font-medium text-teal-700">Achat {t.purchase_number}</span>}
                     <span className="text-xs text-slate-400">
                       {new Date(t.created_at).toLocaleDateString("fr-FR")}
                     </span>
@@ -650,9 +652,9 @@ export default function TransfersView({
                 {/* Source & Destination Information */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3 text-xs">
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-[10px] uppercase font-bold text-slate-500">Expéditeur (Source) :</span>
-                    <div className="font-bold text-slate-900 text-sm mt-0.5">{src?.name}</div>
-                    <div className="text-slate-500 font-mono">Code: {src?.code} • Type: {src?.store_type}</div>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">{isSupplierDelivery ? "Fournisseur :" : "Expéditeur (Source) :"}</span>
+                    <div className="font-bold text-slate-900 text-sm mt-0.5">{t.source_name || src?.name || t.source_store_id}</div>
+                    {src && <div className="text-slate-500 font-mono">Code: {src.code} • Type: {src.store_type}</div>}
                     {t.shipped_at && (
                       <div className="text-indigo-600 mt-1 font-medium">
                         Expédié le : {new Date(t.shipped_at).toLocaleString("fr-FR")} ({t.shipped_by_name})
@@ -689,7 +691,7 @@ export default function TransfersView({
                       <tr className="text-slate-500 border-b border-slate-200">
                         <th className="py-1 px-2">Réf</th>
                         <th className="py-1 px-2">Article</th>
-                        <th className="py-1 px-2 text-right">Qté Expédiée</th>
+                        <th className="py-1 px-2 text-right">{isSupplierDelivery ? "Qté commandée" : "Qté expédiée"}</th>
                         <th className="py-1 px-2 text-right">Qté Reçue</th>
                         <th className="py-1 px-2 text-right">Qté Acceptée</th>
                         <th className="py-1 px-2 text-right text-rose-700">Écart / Rejet</th>
@@ -838,7 +840,7 @@ export default function TransfersView({
                         className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <FileCheck className="h-4 w-4" />
-                        Réceptionner & Valider au Magasin
+                        {isSupplierDelivery ? "Réceptionner l'achat au Magasin" : "Réceptionner & Valider au Magasin"}
                       </button>
                     )}
 

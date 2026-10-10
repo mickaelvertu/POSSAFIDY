@@ -35,6 +35,11 @@
   .printable-document thead { display: table-header-group; }
   .printable-document tr, .printable-document img { break-inside: avoid; }
 
+  html:has(.thermal-receipt), body:has(.thermal-receipt) {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
   body:has(.thermal-receipt) {
     width: 80mm !important;
     min-width: 0 !important;
@@ -47,7 +52,7 @@
     min-width: 74mm !important;
     max-width: 74mm !important;
     margin: 0 auto !important;
-    padding: 3mm !important;
+    padding: 1.5mm 3mm !important;
     border: 0 !important;
     border-radius: 0 !important;
     font-family: Arial, sans-serif !important;
@@ -65,11 +70,14 @@
 }
 
 .thermal-receipt.thermal-print-sizing {
+  max-height: none !important;
+  overflow: visible !important;
+  position: static !important;
   box-sizing: border-box !important;
   width: 74mm !important;
   min-width: 74mm !important;
   max-width: 74mm !important;
-  padding: 3mm !important;
+  padding: 1.5mm 3mm !important;
   border: 0 !important;
   border-radius: 0 !important;
   font-family: Arial, sans-serif !important;

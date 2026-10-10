@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, AuthState, SignUpPayload, ResellerSignUpPayload, LoginPayload, ApiResponse } from "../types/auth";
 import { authService } from "../services/authService";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
 import { trackUserPresence } from "../services/presenceService";
 
 interface AuthContextType extends AuthState {
@@ -28,6 +29,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user || user.status !== "ACTIVE") return;
     return trackUserPresence(user.id);
   }, [user?.id, user?.status]);
+
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+    const unsubscribe = onSnapshot(
+      doc(db, "users", user.id),
+      () => {
+        void authService.getCurrentUser()
+          .then(currentUser => {
+            if (isMounted && auth.currentUser?.uid === user.id) {
+              setUser(keepStableUser(currentUser));
+              setToken(authService.getToken());
+            }
+          })
+          .catch(error => console.error("Live user authorization refresh failed:", error));
+      },
+      error => console.error("User authorization listener failed:", error)
+    );
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [user?.id]);
 
   // Restore session on initial boot
   useEffect(() => {

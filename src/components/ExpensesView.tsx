@@ -1,12 +1,14 @@
 import { FormEvent, useMemo, useState } from "react";
 import { CalendarDays, CircleDollarSign, ClipboardList, HandCoins, Plus, Search } from "lucide-react";
-import { Expense, ExpenseCategory, PaymentMethod, Store, UserProfile } from "../types";
+import { Employee, Expense, ExpenseCategory, PaymentMethod, Store, UserProfile } from "../types";
 
 interface ExpensesViewProps {
   expenses: Expense[];
+  employees: Employee[];
   stores: Store[];
   currentUser: UserProfile;
   canCreate: boolean;
+  canCreateSalaryAdvance: boolean;
   onValidateExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (expense: Expense) => Promise<void>;
   onCreateExpense: (expense: Expense) => Promise<void>;
@@ -22,6 +24,7 @@ const CATEGORIES: Array<{ value: ExpenseCategory; label: string }> = [
   { value: "SUPPLIES", label: "Fournitures" },
   { value: "COMMUNICATION", label: "Communication" },
   { value: "FOOD", label: "Nourriture" },
+  { value: "SALARY_ADVANCE", label: "Avance sur salaire" },
   { value: "OTHER", label: "Autres frais" }
 ];
 
@@ -43,7 +46,7 @@ const dateLabel = (timestamp: number) => new Date(timestamp).toLocaleDateString(
 const categoryLabel = (category: ExpenseCategory) => CATEGORIES.find(item => item.value === category)?.label || "Autres frais";
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
 
-export default function ExpensesView({ expenses, stores, currentUser, canCreate, onCreateExpense, onUpdateExpense, onValidateExpense, onDeleteExpense }: ExpensesViewProps) {
+export default function ExpensesView({ expenses, employees, stores, currentUser, canCreate, canCreateSalaryAdvance, onCreateExpense, onUpdateExpense, onValidateExpense, onDeleteExpense }: ExpensesViewProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [category, setCategory] = useState<ExpenseCategory>("RENT");
@@ -52,6 +55,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
   const [expenseDate, setExpenseDate] = useState(dateInputValue(Date.now()));
   const [storeId, setStoreId] = useState("");
   const [payee, setPayee] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [paymentStatus, setPaymentStatus] = useState<Expense["payment_status"]>("PAID");
   const [reference, setReference] = useState("");
@@ -64,6 +68,9 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
   const [busyId, setBusyId] = useState<string | null>(null);
   const canValidate = canCreate;
   const canDelete = currentUser.roleId === "SUPER_ADMIN";
+  const isSalaryAdvance = category === "SALARY_ADVANCE";
+  const selectedEmployee = employees.find(employee => employee.id === employeeId);
+  const categoryOptions = CATEGORIES.filter(item => item.value !== "SALARY_ADVANCE" || canCreateSalaryAdvance);
   const openCreateForm = () => {
     setEditingExpense(null);
     setCategory("RENT");
@@ -72,6 +79,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
     setExpenseDate(dateInputValue(Date.now()));
     setStoreId("");
     setPayee("");
+    setEmployeeId("");
     setPaymentMethod("CASH");
     setPaymentStatus("PAID");
     setReference("");
@@ -88,6 +96,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
     setExpenseDate(dateInputValue(expense.expense_date));
     setStoreId(expense.store_id || "");
     setPayee(expense.payee || "");
+    setEmployeeId(expense.employee_id || "");
     setPaymentMethod(expense.payment_method);
     setPaymentStatus(expense.payment_status);
     setReference(expense.reference || "");
@@ -110,7 +119,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
     return expenses.filter(expense => {
       const date = new Date(expense.expense_date);
       const matchesMonth = !monthFilter || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` === monthFilter;
-      const searchableText = [expense.expense_number, expense.description, expense.payee, expense.store_name, expense.reference, categoryLabel(expense.category)]
+      const searchableText = [expense.expense_number, expense.description, expense.payee, expense.employee_name, expense.store_name, expense.reference, categoryLabel(expense.category)]
         .filter(Boolean).join(" ").toLocaleLowerCase("fr-FR");
       return matchesMonth && (!normalizedSearch || searchableText.includes(normalizedSearch));
     });
@@ -129,6 +138,14 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
     event.preventDefault();
     const numericAmount = Number(amount);
     const selectedStore = stores.find(store => store.id === storeId);
+    if (isSalaryAdvance && (!canCreateSalaryAdvance || !selectedEmployee || !selectedEmployee.is_active)) {
+      setFormError("Seul un administrateur peut enregistrer une avance pour un employé actif.");
+      return;
+    }
+    if (isSalaryAdvance && !description.trim()) {
+      setFormError("Indiquez le motif de l'avance sur salaire.");
+      return;
+    }
     if (!canUseGlobalExpense && (!selectedStore || !currentUser.storeIds.includes(selectedStore.id))) {
       setFormError("Sélectionnez un magasin qui est attribué à votre compte.");
       return;
@@ -139,10 +156,11 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
     }
 
     const timestamp = Date.now();
+    const expenseId = editingExpense?.id || `expense-${crypto.randomUUID()}`;
     const expense: Expense = {
       ...editingExpense,
       status: "DRAFT",
-      id: editingExpense?.id || `expense-${crypto.randomUUID()}`,
+      id: expenseId,
       expense_number: editingExpense?.expense_number || `DEP-${new Date(timestamp).getFullYear()}-${String(timestamp).slice(-6)}`,
       category,
       description: description.trim(),
@@ -150,9 +168,12 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
       expense_date: new Date(`${expenseDate}T12:00:00`).getTime(),
       store_id: selectedStore?.id,
       store_name: selectedStore?.name,
-      payee: payee.trim() || undefined,
+      payee: isSalaryAdvance ? `${selectedEmployee!.first_name} ${selectedEmployee!.last_name}` : payee.trim() || undefined,
+      employee_id: isSalaryAdvance ? selectedEmployee?.id : undefined,
+      employee_name: isSalaryAdvance && selectedEmployee ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}` : undefined,
+      salary_advance_id: isSalaryAdvance ? `advance-${expenseId}` : undefined,
       payment_method: paymentMethod,
-      payment_status: paymentStatus,
+      payment_status: isSalaryAdvance ? "PAID" : paymentStatus,
       reference: reference.trim() || undefined,
       notes: notes.trim() || undefined,
       created_by: editingExpense?.created_by || currentUser.uid,
@@ -168,6 +189,7 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
       setDescription("");
       setAmount("");
       setPayee("");
+      setEmployeeId("");
       setReference("");
       setNotes("");
       setPaymentStatus("PAID");
@@ -238,14 +260,18 @@ export default function ExpensesView({ expenses, stores, currentUser, canCreate,
           <form onSubmit={handleCreateExpense} className="my-auto w-full max-w-2xl space-y-4 rounded-xl bg-white p-5 shadow-2xl sm:p-6">
             <div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-bold text-slate-900">{editingExpense ? "Modifier le brouillon de dépense" : "Nouvelle dépense"}</h3><p className="mt-1 text-xs text-slate-500">La dépense sera enregistrée en brouillon et prise en compte après votre validation.</p></div><button type="button" onClick={() => setIsFormOpen(false)} aria-label="Fermer" className="rounded-md px-2 py-1 text-lg text-slate-500 hover:bg-slate-100">×</button></div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Catégorie<select value={category} onChange={event => setCategory(event.target.value as ExpenseCategory)} className={inputClass}>{CATEGORIES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700">Catégorie<select value={category} onChange={event => { const next = event.target.value as ExpenseCategory; if (category === "SALARY_ADVANCE" && next !== "SALARY_ADVANCE") setPayee(""); setCategory(next); if (next === "SALARY_ADVANCE") setPaymentStatus("PAID"); else setEmployeeId(""); }} className={inputClass}>{categoryOptions.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Montant (Ar)<input required type="number" min="1" step="any" value={amount} onChange={event => setAmount(event.target.value)} placeholder="0" className={inputClass} /></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Motif / description (facultatif)<input value={description} onChange={event => setDescription(event.target.value)} placeholder="Facultatif" className={inputClass} /></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Motif / description{isSalaryAdvance ? " *" : " (facultatif)"}<input required={isSalaryAdvance} value={description} onChange={event => setDescription(event.target.value)} placeholder={isSalaryAdvance ? "Ex. avance pour frais médicaux" : "Facultatif"} className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Date<input required type="date" value={expenseDate} onChange={event => setExpenseDate(event.target.value)} className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense ? <option value="">Tous magasins / siège</option> : <option value="">Sélectionner un magasin</option>}{stores.filter(store => store.is_active && (canUseGlobalExpense || currentUser.storeIds.includes(store.id))).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Bénéficiaire / fournisseur<input value={payee} onChange={event => setPayee(event.target.value)} placeholder="Nom du bailleur ou prestataire" className={inputClass} /></label>
+              {isSalaryAdvance ? (
+                <label className="space-y-1 text-xs font-semibold text-slate-700">Employé bénéficiaire<select required value={employeeId} onChange={event => setEmployeeId(event.target.value)} className={inputClass}><option value="">Sélectionner un employé</option>{employees.filter(employee => employee.is_active).map(employee => <option key={employee.id} value={employee.id}>{employee.last_name} {employee.first_name} · {employee.position}</option>)}</select></label>
+              ) : (
+                <label className="space-y-1 text-xs font-semibold text-slate-700">Bénéficiaire / fournisseur<input value={payee} onChange={event => setPayee(event.target.value)} placeholder="Nom du bailleur ou prestataire" className={inputClass} /></label>
+              )}
               <label className="space-y-1 text-xs font-semibold text-slate-700">Mode de paiement<select value={paymentMethod} onChange={event => setPaymentMethod(event.target.value as PaymentMethod)} className={inputClass}>{PAYMENT_METHODS.map(method => <option key={method.value} value={method.value}>{method.label}</option>)}</select></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Statut du paiement<select value={paymentStatus} onChange={event => setPaymentStatus(event.target.value as Expense["payment_status"])} className={inputClass}><option value="PAID">Payée</option><option value="PENDING">À payer</option></select></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700">Statut du paiement<select disabled={isSalaryAdvance} value={isSalaryAdvance ? "PAID" : paymentStatus} onChange={event => setPaymentStatus(event.target.value as Expense["payment_status"])} className={inputClass}><option value="PAID">Payée</option><option value="PENDING">À payer</option></select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">N° facture / référence<input value={reference} onChange={event => setReference(event.target.value)} placeholder="Référence du justificatif" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Notes<textarea rows={2} value={notes} onChange={event => setNotes(event.target.value)} placeholder="Détails complémentaires" className={inputClass} /></label>
             </div>

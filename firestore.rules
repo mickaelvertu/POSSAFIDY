@@ -45,6 +45,19 @@ service cloud.firestore {
       );
     }
 
+    function canViewArticleType(articleType) {
+      let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return isSuperAdmin() || (
+        isActiveUser() && (
+          ('visibleArticleTypes' in profile && profile.visibleArticleTypes.hasAny([articleType])) ||
+          (!('visibleArticleTypes' in profile) && (
+            profile.role in ['ADMIN', 'MAGASINIER', 'RESPONSABLE_MAGASIN', 'PRODUCTION'] ||
+            (profile.role in ['VENDEUR', 'GESTIONNAIRE_CREDIT', 'REVENDEUR'] && articleType == 'RESALE')
+          ))
+        )
+      );
+    }
+
     // User collection access rules
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
@@ -119,7 +132,7 @@ service cloud.firestore {
     }
 
     match /articles/{articleId} {
-      allow read: if isActiveUser();
+      allow read: if isActiveUser() && canViewArticleType(resource.data.article_type);
       allow write: if isAdmin();
     }
 
@@ -178,12 +191,94 @@ service cloud.firestore {
     }
 
     match /purchases/{purchaseId} {
-      allow read, write: if isAdmin();
+      allow get: if isAdmin() || (
+        isActiveUser() &&
+        resource.data.status == 'APPROVED' &&
+        hasStoreAccess(resource.data.store_id)
+      );
+      allow list: if isAdmin();
+      allow create: if isAdmin() &&
+        request.resource.data.id == purchaseId &&
+        request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.status == 'DRAFT' &&
+        request.resource.data.lines is list &&
+        request.resource.data.lines.size() > 0;
+      allow update: if (
+        isAdmin() &&
+        resource.data.status == 'DRAFT' &&
+        request.resource.data.status == 'APPROVED' &&
+        resource.data.created_by != request.auth.uid &&
+        request.resource.data.created_by == resource.data.created_by &&
+        request.resource.data.store_id == resource.data.store_id &&
+        request.resource.data.supplier_id == resource.data.supplier_id &&
+        request.resource.data.lines == resource.data.lines &&
+        request.resource.data.total == resource.data.total &&
+        request.resource.data.invoice_number == resource.data.invoice_number &&
+        request.resource.data.expected_payment_at == resource.data.expected_payment_at &&
+        request.resource.data.payments == resource.data.payments &&
+        request.resource.data.amount_paid == resource.data.amount_paid &&
+        request.resource.data.approved_by == request.auth.uid &&
+        request.resource.data.transfer_id == 'trf-purchase-' + purchaseId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'approved_by', 'approved_by_name', 'approved_at', 'transfer_id', 'updated_at'
+        ]) &&
+        existsAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)) &&
+        getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.type == 'SUPPLIER_TO_STORE' &&
+        getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.purchase_id == purchaseId &&
+        getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.status == 'IN_TRANSIT' &&
+        getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.approved_by == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.requested_by == resource.data.created_by &&
+        getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.destination_store_id == resource.data.store_id &&
+        getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.supplier_id == resource.data.supplier_id
+      ) || (
+        isAdmin() &&
+        resource.data.get('status', 'RECEIVED') in ['APPROVED', 'RECEIVED'] &&
+        request.resource.data.get('status', 'RECEIVED') == resource.data.get('status', 'RECEIVED') &&
+        request.resource.data.amount_paid is number &&
+        request.resource.data.amount_paid >= resource.data.amount_paid &&
+        request.resource.data.amount_paid <= resource.data.total &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'amount_paid', 'payment_status', 'payments', 'updated_at'
+        ])
+      ) || (
+        isActiveUser() &&
+        resource.data.status == 'APPROVED' &&
+        request.resource.data.status == 'RECEIVED' &&
+        request.resource.data.transfer_id == resource.data.transfer_id &&
+        hasStoreAccess(resource.data.store_id) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.store_id]) &&
+        request.resource.data.received_by == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'received_by', 'received_by_name', 'received_at', 'updated_at'
+        ]) &&
+        existsAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)) &&
+        getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.status in ['VALIDATED', 'DISCREPANCY'] &&
+        getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.purchase_id == purchaseId &&
+        getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.received_by == request.auth.uid
+      );
     }
 
     function hasExpenseStoreAccess(storeId) {
       return isSuperAdmin() || (isActiveUser() && storeId is string &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([storeId]));
+    }
+
+    function isSalaryAdvanceExpense(data) {
+      return data.category == 'SALARY_ADVANCE';
+    }
+
+    function hasValidSalaryAdvanceDetails(data) {
+      return ('employee_id' in data) &&
+        data.employee_id is string &&
+        exists(/databases/$(database)/documents/employees/$(data.employee_id)) &&
+        ('employee_name' in data) &&
+        data.employee_name == get(/databases/$(database)/documents/employees/$(data.employee_id)).data.first_name + ' ' +
+          get(/databases/$(database)/documents/employees/$(data.employee_id)).data.last_name &&
+        ('salary_advance_id' in data) &&
+        data.salary_advance_id == 'advance-' + data.id &&
+        data.payment_status == 'PAID' &&
+        data.description is string &&
+        data.description.size() > 0;
     }
 
     match /expenses/{expenseId} {
@@ -196,7 +291,11 @@ service cloud.firestore {
         !request.resource.data.keys().hasAny(['validated_by', 'validated_at']) &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.amount is number && request.resource.data.amount > 0 &&
-        request.resource.data.description is string;
+        request.resource.data.description is string &&
+        (
+          (isSalaryAdvanceExpense(request.resource.data) && isAdmin() && hasValidSalaryAdvanceDetails(request.resource.data)) ||
+          (!isSalaryAdvanceExpense(request.resource.data) && !request.resource.data.keys().hasAny(['employee_id', 'employee_name', 'salary_advance_id']))
+        );
       allow update: if (
         hasPermission('expenses.create') &&
         resource.data.status == 'DRAFT' &&
@@ -207,9 +306,15 @@ service cloud.firestore {
         request.resource.data.expense_number == resource.data.expense_number &&
         request.resource.data.created_at == resource.data.created_at &&
         hasExpenseStoreAccess(request.resource.data.get('store_id', null)) &&
+        (!isSalaryAdvanceExpense(resource.data) && !isSalaryAdvanceExpense(request.resource.data) || isAdmin()) &&
+        (
+          (isSalaryAdvanceExpense(request.resource.data) && hasValidSalaryAdvanceDetails(request.resource.data)) ||
+          (!isSalaryAdvanceExpense(request.resource.data) && !request.resource.data.keys().hasAny(['employee_id', 'employee_name', 'salary_advance_id']))
+        ) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'category', 'description', 'amount', 'expense_date', 'store_id',
-          'store_name', 'payee', 'payment_method', 'payment_status', 'reference', 'notes'
+          'store_name', 'payee', 'employee_id', 'employee_name', 'salary_advance_id',
+          'payment_method', 'payment_status', 'reference', 'notes'
         ])
       ) || (
         hasPermission('expenses.create') &&
@@ -218,6 +323,22 @@ service cloud.firestore {
         request.resource.data.status == 'VALIDATED' &&
         request.resource.data.validated_by == request.auth.uid &&
         request.resource.data.validated_at is number &&
+        (
+          !isSalaryAdvanceExpense(resource.data) ||
+          (
+            isAdmin() &&
+            hasValidSalaryAdvanceDetails(resource.data) &&
+            existsAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)) &&
+            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.id == resource.data.salary_advance_id &&
+            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.expense_id == expenseId &&
+            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.employee_id == resource.data.employee_id &&
+            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.amount == resource.data.amount &&
+            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.advance_date == resource.data.expense_date &&
+            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.payment_method == resource.data.payment_method &&
+            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.reason == resource.data.description &&
+            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.status == 'OUTSTANDING'
+          )
+        ) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'validated_by', 'validated_at'])
       );
       allow delete: if isSuperAdmin();
@@ -588,7 +709,7 @@ service cloud.firestore {
       allow read: if isActiveUser() && (
         hasStoreAccess(resource.data.source_store_id) || hasStoreAccess(resource.data.destination_store_id)
       );
-      allow create: if hasPermission('transfers.create') &&
+      allow create: if (hasPermission('transfers.create') &&
         request.resource.data.id == transferId &&
         request.resource.data.requested_by == request.auth.uid &&
         hasStoreAccess(request.resource.data.source_store_id) &&
@@ -599,7 +720,31 @@ service cloud.firestore {
         get(/databases/$(database)/documents/stores/$(request.resource.data.source_store_id)).data.is_active == true &&
         request.resource.data.status == 'DRAFT' &&
         request.resource.data.lines is list &&
-        request.resource.data.lines.size() > 0;
+        request.resource.data.lines.size() > 0) || (
+        isAdmin() &&
+        request.resource.data.id == transferId &&
+        request.resource.data.type == 'SUPPLIER_TO_STORE' &&
+        request.resource.data.status == 'IN_TRANSIT' &&
+        request.resource.data.purchase_id is string &&
+        request.resource.data.purchase_number is string &&
+        request.resource.data.supplier_id is string &&
+        request.resource.data.source_store_id == 'supplier-' + request.resource.data.supplier_id &&
+        request.resource.data.approved_by == request.auth.uid &&
+        request.resource.data.requested_by != request.auth.uid &&
+        request.resource.data.lines is list &&
+        request.resource.data.lines.size() > 0 &&
+        exists(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)) &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.is_active == true &&
+        request.resource.data.destination_store_id is string &&
+        existsAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)) &&
+        getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.status == 'APPROVED' &&
+        getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.transfer_id == transferId &&
+        getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.store_id == request.resource.data.destination_store_id &&
+        getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.supplier_id == request.resource.data.supplier_id &&
+        getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.supplier_name == request.resource.data.supplier_name &&
+        getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.purchase_number == request.resource.data.purchase_number &&
+        getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.created_by == request.resource.data.requested_by
+      );
       allow update: if
         request.resource.data.id == resource.data.id &&
         request.resource.data.created_at == resource.data.created_at &&
@@ -667,6 +812,15 @@ service cloud.firestore {
             request.auth.uid != resource.data.requested_by &&
             request.auth.uid != resource.data.approved_by &&
             request.resource.data.lines is list &&
+            (
+              resource.data.type != 'SUPPLIER_TO_STORE' ||
+              (
+                resource.data.purchase_id is string &&
+                existsAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)) &&
+                getAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.status == 'RECEIVED' &&
+                getAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.received_by == request.auth.uid
+              )
+            ) &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'status', 'lines', 'received_by', 'received_by_name', 'received_at',
               'validated_by', 'validated_by_name', 'validated_at', 'has_discrepancy',

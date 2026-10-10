@@ -1,4 +1,5 @@
 export type UserStatus = "PENDING" | "ACTIVE" | "DISABLED";
+export type VisibleArticleType = "RAW_MATERIAL" | "RESALE";
 
 export interface User {
   id: string;
@@ -12,6 +13,7 @@ export interface User {
   status: UserStatus;
   role: string | null;
   permissions: string[];
+  visibleArticleTypes?: VisibleArticleType[];
   assignedStores: string[];
   createdAt: string;
   updatedAt: string;
