@@ -2,7 +2,10 @@ import {
   Article,
   AuditLog,
   Category,
+  Expense,
+  ExpenseCategory,
   GeneralFilters,
+  PaymentMethod,
   Production,
   ReportType,
   Sale,
@@ -21,7 +24,33 @@ export interface ReportData {
   sales: Sale[];
   productions: Production[];
   auditLogs: AuditLog[];
+  expenses?: Expense[];
 }
+
+export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+  RENT: "Loyer",
+  ELECTRICITY: "Électricité",
+  FUEL: "Carburant",
+  TRANSPORT: "Transport",
+  MAINTENANCE: "Entretien",
+  SUPPLIES: "Fournitures",
+  COMMUNICATION: "Communication",
+  FOOD: "Nourriture",
+  SALARY_ADVANCE: "Avance sur salaire",
+  OTHER: "Autres frais"
+};
+
+export const PAYMENT_METHOD_LABELS: Partial<Record<PaymentMethod, string>> = {
+  CASH: "Espèces",
+  BANK_TRANSFER: "Virement bancaire",
+  MVOLA: "MVola",
+  AIRTEL_MONEY: "Airtel Money",
+  ORANGE_MONEY: "Orange Money",
+  CHECK: "Chèque"
+};
+
+// Les dépenses sans statut (anciennes données) sont considérées validées, comme dans le module Dépenses.
+export const expenseStatus = (expense: Expense): "DRAFT" | "VALIDATED" => expense.status === "DRAFT" ? "DRAFT" : "VALIDATED";
 
 export interface ReportKpi {
   label: string;
@@ -52,10 +81,11 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
   const articleById = new Map(data.articles.map(article => [article.id, article]));
   const storeById = new Map(data.stores.map(store => [store.id, store]));
   const query = normalize(filters.searchRef?.trim());
-  const articleFiltersActive = Boolean(filters.articleId || filters.categoryIds.length || (filters.articleType && filters.articleType !== "ALL"));
+  const articleFiltersActive = Boolean(filters.articleId || filters.articleIds?.length || filters.categoryIds.length || (filters.articleType && filters.articleType !== "ALL"));
   const matchesArticle = (articleId: string) => {
     const article = articleById.get(articleId);
     if (filters.articleId && articleId !== filters.articleId) return false;
+    if (filters.articleIds?.length && !filters.articleIds.includes(articleId)) return false;
     if (filters.categoryIds.length && (!article || !filters.categoryIds.includes(article.category_id))) return false;
     if (filters.articleType && filters.articleType !== "ALL" && article?.article_type !== filters.articleType) return false;
     return true;
@@ -116,7 +146,13 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
       matchesQuery(log.action, log.entity_type, log.entity_id, log.user_name, log.device_id, log.store_id);
   });
 
-  return { ...data, stocks, transfers, movements, sales, productions, auditLogs };
+  const expenses = data.expenses?.filter(expense =>
+    (filters.storeIds.length === 0 || (Boolean(expense.store_id) && filters.storeIds.includes(expense.store_id as string))) &&
+    isInPeriod(expense.expense_date, filters) && matchesStatus(expenseStatus(expense)) && matchesQuantity(expense.amount, filters) &&
+    matchesQuery(expense.expense_number, expense.description, EXPENSE_CATEGORY_LABELS[expense.category], expense.store_name, expense.payee, expense.employee_name, expense.reference, expense.created_by_name)
+  );
+
+  return { ...data, stocks, transfers, movements, sales, productions, auditLogs, expenses };
 }
 
 const money = (amount: number) => `${Math.round(amount).toLocaleString("fr-FR")} Ar`;
@@ -215,6 +251,16 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Actions distinctes", value: String(new Set(data.auditLogs.map(log => log.action)).size) },
         { label: "Entités concernées", value: String(new Set(data.auditLogs.map(log => log.entity_type)).size) }
       ];
+    case "EXPENSES": {
+      const expenses = data.expenses || [];
+      const validated = expenses.filter(expense => expenseStatus(expense) === "VALIDATED");
+      return [
+        { label: "Dépenses", value: String(expenses.length) },
+        { label: "Total validé", value: money(validated.reduce((sum, expense) => sum + expense.amount, 0)) },
+        { label: "En attente de paiement", value: money(validated.filter(expense => expense.payment_status === "PENDING").reduce((sum, expense) => sum + expense.amount, 0)) },
+        { label: "Brouillons", value: String(expenses.length - validated.length) }
+      ];
+    }
     default:
       return [
         { label: "Enregistrements", value: String(data.stocks.length + data.transfers.length + data.movements.length + data.sales.length + data.productions.length + data.auditLogs.length) },

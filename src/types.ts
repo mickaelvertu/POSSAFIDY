@@ -625,6 +625,7 @@ export interface GeneralFilters {
   minQty?: number;
   maxQty?: number;
   articleId?: string;
+  articleIds?: string[]; // multi-sélection d'articles précis
   customerName?: string;
   sellerId?: string;
 }
@@ -644,7 +645,8 @@ export type ReportType =
   | "RAW_MATERIAL_CONSUMPTION"
   | "PRODUCTION"
   | "RETURNS"
-  | "AUDIT_LOG";
+  | "AUDIT_LOG"
+  | "EXPENSES";
 
 export type EmployeeContractType = "CDI" | "CDD" | "TEMPORARY" | "INTERN" | "DAILY";
 

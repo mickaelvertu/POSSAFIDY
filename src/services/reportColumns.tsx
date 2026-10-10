@@ -3,6 +3,7 @@ import { formatSignedQuantity, LedgerBlock } from "./stockLedger";
 import {
   Article,
   AuditLog,
+  Expense,
   Production,
   ReportType,
   Sale,
@@ -11,6 +12,7 @@ import {
   StockTransferLine,
   StoreStock
 } from "../types";
+import { EXPENSE_CATEGORY_LABELS, expenseStatus, PAYMENT_METHOD_LABELS } from "./reportService";
 
 export interface ReportColumn<T = any> {
   key: string;
@@ -41,6 +43,7 @@ export interface ReportColumnsContext {
   reportSales: Sale[];
   reportProductions: Production[];
   reportAuditLogs: AuditLog[];
+  reportExpenses: Expense[];
   salesByCustomer: { name: string; count: number; total: number }[];
   salesByArticle: { id: string; name: string; code: string; quantity: number; total: number }[];
   salesByCategory: { id: string; quantity: number; total: number; articleIds: Set<string> }[];
@@ -257,6 +260,25 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
         { key: "status", label: "Statut", value: p => p.status, render: p => <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">{p.status}</span> }
       ];
       return { columns, rows, rowKey: p => p.id };
+    }
+
+    case "EXPENSES": {
+      const rows = ctx.reportExpenses;
+      const columns: ReportColumn<Expense>[] = [
+        { key: "number", label: "N° dépense", value: e => e.expense_number },
+        { key: "date", label: "Date", value: e => e.expense_date, render: e => new Date(e.expense_date).toLocaleDateString("fr-FR") },
+        { key: "store", label: "Magasin", value: e => e.store_name || (e.store_id ? getStoreName(e.store_id) : "Global") },
+        { key: "category", label: "Catégorie", value: e => EXPENSE_CATEGORY_LABELS[e.category] || EXPENSE_CATEGORY_LABELS.OTHER },
+        { key: "description", label: "Description", value: e => e.description },
+        { key: "payee", label: "Bénéficiaire", value: e => e.employee_name || e.payee || "-" },
+        { key: "method", label: "Mode de paiement", value: e => PAYMENT_METHOD_LABELS[e.payment_method] || e.payment_method },
+        { key: "paymentStatus", label: "Paiement", value: e => e.payment_status === "PAID" ? "Payé" : "En attente" },
+        { key: "reference", label: "Référence", value: e => e.reference || "-" },
+        { key: "author", label: "Saisi par", value: e => e.created_by_name },
+        { key: "status", label: "Statut", value: e => expenseStatus(e) === "DRAFT" ? "Brouillon" : "Validée" },
+        { key: "amount", label: "Montant", align: "right", value: e => e.amount, render: e => money(e.amount), footer: list => money(sum(list.filter(e => expenseStatus(e) === "VALIDATED").map(e => e.amount))) }
+      ];
+      return { columns, rows, rowKey: e => e.id };
     }
 
     case "AUDIT_LOG":

@@ -493,6 +493,15 @@ export default function AuthenticatedSessionView() {
   const accessibleStores = user && user.assignedStores.length > 0 && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"
     ? inventoryStores.filter(store => user.assignedStores.includes(store.id))
     : inventoryStores;
+  // Même règle d'accès que le module Dépenses. ADMIN et SUPER_ADMIN voient tout ;
+  // les autres utilisateurs ne voient que leurs propres dépenses, dans leurs magasins assignés.
+  const canAccessExpenses = Boolean(currentAppUser && user?.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")));
+  const reportExpenses = !canAccessExpenses || !user
+    ? undefined
+    : user.role === "ADMIN" || user.role === "SUPER_ADMIN"
+      ? expenses
+      : expenses.filter(expense => expense.created_by === user.id &&
+          (user.assignedStores.length === 0 || (Boolean(expense.store_id) && user.assignedStores.includes(expense.store_id as string))));
   // Non-admin roles only see transfers involving one of their assigned stores.
   const visibleArticleIds = new Set<string>(articles.map(article => article.id));
   const visibleTransfers = currentAppUser && currentAppUser.roleId !== "SUPER_ADMIN" && currentAppUser.roleId !== "ADMIN"
@@ -2216,6 +2225,7 @@ export default function AuthenticatedSessionView() {
               sales={visibleSales}
               productions={visibleProductions}
               auditLogs={visibleAuditLogs}
+              expenses={reportExpenses}
               currentUser={currentAppUser}
               onOpenReportViewer={(type, filters) => setReportRequest({ type, filters })}
             />
@@ -2232,6 +2242,7 @@ export default function AuthenticatedSessionView() {
                 sales={visibleSales}
                 productions={visibleProductions}
                 auditLogs={visibleAuditLogs}
+                expenses={reportExpenses}
                 currentUser={currentAppUser}
                 onClose={() => setReportRequest(null)}
               />

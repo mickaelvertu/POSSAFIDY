@@ -12,6 +12,7 @@ import {
   Sale, 
   Production, 
   AuditLog, 
+  Expense,
   UserProfile,
   StockMovementType,
   MovementDirection,
@@ -35,11 +36,14 @@ import {
   AlertTriangle,
   Factory,
   RotateCcw,
-  ShieldAlert
+  ShieldAlert,
+  Wallet
 } from "lucide-react";
 
 interface ReportsViewProps {
   userAuditReport?: ReactNode;
+  /** Fournies uniquement aux utilisateurs autorisés à consulter les dépenses. */
+  expenses?: Expense[];
   stores: Store[];
   categories: Category[];
   articles: Article[];
@@ -55,6 +59,7 @@ interface ReportsViewProps {
 
 export default function ReportsView({
   userAuditReport,
+  expenses,
   stores,
   categories,
   articles,
@@ -83,6 +88,8 @@ export default function ReportsView({
   const [minQty, setMinQty] = useState<number | undefined>(undefined);
   const [maxQty, setMaxQty] = useState<number | undefined>(undefined);
   const [customerName, setCustomerName] = useState<string>("");
+  const [articleIds, setArticleIds] = useState<string[]>([]);
+  const [articleQuery, setArticleQuery] = useState<string>("");
 
   const REPORTS_CATALOG: Array<{
     type: ReportType;
@@ -108,6 +115,17 @@ export default function ReportsView({
     { type: "STOCK_LEDGER", number: 14, title: "Grille des mouvements (Excel)", description: "Par article : stock avant, puis chaque variation (+4 transfert, −1 vente…) et stock après", icon: SlidersHorizontal, color: "text-cyan-600 bg-cyan-50 border-cyan-200" }
   ];
 
+  const EXPENSES_REPORT: (typeof REPORTS_CATALOG)[number] | undefined = expenses ? {
+    type: "EXPENSES",
+    number: 16,
+    title: "Dépenses",
+    description: "Frais d'exploitation par magasin, catégorie, bénéficiaire et mode de paiement",
+    icon: Wallet,
+    color: "text-rose-600 bg-rose-50 border-rose-200"
+  } : undefined;
+  const reportCount = 14 + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
+  const allReports = EXPENSES_REPORT ? [...REPORTS_CATALOG, EXPENSES_REPORT] : REPORTS_CATALOG;
+
   const filters = useMemo<GeneralFilters>(() => ({
     startDate: startDate || undefined,
     endDate: endDate || undefined,
@@ -120,8 +138,9 @@ export default function ReportsView({
     searchRef: searchRef || undefined,
     minQty,
     maxQty,
-    customerName: customerName || undefined
-  }), [startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
+    customerName: customerName || undefined,
+    articleIds: selectedReport === "STOCK_LEDGER" && articleIds.length ? articleIds : undefined
+  }), [selectedReport, articleIds, startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
 
   const filteredData = useMemo(() => filterReportData({
     articles,
@@ -131,8 +150,9 @@ export default function ReportsView({
     movements,
     sales,
     productions,
-    auditLogs
-  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, filters]);
+    auditLogs,
+    expenses
+  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, filters]);
   const kpiData = useMemo(() => ({
     ...filteredData,
     transfers: selectedReport === "RETURNS"
@@ -152,7 +172,9 @@ export default function ReportsView({
         ? ["DRAFT", "APPROVED", "IN_TRANSIT", "RECEIVED", "VALIDATED", "DISCREPANCY", "CANCELLED"]
         : selectedReport === "AUDIT_LOG"
           ? [...new Set(auditLogs.map(log => log.action))]
-          : [];
+          : selectedReport === "EXPENSES"
+            ? ["DRAFT", "VALIDATED"]
+            : [];
   const movementTypeOptions = [...new Set(movements.map(movement => movement.movement_type))];
 
   // Helper toggle for multi-select
@@ -184,66 +206,9 @@ export default function ReportsView({
     onOpenReportViewer(selectedReport, filters);
   };
 
-  if (showUserAudit && userAuditReport) return <div className="space-y-4"><button type="button" className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 print:hidden" onClick={() => setShowUserAudit(false)}>← Tous les rapports</button>{userAuditReport}</div>;
-
-  return (
-    <div className="space-y-7">
-      <header className="relative isolate overflow-hidden rounded-3xl border border-emerald-200/15 bg-gradient-to-br from-[#12352d] via-[#0c2621] to-[#071714] p-6 text-white shadow-xl sm:p-8">
-        <div className="pointer-events-none absolute -right-12 -top-24 -z-10 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" />
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-          <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-emerald-200/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-100">
-              <FileText className="h-3.5 w-3.5" />
-              Centre de rapports
-            </div>
-            <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-              Rapports officiels GILEADA
-            </h2>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-emerald-50/70">
-              {userAuditReport ? "15 rapports" : "14 rapports"} certifiés pour suivre les stocks, les ventes, la production et les opérations.
-              Chaque édition conserve ses filtres et ses totaux.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleLaunchReport}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-emerald-950 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c2621]"
-          >
-            <Printer className="h-4 w-4" />
-            Générer le rapport sélectionné
-          </button>
-        </div>
-        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs text-emerald-50/60">
-          <span className="font-semibold text-emerald-100">N° {REPORTS_CATALOG.find(report => report.type === selectedReport)?.number ?? 1}</span>
-          <span>{REPORTS_CATALOG.find(report => report.type === selectedReport)?.title ?? "État du stock"}</span>
-          <span className="hidden h-1 w-1 rounded-full bg-emerald-200/50 sm:block" />
-          <span>Filtres actifs pris en compte à la génération</span>
-        </div>
-      </header>
-
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs du rapport filtré">
-        {kpis.map(kpi => (
-          <div key={kpi.label} className="rounded-2xl border border-white/70 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{kpi.label}</p>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{kpi.value}</p>
-          </div>
-        ))}
-      </section>
-
-      <section aria-labelledby="reports-catalog-title" className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-300">Bibliothèque</p>
-            <h3 id="reports-catalog-title" className="mt-1 text-lg font-bold text-white">Choisir un rapport</h3>
-          </div>
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300">
-            {userAuditReport ? "15 éditions disponibles" : "14 éditions disponibles"}
-          </span>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {REPORTS_CATALOG.map((rep) => {
-          const isSelected = selectedReport === rep.type;
-          const IconComp = rep.icon;
+  const renderReportCard = (rep: (typeof REPORTS_CATALOG)[number]) => {
+    const isSelected = selectedReport === rep.type && !showUserAudit;
+    const IconComp = rep.icon;
           return (
             <button
               type="button"
@@ -279,7 +244,66 @@ export default function ReportsView({
               </div>
             </button>
           );
-        })}
+  };
+
+  if (showUserAudit && userAuditReport) return <div className="space-y-4"><button type="button" className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 print:hidden" onClick={() => setShowUserAudit(false)}>← Tous les rapports</button>{userAuditReport}</div>;
+
+  return (
+    <div className="space-y-7">
+      <header className="relative isolate overflow-hidden rounded-3xl border border-emerald-200/15 bg-gradient-to-br from-[#12352d] via-[#0c2621] to-[#071714] p-6 text-white shadow-xl sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-24 -z-10 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" />
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-emerald-200/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-100">
+              <FileText className="h-3.5 w-3.5" />
+              Centre de rapports
+            </div>
+            <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+              Rapports officiels GILEADA
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-emerald-50/70">
+              {reportCount} rapports certifiés pour suivre les stocks, les ventes, la production et les opérations.
+              Chaque édition conserve ses filtres et ses totaux.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleLaunchReport}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-emerald-950 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c2621]"
+          >
+            <Printer className="h-4 w-4" />
+            Générer le rapport sélectionné
+          </button>
+        </div>
+        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs text-emerald-50/60">
+          <span className="font-semibold text-emerald-100">          N° {allReports.find(report => report.type === selectedReport)?.number ?? 1}</span>
+                    <span>{allReports.find(report => report.type === selectedReport)?.title ?? "État du stock"}</span>
+          <span className="hidden h-1 w-1 rounded-full bg-emerald-200/50 sm:block" />
+          <span>Filtres actifs pris en compte à la génération</span>
+        </div>
+      </header>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs du rapport filtré">
+        {kpis.map(kpi => (
+          <div key={kpi.label} className="rounded-2xl border border-white/70 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{kpi.label}</p>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{kpi.value}</p>
+          </div>
+        ))}
+      </section>
+
+      <section aria-labelledby="reports-catalog-title" className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-300">Bibliothèque</p>
+            <h3 id="reports-catalog-title" className="mt-1 text-lg font-bold text-white">Choisir un rapport</h3>
+          </div>
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300">
+            {reportCount} éditions disponibles
+          </span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {REPORTS_CATALOG.map(renderReportCard)}
         {userAuditReport && (
           <button
             type="button"
@@ -309,6 +333,7 @@ export default function ReportsView({
             </div>
           </button>
         )}
+        {EXPENSES_REPORT && renderReportCard(EXPENSES_REPORT)}
         </div>
       </section>
 
@@ -320,7 +345,7 @@ export default function ReportsView({
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">Configuration</p>
               <h3 className="text-sm font-bold text-slate-900">
-                Filtres du rapport <span className="font-normal text-slate-500">(règle métier n° 12)</span>
+                Filtres du rapport <span className="font-normal text-slate-500">(N° {allReports.find(report => report.type === selectedReport)?.number ?? 1} — {allReports.find(report => report.type === selectedReport)?.title})</span>
               </h3>
             </div>
           </div>
@@ -339,6 +364,8 @@ export default function ReportsView({
               setMinQty(undefined);
               setMaxQty(undefined);
               setCustomerName("");
+              setArticleIds([]);
+              setArticleQuery("");
             }}
             className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
           >
@@ -395,6 +422,54 @@ export default function ReportsView({
 
         </div>
 
+        {selectedReport === "STOCK_LEDGER" && (
+          <div className="text-xs">
+            <label className="block font-bold text-slate-700 mb-1" htmlFor="ledger-article">Articles précis (Multi-sélection) :</label>
+            <input
+              id="ledger-article"
+              type="text"
+              list="ledger-article-options"
+              placeholder="Tous les articles — tapez un code ou un nom puis choisissez dans la liste"
+              value={articleQuery}
+              onChange={(e) => {
+                const value = e.target.value;
+                const match = articles.find(article => `${article.code} — ${article.name}` === value);
+                if (match) {
+                  setArticleIds(current => current.includes(match.id) ? current : [...current, match.id]);
+                  setArticleQuery("");
+                } else {
+                  setArticleQuery(value);
+                }
+              }}
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2"
+            />
+            <datalist id="ledger-article-options">
+              {[...articles].filter(article => !articleIds.includes(article.id)).sort((a, b) => a.name.localeCompare(b.name, "fr-FR")).map(article => (
+                <option key={article.id} value={`${article.code} — ${article.name}`} />
+              ))}
+            </datalist>
+            {articleIds.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {articleIds.map(id => {
+                  const article = articles.find(item => item.id === id);
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setArticleIds(current => current.filter(item => item !== id))}
+                      title="Retirer cet article"
+                      className="px-3 py-1.5 rounded-lg border font-semibold flex items-center gap-1.5 bg-cyan-600 text-white border-cyan-600"
+                    >
+                      <CheckSquare className="h-3.5 w-3.5" />
+                      {article ? `${article.code} — ${article.name}` : id}
+                    </button>
+                  );
+                })}
+                <button type="button" onClick={() => setArticleIds([])} className="px-2 py-1.5 font-semibold text-slate-500 hover:text-slate-900">Tout retirer</button>
+              </div>
+            )}
+          </div>
+        )}
         {/* Row 2: Multi-selection Stores */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-2">

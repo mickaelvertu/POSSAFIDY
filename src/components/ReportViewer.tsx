@@ -10,6 +10,7 @@ import {
   Sale, 
   Production, 
   AuditLog, 
+  Expense,
   GeneralFilters 
 } from "../types";
 import { filterReportData } from "../services/reportService";
@@ -40,6 +41,7 @@ interface ReportViewerProps {
   sales: Sale[];
   productions: Production[];
   auditLogs: AuditLog[];
+  expenses?: Expense[];
   currentUser: { email: string; displayName: string };
   onClose: () => void;
 }
@@ -56,6 +58,7 @@ export default function ReportViewer({
   sales,
   productions,
   auditLogs,
+  expenses,
   currentUser,
   onClose,
 }: ReportViewerProps) {
@@ -67,7 +70,7 @@ export default function ReportViewer({
   const getStoreName = (id: string) => stores.find(s => s.id === id)?.name || id;
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
   const getArticle = (id: string) => articles.find(a => a.id === id);
-  const filteredData = filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs }, filters);
+  const filteredData = filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses }, filters);
   const reportStocks = filteredData.stocks;
   const reportTransfers = filteredData.transfers;
   const reportMovements = filteredData.movements;
@@ -82,6 +85,7 @@ export default function ReportViewer({
   const reportSales = filteredData.sales;
   const reportProductions = filteredData.productions;
   const reportAuditLogs = filteredData.auditLogs;
+  const reportExpenses = filteredData.expenses || [];
   const matchesSaleArticle = (articleId: string) => {
     const article = getArticle(articleId);
     return (!filters.articleId || articleId === filters.articleId) &&
@@ -130,11 +134,12 @@ export default function ReportViewer({
     reportSales,
     reportProductions,
     reportAuditLogs,
+    reportExpenses,
     salesByCustomer,
     salesByArticle,
     salesByCategory,
     filteredSalesLines
-  }), [reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
+  }), [reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
 
   const hiddenKeys = useMemo(() => new Set(hiddenKeysByReport[reportType] || []), [hiddenKeysByReport, reportType]);
 
@@ -173,6 +178,16 @@ export default function ReportViewer({
     if (filters.categoryIds.length > 0) {
       parts.push(`Catégories: ${filters.categoryIds.map(getCategoryName).join(", ")}`);
     }
+    if (filters.articleIds?.length) {
+      parts.push(`Articles: ${filters.articleIds.map(id => {
+        const article = getArticle(id);
+        return article ? `${article.code} — ${article.name}` : id;
+      }).join(", ")}`);
+    }
+    if (filters.articleId) {
+      const article = getArticle(filters.articleId);
+      parts.push(`Article: ${article ? `${article.code} — ${article.name}` : filters.articleId}`);
+    }
     if (filters.articleType && filters.articleType !== "ALL") {
       parts.push(`Type article: ${filters.articleType === "RESALE" ? "Revente" : "Matière Première"}`);
     }
@@ -199,7 +214,8 @@ export default function ReportViewer({
     RAW_MATERIAL_CONSUMPTION: "ÉTAT DE CONSOMMATION DES MATIÈRES PREMIÈRES",
     PRODUCTION: "REGISTRE DE FABRICATION & PRODUITS FINIS LABORATOIRE",
     RETURNS: "REGISTRE DES RETOURS VERS LE DÉPÔT CENTRAL",
-    AUDIT_LOG: "JOURNAL D'AUDIT ET DE TRAÇABILITÉ DES OPÉRATIONS"
+    AUDIT_LOG: "JOURNAL D'AUDIT ET DE TRAÇABILITÉ DES OPÉRATIONS",
+    EXPENSES: "REGISTRE DES DÉPENSES & FRAIS D'EXPLOITATION"
   };
 
   const handlePrint = () => {

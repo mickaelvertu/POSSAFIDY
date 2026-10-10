@@ -33,6 +33,7 @@ export default function MovementsView({
 }: MovementsViewProps) {
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
+  const [selectedArticleId, setSelectedArticleId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -66,8 +67,14 @@ export default function MovementsView({
     return (store?.store_type !== "POS" && store?.store_type !== "RESELLER") || article?.article_type === "RESALE";
   });
 
+  const movementArticleIds = new Set(accessibleMovements.map(m => m.article_id));
+  const articleOptions = articles
+    .filter(a => movementArticleIds.has(a.id))
+    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+
   const filteredMovements = accessibleMovements.filter((m) => {
     if (selectedType !== "ALL" && m.movement_type !== selectedType) return false;
+    if (selectedArticleId !== "ALL" && m.article_id !== selectedArticleId) return false;
     if (selectedStoreId !== "ALL" && m.store_id !== selectedStoreId) return false;
     if (dateFrom && m.created_at < new Date(`${dateFrom}T00:00:00`).getTime()) return false;
     if (dateTo && m.created_at > new Date(`${dateTo}T23:59:59.999`).getTime()) return false;
@@ -87,6 +94,7 @@ export default function MovementsView({
   const resetFilters = () => {
     setSelectedType("ALL");
     setSelectedStoreId("ALL");
+    setSelectedArticleId("ALL");
     setSearchQuery("");
     setDateFrom("");
     setDateTo("");
@@ -145,6 +153,23 @@ export default function MovementsView({
             {stores.map((s) => (
               <option key={s.id} value={s.id}>
                 {storeLabel(s)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Article */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-bold text-slate-600">Article :</label>
+          <select
+            value={selectedArticleId}
+            onChange={(e) => setSelectedArticleId(e.target.value)}
+            className="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 max-w-56 focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="ALL">Tous les Articles</option>
+            {articleOptions.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.code} — {a.name}
               </option>
             ))}
           </select>
