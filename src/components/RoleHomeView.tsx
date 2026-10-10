@@ -46,14 +46,25 @@ interface RoleHomeViewProps {
   auditLogs: AuditLog[];
 }
 
-type AuditCategory = "SALE" | "MOVEMENT" | "EXPENSE" | "DEPOT";
+type AuditCategory = "SALE" | "TRANSFER" | "INVENTORY" | "PRODUCTION" | "EXPENSE" | "DEPOT";
 type AuditPeriod = "HOUR" | "FOUR_HOURS" | "TODAY" | "WEEK";
 
 const auditCategoryLabels: Record<AuditCategory, string> = {
   SALE: "Vente",
-  MOVEMENT: "Mouvement",
+  TRANSFER: "Transfert",
+  INVENTORY: "Inventaire",
+  PRODUCTION: "Production",
   EXPENSE: "Dépense",
   DEPOT: "Dépôt"
+};
+
+const auditCategoryCodes: Record<AuditCategory, string> = {
+  SALE: "VTE",
+  TRANSFER: "TRF",
+  INVENTORY: "INV",
+  PRODUCTION: "PRD",
+  EXPENSE: "EXP",
+  DEPOT: "DEP"
 };
 
 const auditActionLabels: Record<string, string> = {
@@ -120,7 +131,11 @@ function getAuditCategory(log: AuditLog): AuditCategory | null {
     case "TRANSFER":
     case "STOCK_TRANSFER":
     case "MOVEMENT":
-      return "MOVEMENT";
+      return "TRANSFER";
+    case "INVENTORY_COUNT":
+      return "INVENTORY";
+    case "PRODUCTION":
+      return "PRODUCTION";
     case "EXPENSE":
       return "EXPENSE";
     case "STOCK":
@@ -508,7 +523,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Activité récente</h2>
-              <p className="text-xs text-slate-500">Ventes, mouvements, dépôts et dépenses · {filteredAuditLogs.length} événement(s)</p>
+              <p className="text-xs text-slate-500">Ventes, transferts, inventaires, dépôts et dépenses · {filteredAuditLogs.length} événement(s)</p>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex">
               <label className="text-xs font-semibold text-slate-600">
@@ -524,21 +539,21 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                   <option value="WEEK">7 derniers jours</option>
                 </select>
               </label>
-              <label className="text-xs font-semibold text-slate-600">
-                Catégorie
-                <select
-                  value={auditCategory}
-                  onChange={event => { setAuditCategory(event.target.value as AuditCategory | "ALL"); setShowAllAuditLogs(false); }}
-                  className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                >
-                  <option value="ALL">Toutes</option>
-                  <option value="SALE">Vente</option>
-                  <option value="MOVEMENT">Mouvement</option>
-                  <option value="EXPENSE">Dépense</option>
-                  <option value="DEPOT">Dépôt</option>
-                </select>
-              </label>
             </div>
+          </div>
+          <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filtrer par catégorie">
+            {(["ALL", ...Object.keys(auditCategoryLabels)] as Array<AuditCategory | "ALL">).map(option => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={auditCategory === option}
+                title={option === "ALL" ? "Toutes les catégories" : auditCategoryLabels[option]}
+                onClick={() => { setAuditCategory(option); setShowAllAuditLogs(false); }}
+                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${auditCategory === option ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50"}`}
+              >
+                {option === "ALL" ? "TOUS" : auditCategoryCodes[option]}
+              </button>
+            ))}
           </div>
           {filteredAuditLogs.length > 0 ? (
             <>

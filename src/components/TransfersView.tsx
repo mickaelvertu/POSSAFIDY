@@ -619,6 +619,11 @@ export default function TransfersView({
               }`}
             >
               {label}
+              <span className={`ml-1.5 inline-block min-w-5 rounded-full px-1.5 py-0.5 text-center text-[10px] leading-none ${
+                filterStatus === st ? "bg-white/25 text-white" : "bg-slate-200 text-slate-700"
+              }`}>
+                {st === "ALL" ? transfers.length : transfers.filter(t => t.status === st).length}
+              </span>
             </button>
           ))}
         </div>

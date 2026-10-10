@@ -33,7 +33,6 @@ export interface SignUpPayload {
   email: string;
   phone?: string;
   password: string;
-  signupCode: string;
 }
 
 export interface ResellerSignUpPayload {
@@ -43,7 +42,6 @@ export interface ResellerSignUpPayload {
   email: string;
   phone: string;
   password: string;
-  signupCode: string;
 }
 
 export interface LoginPayload {
