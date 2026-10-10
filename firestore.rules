@@ -61,7 +61,7 @@ service cloud.firestore {
     // User collection access rules
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin();
+      allow list: if isAdmin() || (isActiveUser() && resource.data.role == 'RESPONSABLE_MAGASIN');
       allow create: if (
         isSuperAdmin() ||
         (isAdmin() && !(request.resource.data.role in ['ADMIN', 'SUPER_ADMIN'])) ||
@@ -150,7 +150,7 @@ service cloud.firestore {
     }
 
     match /employees/{employeeId} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || (isActiveUser() && resource.data.get('user_id', null) == request.auth.uid);
       allow create: if isAdmin() || (
         request.auth.uid == employeeId &&
         request.resource.data.keys().hasOnly([
@@ -183,11 +183,15 @@ service cloud.firestore {
     }
 
     match /payroll/{payslipId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || (isActiveUser() &&
+        get(/databases/$(database)/documents/employees/$(resource.data.employee_id)).data.get('user_id', null) == request.auth.uid);
+      allow write: if isAdmin();
     }
 
     match /salaryAdvances/{advanceId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || (isActiveUser() &&
+        get(/databases/$(database)/documents/employees/$(resource.data.employee_id)).data.get('user_id', null) == request.auth.uid);
+      allow write: if isAdmin();
     }
 
     match /purchases/{purchaseId} {
@@ -520,6 +524,54 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /inventoryCounts/{countId} {
+      function isCounter() {
+        return isActiveUser() && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['RESPONSABLE_MAGASIN', 'CONTROLEUR'] ||
+          hasPermission('inventory.count')
+        );
+      }
+
+      allow read: if isAdmin() || (isActiveUser() && (hasStoreAccess(resource.data.store_id) || resource.data.get('charged_to', null) == request.auth.uid));
+      allow create: if isCounter() &&
+        request.resource.data.id == countId &&
+        request.resource.data.created_by == request.auth.uid &&
+        (isAdmin() || hasStoreAccess(request.resource.data.store_id)) &&
+        request.resource.data.status in ['DRAFT', 'AWAITING_SIGNATURE'] &&
+        (request.resource.data.status == 'DRAFT' || request.resource.data.manager_id is string);
+      allow update: if (
+        isCounter() &&
+        resource.data.status == 'DRAFT' &&
+        resource.data.created_by == request.auth.uid &&
+        request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.store_id == resource.data.store_id &&
+        request.resource.data.status in ['DRAFT', 'AWAITING_SIGNATURE'] &&
+        (request.resource.data.status == 'DRAFT' || request.resource.data.manager_id is string)
+      ) || (
+        // Le responsable désigné signe (présence attestée) ou refuse de signer.
+        isActiveUser() && resource.data.status == 'AWAITING_SIGNATURE' &&
+        resource.data.manager_id == request.auth.uid &&
+        request.resource.data.status in ['SUBMITTED', 'REJECTED'] &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'manager_signed_at', 'manager_signed_by', 'manager_signed_by_name', 'submitted_at',
+          'reviewed_by', 'reviewed_by_name', 'reviewed_at', 'review_note', 'updated_at'
+        ]) &&
+        (request.resource.data.status == 'REJECTED' || request.resource.data.manager_signed_by == request.auth.uid)
+      ) || (
+        isAdmin() && resource.data.status == 'SUBMITTED' &&
+        resource.data.created_by != request.auth.uid &&
+        'manager_signed_at' in resource.data &&
+        request.resource.data.status in ['VALIDATED', 'REJECTED'] &&
+        request.resource.data.store_id == resource.data.store_id
+      ) || (
+        isAdmin() && resource.data.status == 'VALIDATED' &&
+        !('charge_settlement' in resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['charge_settlement', 'updated_at'])
+      );
+      allow delete: if isCounter() && resource.data.status == 'DRAFT' && resource.data.created_by == request.auth.uid;
+    }
+
     match /creditCustomers/{customerId} {
       allow read: if hasPermission('credit.sales') || hasPermission('credit.manage') ||
         (isActiveUser() && resource.data.linked_user_id == request.auth.uid);
@@ -826,6 +878,15 @@ service cloud.firestore {
               'validated_by', 'validated_by_name', 'validated_at', 'has_discrepancy',
               'note', 'updated_at'
             ])
+          ) ||
+          (
+            (hasPermission('production.create') || hasPermission('production.validate')) &&
+            hasStoreAccess(resource.data.destination_store_id) &&
+            resource.data.type == 'RECYCLING' &&
+            resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
+            request.resource.data.status == resource.data.status &&
+            request.resource.data.lines is list &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lines', 'updated_at'])
           ) ||
           (
             isAdmin() &&

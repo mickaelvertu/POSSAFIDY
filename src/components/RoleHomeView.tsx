@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppUser, AuditLog, Expense, Sale, Store } from "../types";
 import { hasPermission } from "../services/authService";
+import MyInfoView from "./MyInfoView";
 import {
   ArrowRightLeft,
   BarChart3,
@@ -38,6 +39,7 @@ interface RoleHomeViewProps {
   onOpenStaff: () => void;
   onOpenReports: () => void;
   onOpenAudit: () => void;
+  onOpenInventory: () => void;
   stores: Store[];
   sales: Sale[];
   expenses: Expense[];
@@ -227,9 +229,11 @@ const roleLabels: Record<string, string> = {
   VENDEUR: "Vendeur POS",
   MAGASINIER: "Magasinier",
   RESPONSABLE_MAGASIN: "Responsable magasin",
+  CONTROLEUR: "Contrôleur",
   PRODUCTION: "Responsable production",
   COMPTABLE: "Comptable",
   GESTIONNAIRE_CREDIT: "Gestionnaire crédit",
+  STAFF: "Staff",
   REVENDEUR: "Revendeur"
 };
 
@@ -239,9 +243,11 @@ const roleDescriptions: Record<string, string> = {
   VENDEUR: "Accès rapide à la caisse, aux articles et au stock de votre magasin.",
   MAGASINIER: "Suivi du stock et préparation des flux entre magasins.",
   RESPONSABLE_MAGASIN: "Pilotage des ventes, du stock et des transferts de votre magasin.",
+  CONTROLEUR: "Comptage physique des magasins assignés et contrôle des stocks.",
   PRODUCTION: "Suivi des ordres de production et des matières premières.",
   COMPTABLE: "Contrôle des ventes, des indicateurs et des rapports.",
   GESTIONNAIRE_CREDIT: "Gestion des comptes revendeurs, plafonds, règlements et relances.",
+  STAFF: "Bienvenue dans votre espace collaborateur : retrouvez votre profil, vos magasins et les informations de l'équipe.",
   REVENDEUR: "Votre demande de compte revendeur est en cours d'examen."
 };
 
@@ -250,6 +256,7 @@ const accessCards = [
   { permission: "credit.manage", title: "Crédits revendeurs", description: "Gérer les plafonds, échéances, paiements et relances", icon: HandCoins, accent: "teal" },
   { permission: "reseller.orders", title: "Commandes revendeurs", description: "Examiner les commandes et notifier les décisions", icon: ShoppingCart, accent: "amber", adminOnly: true },
   { permission: "stock.view", title: "Stocks", description: "Suivre les disponibilités par magasin", icon: Boxes, accent: "blue" },
+  { permission: "inventory.control", title: "Contrôle d'inventaire", description: "Compter le stock, justifier les écarts et valider les ajustements", icon: ClipboardList, accent: "teal" },
   { permission: "transfers.view", title: "Transferts", description: "Suivre les mouvements inter-magasins", icon: ArrowRightLeft, accent: "amber" },
   { permission: "production.view", title: "Production", description: "Suivre les fabrications et consommations", icon: Factory, accent: "indigo" },
   { permission: "reports.view", title: "Rapports", description: "Analyser les performances et les écarts", icon: BarChart3, accent: "violet" },
@@ -273,7 +280,7 @@ const accentClasses: Record<string, string> = {
   teal: "bg-teal-50 text-teal-700 border-teal-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenInventory, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -283,6 +290,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
   const role = user.role || "UNASSIGNED";
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   const pointOfSales = stores.filter(store => store.store_type === "POS" && store.is_active);
+  const staffStores = stores.filter(store => store.is_active && user.storeIds.includes(store.id));
   const resellerStores = stores.filter(store => store.store_type === "RESELLER" && store.is_active);
   const today = new Date();
   const isToday = (timestamp: number) => {
@@ -299,6 +307,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
         : "Production";
   const availableCards = accessCards.filter(card => {
     if (card.permission === "reseller.orders") return isAdmin;
+    if (card.permission === "inventory.control") return isAdmin || role === "RESPONSABLE_MAGASIN" || hasPermission(user, "inventory.count") || hasPermission(user, "inventory.review");
     if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage" || card.permission === "staff.manage") return isAdmin;
     if (card.permission === "expenses.view") return isAdmin || hasPermission(user, "expenses.view") || hasPermission(user, "expenses.create");
     if (card.permission === "transfers.view" && isAdmin) return true;
@@ -353,6 +362,44 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
           </div>
         </div>
       </div>
+
+      {role === "STAFF" && (
+        <section className="grid gap-4 md:grid-cols-2">
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900">Mon profil</h2>
+            <dl className="mt-3 space-y-2 text-xs">
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">Nom</dt><dd className="font-bold text-slate-900">{user.displayName || `${user.firstName} ${user.lastName}`}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">Identifiant</dt><dd className="font-mono font-semibold text-slate-700">{user.code || user.username}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">E-mail</dt><dd className="font-semibold text-slate-700">{user.email}</dd></div>
+              {user.phone && <div className="flex justify-between gap-3"><dt className="text-slate-500">Téléphone</dt><dd className="font-semibold text-slate-700">{user.phone}</dd></div>}
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">Statut</dt><dd className={`rounded-full px-2 py-0.5 font-bold ${user.isActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>{user.isActive ? "Actif" : "Inactif"}</dd></div>
+              {user.lastLoginAt && <div className="flex justify-between gap-3"><dt className="text-slate-500">Dernière connexion</dt><dd className="font-semibold text-slate-700">{new Date(user.lastLoginAt).toLocaleString("fr-FR")}</dd></div>}
+            </dl>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900">Mes lieux de travail</h2>
+            {staffStores.length === 0 ? (
+              <p className="mt-3 text-xs text-slate-500">Aucun magasin ne vous est encore affecté.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {staffStores.map(store => (
+                  <li key={store.id} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
+                    <p className="font-bold text-slate-900">{store.name}</p>
+                    <p className="font-mono text-[11px] text-slate-500">{store.code} · {storeTypeLabel(store)}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+          {user.isActive && <MyInfoView user={user} />}
+          <article className="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-xs text-sky-900 md:col-span-2">
+            <p className="font-bold">Accès limité</p>
+            <p className="mt-1">Votre compte Staff est actif mais ne donne accès à aucun module de gestion. Pour obtenir de nouveaux droits (ventes, stock, transferts…), demandez à un administrateur de vous attribuer un rôle.</p>
+          </article>
+        </section>
+      )}
+
+      {role !== "STAFF" && role !== "SUPER_ADMIN" && user.isActive && role !== "REVENDEUR" && <MyInfoView user={user} />}
 
       {isAdmin && pointOfSales.length > 0 && (
         <section>
@@ -566,12 +613,13 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isAuditCard = card.permission === "audit.view";
               const isStaffCard = card.permission === "staff.manage";
               const isResellerOrdersCard = card.permission === "reseller.orders";
-              const isActionable = isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
+              const isInventoryCard = card.permission === "inventory.control";
+              const isActionable = isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
               return (
                 <button
                   key={card.permission}
                   type="button"
-                  onClick={isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
+                  onClick={isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >

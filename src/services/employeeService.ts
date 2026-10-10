@@ -1,9 +1,14 @@
-﻿import { collection, doc, getDocs, writeBatch } from "firebase/firestore";
+import { collection, doc, getDocs, query, where, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { AuditLog, Employee } from "../types";
 
 function omitUndefined<T extends object>(value: T): T {
   return Object.fromEntries(Object.entries(value).filter(([, field]) => field !== undefined)) as T;
+}
+
+export async function loadMyEmployees(userId: string): Promise<Employee[]> {
+  const snapshot = await getDocs(query(collection(db, "employees"), where("user_id", "==", userId)));
+  return snapshot.docs.map(item => item.data() as Employee);
 }
 
 export async function loadEmployees(): Promise<Employee[]> {

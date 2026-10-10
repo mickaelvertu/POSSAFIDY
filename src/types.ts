@@ -8,9 +8,11 @@ export type AppRoleId =
   | "VENDEUR"
   | "MAGASINIER"
   | "RESPONSABLE_MAGASIN"
+  | "CONTROLEUR"
   | "PRODUCTION"
   | "COMPTABLE"
   | "GESTIONNAIRE_CREDIT"
+  | "STAFF"
   | "REVENDEUR";
 
 export type AppPermission = string;
@@ -64,7 +66,7 @@ export const ALL_PERMISSIONS: AppPermission[] = [
   "transfers.view", "transfers.create", "transfers.approve", "transfers.ship",
   "transfers.receive", "transfers.validate", "production.view", "production.create",
   "production.validate", "reports.view", "reports.export", "audit.view",
-  "credit.sales", "credit.manage",
+  "credit.sales", "credit.manage", "inventory.count", "inventory.review",
   "users.view", "users.create", "users.edit", "users.delete", "users.permissions",
   "expenses.view", "expenses.create", "units.manage"
 ];
@@ -216,6 +218,7 @@ export interface StoreStock {
   store_id: string;
   article_id: string;
   quantity: number;
+  quarantine_quantity?: number; // retours à recycler, jamais vendables
   reserved_quantity: number;
   updated_at: number;
 }
@@ -240,7 +243,24 @@ export type TransferTypeCode =
   | "STORE_TO_STORE"
   | "MANUFACTURER_TO_CENTRAL"
   | "MANUFACTURER_TO_STORE"
-  | "RETURN";
+  | "RETURN"
+  | "STORE_RETURN"
+  | "RECYCLING";
+
+export type ReturnReason = "EXPIRED" | "DAMAGED_LABEL" | "DEFECT" | "CUSTOMER_RETURN";
+export type RecyclingDecision = "RECYCLED" | "DESTROYED";
+
+export const RETURN_REASON_LABELS: Record<ReturnReason, string> = {
+  EXPIRED: "Péremption",
+  DAMAGED_LABEL: "Étiquette usée / illisible",
+  DEFECT: "Défaut / casse",
+  CUSTOMER_RETURN: "Retour client"
+};
+
+export const RECYCLING_DECISION_LABELS: Record<RecyclingDecision, string> = {
+  RECYCLED: "Recyclé en production",
+  DESTROYED: "Détruit (perte)"
+};
 
 export interface StockTransferLine {
   id: string;
@@ -255,6 +275,15 @@ export interface StockTransferLine {
   quantity_rejected: number; // Discrepancy / manquants / avaries
   source_stock_floor?: number;
   note?: string;
+  return_reason?: ReturnReason;
+  batch_number?: string;
+  expiry_date?: string;
+  recycling_decision?: RecyclingDecision;
+  recycled_available?: boolean; // « Recyclé » : reste en stock à recycler jusqu'à sa consommation dans un ordre de fabrication
+  recycling_decided_by?: string;
+  recycling_decided_by_name?: string;
+  recycling_decided_at?: number;
+  recycling_note?: string;
 }
 
 export interface StockTransfer {
@@ -307,6 +336,8 @@ export type StockMovementType =
   | "MANUFACTURER_TO_STORE"
   | "SALE"
   | "RETURN"
+  | "STORE_RETURN"
+  | "RECYCLING"
   | "PRODUCTION"
   | "CONSUMPTION"
   | "INVENTORY_ADJUSTMENT"
@@ -327,6 +358,7 @@ export interface StockMovement {
   created_by: string;
   created_by_name: string;
   notes?: string;
+  stock_bucket?: "QUARANTINE";
   created_at: number;
 }
 
@@ -477,6 +509,7 @@ export interface ProductionConsumptionLine {
   article_name: string;
   unit: string;
   quantity: number;
+  source?: "RECYCLED"; // prélevé sur le stock « à recycler » (articles retournés) et non sur le stock normal
 }
 
 export interface ProductionOutputLine {
@@ -502,6 +535,63 @@ export interface Production {
   validated_by_name?: string;
   created_at: number;
   validated_at?: number;
+}
+
+// 8b. Contrôle d'inventaire
+export type InventoryCountStatus = "DRAFT" | "AWAITING_SIGNATURE" | "SUBMITTED" | "VALIDATED" | "REJECTED";
+export type InventoryReasonDecision = "ACCEPTED" | "REJECTED";
+
+export interface InventoryCountLine {
+  article_id: string;
+  article_code: string;
+  article_name: string;
+  unit: string;
+  system_quantity: number;
+  counted_quantity: number;
+  variance: number; // counted - system
+  unit_cost: number;
+  variance_value: number;
+  reason?: string; // motif obligatoire en cas d'anomalie avant soumission
+  decision?: InventoryReasonDecision; // décision de l'administrateur sur le motif
+  charged_amount?: number; // manque retenu au responsable si motif refusé
+}
+
+export interface InventoryChargeSettlement {
+  settled_at: number;
+  settled_by: string;
+  settled_by_name: string;
+  method: "PAYSLIP" | "ADVANCE" | "OTHER";
+  reference: string; // ex: "Paie 2026-03", n° d'avance, quittance
+  payslip_id?: string;
+  note?: string;
+}
+
+export interface InventoryCount {
+  id: string;
+  count_number: string;
+  store_id: string;
+  store_name: string;
+  status: InventoryCountStatus;
+  lines: InventoryCountLine[];
+  notes?: string;
+  created_by: string;
+  created_by_name: string;
+  created_at: number;
+  updated_at: number;
+  submitted_at?: number;
+  manager_id?: string; // responsable du magasin désigné pour signer
+  manager_name?: string;
+  manager_signed_at?: number; // signature = présence attestée lors du comptage
+  manager_signed_by?: string;
+  manager_signed_by_name?: string;
+  reviewed_by?: string;
+  reviewed_by_name?: string;
+  reviewed_at?: number;
+  review_note?: string;
+  charged_to?: string; // responsable auquel le manque est retenu
+  charged_to_name?: string;
+  total_charged_amount?: number;
+  charge_settlement?: InventoryChargeSettlement; // renseigné une fois la retenue déduite
 }
 
 // 9. Journal d'Audit
@@ -605,6 +695,8 @@ export interface Payslip {
   deductions: number;
   advances_deducted?: number;
   advance_ids?: string[];
+  inventory_charges_deducted?: number;
+  inventory_count_ids?: string[];
   net_salary: number;
   payment_status: "PENDING" | "PAID";
   payment_date?: number;

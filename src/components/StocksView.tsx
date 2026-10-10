@@ -9,7 +9,7 @@ import {
   UserProfile, 
   ArticleTypeCode 
 } from "../types";
-import { getArticleStock } from "../services/stockService";
+import { getArticleStock, getQuarantineStock } from "../services/stockService";
 import SearchableSelect from "./SearchableSelect";
 import MovementsView from "./MovementsView";
 import { 
@@ -248,6 +248,7 @@ export default function StocksView({
         article: art,
         store: store,
         quantity: qty,
+        quarantine: getQuarantineStock(stocks, store.id, art.id),
         isLow: isLow
       };
     });
@@ -554,6 +555,11 @@ export default function StocksView({
                       }`}>
                         {item.quantity}
                       </span>
+                      {item.quarantine > 0 && (
+                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800" title="Retours à recycler, non vendables">
+                          +{item.quarantine} à recycler
+                        </span>
+                      )}
                     </td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-600">
                       {item.article.prix_normal.toLocaleString("fr-FR")} Ar

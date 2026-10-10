@@ -47,6 +47,8 @@ export default function MovementsView({
     "MANUFACTURER_TO_STORE",
     "SALE",
     "RETURN",
+    "STORE_RETURN",
+    "RECYCLING",
     "PRODUCTION",
     "CONSUMPTION",
     "INVENTORY_ADJUSTMENT",

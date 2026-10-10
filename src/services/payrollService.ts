@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, writeBatch } from "firebase/firestore";
+import { collection, doc, getDocs, query, where, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { AuditLog, Payslip, SalaryAdvance } from "../types";
 
@@ -7,6 +7,16 @@ const ADVANCES_COLLECTION = "salaryAdvances";
 
 function omitUndefined<T extends object>(value: T): T {
   return Object.fromEntries(Object.entries(value).filter(([, field]) => field !== undefined)) as T;
+}
+
+export async function loadMyPayslips(employeeIds: string[]): Promise<Payslip[]> {
+  const snapshots = await Promise.all(employeeIds.map(id => getDocs(query(collection(db, PAYROLL_COLLECTION), where("employee_id", "==", id)))));
+  return snapshots.flatMap(snapshot => snapshot.docs.map(item => item.data() as Payslip)).sort((left, right) => right.period.localeCompare(left.period));
+}
+
+export async function loadMySalaryAdvances(employeeIds: string[]): Promise<SalaryAdvance[]> {
+  const snapshots = await Promise.all(employeeIds.map(id => getDocs(query(collection(db, ADVANCES_COLLECTION), where("employee_id", "==", id)))));
+  return snapshots.flatMap(snapshot => snapshot.docs.map(item => item.data() as SalaryAdvance)).sort((left, right) => right.advance_date - left.advance_date);
 }
 
 export async function loadPayslips(): Promise<Payslip[]> {

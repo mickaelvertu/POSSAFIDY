@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import path from "path";
 import fs from "fs";
@@ -40,7 +40,7 @@ const ALL_PERMISSIONS = [
   "transfers.receive", "transfers.validate", "production.view", "production.create",
   "production.validate", "reports.view", "reports.export", "audit.view",
   "users.view", "users.create", "users.edit", "users.delete", "users.permissions",
-  "expenses.view", "expenses.create", "units.manage"
+  "expenses.view", "expenses.create", "units.manage", "inventory.count", "inventory.review"
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -48,7 +48,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ADMIN: ALL_PERMISSIONS.filter(permission => permission !== "users.delete"),
   VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit"],
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
-  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "transfers.view", "transfers.create", "transfers.receive", "reports.view"],
+  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "transfers.view", "transfers.create", "transfers.receive", "reports.view", "inventory.count"],
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"]
 };
@@ -685,9 +685,35 @@ export function createExpressApp() {
   return app;
 }
 
+async function listenWithFallback(app: Express, preferredPort: number, host: string): Promise<number> {
+  const maxAttempts = 20;
+
+  for (let port = preferredPort; port < preferredPort + maxAttempts; port += 1) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const server = app.listen(port, host, () => resolve());
+        server.once("error", (error: NodeJS.ErrnoException) => {
+          if (error.code === "EADDRINUSE") {
+            reject(error);
+            return;
+          }
+          reject(error);
+        });
+      });
+      return port;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EADDRINUSE") {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error(`No available port found starting from ${preferredPort}`);
+}
+
 export async function startServer() {
   const app = createExpressApp();
-  const PORT = Number(process.env.PORT) || 3000;
+  const preferredPort = Number(process.env.PORT) || 3000;
   const HOST = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
 
   if (process.env.NODE_ENV === "production") {
@@ -698,15 +724,19 @@ export async function startServer() {
     });
   } else {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: {
+          port: Number(process.env.VITE_HMR_PORT) || 24679
+        }
+      },
       appType: "spa"
     });
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, HOST, () => {
-    console.log(`[GILEADA Auth] Server running at http://${HOST}:${PORT}`);
-  });
+  const PORT = await listenWithFallback(app, preferredPort, HOST);
+  console.log(`[GILEADA Auth] Server running at http://${HOST}:${PORT}`);
 }
 
 // Start only if executed directly as entrypoint
