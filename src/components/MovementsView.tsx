@@ -57,7 +57,7 @@ export default function MovementsView({
     "EXPIRY"
   ];
 
-  const getStoreName = (id: string) => stores.find(s => s.id === id)?.name || id;
+  const getStoreName = (id: string) => { const s = stores.find(st => st.id === id); return s ? storeLabel(s) : id; };
   const getArticle = (id: string) => articles.find(a => a.id === id);
   const accessibleStoreIds = new Set(stores.map(store => store.id));
   const accessibleMovements = movements.filter(movement => {

@@ -5,6 +5,7 @@ import { generateRef } from "../services/stockService";
 import {
   anomalyLines,
   applyDecisions,
+  repriceCount,
   buildChargesReport,
   buildCountLine,
   chargesToCsv,
@@ -95,6 +96,7 @@ export default function InventoryControlView({
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [decisions, setDecisions] = useState<Record<string, InventoryReasonDecision>>({});
   const [reviewNote, setReviewNote] = useState("");
+  const [reviewSearch, setReviewSearch] = useState("");
   const [chargeFilter, setChargeFilter] = useState<{ startDate: string; endDate: string; managerId: string; storeId: string; settlement: "ALL" | "PENDING" | "SETTLED" }>({ startDate: "", endDate: "", managerId: "", storeId: "", settlement: "PENDING" });
   const [settling, setSettling] = useState<string | null>(null);
   const [settleMethod, setSettleMethod] = useState<"PAYSLIP" | "ADVANCE" | "OTHER">("PAYSLIP");
@@ -269,9 +271,17 @@ export default function InventoryControlView({
   });
 
   // ---- Review (administrator) ----
-  const reviewable = counts.filter(count => count.status === "SUBMITTED").sort((a, b) => (a.submitted_at || 0) - (b.submitted_at || 0));
-  const reviewed = counts.filter(count => count.status === "VALIDATED" || count.status === "REJECTED").sort((a, b) => (b.reviewed_at || 0) - (a.reviewed_at || 0)).slice(0, 15);
-  const reviewCount = counts.find(count => count.id === reviewId);
+  const reviewQuery = reviewSearch.trim().toLowerCase();
+  const matchesReviewSearch = (count: InventoryCount) => !reviewQuery || [
+    count.count_number, count.store_name, count.created_by_name, count.manager_name, count.manager_signed_by_name,
+    count.reviewed_by_name, count.charged_to_name, count.notes, count.review_note,
+    ...count.lines.flatMap(line => [line.article_name, line.article_code, line.reason])
+  ].some(value => value?.toLowerCase().includes(reviewQuery));
+  const reviewable = counts.filter(count => count.status === "SUBMITTED" && matchesReviewSearch(count)).sort((a, b) => (a.submitted_at || 0) - (b.submitted_at || 0));
+  const reviewedAll = counts.filter(count => (count.status === "VALIDATED" || count.status === "REJECTED") && matchesReviewSearch(count)).sort((a, b) => (b.reviewed_at || 0) - (a.reviewed_at || 0));
+  const reviewed = reviewQuery ? reviewedAll : reviewedAll.slice(0, 15);
+  const rawReviewCount = counts.find(count => count.id === reviewId);
+  const reviewCount = rawReviewCount && rawReviewCount.status === "SUBMITTED" ? repriceCount(rawReviewCount, articles) : rawReviewCount;
   const reviewPreview = reviewCount && reviewCount.status === "SUBMITTED" ? applyDecisions(reviewCount, decisions) : undefined;
   const reviewHints = reviewCount ? suggestForReview(reviewCount, counts) : new Map<string, InventorySuggestion[]>();
 
@@ -320,7 +330,7 @@ export default function InventoryControlView({
         </div>
         <div className="flex gap-2">
           {canCount && tabButton("count", "Comptage")}
-          {canReview && tabButton("review", "Contrôle admin", reviewable.length)}
+          {canReview && tabButton("review", "Contrôle admin", counts.filter(count => count.status === "SUBMITTED").length)}
           {canReview && tabButton("charges", "Retenues")}
         </div>
       </div>
@@ -582,9 +592,17 @@ export default function InventoryControlView({
       {tab === "review" && canReview && (
         <div className="grid gap-5 lg:grid-cols-[18rem_1fr]">
           <div className="space-y-4">
+            <input
+              type="search"
+              value={reviewSearch}
+              onChange={event => setReviewSearch(event.target.value)}
+              placeholder="Rechercher : n°, magasin, personne, article…"
+              aria-label="Rechercher un inventaire"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900"
+            />
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
               <h3 className="mb-2 text-sm font-bold">En attente de contrôle ({reviewable.length})</h3>
-              {reviewable.length === 0 && <p className="text-xs text-slate-500">Aucun inventaire à contrôler.</p>}
+              {reviewable.length === 0 && <p className="text-xs text-slate-500">{reviewQuery ? "Aucun résultat." : "Aucun inventaire à contrôler."}</p>}
               <ul className="space-y-2">
                 {reviewable.map(count => {
                   const info = summarizeCount(count);
@@ -601,23 +619,61 @@ export default function InventoryControlView({
               </ul>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-              <h3 className="mb-2 text-sm font-bold">Historique récent</h3>
+              <h3 className="mb-2 text-sm font-bold">{reviewQuery ? `Historique (${reviewed.length})` : "Historique récent"}</h3>
               <ul className="space-y-2 text-xs">
                 {reviewed.map(count => (
-                  <li key={count.id} className="rounded-xl border border-slate-100 p-2">
-                    <div className="flex items-center justify-between"><span className="font-mono font-semibold">{count.count_number}</span><StatusBadge status={count.status} /></div>
-                    <p className="text-slate-500">{count.store_name} · {count.created_by_name}</p>
-                    {(count.total_charged_amount || 0) > 0 && <p className="font-semibold text-rose-700">Retenu à {count.charged_to_name} : {money(count.total_charged_amount || 0)}</p>}
+                  <li key={count.id}>
+                    <button type="button" onClick={() => openReview(count)} className={`w-full rounded-xl border p-2 text-left hover:bg-slate-50 ${reviewId === count.id ? "border-blue-400 bg-blue-50" : "border-slate-100"}`}>
+                      <div className="flex items-center justify-between"><span className="font-mono font-semibold">{count.count_number}</span><StatusBadge status={count.status} /></div>
+                      <p className="text-slate-500">{count.store_name} · {count.created_by_name}</p>
+                      {(count.total_charged_amount || 0) > 0 && <p className="font-semibold text-rose-700">Retenu à {count.charged_to_name} : {money(count.total_charged_amount || 0)}</p>}
+                    </button>
                   </li>
                 ))}
-                {reviewed.length === 0 && <li className="text-slate-500">Aucun historique.</li>}
+                {reviewed.length === 0 && <li className="text-slate-500">{reviewQuery ? "Aucun résultat." : "Aucun historique."}</li>}
               </ul>
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-            {!reviewCount || reviewCount.status !== "SUBMITTED" || !reviewPreview ? (
-              <p className="py-10 text-center text-sm text-slate-500">Sélectionnez un inventaire à contrôler.</p>
+            {reviewCount && reviewCount.status !== "SUBMITTED" ? (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-mono text-base font-bold">{reviewCount.count_number}</h3>
+                    <p className="text-xs text-slate-500">{reviewCount.store_name} · compté par <strong>{reviewCount.created_by_name}</strong> · soumis le {formatDate(reviewCount.submitted_at)}</p>
+                  </div>
+                  <StatusBadge status={reviewCount.status} />
+                </div>
+                <div className="grid gap-2 text-xs text-slate-700 sm:grid-cols-2">
+                  <p>Contrôlé par : <strong>{reviewCount.reviewed_by_name || "—"}</strong></p>
+                  <p>Contrôlé le : <strong>{formatDate(reviewCount.reviewed_at)}</strong></p>
+                  <p>Signature : <strong>{reviewCount.manager_signed_by_name ? `${reviewCount.manager_signed_by_name} (${formatDate(reviewCount.manager_signed_at)})` : reviewCount.signature_waived ? "Non signé" : "—"}</strong></p>
+                  {(reviewCount.total_charged_amount || 0) > 0 && <p className="font-semibold text-rose-700">Retenu à {reviewCount.charged_to_name} : {money(reviewCount.total_charged_amount || 0)}{reviewCount.charge_settlement ? " · déduit" : " · à déduire"}</p>}
+                </div>
+                {reviewCount.notes && <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-700">Remarque : {reviewCount.notes}</p>}
+                {reviewCount.review_note && <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-700">Commentaire admin : {reviewCount.review_note}</p>}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="border-b border-slate-200 text-left text-slate-500"><th className="py-1.5 pr-2">Article</th><th className="px-2 text-right">Théorique</th><th className="px-2 text-right">Compté</th><th className="px-2 text-right">Écart</th><th className="px-2 text-right">Valeur</th><th className="pl-2">Décision / motif</th></tr></thead>
+                    <tbody>
+                      {reviewCount.lines.filter(line => line.variance !== 0).map(line => (
+                        <tr key={line.article_id} className="border-b border-slate-100 align-top">
+                          <td className="py-1.5 pr-2 font-semibold">{line.article_name} <span className="font-mono text-[10px] text-slate-500">{line.article_code}</span></td>
+                          <td className="px-2 text-right font-mono">{line.system_quantity}</td>
+                          <td className="px-2 text-right font-mono">{line.counted_quantity}</td>
+                          <td className={`px-2 text-right font-mono font-bold ${line.variance < 0 ? "text-rose-700" : "text-emerald-700"}`}>{line.variance > 0 ? "+" : ""}{line.variance}</td>
+                          <td className="px-2 text-right font-mono">{money(line.variance_value)}</td>
+                          <td className="pl-2">{line.decision === "REJECTED" ? <span className="font-semibold text-rose-700">Motif inexact{(line.charged_amount || 0) > 0 ? ` · retenu ${money(line.charged_amount || 0)}` : ""}</span> : <span className="text-emerald-700">Motif exact</span>}{line.reason && <span className="block italic text-slate-600">« {line.reason} »</span>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {reviewCount.lines.every(line => line.variance === 0) && <p className="py-2 text-xs text-emerald-700">Aucune anomalie.</p>}
+                </div>
+              </div>
+            ) : !reviewCount || reviewCount.status !== "SUBMITTED" || !reviewPreview ? (
+              <p className="py-10 text-center text-sm text-slate-500">Sélectionnez un inventaire pour voir le détail.</p>
             ) : (
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">

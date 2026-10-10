@@ -1,4 +1,5 @@
 import { Article, MovementDirection, Sale, StockMovement, StockTransfer, Store } from "../types";
+import { storeLabel as formatStoreLabel } from "./storeLabel";
 
 export interface LedgerEntry {
   id: string;
@@ -36,7 +37,7 @@ export function describeMovementCause(movement: StockMovement, lookups: LedgerLo
   const isEntry = movement.quantity > 0;
   const storeLabel = (storeId: string) => {
     const store = lookups.getStore(storeId);
-    return store ? store.name + " (" + store.store_type + ")" : storeId;
+    return store ? formatStoreLabel(store) : storeId;
   };
   switch (movement.reference_type) {
     case "TRANSFER": {
@@ -94,7 +95,7 @@ export function buildStockLedger(
       articleName: article?.name || group[0].article_id,
       articleCode: article?.code || "",
       unit: article?.unit || "",
-      storeName: lookups.getStore(group[0].store_id)?.name || group[0].store_id,
+      storeName: group[0] && lookups.getStore(group[0].store_id) ? formatStoreLabel(lookups.getStore(group[0].store_id)!) : group[0].store_id,
       before: group[0].before_quantity,
       after: group[group.length - 1].after_quantity,
       totalIn: visible.filter(movement => movement.quantity > 0).reduce((total, movement) => total + movement.quantity, 0),

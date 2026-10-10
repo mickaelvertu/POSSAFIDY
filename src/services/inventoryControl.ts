@@ -4,8 +4,28 @@ export const SIGNIFICANT_VARIANCE_RATE = 0.1;
 export const HIGH_VALUE_VARIANCE = 50000;
 const MIN_REASON_LENGTH = 5;
 
+// Valeur retenue d'un article : prix de vente normal, à défaut prix revendeur puis prix d'achat.
+export function articleUnitCost(article: Article): number {
+  return article.prix_normal || article.prix_revendeur || article.prix_achat || 0;
+}
+
+// Comptages en attente de contrôle : la valeur est recalculée au prix de vente actuel de l'article.
+export function repriceCount(count: InventoryCount, articles: Article[]): InventoryCount {
+  const byId = new Map(articles.map(article => [article.id, article]));
+  return {
+    ...count,
+    lines: count.lines.map(line => {
+      const article = byId.get(line.article_id);
+      if (!article) return line;
+      const unitCost = articleUnitCost(article);
+      return { ...line, unit_cost: unitCost, variance_value: line.variance * unitCost };
+    })
+  };
+}
+
 export function buildCountLine(article: Article, systemQuantity: number, countedQuantity: number, reason?: string): InventoryCountLine {
   const variance = countedQuantity - systemQuantity;
+  const unitCost = articleUnitCost(article);
   const line: InventoryCountLine = {
     article_id: article.id,
     article_code: article.code,
@@ -14,8 +34,8 @@ export function buildCountLine(article: Article, systemQuantity: number, counted
     system_quantity: systemQuantity,
     counted_quantity: countedQuantity,
     variance,
-    unit_cost: article.prix_achat || 0,
-    variance_value: variance * (article.prix_achat || 0)
+    unit_cost: unitCost,
+    variance_value: variance * unitCost
   };
   const trimmed = reason?.trim();
   if (trimmed) line.reason = trimmed;
@@ -42,7 +62,7 @@ export function isValidCountedQuantity(value: number): boolean {
   return Number.isFinite(value) && value >= 0;
 }
 
-// Shortages whose reason is rejected are withheld from the store manager at purchase cost.
+// Shortages whose reason is rejected are withheld from the store manager at selling price.
 export function chargedAmount(line: InventoryCountLine, decision: InventoryReasonDecision | undefined): number {
   if (decision !== "REJECTED" || line.variance >= 0) return 0;
   return Math.abs(line.variance) * line.unit_cost;

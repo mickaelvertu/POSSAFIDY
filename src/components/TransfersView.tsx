@@ -1,3 +1,4 @@
+import { storeLabel } from "../services/storeLabel";
 import { useState, FormEvent } from "react";
 import DeliveryNote from "./DeliveryNote";
 import SearchableSelect from "./SearchableSelect";
@@ -127,7 +128,7 @@ export default function TransfersView({
   const [inspectionLines, setInspectionLines] = useState<StockTransferLine[]>([]);
   const [receiverGeneralNote, setReceiverGeneralNote] = useState("");
 
-  const getStoreName = (id: string) => stores.find(s => s.id === id)?.name || id;
+  const getStoreName = (id: string) => { const s = stores.find(st => st.id === id); return s ? storeLabel(s) : id; };
   const centralStores = stores.filter(store => store.store_type === "CENTRAL_WAREHOUSE" && store.is_active);
   const primaryCentralStore = centralStores.find(store => store.code === "DEP-01") || centralStores[0];
   const resellerStores = stores.filter(store => store.store_type === "RESELLER" && store.is_active);

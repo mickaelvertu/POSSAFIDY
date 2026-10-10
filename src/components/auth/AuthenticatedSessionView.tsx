@@ -35,6 +35,8 @@ import { loadEmployees, saveEmployee } from "../../services/employeeService";
 import { loadPayslips, loadSalaryAdvances, savePayslip, saveSalaryAdvance } from "../../services/payrollService";
 import UserAuditReport from "../UserAuditReport";
 import ThemeSwitcher from "../ThemeSwitcher";
+import NotificationBell from "../NotificationBell";
+import { buildActionNotifications } from "../../services/notificationService";
 import { deleteExpense, loadExpenses, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { applyStockSnapshot, importInitialStocks } from "../../services/stockImportService";
@@ -638,8 +640,14 @@ export default function AuthenticatedSessionView() {
 
   const handleCreateResellerOrder = async (order: ResellerOrder): Promise<boolean> => {
     try {
-      if (user?.role !== "REVENDEUR" || !user.businessName || order.reseller_user_id !== user.id) {
-        throw new Error("Seul un compte revendeur activé peut soumettre une commande.");
+      if (user?.role !== "REVENDEUR") {
+        throw new Error("Seul un compte revendeur peut soumettre une commande.");
+      }
+      if (user.status !== "ACTIVE") {
+        throw new Error("Votre compte revendeur n'est pas encore activé : un administrateur doit l'approuver avant toute commande.");
+      }
+      if (order.reseller_user_id !== user.id) {
+        throw new Error("Cette commande n'est pas rattachée à votre compte.");
       }
       await createResellerOrder(order);
       setResellerOrders(current => [order, ...current]);
@@ -1974,6 +1982,18 @@ export default function AuthenticatedSessionView() {
 
   if (!user) return null;
 
+  const actionNotifications = currentAppUser && user.status === "ACTIVE"
+    ? buildActionNotifications({
+        uid: currentAppUser.uid,
+        storeIds: currentAppUser.storeIds,
+        isAdmin: isInventoryAdmin,
+        canReviewInventory,
+        transfers,
+        inventoryCounts,
+        resellerOrders
+      })
+    : [];
+
   return (
     <div className="theme-app min-h-screen bg-slate-900 text-slate-100 flex flex-col">
       {/* Top Application Bar */}
@@ -1994,6 +2014,7 @@ export default function AuthenticatedSessionView() {
             {isOnline ? "En ligne" : "Hors connexion · synchro en attente"}
           </div>
           <ThemeSwitcher />
+          <NotificationBell notifications={actionNotifications} onOpen={setActiveModule} />
           {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) && <button type="button" onClick={() => setActiveModule("expenses")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Dépenses</button>}
           <button
             type="button"

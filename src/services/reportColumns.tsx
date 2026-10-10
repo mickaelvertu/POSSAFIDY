@@ -267,7 +267,7 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
       const columns: ReportColumn<Expense>[] = [
         { key: "number", label: "N° dépense", value: e => e.expense_number },
         { key: "date", label: "Date", value: e => e.expense_date, render: e => new Date(e.expense_date).toLocaleDateString("fr-FR") },
-        { key: "store", label: "Magasin", value: e => e.store_name || (e.store_id ? getStoreName(e.store_id) : "Global") },
+        { key: "store", label: "Magasin", value: e => (e.store_id ? getStoreName(e.store_id) : e.store_name) || "Global" },
         { key: "category", label: "Catégorie", value: e => EXPENSE_CATEGORY_LABELS[e.category] || EXPENSE_CATEGORY_LABELS.OTHER },
         { key: "description", label: "Description", value: e => e.description },
         { key: "payee", label: "Bénéficiaire", value: e => e.employee_name || e.payee || "-" },

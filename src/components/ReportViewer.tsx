@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { storeLabel } from "../services/storeLabel";
 import { 
   ReportType, 
   Store, 
@@ -67,7 +68,7 @@ export default function ReportViewer({
     timeStyle: "medium"
   }));
 
-  const getStoreName = (id: string) => stores.find(s => s.id === id)?.name || id;
+  const getStoreName = (id: string) => { const s = stores.find(st => st.id === id); return s ? storeLabel(s) : id; };
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
   const getArticle = (id: string) => articles.find(a => a.id === id);
   const filteredData = filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses }, filters);

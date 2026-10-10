@@ -266,7 +266,8 @@ export default function AuditView({
   );
   const getStoreName = (id?: string) => {
     if (!id) return "Système global";
-    return stores.find(store => store.id === id)?.name || id;
+    const store = stores.find(item => item.id === id);
+    return store ? storeLabel(store) : id;
   };
   const clearFilters = () => {
     setSearchQuery("");
