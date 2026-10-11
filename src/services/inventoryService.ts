@@ -187,7 +187,8 @@ export async function saveTransferWithStockEffects(
           const persisted = currentTransfer.lines.find(item => item.id === line.id);
           return Boolean(persisted?.recycling_decision) && persisted?.recycling_decided_at !== line.recycling_decided_at;
         })
-      : currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT"
+      : currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT" && currentTransfer.type !== "DIRECT_DEPOSIT"
+        || currentTransfer.status === "APPROVED" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status) && currentTransfer.type === "DIRECT_DEPOSIT"
         || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
         || currentTransfer.status === "RECEIVED" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
           && Boolean(currentTransfer.received_by)

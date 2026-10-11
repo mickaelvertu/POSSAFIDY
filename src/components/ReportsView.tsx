@@ -165,7 +165,7 @@ export default function ReportsView({
   }), [filteredData, selectedReport]);
   const kpis = useMemo(() => getReportKpis(selectedReport, kpiData, categories, filters), [selectedReport, kpiData, categories, filters]);
   const statusOptions = selectedReport.startsWith("SALES")
-    ? ["DRAFT", "CHECKING", "VERIFIED", "VALIDATED", "CANCELLED", "REFUNDED"]
+    ? ["DRAFT", "CHECKING", "VERIFIED", "APPROVED", "VALIDATED", "CANCELLED", "REFUNDED"]
     : selectedReport === "PRODUCTION" || selectedReport === "RAW_MATERIAL_CONSUMPTION"
       ? ["DRAFT", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
       : ["TRANSFERS", "RECEIPTS", "DISCREPANCIES", "RETURNS"].includes(selectedReport)

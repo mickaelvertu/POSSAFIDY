@@ -245,7 +245,8 @@ export type TransferTypeCode =
   | "MANUFACTURER_TO_STORE"
   | "RETURN"
   | "STORE_RETURN"
-  | "RECYCLING";
+  | "RECYCLING"
+  | "DIRECT_DEPOSIT";
 
 export type ReturnReason = "EXPIRED" | "DAMAGED_LABEL" | "DEFECT" | "CUSTOMER_RETURN";
 export type RecyclingDecision = "RECYCLED" | "DESTROYED";
@@ -367,6 +368,7 @@ export type SaleStatus =
   | "DRAFT"
   | "CHECKING"
   | "VERIFIED"
+  | "APPROVED"
   | "VALIDATED"
   | "CANCELLED"
   | "REFUNDED";
@@ -413,6 +415,9 @@ export interface Sale {
   verified_by_name?: string;
   validated_by?: string;
   validated_by_name?: string;
+  approved_by?: string;
+  approved_by_name?: string;
+  approved_at?: number;
   lines: SaleLine[];
   subtotal: number;
   discount: number;

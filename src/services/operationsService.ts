@@ -300,6 +300,28 @@ function stockReference(stocks: StoreStock[], storeId: string, articleId: string
   };
 }
 
+export async function approveSale(
+  sale: Sale,
+  userId: string,
+  userName: string
+): Promise<{ sale: Sale; auditLog: AuditLog }> {
+  if (sale.status !== "VERIFIED" || sale.customer_type !== "REVENDEUR") {
+    throw new Error("Seule une demande revendeur vérifiée peut être approuvée.");
+  }
+  const updated: Sale = clean({ ...sale, status: "APPROVED", approved_by: userId, approved_by_name: userName, approved_at: Date.now() });
+  const entry = audit("SALE_APPROVED", "SALE", sale.id, userId, userName, sale.store_id, sale, updated);
+  await runTransaction(db, async transaction => {
+    const saleRef = doc(db, SALES, sale.id);
+    const snapshot = await transaction.get(saleRef);
+    if (!snapshot.exists() || (snapshot.data() as Sale).status !== "VERIFIED") {
+      throw new Error("Le statut de la vente a changé. Rechargez les données.");
+    }
+    transaction.set(saleRef, updated);
+    transaction.set(doc(db, AUDIT_LOGS, entry.id), entry);
+  });
+  return { sale: updated, auditLog: entry };
+}
+
 export async function validateSale(
   sale: Sale,
   knownStocks: StoreStock[],
@@ -312,14 +334,17 @@ export async function validateSale(
   const saleRef = doc(db, SALES, sale.id);
   const timestamp = Date.now();
   const updatedSale: Sale = { ...sale, status: "VALIDATED", validated_by: userId, validated_by_name: userName, validated_at: timestamp };
-  const entry = audit("SALE_VALIDATED", "SALE", sale.id, userId, userName, sale.store_id, sale, updatedSale);
+  const requiredStatus = sale.customer_type === "REVENDEUR" ? "APPROVED" : "VERIFIED";
+  const entry = audit(sale.customer_type === "REVENDEUR" ? "SALE_SHIPPED" : "SALE_VALIDATED", "SALE", sale.id, userId, userName, sale.store_id, sale, updatedSale);
   const updatedStocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
   await runTransaction(db, async transaction => {
     const saleSnapshot = await transaction.get(saleRef);
-    if (!saleSnapshot.exists() || (saleSnapshot.data() as Sale).status !== "VERIFIED") {
-      throw new Error("La vente doit être vérifiée avant validation.");
+    if (!saleSnapshot.exists() || (saleSnapshot.data() as Sale).status !== requiredStatus) {
+      throw new Error(requiredStatus === "APPROVED"
+        ? "La demande revendeur doit être approuvée par un administrateur avant l'expédition."
+        : "La vente doit être vérifiée avant validation.");
     }
     const snapshots = await Promise.all(stockTargets.map(target => transaction.get(target.reference)));
     stockTargets.forEach((target, index) => {

@@ -51,6 +51,7 @@ interface TransfersViewProps {
     receiverNote?: string
   ) => void;
   onConfirmCentralReceipt: (transferId: string) => void;
+  onReceiveDirectDeposit: (transferId: string) => void;
   onResolveDiscrepancy: (transferId: string, resolutionNote: string) => void;
   canCreate: boolean;
   canApprove: boolean;
@@ -74,6 +75,8 @@ interface StockDistributionPlan {
   allocations: StoreAllocation[];
 }
 
+type TransferKind = "STANDARD" | "STORE_RETURN" | "RECYCLING" | "DIRECT_DEPOSIT";
+
 const getQuantityStep = (unit: string) => (/piece|unité|unite/i.test(unit) ? 1 : 0.01);
 
 const formatQuantity = (quantity: number, unit: string) => quantity.toLocaleString("fr-FR", {
@@ -94,6 +97,7 @@ export default function TransfersView({
   onShipTransfer,
   onReceiveAndValidateTransfer,
   onConfirmCentralReceipt,
+  onReceiveDirectDeposit,
   onResolveDiscrepancy,
   canCreate,
   canApprove,
@@ -123,7 +127,7 @@ export default function TransfersView({
   const [transferLines, setTransferLines] = useState<Array<{ article_id: string; quantity: number; query?: string; return_reason?: ReturnReason; batch_number?: string; expiry_date?: string }>>([
     { article_id: articles[0]?.id || "", quantity: 10 }
   ]);
-  const [transferKind, setTransferKind] = useState<"STANDARD" | "STORE_RETURN" | "RECYCLING">("STANDARD");
+  const [transferKind, setTransferKind] = useState<TransferKind>("STANDARD");
   const [transferNote, setTransferNote] = useState("");
 
   // Inspection form state for reception
@@ -146,9 +150,10 @@ export default function TransfersView({
       : articles;
   };
   const getDispatchableStock = (storeId: string, articleId: string, excludeTransferId?: string) => {
+    if (transferKind === "DIRECT_DEPOSIT") return getArticleStock(stocks, storeId, articleId) + 1e9;
     const stock = transferKind === "RECYCLING" ? getQuarantineStock(stocks, storeId, articleId) : getArticleStock(stocks, storeId, articleId);
     const pending = transfers
-      .filter(transfer => transfer.id !== excludeTransferId && transfer.source_store_id === storeId && ["DRAFT", "APPROVED"].includes(transfer.status))
+      .filter(transfer => transfer.id !== excludeTransferId && transfer.type !== "DIRECT_DEPOSIT" && transfer.source_store_id === storeId && ["DRAFT", "APPROVED"].includes(transfer.status))
       .flatMap(transfer => transfer.lines)
       .filter(line => line.article_id === articleId)
       .reduce((total, line) => total + line.quantity_sent, 0);
@@ -190,7 +195,7 @@ export default function TransfersView({
 
     const centralStock = getArticleStock(stocks, primaryCentralStore.id, articleId);
     const pendingStock = transfers
-      .filter(transfer => transfer.source_store_id === primaryCentralStore.id && ["DRAFT", "APPROVED"].includes(transfer.status))
+      .filter(transfer => transfer.type !== "DIRECT_DEPOSIT" && transfer.source_store_id === primaryCentralStore.id && ["DRAFT", "APPROVED"].includes(transfer.status))
       .flatMap(transfer => transfer.lines)
       .filter(line => line.article_id === articleId)
       .reduce((total, line) => total + line.quantity_sent, 0);
@@ -311,8 +316,15 @@ export default function TransfersView({
   });
 
   const manufacturerStores = stores.filter(store => store.store_type === "MANUFACTURER" && store.is_active);
-  const changeTransferKind = (kind: "STANDARD" | "STORE_RETURN" | "RECYCLING") => {
+  const changeTransferKind = (kind: TransferKind) => {
     setTransferKind(kind);
+    if (kind === "DIRECT_DEPOSIT") {
+      const depot = centralStores.find(store => currentUser.storeIds.includes(store.id)) || primaryCentralStore;
+      if (depot) {
+        setSourceStoreId(depot.id);
+        setDestStoreId(depot.id);
+      }
+    }
     if (kind === "STORE_RETURN" && primaryCentralStore) setDestStoreId(primaryCentralStore.id);
     if (kind === "RECYCLING") {
       if (manufacturerStores[0]) setDestStoreId(manufacturerStores[0].id);
@@ -340,7 +352,7 @@ export default function TransfersView({
   const handleOpenEditModal = (transfer: StockTransfer) => {
     if (transfer.status !== "DRAFT" || transfer.requested_by !== currentUser.uid) return;
     setEditingTransfer(transfer);
-    setTransferKind(transfer.type === "STORE_RETURN" || transfer.type === "RECYCLING" ? transfer.type : "STANDARD");
+    setTransferKind(transfer.type === "STORE_RETURN" || transfer.type === "RECYCLING" || transfer.type === "DIRECT_DEPOSIT" ? transfer.type : "STANDARD");
     setSourceStoreId(transfer.source_store_id);
     setDestStoreId(transfer.destination_store_id);
     setTransferLines(transfer.lines.map(line => ({
@@ -381,7 +393,8 @@ export default function TransfersView({
 
   const handleSaveNewTransfer = async (e: FormEvent) => {
     e.preventDefault();
-    if (sourceStoreId === destStoreId) {
+    const isDirectDeposit = transferKind === "DIRECT_DEPOSIT";
+    if (sourceStoreId === destStoreId && !isDirectDeposit) {
       alert("Le magasin source et le magasin destination doivent être distincts !");
       return;
     }
@@ -392,6 +405,10 @@ export default function TransfersView({
 
     const destinationStore = stores.find(store => store.id === destStoreId);
     const sourceStore = stores.find(store => store.id === sourceStoreId);
+    if (isDirectDeposit && (sourceStoreId !== destStoreId || destinationStore?.store_type !== "CENTRAL_WAREHOUSE")) {
+      alert("Un dépôt direct doit cibler un dépôt central.");
+      return;
+    }
     if (transferKind === "STORE_RETURN") {
       if (destinationStore?.store_type !== "CENTRAL_WAREHOUSE" || sourceStore?.store_type === "CENTRAL_WAREHOUSE") {
         alert("Un retour doit être envoyé d'un magasin vers un entrepôt.");
@@ -464,6 +481,7 @@ export default function TransfersView({
       type,
       source_store_id: sourceStoreId,
       destination_store_id: destStoreId,
+      ...(transferKind === "DIRECT_DEPOSIT" ? { source_name: "Dépôt direct" } : {}),
       status: "DRAFT",
       requested_by: editingTransfer?.requested_by || currentUser.uid,
       requested_by_name: editingTransfer?.requested_by_name || currentUser.displayName || currentUser.email,
@@ -487,7 +505,7 @@ export default function TransfersView({
     }
   };
 
-  const transferFormIssue = sourceStoreId === destStoreId
+  const transferFormIssue = sourceStoreId === destStoreId && transferKind !== "DIRECT_DEPOSIT"
     ? "Choisissez deux magasins différents pour créer le transfert."
     : transferKind === "STORE_RETURN" && transferLines.some(line => !line.return_reason)
       ? "Indiquez le motif de retour de chaque article."
@@ -712,6 +730,11 @@ export default function TransfersView({
                       Type: {isSupplierDelivery ? "Achat fournisseur" : ({ STORE_RETURN: "Retour magasin", RECYCLING: "Recyclage" }[t.type as string] || t.type)}
                     </span>
                     {isSupplierDelivery && t.purchase_number && <span className="text-xs font-medium text-teal-700">Achat {t.purchase_number}</span>}
+                    {isCentralDestination && (
+                      <span className="text-[10px] font-bold uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full" title="Entrée au dépôt central : réception saisie par une personne, confirmée par une autre">
+                        Contrôle à 2
+                      </span>
+                    )}
                     <span className="text-xs text-slate-400">
                       {new Date(t.created_at).toLocaleDateString("fr-FR")}
                     </span>
@@ -917,7 +940,7 @@ export default function TransfersView({
                     )}
 
                     {/* Step 2 -> 3: Ship APPROVED -> Sets IN_TRANSIT, deducts source stock */}
-                    {t.status === "APPROVED" && canShip && isSourceOperator && (
+                    {t.status === "APPROVED" && canShip && isSourceOperator && t.type !== "DIRECT_DEPOSIT" && (
                       <button
                         type="button"
                         onClick={() => onShipTransfer(t.id)}
@@ -926,6 +949,25 @@ export default function TransfersView({
                         <Truck className="h-3.5 w-3.5" />
                         Expédier depuis le magasin source
                       </button>
+                    )}
+
+                    {t.status === "APPROVED" && t.type === "DIRECT_DEPOSIT" && (
+                      canReceive && currentUser.storeIds.includes(t.destination_store_id) && currentUser.uid !== t.approved_by ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Confirmer la réception du dépôt ${t.transfer_number} et créditer le stock ?`)) onReceiveDirectDeposit(t.id);
+                          }}
+                          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Réceptionner le dépôt et créditer le stock
+                        </button>
+                      ) : (
+                        <span className="text-xs font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                          Approuvé — en attente de réception par le responsable du dépôt
+                        </span>
+                      )
                     )}
 
                     {/* Step 3 -> 4 & 5: Reception control */}
@@ -1144,10 +1186,13 @@ export default function TransfersView({
                 <select
                   value={transferKind}
                   disabled={Boolean(editingTransfer)}
-                  onChange={event => changeTransferKind(event.target.value as "STANDARD" | "STORE_RETURN" | "RECYCLING")}
+                  onChange={event => changeTransferKind(event.target.value as TransferKind)}
                   className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 disabled:bg-slate-100"
                 >
                   <option value="STANDARD">Transfert standard</option>
+                  {(currentUser.roleId === "RESPONSABLE_MAGASIN" || currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN") && centralStores.length > 0 && (
+                    <option value="DIRECT_DEPOSIT">Dépôt direct au dépôt central (validation admin)</option>
+                  )}
                   <option value="STORE_RETURN">Retour magasin → entrepôt (défaut, péremption, étiquette usée)</option>
                   <option value="RECYCLING">Entrepôt → magasin de production (recyclage)</option>
                 </select>
@@ -1161,6 +1206,19 @@ export default function TransfersView({
                   <h4 id="transfer-route-heading" className="text-sm font-bold text-slate-800">1. Trajet</h4>
                   <p className="text-xs text-slate-500">Recherchez par nom ou code magasin.</p>
                 </div>
+                {transferKind === "DIRECT_DEPOSIT" ? (
+                  <div className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <label className="block text-xs font-bold text-slate-700">Dépôt central à alimenter</label>
+                    <SearchableSelect
+                      value={destStoreId}
+                      options={storeOptions.filter(option => centralStores.some(store => store.id === option.value)
+                        && (sourceStores.some(store => store.id === option.value)))}
+                      onChange={depotId => { setSourceStoreId(depotId); setDestStoreId(depotId); }}
+                      placeholder="Rechercher un dépôt…"
+                      className="w-full"
+                    />
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700">Magasin expéditeur</label>
@@ -1192,7 +1250,8 @@ export default function TransfersView({
                     />
                   </div>
                 </div>
-                {sourceStoreId === destStoreId && (
+                )}
+                {sourceStoreId === destStoreId && transferKind !== "DIRECT_DEPOSIT" && (
                   <p className="mt-2 text-xs font-medium text-amber-700" role="alert">
                     Le magasin expéditeur et le destinataire doivent être différents.
                   </p>

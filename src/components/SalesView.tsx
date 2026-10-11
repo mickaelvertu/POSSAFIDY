@@ -12,6 +12,7 @@ import {
 } from "../types";
 import { generateRef, getArticleStock } from "../services/stockService";
 import StoreDropdown from "./StoreDropdown";
+import { storeLabel } from "../services/storeLabel";
 import { 
   ShoppingCart, 
   Plus, 
@@ -44,6 +45,7 @@ interface SalesViewProps {
   onUpdateSale: (originalSale: Sale, sale: Sale) => Promise<boolean>;
   onDeleteSale: (sale: Sale) => Promise<void>;
   onVerifySale: (saleId: string) => void;
+  onApproveSale: (saleId: string) => void;
   onValidateSale: (saleId: string) => void;
   onCancelSale: (saleId: string) => void;
 }
@@ -60,6 +62,7 @@ export default function SalesView({
   onUpdateSale,
   onDeleteSale,
   onVerifySale,
+  onApproveSale,
   onValidateSale,
   onCancelSale
 }: SalesViewProps) {
@@ -68,6 +71,7 @@ export default function SalesView({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
+  const [detailSale, setDetailSale] = useState<Sale | null>(null);
 
   // New Sale Form
   // Sales are made from POS and reseller stores; the central warehouse only appears for the reseller-request flow.
@@ -311,6 +315,10 @@ export default function SalesView({
       alert("Une demande revendeur doit être créée par un responsable du dépôt central et ne contenir que des produits de revente.");
       return;
     }
+    if (isResellerSale && !editingSale && !selectedCreditCustomer) {
+      alert("Une vente depuis le dépôt n'est possible que pour un revendeur déjà enregistré et actif.");
+      return;
+    }
     if (exceedsCreditLimit) {
       alert(selectedCreditCustomer
         ? `Plafond dépassé. Crédit disponible pour ${selectedCreditCustomer.name} : ${creditAvailable.toLocaleString("fr-FR")} Ar.`
@@ -453,8 +461,8 @@ export default function SalesView({
           </span>
           <p className="text-emerald-200/90 mt-0.5">
             • <strong>Point de Vente (POS)</strong> : Applique automatiquement le <strong>prix_normal</strong> (prix public).<br />
-            • <strong>Demande revendeur</strong> : créée uniquement par un responsable du dépôt central, au <strong>prix revendeur</strong>.<br />
-            • <strong>Approbation</strong> : un administrateur doit valider la demande avant la sortie du stock.
+            • <strong>Demande revendeur (dépôt)</strong> : brouillon créé par le responsable du dépôt, uniquement pour un revendeur déjà enregistré, au <strong>prix revendeur</strong>.<br />
+            • <strong>Circuit</strong> : l'administrateur approuve, puis le responsable du dépôt expédie ; le stock ne diminue qu'à l'expédition.
           </p>
         </div>
         <div className="bg-emerald-900 px-3 py-2 rounded-xl text-center shrink-0 border border-emerald-800">
@@ -470,7 +478,7 @@ export default function SalesView({
         
         {/* Status filters */}
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
-          {["ALL", "DRAFT", "CHECKING", "VERIFIED", "VALIDATED", "CANCELLED"].map((st) => (
+          {["ALL", "DRAFT", "CHECKING", "VERIFIED", "APPROVED", "VALIDATED", "CANCELLED"].map((st) => (
             <button
               key={st}
               type="button"
@@ -521,7 +529,7 @@ export default function SalesView({
               {filteredSales.map((sale) => {
                 const store = stores.find(s => s.id === sale.store_id);
                 return (
-                  <tr key={sale.id} className="hover:bg-slate-50">
+                  <tr key={sale.id} onClick={() => setDetailSale(sale)} className="cursor-pointer hover:bg-slate-50">
                     <td className="py-2.5 px-3 font-mono font-bold text-emerald-800">
                       {sale.sale_number}
                     </td>
@@ -529,7 +537,7 @@ export default function SalesView({
                       {new Date(sale.created_at).toLocaleDateString("fr-FR")}
                     </td>
                     <td className="py-2.5 px-3">
-                      <span className="font-semibold text-slate-800">{store?.name}</span>
+                      <span className="font-semibold text-slate-800">{store ? storeLabel(store) : ""}</span>
                       <div className="text-[10px] text-slate-400 font-mono">{store?.store_type}</div>
                     </td>
                     <td className="py-2.5 px-3">
@@ -549,6 +557,7 @@ export default function SalesView({
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         sale.status === "VALIDATED" ? "bg-emerald-100 text-emerald-800 border border-emerald-300" :
                         sale.status === "VERIFIED" ? "bg-blue-100 text-blue-800 border border-blue-300" :
+                        sale.status === "APPROVED" ? "bg-indigo-100 text-indigo-800 border border-indigo-300" :
                         sale.status === "CHECKING" ? "bg-amber-100 text-amber-800 border border-amber-300" :
                         sale.status === "CANCELLED" ? "bg-rose-100 text-rose-800 border border-rose-300" :
                         "bg-slate-100 text-slate-700 border border-slate-300"
@@ -558,8 +567,11 @@ export default function SalesView({
                       {sale.customer_type === "REVENDEUR" && sale.status === "VERIFIED" && (
                         <div className="mt-1 text-[10px] font-bold text-amber-700">En attente d'approbation admin</div>
                       )}
+                      {sale.customer_type === "REVENDEUR" && sale.status === "APPROVED" && (
+                        <div className="mt-1 text-[10px] font-bold text-indigo-700">Approuvée · à expédier par le dépôt</div>
+                      )}
                     </td>
-                    <td className="py-2.5 px-3 text-right">
+                    <td className="py-2.5 px-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
                         
                         {/* 4-step workflow actions */}
@@ -610,16 +622,36 @@ export default function SalesView({
                           </button>
                         )}
 
-                        {sale.status === "VERIFIED" && (
-                          sale.customer_type !== "REVENDEUR" || currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN"
-                        ) && (
+                        {sale.status === "VERIFIED" && sale.customer_type === "REVENDEUR" && (currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN") && (
+                          <button
+                            type="button"
+                            onClick={() => onApproveSale(sale.id)}
+                            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded text-[10px] shadow-xs flex items-center gap-1 cursor-pointer"
+                          >
+                            <CheckCircle2 className="h-3 w-3" />
+                            Approuver la demande
+                          </button>
+                        )}
+
+                        {sale.status === "APPROVED" && sale.customer_type === "REVENDEUR" && (
                           <button
                             type="button"
                             onClick={() => onValidateSale(sale.id)}
                             className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] shadow-xs flex items-center gap-1 cursor-pointer"
                           >
                             <CheckCircle2 className="h-3 w-3" />
-                            {sale.customer_type === "REVENDEUR" ? "Approuver & débiter le stock" : "Valider Caisse & Stock"}
+                            Expédier & débiter le stock
+                          </button>
+                        )}
+
+                        {sale.status === "VERIFIED" && sale.customer_type !== "REVENDEUR" && (
+                          <button
+                            type="button"
+                            onClick={() => onValidateSale(sale.id)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] shadow-xs flex items-center gap-1 cursor-pointer"
+                          >
+                            <CheckCircle2 className="h-3 w-3" />
+                            Valider Caisse & Stock
                           </button>
                         )}
 
@@ -641,6 +673,48 @@ export default function SalesView({
           </table>
         </div>
       </div>
+
+      {detailSale && (() => {
+        const sale = sales.find(item => item.id === detailSale.id) || detailSale;
+        const store = stores.find(s => s.id === sale.store_id);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" onClick={() => setDetailSale(null)}>
+            <div className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-mono text-lg font-black text-slate-900">{sale.sale_number}</h3>
+                  <p className="text-xs text-slate-500">{store ? storeLabel(store) : ""} · {new Date(sale.created_at).toLocaleString("fr-FR")}</p>
+                </div>
+                <button type="button" onClick={() => setDetailSale(null)} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer"><X className="h-5 w-5" /></button>
+              </div>
+              <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+                <div><dt className="font-bold text-slate-500">Client</dt><dd className="text-slate-900">{sale.customer_name} · {sale.customer_type}</dd></div>
+                <div><dt className="font-bold text-slate-500">Statut</dt><dd className="text-slate-900">{sale.status}</dd></div>
+                <div><dt className="font-bold text-slate-500">Brouillon créé par</dt><dd className="text-slate-900">{sale.seller_name}</dd></div>
+                {sale.verified_by_name && <div><dt className="font-bold text-slate-500">Vérifiée par</dt><dd className="text-slate-900">{sale.verified_by_name}{sale.verified_at ? ` · ${new Date(sale.verified_at).toLocaleString("fr-FR")}` : ""}</dd></div>}
+                {sale.approved_by_name && <div><dt className="font-bold text-slate-500">Approuvée par (admin)</dt><dd className="text-slate-900">{sale.approved_by_name}{sale.approved_at ? ` · ${new Date(sale.approved_at).toLocaleString("fr-FR")}` : ""}</dd></div>}
+                {sale.validated_by_name && <div><dt className="font-bold text-slate-500">{sale.customer_type === "REVENDEUR" ? "Expédiée par" : "Validée par"}</dt><dd className="text-slate-900">{sale.validated_by_name}{sale.validated_at ? ` · ${new Date(sale.validated_at).toLocaleString("fr-FR")}` : ""}</dd></div>}
+                <div><dt className="font-bold text-slate-500">Règlement</dt><dd className="text-slate-900">{sale.payment_method} · {sale.payment_status} · encaissé {sale.amount_paid.toLocaleString("fr-FR")} Ar</dd></div>
+                {sale.notes && <div className="sm:col-span-2"><dt className="font-bold text-slate-500">Notes</dt><dd className="text-slate-900">{sale.notes}</dd></div>}
+              </dl>
+              <table className="mt-4 w-full text-xs">
+                <thead><tr className="border-b border-slate-200 text-left text-slate-500"><th className="py-2">Article</th><th className="py-2 text-right">Qté</th><th className="py-2 text-right">Prix</th><th className="py-2 text-right">Total</th></tr></thead>
+                <tbody className="divide-y divide-slate-100">
+                  {sale.lines.map(line => (
+                    <tr key={line.id}>
+                      <td className="py-1.5 text-slate-900">{line.article_name} <span className="font-mono text-[10px] text-slate-400">{line.article_code}</span></td>
+                      <td className="py-1.5 text-right font-mono">{line.quantity}</td>
+                      <td className="py-1.5 text-right font-mono">{line.unit_price.toLocaleString("fr-FR")}</td>
+                      <td className="py-1.5 text-right font-mono font-bold">{line.total.toLocaleString("fr-FR")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot><tr><td colSpan={3} className="pt-2 text-right font-bold">Total net</td><td className="pt-2 text-right font-mono text-sm font-black">{sale.total.toLocaleString("fr-FR")} Ar</td></tr></tfoot>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* CREATE NEW SALE MODAL */}
       {isModalOpen && (

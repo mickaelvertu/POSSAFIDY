@@ -386,6 +386,14 @@ service cloud.firestore {
             exists(/databases/$(database)/documents/stores/$(request.resource.data.store_id)) &&
             get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
             (
+              (isAdmin() && request.resource.data.status == 'VALIDATED') ||
+              (
+                request.resource.data.credit_customer_id is string &&
+                exists(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)) &&
+                get(/databases/$(database)/documents/creditCustomers/$(request.resource.data.credit_customer_id)).data.is_active == true
+              )
+            ) &&
+            (
               (isAdmin() && request.resource.data.status == 'VALIDATED' && !request.resource.data.keys().hasAny(['credit_customer_id'])) ||
               request.resource.data.amount_paid >= request.resource.data.total ||
               (
@@ -456,9 +464,25 @@ service cloud.firestore {
         (
           (resource.data.status == 'DRAFT' && request.resource.data.status in ['CHECKING', 'CANCELLED']) ||
           (resource.data.status == 'CHECKING' && request.resource.data.status in ['VERIFIED', 'CANCELLED']) ||
-          (resource.data.status == 'VERIFIED' && request.resource.data.status in ['VALIDATED', 'CANCELLED'])
+          (resource.data.status == 'VERIFIED' && request.resource.data.status == 'CANCELLED') ||
+          (resource.data.status == 'VERIFIED' && request.resource.data.status == 'VALIDATED' && resource.data.customer_type != 'REVENDEUR') ||
+          (
+            resource.data.status == 'VERIFIED' && request.resource.data.status == 'APPROVED' &&
+            resource.data.customer_type == 'REVENDEUR' && isAdmin() &&
+            request.resource.data.approved_by == request.auth.uid &&
+            request.resource.data.approved_at is number
+          ) ||
+          (
+            resource.data.status == 'APPROVED' && request.resource.data.status == 'CANCELLED' &&
+            (isAdmin() || hasStoreAccess(resource.data.store_id))
+          ) ||
+          (
+            resource.data.status == 'APPROVED' && request.resource.data.status == 'VALIDATED' &&
+            resource.data.customer_type == 'REVENDEUR' && hasPermission('sales.validate') &&
+            hasStoreAccess(resource.data.store_id) &&
+            request.resource.data.get('approved_by', null) == resource.data.get('approved_by', null)
+          )
         ) &&
-        (request.resource.data.status != 'VALIDATED' || resource.data.customer_type != 'REVENDEUR' || isAdmin()) &&
         (request.resource.data.status != 'VALIDATED' || request.resource.data.validated_by == request.auth.uid)
       ) || (
         hasPermission('credit.manage') &&
@@ -774,6 +798,17 @@ service cloud.firestore {
       );
       allow create: if (hasPermission('transfers.create') &&
         request.resource.data.id == transferId &&
+        request.resource.data.type == 'DIRECT_DEPOSIT' &&
+        request.resource.data.requested_by == request.auth.uid &&
+        request.resource.data.source_store_id == request.resource.data.destination_store_id &&
+        hasStoreAccess(request.resource.data.destination_store_id) &&
+        exists(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)) &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.is_active == true &&
+        request.resource.data.status == 'DRAFT' &&
+        request.resource.data.lines is list &&
+        request.resource.data.lines.size() > 0) || (hasPermission('transfers.create') &&
+        request.resource.data.id == transferId &&
         request.resource.data.requested_by == request.auth.uid &&
         hasStoreAccess(request.resource.data.source_store_id) &&
         request.resource.data.source_store_id != request.resource.data.destination_store_id &&
@@ -929,6 +964,25 @@ service cloud.firestore {
                 getAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.received_by == request.auth.uid
               )
             ) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'lines', 'received_by', 'received_by_name', 'received_at',
+              'validated_by', 'validated_by_name', 'validated_at', 'has_discrepancy',
+              'note', 'updated_at'
+            ])
+          ) ||
+          (
+            hasPermission('transfers.receive') &&
+            hasStoreAccess(resource.data.destination_store_id) &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
+            get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+            resource.data.type == 'DIRECT_DEPOSIT' &&
+            resource.data.status == 'APPROVED' &&
+            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
+            request.resource.data.received_by == request.auth.uid &&
+            request.resource.data.validated_by == request.auth.uid &&
+            request.auth.uid != resource.data.approved_by &&
+            request.resource.data.lines is list &&
+            request.resource.data.lines.size() == resource.data.lines.size() &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'status', 'lines', 'received_by', 'received_by_name', 'received_at',
               'validated_by', 'validated_by_name', 'validated_at', 'has_discrepancy',

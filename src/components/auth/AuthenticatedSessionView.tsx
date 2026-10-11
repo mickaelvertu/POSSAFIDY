@@ -26,7 +26,7 @@ import {
   recordTransferReceipt,
   updateDraftTransfer,
 } from "../../services/inventoryService";
-import { advanceSale, cancelSale, createProduction, deleteDraftSale, deleteDraftProduction, loadOperationalData, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
+import { advanceSale, approveSale, cancelSale, createProduction, deleteDraftSale, deleteDraftProduction, loadOperationalData, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
 import { createCreditSale, loadCreditCustomerForUser, loadCreditCustomers, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
 import { createResellerOrder, loadResellerStocks, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
@@ -835,11 +835,27 @@ export default function AuthenticatedSessionView() {
     }
   };
 
+  const handleApproveSale = async (saleId: string) => {
+    const sale = sales.find(item => item.id === saleId);
+    if (!sale || !currentAppUser) return;
+    if (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN") {
+      alert("Seul un administrateur peut approuver une demande revendeur.");
+      return;
+    }
+    try {
+      const result = await approveSale(sale, currentAppUser.uid, currentAppUser.displayName);
+      setSales(current => current.map(item => item.id === saleId ? result.sale : item));
+      setAuditLogs(current => [result.auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'approuver la demande.");
+    }
+  };
+
   const handleValidateSale = async (saleId: string) => {
     const sale = sales.find(item => item.id === saleId);
     if (!sale || !currentAppUser) return;
-    if (sale.customer_type === "REVENDEUR" && currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN") {
-      alert("Seul un administrateur peut approuver une demande revendeur.");
+    if (sale.customer_type === "REVENDEUR" && sale.status !== "APPROVED") {
+      alert("La demande revendeur doit d'abord être approuvée par un administrateur.");
       return;
     }
     try {
@@ -963,8 +979,11 @@ export default function AuthenticatedSessionView() {
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
     const sourceStore = inventoryStores.find(store => store.id === transfer.source_store_id);
     const destinationStore = inventoryStores.find(store => store.id === transfer.destination_store_id);
+    const isDirectDeposit = transfer.type === "DIRECT_DEPOSIT";
     if ((!isAdmin && !currentAppUser.storeIds.includes(transfer.source_store_id))
-      || transfer.source_store_id === transfer.destination_store_id
+      || (isDirectDeposit
+        ? transfer.source_store_id !== transfer.destination_store_id || destinationStore?.store_type !== "CENTRAL_WAREHOUSE"
+        : transfer.source_store_id === transfer.destination_store_id)
       || !sourceStore?.is_active
       || !destinationStore?.is_active) {
       alert("Choisissez un magasin source qui vous est attribué et un autre magasin destinataire.");
@@ -998,9 +1017,10 @@ export default function AuthenticatedSessionView() {
       requestedByArticle.set(line.article_id, (requestedByArticle.get(line.article_id) || 0) + line.quantity_sent);
     }
     for (const [articleId, requestedQuantity] of requestedByArticle) {
+      if (isDirectDeposit) break;
       const physicalStock = getArticleStock(stocks, sourceStore.id, articleId);
       const pendingQuantity = transfers
-        .filter(item => item.id !== transfer.id && item.source_store_id === sourceStore.id && ["DRAFT", "APPROVED"].includes(item.status))
+        .filter(item => item.id !== transfer.id && item.type !== "DIRECT_DEPOSIT" && item.source_store_id === sourceStore.id && ["DRAFT", "APPROVED"].includes(item.status))
         .flatMap(item => item.lines)
         .filter(line => line.article_id === articleId)
         .reduce((total, line) => total + line.quantity_sent, 0);
@@ -1286,6 +1306,74 @@ export default function AuthenticatedSessionView() {
       setAuditLogs(current => [auditLog, ...(purchaseAuditLog ? [purchaseAuditLog] : []), ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du transfert dans Firestore.");
+    }
+  };
+
+  const handleReceiveDirectDeposit = async (transferId: string, receiverNote?: string) => {
+    const transfer = transfers.find(item => item.id === transferId);
+    if (!transfer || transfer.type !== "DIRECT_DEPOSIT" || transfer.status !== "APPROVED" || !currentAppUser) return;
+    if (!hasPermission(currentAppUser, "transfers.receive")
+      || !currentAppUser.storeIds.includes(transfer.destination_store_id)
+      || currentAppUser.uid === transfer.approved_by) {
+      alert("Seul un responsable du dépôt, différent de l'approbateur, peut réceptionner ce dépôt.");
+      return;
+    }
+    const timestamp = Date.now();
+    const lines = transfer.lines.map(line => ({
+      ...line,
+      quantity_received: line.quantity_sent,
+      quantity_accepted: line.quantity_sent,
+      quantity_rejected: 0
+    }));
+    let updatedStocks = stocks;
+    const movements: StockMovement[] = [];
+    for (const line of lines) {
+      const { newStocks, beforeQty, afterQty } = updateStockQuantity(updatedStocks, transfer.destination_store_id, line.article_id, line.quantity_accepted);
+      updatedStocks = newStocks;
+      movements.push({
+        id: `movement-${transfer.id}-deposit-${line.article_id}`,
+        store_id: transfer.destination_store_id,
+        article_id: line.article_id,
+        movement_type: "PURCHASE",
+        quantity: line.quantity_accepted,
+        reference_type: "STOCK_DEPOSIT",
+        reference_id: transfer.id,
+        reference_number: transfer.transfer_number,
+        before_quantity: beforeQty,
+        after_quantity: afterQty,
+        created_by: currentAppUser.uid,
+        created_by_name: currentAppUser.displayName || currentAppUser.email || "Utilisateur",
+        notes: "Dépôt direct validé par un administrateur",
+        created_at: timestamp
+      });
+    }
+    const updatedTransfer: StockTransfer = {
+      ...transfer,
+      status: "VALIDATED",
+      lines,
+      received_by: currentAppUser.uid,
+      received_by_name: currentAppUser.displayName,
+      received_at: timestamp,
+      validated_by: currentAppUser.uid,
+      validated_by_name: currentAppUser.displayName,
+      validated_at: timestamp,
+      has_discrepancy: false,
+      note: receiverNote || transfer.note,
+      updated_at: timestamp
+    };
+    const changedStocks = updatedStocks.filter(stock =>
+      stock.store_id === transfer.destination_store_id && lines.some(line => line.article_id === stock.article_id)
+    );
+    try {
+      const auditLog = createAuditLog(currentAppUser, "DIRECT_DEPOSIT_RECEIVED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.destination_store_id);
+      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements, auditLog);
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
+      setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
+      setAuditLogs(current => [auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du dépôt.");
     }
   };
 
@@ -2112,7 +2200,9 @@ export default function AuthenticatedSessionView() {
         canReviewInventory,
         transfers,
         inventoryCounts,
-        resellerOrders
+        resellerOrders,
+        sales: visibleSales,
+        canShipSales: hasPermission(currentAppUser, "sales.validate")
       })
     : [];
 
@@ -2206,13 +2296,15 @@ export default function AuthenticatedSessionView() {
               articles={articles}
               stocks={stocks}
               currentUser={currentAppUser}
-              canCreateResellerSale={currentAppUser.roleId === "RESPONSABLE_MAGASIN"
-                && hasPermission(currentAppUser, "credit.sales")
-                && currentAppUser.storeIds.some(storeId => inventoryStores.some(store => store.id === storeId && store.store_type === "CENTRAL_WAREHOUSE"))}
+              canCreateResellerSale={currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN"
+                || (currentAppUser.roleId === "RESPONSABLE_MAGASIN"
+                  && hasPermission(currentAppUser, "sales.create")
+                  && currentAppUser.storeIds.some(storeId => inventoryStores.some(store => store.id === storeId && store.store_type === "CENTRAL_WAREHOUSE")))}
               onCreateSale={handleCreateSale}
               onUpdateSale={handleUpdateSale}
               onDeleteSale={handleDeleteSale}
               onVerifySale={handleVerifySale}
+              onApproveSale={handleApproveSale}
               onValidateSale={handleValidateSale}
               onCancelSale={handleCancelSale}
             />
@@ -2346,6 +2438,7 @@ export default function AuthenticatedSessionView() {
               onShipTransfer={handleShipTransfer}
               onReceiveAndValidateTransfer={handleReceiveTransfer}
               onConfirmCentralReceipt={handleConfirmCentralReceipt}
+              onReceiveDirectDeposit={handleReceiveDirectDeposit}
               onResolveDiscrepancy={handleResolveTransferDiscrepancy}
             />
           </section>

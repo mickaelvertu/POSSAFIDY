@@ -1,6 +1,6 @@
-import { InventoryCount, ResellerOrder, StockTransfer } from "../types";
+import { InventoryCount, ResellerOrder, Sale, StockTransfer } from "../types";
 
-export type NotificationModule = "transfers" | "inventory" | "resellerPortal";
+export type NotificationModule = "transfers" | "inventory" | "resellerPortal" | "sales";
 
 export interface ActionNotification {
   id: string;
@@ -19,12 +19,22 @@ export interface NotificationContext {
   transfers: StockTransfer[];
   inventoryCounts: InventoryCount[];
   resellerOrders: ResellerOrder[];
+  sales: Sale[];
+  canShipSales: boolean;
 }
 
 export function buildActionNotifications(ctx: NotificationContext): ActionNotification[] {
   const items: ActionNotification[] = [];
 
   for (const t of ctx.transfers) {
+    if (t.type === "DIRECT_DEPOSIT") {
+      if (t.status === "APPROVED" && ctx.canReceiveTransfers && ctx.storeIds.includes(t.destination_store_id) && t.approved_by !== ctx.uid) {
+        items.push({ id: `tr-deposit-${t.id}`, module: "transfers", title: "Dépôt à réceptionner", detail: `${t.transfer_number} approuvé par ${t.approved_by_name || "un admin"}`, at: t.approved_at || t.updated_at });
+      } else if (t.status === "DRAFT" && ctx.isAdmin && t.requested_by !== ctx.uid) {
+        items.push({ id: `tr-appr-${t.id}`, module: "transfers", title: "Dépôt direct à valider", detail: `${t.transfer_number} demandé par ${t.requested_by_name}`, at: t.created_at });
+      }
+      continue;
+    }
     const at = t.shipped_at || t.approved_at || t.created_at;
     if (t.status === "IN_TRANSIT" && ctx.storeIds.includes(t.destination_store_id)) {
       items.push({ id: `tr-recv-${t.id}`, module: "transfers", title: "Transfert à réceptionner", detail: `${t.transfer_number} en route vers votre magasin`, at });
@@ -42,6 +52,15 @@ export function buildActionNotifications(ctx: NotificationContext): ActionNotifi
       items.push({ id: `ic-sign-${c.id}`, module: "inventory", title: "Comptage à signer", detail: `${c.count_number} · ${c.store_name}`, at: c.submitted_at || c.updated_at });
     } else if (c.status === "SUBMITTED" && ctx.canReviewInventory) {
       items.push({ id: `ic-rev-${c.id}`, module: "inventory", title: "Comptage à valider", detail: `${c.count_number} · ${c.store_name}`, at: c.submitted_at || c.updated_at });
+    }
+  }
+
+  for (const s of ctx.sales) {
+    if (s.customer_type !== "REVENDEUR") continue;
+    if (s.status === "VERIFIED" && ctx.isAdmin) {
+      items.push({ id: `sa-appr-${s.id}`, module: "sales", title: "Vente revendeur à approuver", detail: `${s.sale_number} · ${s.customer_name}`, at: s.verified_at || s.created_at });
+    } else if (s.status === "APPROVED" && ctx.canShipSales && ctx.storeIds.includes(s.store_id)) {
+      items.push({ id: `sa-ship-${s.id}`, module: "sales", title: "Vente revendeur à expédier", detail: `${s.sale_number} · ${s.customer_name} approuvée, prête à partir`, at: s.approved_at || s.created_at });
     }
   }
 

@@ -111,19 +111,6 @@ export default function StocksView({
     setIsAdjustModalOpen(true);
   };
 
-  const handleOpenDepositModal = () => {
-    const sId = selectedStoreId !== "ALL" && canManageStockForStore(selectedStoreId)
-      ? selectedStoreId
-      : primaryCentralStore?.id || "";
-    if (!canManageStockForStore(sId)) return;
-    setAdjustStoreId(sId);
-    setAdjustArticleId("");
-    setAdjustNewQty(0);
-    setIsDepositMode(true);
-    setAdjustReason("Réception de marchandises");
-    setIsAdjustModalOpen(true);
-  };
-
   const handleConfirmAdjust = (e: FormEvent) => {
     e.preventDefault();
     if (!adjustArticleId) return;
@@ -283,16 +270,6 @@ export default function StocksView({
             Section 1 & 2 : Suivi en temps réel des stocks de revente et matières premières par site de stockage.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={handleOpenDepositModal}
-          disabled={!isAdmin || centralStores.length === 0}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          Dépôt de stock
-        </button>
       </div>
 
       {isSuperAdmin && (
