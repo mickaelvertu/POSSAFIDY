@@ -13,6 +13,7 @@ export interface ActionNotification {
 export interface NotificationContext {
   uid: string;
   storeIds: string[];
+  canReceiveTransfers: boolean;
   isAdmin: boolean;
   canReviewInventory: boolean;
   transfers: StockTransfer[];
@@ -27,6 +28,8 @@ export function buildActionNotifications(ctx: NotificationContext): ActionNotifi
     const at = t.shipped_at || t.approved_at || t.created_at;
     if (t.status === "IN_TRANSIT" && ctx.storeIds.includes(t.destination_store_id)) {
       items.push({ id: `tr-recv-${t.id}`, module: "transfers", title: "Transfert à réceptionner", detail: `${t.transfer_number} en route vers votre magasin`, at });
+    } else if (t.status === "RECEIVED" && ctx.canReceiveTransfers && ctx.storeIds.includes(t.destination_store_id) && t.received_by !== ctx.uid) {
+      items.push({ id: `tr-confirm-${t.id}`, module: "transfers", title: "Entrée de stock à confirmer", detail: `${t.transfer_number} saisie par ${t.received_by_name || "un collègue"}`, at: t.received_at || t.updated_at });
     } else if (t.status === "APPROVED" && ctx.storeIds.includes(t.source_store_id)) {
       items.push({ id: `tr-ship-${t.id}`, module: "transfers", title: "Transfert à expédier", detail: `${t.transfer_number} approuvé, prêt à partir`, at });
     } else if (t.status === "DRAFT" && ctx.isAdmin && t.requested_by !== ctx.uid) {

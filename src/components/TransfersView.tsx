@@ -50,6 +50,7 @@ interface TransfersViewProps {
     updatedLines: StockTransferLine[], 
     receiverNote?: string
   ) => void;
+  onConfirmCentralReceipt: (transferId: string) => void;
   onResolveDiscrepancy: (transferId: string, resolutionNote: string) => void;
   canCreate: boolean;
   canApprove: boolean;
@@ -92,6 +93,7 @@ export default function TransfersView({
   onRejectTransfer,
   onShipTransfer,
   onReceiveAndValidateTransfer,
+  onConfirmCentralReceipt,
   onResolveDiscrepancy,
   canCreate,
   canApprove,
@@ -605,7 +607,7 @@ export default function TransfersView({
             ["APPROVED", "Approuvés"],
             ["REJECTED", "Refusés"],
             ["IN_TRANSIT", "En transit"],
-            ["RECEIVED", "Reçus"],
+            ["RECEIVED", "À confirmer"],
             ["VALIDATED", "Validés"],
             ["DISCREPANCY", "Avec écart"]
           ].map(([st, label]) => (
@@ -681,7 +683,9 @@ export default function TransfersView({
 
             const isReceiver = currentUser.storeIds.includes(t.destination_store_id)
               && currentUser.uid !== t.requested_by
-              && currentUser.uid !== t.approved_by;
+              && currentUser.uid !== t.approved_by
+              && (t.status !== "RECEIVED" || currentUser.uid !== t.received_by);
+            const isCentralDestination = dst?.store_type === "CENTRAL_WAREHOUSE";
             const isSupplierDelivery = t.type === "SUPPLIER_TO_STORE";
             const isSourceOperator = currentUser.roleId === "ADMIN"
               || currentUser.roleId === "SUPER_ADMIN"
@@ -692,7 +696,7 @@ export default function TransfersView({
                 key={t.id} 
                 className={`bg-white rounded-2xl border p-5 shadow-xs transition hover:shadow-md ${
                   t.status === "DISCREPANCY" ? "border-rose-300 bg-rose-50/20" :
-                  t.status === "IN_TRANSIT" ? "border-amber-300" :
+                  t.status === "IN_TRANSIT" || t.status === "RECEIVED" ? "border-amber-300" :
                   t.status === "VALIDATED" ? "border-emerald-200" :
                   t.status === "REJECTED" ? "border-rose-200 bg-rose-50/20" : "border-slate-200"
                 }`}
@@ -720,7 +724,7 @@ export default function TransfersView({
                   <div className="flex items-center gap-2">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
                       t.status === "VALIDATED" ? "bg-emerald-100 text-emerald-800 border-emerald-300" :
-                      t.status === "IN_TRANSIT" ? "bg-amber-100 text-amber-800 border-amber-300 animate-pulse" :
+                      t.status === "IN_TRANSIT" || t.status === "RECEIVED" ? "bg-amber-100 text-amber-800 border-amber-300" :
                       t.status === "APPROVED" ? "bg-blue-100 text-blue-800 border-blue-300" :
                       t.status === "DISCREPANCY" ? "bg-rose-100 text-rose-800 border-rose-300" :
                       t.status === "REJECTED" ? "bg-rose-100 text-rose-800 border-rose-300" :
@@ -731,7 +735,7 @@ export default function TransfersView({
                         APPROVED: "Approuvé",
                         SHIPPED: "Expédié",
                         IN_TRANSIT: "En transit",
-                        RECEIVED: "Reçu",
+                        RECEIVED: "À confirmer",
                         VALIDATED: "Réception validée",
                         DISCREPANCY: "Écart à traiter",
                         REJECTED: "Refusé",
@@ -797,9 +801,9 @@ export default function TransfersView({
                           <td className="py-1.5 px-2 font-medium text-slate-800">{l.article_name} <span className="text-slate-500">({l.unit})</span></td>
                           <td className="py-1.5 px-2 text-right font-mono font-bold">{l.quantity_sent}</td>
                           <td className="py-1.5 px-2 text-right font-mono font-semibold">{t.status === "DRAFT" || t.status === "APPROVED" || t.status === "IN_TRANSIT" ? "-" : l.quantity_received}</td>
-                          <td className="py-1.5 px-2 text-right font-mono font-bold text-emerald-700">{t.status === "VALIDATED" || t.status === "DISCREPANCY" ? l.quantity_accepted : "-"}</td>
+                          <td className="py-1.5 px-2 text-right font-mono font-bold text-emerald-700">{t.status === "RECEIVED" || t.status === "VALIDATED" || t.status === "DISCREPANCY" ? l.quantity_accepted : "-"}</td>
                           <td className={`py-1.5 px-2 text-right font-mono font-bold ${l.quantity_rejected > 0 ? "text-rose-600 bg-rose-50" : "text-slate-400"}`}>
-                            {t.status === "VALIDATED" || t.status === "DISCREPANCY" ? l.quantity_rejected : "-"}
+                            {t.status === "RECEIVED" || t.status === "VALIDATED" || t.status === "DISCREPANCY" ? l.quantity_rejected : "-"}
                           </td>
                           <td className="py-1.5 px-2 text-[11px] text-slate-500">{l.note || "-"}</td>
                         </tr>
@@ -932,7 +936,22 @@ export default function TransfersView({
                         className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <FileCheck className="h-4 w-4" />
-                        {isSupplierDelivery ? "Réceptionner l'achat au Magasin" : "Réceptionner & Valider au Magasin"}
+                        {isCentralDestination ? "Saisir la réception" : isSupplierDelivery ? "Réceptionner l'achat au Magasin" : "Réceptionner & Valider au Magasin"}
+                      </button>
+                    )}
+                    {t.status === "RECEIVED" && isCentralDestination && (
+                      <div className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                        Réception saisie par <strong>{t.received_by_name || "un utilisateur"}</strong>. Le stock n'est pas encore crédité ; une autre personne autorisée doit confirmer.
+                      </div>
+                    )}
+                    {t.status === "RECEIVED" && isCentralDestination && canReceive && isReceiver && (
+                      <button
+                        type="button"
+                        onClick={() => onConfirmCentralReceipt(t.id)}
+                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        Confirmer l'entrée et créditer le stock
                       </button>
                     )}
 
@@ -1506,7 +1525,9 @@ export default function TransfersView({
                   onClick={handleConfirmInspection}
                   className="px-5 py-2 font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs cursor-pointer"
                 >
-                  Valider la Réception & Mettre à Jour les Stocks
+                  {stores.find(store => store.id === inspectingTransfer.destination_store_id)?.store_type === "CENTRAL_WAREHOUSE"
+                    ? "Enregistrer la réception (stock non crédité)"
+                    : "Valider la Réception & Mettre à Jour les Stocks"}
                 </button>
               </div>
 

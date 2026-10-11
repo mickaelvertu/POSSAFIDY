@@ -251,14 +251,25 @@ service cloud.firestore {
         request.resource.data.transfer_id == resource.data.transfer_id &&
         hasStoreAccess(resource.data.store_id) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.store_id]) &&
-        request.resource.data.received_by == request.auth.uid &&
+        request.resource.data.received_by is string &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'status', 'received_by', 'received_by_name', 'received_at', 'updated_at'
         ]) &&
         existsAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)) &&
         getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.status in ['VALIDATED', 'DISCREPANCY'] &&
         getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.purchase_id == purchaseId &&
-        getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.received_by == request.auth.uid
+        getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.received_by == request.resource.data.received_by &&
+        (
+          (
+            get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+            getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.validated_by == request.auth.uid &&
+            request.resource.data.received_by != request.auth.uid
+          ) ||
+          (
+            get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type != 'CENTRAL_WAREHOUSE' &&
+            request.resource.data.received_by == request.auth.uid
+          )
+        )
       );
     }
 
@@ -857,6 +868,51 @@ service cloud.firestore {
             hasPermission('transfers.receive') &&
             hasStoreAccess(resource.data.destination_store_id) &&
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
+            get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+            resource.data.status == 'IN_TRANSIT' &&
+            request.resource.data.status == 'RECEIVED' &&
+            request.resource.data.received_by == request.auth.uid &&
+            request.auth.uid != resource.data.requested_by &&
+            request.auth.uid != resource.data.approved_by &&
+            request.resource.data.lines is list &&
+            request.resource.data.has_discrepancy is bool &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'lines', 'received_by', 'received_by_name', 'received_at',
+              'has_discrepancy', 'note', 'updated_at'
+            ])
+          ) ||
+          (
+            hasPermission('transfers.receive') &&
+            hasStoreAccess(resource.data.destination_store_id) &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
+            get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+            resource.data.status == 'RECEIVED' &&
+            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
+            resource.data.received_by is string &&
+            request.resource.data.received_by == resource.data.received_by &&
+            request.auth.uid != resource.data.received_by &&
+            request.auth.uid != resource.data.requested_by &&
+            request.auth.uid != resource.data.approved_by &&
+            request.resource.data.validated_by == request.auth.uid &&
+            request.resource.data.lines == resource.data.lines &&
+            (
+              resource.data.type != 'SUPPLIER_TO_STORE' ||
+              (
+                resource.data.purchase_id is string &&
+                existsAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)) &&
+                getAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.status == 'RECEIVED' &&
+                getAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.received_by == resource.data.received_by
+              )
+            ) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'validated_by', 'validated_by_name', 'validated_at', 'updated_at'
+            ])
+          ) ||
+          (
+            hasPermission('transfers.receive') &&
+            hasStoreAccess(resource.data.destination_store_id) &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
+            get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type != 'CENTRAL_WAREHOUSE' &&
             resource.data.status == 'IN_TRANSIT' &&
             request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
             request.resource.data.received_by == request.auth.uid &&

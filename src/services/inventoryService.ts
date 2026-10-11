@@ -127,6 +127,34 @@ export async function deleteDraftTransfer(transfer: StockTransfer, auditLog: Aud
   });
 }
 
+export async function recordTransferReceipt(transfer: StockTransfer, auditLog: AuditLog): Promise<void> {
+  if (
+    transfer.status !== "RECEIVED" ||
+    !transfer.received_by ||
+    transfer.validated_by ||
+    !Array.isArray(transfer.lines)
+  ) {
+    throw new Error("La réception doit être enregistrée avant sa confirmation.");
+  }
+
+  await runTransaction(db, async transaction => {
+    const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
+    const storeRef = doc(db, STORES_COLLECTION, transfer.destination_store_id);
+    const [transferSnapshot, storeSnapshot] = await Promise.all([
+      transaction.get(transferRef),
+      transaction.get(storeRef)
+    ]);
+    if (!transferSnapshot.exists() || (transferSnapshot.data() as StockTransfer).status !== "IN_TRANSIT") {
+      throw new Error("Ce transfert n'est plus en attente de réception.");
+    }
+    if (!storeSnapshot.exists() || (storeSnapshot.data() as Store).store_type !== "CENTRAL_WAREHOUSE") {
+      throw new Error("La double confirmation s'applique uniquement aux entrées du dépôt central.");
+    }
+    transaction.set(transferRef, omitUndefined(transfer));
+    transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  });
+}
+
 // Persists a transfer status change together with the stock/movement side effects it triggers (ship or receive).
 export async function saveTransferWithStockEffects(
   transfer: StockTransfer,
@@ -160,7 +188,12 @@ export async function saveTransferWithStockEffects(
           return Boolean(persisted?.recycling_decision) && persisted?.recycling_decided_at !== line.recycling_decided_at;
         })
       : currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT"
-        || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status);
+        || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
+        || currentTransfer.status === "RECEIVED" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
+          && Boolean(currentTransfer.received_by)
+          && currentTransfer.received_by !== transfer.validated_by
+          && currentTransfer.received_by === transfer.received_by
+          && JSON.stringify(currentTransfer.lines) === JSON.stringify(transfer.lines);
     if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");
     let purchaseRef: ReturnType<typeof doc> | undefined;
     let updatedPurchase: Purchase | undefined;

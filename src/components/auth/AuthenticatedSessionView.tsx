@@ -23,6 +23,7 @@ import {
   saveSupplier,
   saveTransfer,
   saveTransferWithStockEffects,
+  recordTransferReceipt,
   updateDraftTransfer,
 } from "../../services/inventoryService";
 import { advanceSale, cancelSale, createProduction, deleteDraftSale, deleteDraftProduction, loadOperationalData, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
@@ -1193,6 +1194,31 @@ export default function AuthenticatedSessionView() {
       alert("Vérifiez les quantités reçues et acceptées : elles ne peuvent pas dépasser la quantité expédiée.");
       return;
     }
+    const destinationStore = inventoryStores.find(store => store.id === transfer.destination_store_id);
+    if (destinationStore?.store_type === "CENTRAL_WAREHOUSE") {
+      const hasDiscrepancy = updatedLines.some(line => line.quantity_rejected > 0 || line.quantity_received !== line.quantity_sent);
+      const timestamp = Date.now();
+      const stagedTransfer: StockTransfer = {
+        ...transfer,
+        status: "RECEIVED",
+        lines: updatedLines,
+        received_by: currentAppUser!.uid,
+        received_by_name: currentAppUser!.displayName,
+        received_at: timestamp,
+        has_discrepancy: hasDiscrepancy,
+        note: receiverNote || transfer.note,
+        updated_at: timestamp
+      };
+      try {
+        const auditLog = createAuditLog(currentAppUser!, "TRANSFER_RECEIPT_RECORDED", "TRANSFER", transfer.id, transfer, stagedTransfer, transfer.destination_store_id);
+        await recordTransferReceipt(stagedTransfer, auditLog);
+        setTransfers(current => current.map(item => item.id === transferId ? stagedTransfer : item));
+        setAuditLogs(current => [auditLog, ...current]);
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception en attente de confirmation.");
+      }
+      return;
+    }
     let updatedStocks = stocks;
     const movements: StockMovement[] = [];
     const receiveIntoQuarantine = transfer.type === "STORE_RETURN" || transfer.type === "RECYCLING";
@@ -1260,6 +1286,101 @@ export default function AuthenticatedSessionView() {
       setAuditLogs(current => [auditLog, ...(purchaseAuditLog ? [purchaseAuditLog] : []), ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du transfert dans Firestore.");
+    }
+  };
+
+  const handleConfirmCentralReceipt = async (transferId: string) => {
+    const transfer = transfers.find(item => item.id === transferId);
+    if (!transfer || transfer.status !== "RECEIVED" || !currentAppUser) return;
+    if (inventoryStores.find(store => store.id === transfer.destination_store_id)?.store_type !== "CENTRAL_WAREHOUSE") {
+      alert("Cette double confirmation est réservée aux entrées du dépôt central.");
+      return;
+    }
+    const isAssignedConfirmer = hasPermission(currentAppUser, "transfers.receive")
+      && currentAppUser.storeIds.includes(transfer.destination_store_id)
+      && currentAppUser.uid !== transfer.received_by
+      && currentAppUser.uid !== transfer.requested_by
+      && currentAppUser.uid !== transfer.approved_by;
+    if (!isAssignedConfirmer) {
+      alert("Un autre utilisateur autorisé du dépôt central doit confirmer cette réception.");
+      return;
+    }
+    if (transfer.lines.some(line =>
+      line.quantity_received < 0 ||
+      line.quantity_received > line.quantity_sent ||
+      line.quantity_accepted < 0 ||
+      line.quantity_accepted > line.quantity_received
+    )) {
+      alert("Les quantités enregistrées sont invalides. Rechargez les données et vérifiez la réception.");
+      return;
+    }
+
+    let updatedStocks = stocks;
+    const movements: StockMovement[] = [];
+    const receiveIntoQuarantine = transfer.type === "STORE_RETURN" || transfer.type === "RECYCLING";
+    const isSupplierDelivery = transfer.type === "SUPPLIER_TO_STORE";
+    transfer.lines.forEach(line => {
+      if (line.quantity_accepted <= 0) return;
+      const { newStocks, beforeQty, afterQty } = (receiveIntoQuarantine ? updateQuarantineQuantity : updateStockQuantity)(
+        updatedStocks,
+        transfer.destination_store_id,
+        line.article_id,
+        line.quantity_accepted
+      );
+      updatedStocks = newStocks;
+      movements.push({
+        id: `movement-${transfer.id}-receive-${line.article_id}`,
+        store_id: transfer.destination_store_id,
+        article_id: line.article_id,
+        movement_type: isSupplierDelivery ? "PURCHASE" : transfer.type,
+        ...(receiveIntoQuarantine ? { stock_bucket: "QUARANTINE" as const } : {}),
+        quantity: line.quantity_accepted,
+        reference_type: isSupplierDelivery ? "PURCHASE" : "TRANSFER",
+        reference_id: isSupplierDelivery ? transfer.purchase_id! : transfer.id,
+        reference_number: isSupplierDelivery ? transfer.purchase_number || transfer.transfer_number : transfer.transfer_number,
+        before_quantity: beforeQty,
+        after_quantity: afterQty,
+        created_by: currentAppUser.uid,
+        created_by_name: currentAppUser.displayName || currentAppUser.email,
+        notes: isSupplierDelivery ? `Réception achat fournisseur ${transfer.supplier_name || transfer.source_name || ""}` : undefined,
+        created_at: Date.now()
+      });
+    });
+
+    const timestamp = Date.now();
+    const finalStatus = transfer.has_discrepancy ? "DISCREPANCY" : "VALIDATED";
+    const confirmedTransfer: StockTransfer = {
+      ...transfer,
+      status: finalStatus,
+      validated_by: currentAppUser.uid,
+      validated_by_name: currentAppUser.displayName || currentAppUser.email,
+      validated_at: timestamp,
+      updated_at: timestamp
+    };
+    const changedStocks = updatedStocks.filter(stock =>
+      transfer.lines.some(line => stock.store_id === transfer.destination_store_id && stock.article_id === line.article_id)
+    );
+    try {
+      const auditLog = createAuditLog(currentAppUser, "TRANSFER_RECEIPT_CONFIRMED", "TRANSFER", transfer.id, transfer, confirmedTransfer, transfer.destination_store_id);
+      const purchaseAuditLog = transfer.purchase_id
+        ? createAuditLog(
+            currentAppUser,
+            "PURCHASE_RECEIVED",
+            "PURCHASE",
+            transfer.purchase_id,
+            { status: "APPROVED", transfer_id: transfer.id },
+            { status: "RECEIVED", transfer_id: transfer.id, received_by: transfer.received_by, received_by_name: transfer.received_by_name, received_at: transfer.received_at },
+            transfer.destination_store_id
+          )
+        : undefined;
+      const result = await saveTransferWithStockEffects(confirmedTransfer, changedStocks, movements, auditLog, purchaseAuditLog);
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
+      setTransfers(current => current.map(item => item.id === transferId ? confirmedTransfer : item));
+      setAuditLogs(current => [auditLog, ...(purchaseAuditLog ? [purchaseAuditLog] : []), ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible de confirmer cette entrée de stock.");
     }
   };
 
@@ -1986,6 +2107,7 @@ export default function AuthenticatedSessionView() {
     ? buildActionNotifications({
         uid: currentAppUser.uid,
         storeIds: currentAppUser.storeIds,
+        canReceiveTransfers: hasPermission(currentAppUser, "transfers.receive"),
         isAdmin: isInventoryAdmin,
         canReviewInventory,
         transfers,
@@ -2223,6 +2345,7 @@ export default function AuthenticatedSessionView() {
               onRejectTransfer={handleRejectTransfer}
               onShipTransfer={handleShipTransfer}
               onReceiveAndValidateTransfer={handleReceiveTransfer}
+              onConfirmCentralReceipt={handleConfirmCentralReceipt}
               onResolveDiscrepancy={handleResolveTransferDiscrepancy}
             />
           </section>
