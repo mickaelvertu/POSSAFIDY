@@ -1,0 +1,825 @@
+{
+  "source_file": "POINT0426.xlsx",
+  "quantity_column": "B",
+  "excluded_duplicate_stores": [
+    {
+      "name": "Mr Ismael Commercial",
+      "is_active": true,
+      "id": "MAG-030",
+      "store_type": "POS",
+      "created_at": 1791284621558,
+      "code": "POS-19",
+      "location": "",
+      "updated_at": 1791284621558
+    }
+  ],
+  "matched_sheets": [
+    {
+      "sheet": "ANTSAHABE",
+      "store_id": "store-pos-02",
+      "store_code": "POS-02",
+      "store_name": "Antsahabe",
+      "rows": 58,
+      "total_quantity": 474.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "ANALAMAHITSY",
+      "store_id": "store-pos-08",
+      "store_code": "POS-08",
+      "store_name": "Analamahintsy",
+      "rows": 65,
+      "total_quantity": 434.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "Akoor Digue",
+      "store_id": "store-pos-11",
+      "store_code": "POS-11",
+      "store_name": "Akoor Digue",
+      "rows": 44,
+      "total_quantity": 465.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "ANTANINANDRO",
+      "store_id": "store-pos-06",
+      "store_code": "POS-06",
+      "store_name": "Antaninandro",
+      "rows": 62,
+      "total_quantity": 365.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "ANOSY",
+      "store_id": "store-rev-03",
+      "store_code": "REV-03",
+      "store_name": "Anosy",
+      "rows": 58,
+      "total_quantity": 342.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "REX",
+      "store_id": "store-pos-03",
+      "store_code": "POS-03",
+      "store_name": "Rex",
+      "rows": 65,
+      "total_quantity": 502.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "TSARALALANA",
+      "store_id": "MAG-042",
+      "store_code": "POS-20",
+      "store_name": "Tsaralalana",
+      "rows": 44,
+      "total_quantity": 346.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "ANKAZOMANGA",
+      "store_id": "store-pos-07",
+      "store_code": "POS-07",
+      "store_name": "Ankazomanga",
+      "rows": 53,
+      "total_quantity": 330.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "MORAMANGA",
+      "store_id": "store-pos-14",
+      "store_code": "POS-14",
+      "store_name": "Moramanga",
+      "rows": 65,
+      "total_quantity": 420.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "Maman Shinning Tamatave",
+      "store_id": "store-rev-01",
+      "store_code": "REV-01",
+      "store_name": "Maman Shinning Tamatave",
+      "rows": 58,
+      "total_quantity": 444.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "Meteo Ampasapito",
+      "store_id": "store-pos-15",
+      "store_code": "POS-15",
+      "store_name": "Meteo Ampasapito",
+      "rows": 67,
+      "total_quantity": 535.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "IVATO",
+      "store_id": "store-pos-10",
+      "store_code": "POS-10",
+      "store_name": "Ivato",
+      "rows": 56,
+      "total_quantity": 458.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "SOANIERANA",
+      "store_id": "store-pos-05",
+      "store_code": "POS-05",
+      "store_name": "Soanierana",
+      "rows": 59,
+      "total_quantity": 389.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "TALATAMATY",
+      "store_id": "store-rev-04",
+      "store_code": "REV-04",
+      "store_name": "Talatamaty",
+      "rows": 59,
+      "total_quantity": 396.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "MAHAMASINA",
+      "store_id": "store-pos-04",
+      "store_code": "POS-04",
+      "store_name": "Mahamasina",
+      "rows": 95,
+      "total_quantity": 981.0,
+      "rows_with_issues": 26
+    },
+    {
+      "sheet": "ANKADINDRATOMBO",
+      "store_id": "store-rev-06",
+      "store_code": "REV-06",
+      "store_name": "Ankadidratombo",
+      "rows": 65,
+      "total_quantity": 347.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "AMPANDRANA",
+      "store_id": "store-pos-12",
+      "store_code": "POS-12",
+      "store_name": "Ampandrana",
+      "rows": 59,
+      "total_quantity": 413.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "ANDRANOMENA",
+      "store_id": "store-pos-09",
+      "store_code": "POS-09",
+      "store_name": "Andranomena",
+      "rows": 60,
+      "total_quantity": 398.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "ANTSIRABE",
+      "store_id": "store-pos-13",
+      "store_code": "POS-13",
+      "store_name": "Antsirabe",
+      "rows": 63,
+      "total_quantity": 456.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "ANALAKELY",
+      "store_id": "store-rev-02",
+      "store_code": "REV-02",
+      "store_name": "Analakely 401",
+      "rows": 58,
+      "total_quantity": 474.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "Mr Riana Commercial",
+      "store_id": "MAG-029",
+      "store_code": "POS-18",
+      "store_name": "Mr Riana Commercial",
+      "rows": 17,
+      "total_quantity": 34.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "Mr Ismael Commercial",
+      "store_id": "store-pos-17",
+      "store_code": "POS-17",
+      "store_name": "Mr Ismael Commercial",
+      "rows": 21,
+      "total_quantity": 36.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "Mr Jean Yves Antsirabe",
+      "store_id": "store-rev-08",
+      "store_code": "REV-08",
+      "store_name": "Mr Jean Yves Antsirabe",
+      "rows": 44,
+      "total_quantity": 281.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "IMERITSIATOSIKA",
+      "store_id": "store-rev-05",
+      "store_code": "REV-05",
+      "store_name": "Imeritsiatosika",
+      "rows": 55,
+      "total_quantity": 270.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "MAHAJANGA",
+      "store_id": "store-pos-01",
+      "store_code": "REV-09",
+      "store_name": "Mahajanga",
+      "rows": 0,
+      "total_quantity": 0.0,
+      "rows_with_issues": 0
+    },
+    {
+      "sheet": "DEPOT CENTRAL",
+      "store_id": "store-central-01",
+      "store_code": "DEP-01",
+      "store_name": "Mahamasina",
+      "rows": 62,
+      "total_quantity": 4422.0,
+      "rows_with_issues": 0
+    }
+  ],
+  "unmatched_sheets": [],
+  "unmatched_articles": [],
+  "provisional_articles": [
+    {
+      "id": "article-resale-provisional-nim100",
+      "code": "TMP001",
+      "name": "NIM 100",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 16,
+          "quantity": 3.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-paracetamol500mg",
+      "code": "TMP002",
+      "name": "PARACETAMOL 500MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 91,
+          "quantity": 12.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-opral20mg",
+      "code": "TMP003",
+      "name": "OPRAL 20MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 92,
+          "quantity": 5.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-amoxiciline500mg",
+      "code": "TMP004",
+      "name": "AMOXICILINE 500MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 93,
+          "quantity": 10.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-ciprofloxacine500mg",
+      "code": "TMP005",
+      "name": "CIPROFLOXACINE 500MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 94,
+          "quantity": 9.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-metronis500mg",
+      "code": "TMP006",
+      "name": "METRONIS 500MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 95,
+          "quantity": 10.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-predisolone5mg",
+      "code": "TMP007",
+      "name": "PREDISOLONE 5MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 96,
+          "quantity": 5.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-vitaminec500mg",
+      "code": "TMP008",
+      "name": "VITAMINE C 500MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 97,
+          "quantity": 14.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-paracetamol1g",
+      "code": "TMP009",
+      "name": "PARACETAMOL 1G",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 98,
+          "quantity": 6.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-vitaminecinjection500mg",
+      "code": "TMP010",
+      "name": "VITAMINE C INJECTION 500MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 99,
+          "quantity": 49.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-ampibact1ginjection",
+      "code": "TMP011",
+      "name": "AMPIBACT 1G INJECTION",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 100,
+          "quantity": 46.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-dexainjection4mg",
+      "code": "TMP012",
+      "name": "DEXA INJECTION 4MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 101,
+          "quantity": 93.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-becilaninjection250mg",
+      "code": "TMP013",
+      "name": "BECILAN INJECTION 250MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 102,
+          "quantity": 5.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-complexbinjection",
+      "code": "TMP014",
+      "name": "COMPLEX B INJECTION",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 103,
+          "quantity": 7.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-dicloinjection75mg",
+      "code": "TMP015",
+      "name": "DICLO INJECTION 75MG",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 104,
+          "quantity": 34.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-calciuminjection10",
+      "code": "TMP016",
+      "name": "CALCIUM INJECTION 10%",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 105,
+          "quantity": 9.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-chloruredesodium09",
+      "code": "TMP017",
+      "name": "CHLORURE DE SODIUM 0,9%",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 106,
+          "quantity": 3.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-glucose5",
+      "code": "TMP018",
+      "name": "GLUCOSE 5%",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 107,
+          "quantity": 2.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-lasuna",
+      "code": "TMP019",
+      "name": "LASUNA",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 108,
+          "quantity": 3.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-confido",
+      "code": "TMP020",
+      "name": "CONFIDO",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 111,
+          "quantity": 1.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-seringue5cc",
+      "code": "TMP021",
+      "name": "SERINGUE 5CC",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 112,
+          "quantity": 9.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-seringue10cc",
+      "code": "TMP022",
+      "name": "SERINGUE10CC",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 113,
+          "quantity": 1.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-seringue20cc",
+      "code": "TMP023",
+      "name": "SERINGUE 20CC",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 114,
+          "quantity": 8.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-microperfuseurbleu",
+      "code": "TMP024",
+      "name": "MICROPERFUSEUR BLEU",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 115,
+          "quantity": 9.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-perfusseur",
+      "code": "TMP025",
+      "name": "PERFUSSEUR",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 116,
+          "quantity": 4.0
+        }
+      ]
+    },
+    {
+      "id": "article-resale-provisional-coton200g",
+      "code": "TMP026",
+      "name": "COTON 200G",
+      "category_id": "cat-a-classer",
+      "article_type": "RESALE",
+      "unit": "Piece",
+      "prix_achat": 0,
+      "prix_normal": 0,
+      "prix_revendeur": 0,
+      "reason": "Fiche créée provisoirement avec les valeurs autorisées; prix réels à compléter avant vente.",
+      "occurrences": [
+        {
+          "sheet": "MAHAMASINA",
+          "row": 117,
+          "quantity": 1.0
+        }
+      ]
+    }
+  ],
+  "invalid_rows": [],
+  "empty_quantity_row_count": 1586,
+  "empty_quantity_rows_by_sheet": {
+    "IMERITSIATOSIKA": 60,
+    "REX": 52,
+    "ANTANINANDRO": 55,
+    "Mr Ismael Commercial": 94,
+    "MAHAJANGA": 115,
+    "ANKAZOMANGA": 62,
+    "Mr Jean Yves Antsirabe": 71,
+    "TALATAMATY": 56,
+    "Meteo Ampasapito": 50,
+    "ANTSAHABE": 57,
+    "Maman Shinning Tamatave": 59,
+    "ANALAMAHITSY": 52,
+    "MAHAMASINA": 20,
+    "AMPANDRANA": 56,
+    "DEPOT CENTRAL": 53,
+    "ANTSIRABE": 54,
+    "Mr Riana Commercial": 100,
+    "ANDRANOMENA": 55,
+    "ANOSY": 59,
+    "Akoor Digue": 73,
+    "MORAMANGA": 36,
+    "SOANIERANA": 56,
+    "ANALAKELY": 57,
+    "IVATO": 61,
+    "TSARALALANA": 73,
+    "ANKADINDRATOMBO": 50
+  },
+  "skipped_non_stock_labels": [
+    {
+      "sheet": "MORAMANGA",
+      "row": 18,
+      "label": "ANALYSE"
+    },
+    {
+      "sheet": "MORAMANGA",
+      "row": 19,
+      "label": "ANALYSE"
+    },
+    {
+      "sheet": "MORAMANGA",
+      "row": 40,
+      "label": "CONSULTATION"
+    },
+    {
+      "sheet": "MORAMANGA",
+      "row": 44,
+      "label": "CONTRÔLE"
+    },
+    {
+      "sheet": "MORAMANGA",
+      "row": 85,
+      "label": "MASSAGE PARTIEL"
+    },
+    {
+      "sheet": "MORAMANGA",
+      "row": 86,
+      "label": "MASSAGE RELAXANT"
+    },
+    {
+      "sheet": "MORAMANGA",
+      "row": 93,
+      "label": "AUTRES"
+    },
+    {
+      "sheet": "MORAMANGA",
+      "row": 105,
+      "label": "CHARBON"
+    }
+  ],
+  "record_count": 1412,
+  "positive_quantity_count": 1410,
+  "ready_to_apply": true
+}

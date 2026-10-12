@@ -35,6 +35,16 @@ Aucune donnée n'a été envoyée à Firebase. L'application dispose maintenant 
 
 Le classeur magasins contient une liste complète et des feuilles par type qui reprennent les mêmes magasins. La comparaison des identifiants et noms avec la sauvegarde confirme les 27 magasins ; ces feuilles ne sont pas additionnées.
 
+## Rapprochement du catalogue, des magasins et des stocks récents
+
+`prepare-initial-stocks.ps1` rapproche `magasins-2026-10-12.json`, `catalogue-2026-10-12.json` et `POINT0426.xlsx`. Dans chaque onglet magasin, la colonne `A` contient l'article et la colonne `B` sa quantité récente. Les cellules `B` vides ne sont pas transformées en zéros. Pour régénérer les fichiers :
+
+`powershell -ExecutionPolicy Bypass -File imports/2026-09-30/prepare-initial-stocks.ps1`
+
+Le script produit `magasins-importables-2026-10-12.json`, `catalogue-importable-2026-10-12.json`, `stocks-initiaux-2026-10-12.json` et le détail `rapprochement-stocks-initiaux-2026-10-12.json`. Le magasin en doublon `MAG-030` / `POS-19` (« Mr Ismael Commercial ») est exclu au profit de `store-pos-17` / `POS-17`, conformément au rapprochement précédent. Le magasin fourni pour l'onglet `TSARALALANA` est ajouté comme `MAG-042` / `POS-20`. Le catalogue de la source contient 151 articles et 29 catégories, sans doublons d'ID, code ou nom/type.
+
+Le stock comprend aussi les 26 libellés de l'onglet `MAHAMASINA` absents des catalogues : après validation, ils sont créés comme articles provisoires `RESALE`, catégorie `À classer`, unité `Piece`, code `TMPnnn` et prix à 0. Ils sont liés à leurs quantités dans l'import initial. Compléter leurs prix réels avant toute vente et classer les articles avant utilisation opérationnelle. Le fichier de rapprochement liste chaque article provisoire et ses lignes source. Vérifier les totaux par magasin et les stocks déjà présents dans l'application. Le script ne transmet aucune donnée à Firebase.
+
 ## Traçabilité
 
 `source-excel.json` contient les valeurs extraites des deux classeurs. `convert.mjs` permet de régénérer les fichiers depuis cette extraction avec `node imports/2026-09-30/convert.mjs`. Pour régénérer uniquement les magasins, utilisez `node imports/2026-09-30/convert.mjs --stores-only`; pour régénérer uniquement le catalogue importable dédoublonné, utilisez `--catalogue-only`. Pour dédoublonner le catalogue complet du 1er octobre et remapper son brouillon de stocks, utilisez `--normalize-current-catalogue`. Le script vérifie l'unicité des IDs et codes et les références entre données. La commande complète remplace les fichiers générés et leurs dates : ne pas la relancer après des corrections manuelles sans sauvegarder celles-ci.
@@ -46,6 +56,3 @@ Le classeur magasins contient une liste complète et des feuilles par type qui r
 Commande : `powershell -ExecutionPolicy Bypass -File imports/2026-09-30/stock-report.ps1 [-Date 2026-10-06]`.
 
 Le fichier suit les colonnes de l'export de stock de l'application, mais n'a pas été importé. Rien n'a été envoyé à Firebase.
-
-
-
