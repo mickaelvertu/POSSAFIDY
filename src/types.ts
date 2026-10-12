@@ -484,6 +484,7 @@ export interface CreditCustomer {
   created_at: number;
   updated_at: number;
   last_credit_sale_id?: string;
+  last_cancelled_credit_sale_id?: string;
 }
 
 export interface CreditPayment {

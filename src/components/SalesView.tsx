@@ -655,6 +655,24 @@ export default function SalesView({
                           </button>
                         )}
 
+                        {currentUser.roleId === "SUPER_ADMIN" && ["DRAFT", "CHECKING", "VERIFIED", "APPROVED", "VALIDATED"].includes(sale.status) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const stockWarning = sale.status === "VALIDATED"
+                                ? "\nLe stock vendu sera remis en stock et le solde crédit restant sera libéré."
+                                : "";
+                              if (window.confirm(`Annuler la vente ${sale.sale_number} ?${stockWarning}`)) {
+                                onCancelSale(sale.id);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 rounded border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50"
+                            title="Annuler la vente (super administrateur)"
+                          >
+                            <X className="h-3 w-3" /> Annuler
+                          </button>
+                        )}
+
                         {/* Print Receipt */}
                         <button
                           type="button"

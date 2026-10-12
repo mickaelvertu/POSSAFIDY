@@ -8,7 +8,7 @@ import {
   where
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
+import { AppRoleId, AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
 
 const SALES = "sales";
 const PRODUCTIONS = "productions";
@@ -259,37 +259,112 @@ export async function advanceSale(
 export async function cancelSale(
   sale: Sale,
   userId: string,
-  userName: string
-): Promise<{ sale: Sale; auditLog: AuditLog }> {
-  if (["VALIDATED", "CANCELLED", "REFUNDED"].includes(sale.status)) {
-    throw new Error("Une vente validée doit passer par une procédure de remboursement.");
+  userName: string,
+  roleId: AppRoleId,
+  knownStocks: StoreStock[]
+): Promise<{ sale: Sale; stocks: StoreStock[]; movements: StockMovement[]; releasedCredit: number; auditLog: AuditLog }> {
+  if (roleId !== "SUPER_ADMIN") {
+    throw new Error("L'annulation des ventes est réservée aux super administrateurs.");
   }
-  const updated: Sale = { ...sale, status: "CANCELLED" };
-  const entry = audit("SALE_CANCELLED", "SALE", sale.id, userId, userName, sale.store_id, sale, updated);
+  if (["CANCELLED", "REFUNDED"].includes(sale.status)) {
+    throw new Error("Cette vente est déjà annulée ou remboursée.");
+  }
+  if (!["DRAFT", "CHECKING", "VERIFIED", "APPROVED", "VALIDATED"].includes(sale.status)) {
+    throw new Error("Le statut de cette vente ne permet pas son annulation.");
+  }
+  const updatedStocks: StoreStock[] = [];
+  const movements: StockMovement[] = [];
+  let updatedSale: Sale = sale;
+  let entry: AuditLog;
+  let releasedCredit = 0;
+  const timestamp = Date.now();
   await runTransaction(db, async transaction => {
+    updatedStocks.length = 0;
+    movements.length = 0;
     const saleRef = doc(db, SALES, sale.id);
     const snapshot = await transaction.get(saleRef);
     if (!snapshot.exists() || (snapshot.data() as Sale).status !== sale.status) {
       throw new Error("Le statut de la vente a changé. Rechargez les données.");
     }
-    const customerRef = sale.credit_customer_id ? doc(db, "creditCustomers", sale.credit_customer_id) : null;
-    const customerSnapshot = customerRef ? await transaction.get(customerRef) : null;
-    const remainingCredit = sale.credit_customer_id ? Math.max(0, sale.total - sale.amount_paid) : 0;
+    const currentSale = snapshot.data() as Sale;
+    if (currentSale.status === "VALIDATED" && sale.status !== "VALIDATED") {
+      throw new Error("Seule une vente validée peut être annulée avec restauration du stock.");
+    }
+    updatedSale = { ...currentSale, status: "CANCELLED" };
+    entry = audit("SALE_CANCELLED", "SALE", sale.id, userId, userName, currentSale.store_id, currentSale, updatedSale);
+    const customerRef = currentSale.credit_customer_id ? doc(db, "creditCustomers", currentSale.credit_customer_id) : null;
+    const quantities = new Map<string, number>();
+    if (currentSale.status === "VALIDATED") {
+      currentSale.lines
+        .filter(line => line.line_type !== "SERVICE")
+        .forEach(line => quantities.set(line.article_id, (quantities.get(line.article_id) || 0) + line.quantity));
+    }
+    const stockTargets = [...quantities].map(([articleId, quantity]) => ({
+      articleId,
+      quantity,
+      ...stockReference(knownStocks, currentSale.store_id, articleId)
+    }));
+    const [stockSnapshots, customerSnapshot] = await Promise.all([
+      Promise.all(stockTargets.map(target => transaction.get(target.reference))),
+      customerRef ? transaction.get(customerRef) : Promise.resolve(null)
+    ]);
+    const remainingCredit = currentSale.credit_customer_id ? Math.max(0, currentSale.total - currentSale.amount_paid) : 0;
+    releasedCredit = remainingCredit;
+    if (customerRef && !customerSnapshot?.exists()) {
+      throw new Error("Le compte crédit associé à cette vente est introuvable.");
+    }
     if (customerRef && customerSnapshot?.exists() && remainingCredit > 0) {
-      const customer = customerSnapshot.data() as { outstanding_balance: number; updated_at: number };
+      const customer = customerSnapshot.data() as CreditCustomer;
       if (customer.outstanding_balance < remainingCredit) {
         throw new Error("Le solde crédit du revendeur est incohérent. Contactez un administrateur.");
       }
       transaction.set(customerRef, clean({
         ...customer,
         outstanding_balance: customer.outstanding_balance - remainingCredit,
-        updated_at: Date.now()
+        last_cancelled_credit_sale_id: sale.id,
+        updated_at: timestamp
       }));
     }
-    transaction.set(saleRef, clean(updated));
+    stockTargets.forEach((target, index) => {
+      const current = stockSnapshots[index].exists()
+        ? stockSnapshots[index].data() as StoreStock
+        : target.fallback;
+      const before = current?.quantity || 0;
+      const after = before + target.quantity;
+      const stock: StoreStock = {
+        id: current?.id || target.reference.id,
+        store_id: currentSale.store_id,
+        article_id: target.articleId,
+        quantity: after,
+        ...(current?.quarantine_quantity !== undefined ? { quarantine_quantity: current.quarantine_quantity } : {}),
+        reserved_quantity: current?.reserved_quantity || 0,
+        updated_at: timestamp
+      };
+      const movement: StockMovement = {
+        id: `movement-${sale.id}-${target.articleId}-cancel`,
+        store_id: sale.store_id,
+        article_id: target.articleId,
+        movement_type: "RETURN",
+        quantity: target.quantity,
+        reference_type: "SALE_CANCELLATION",
+        reference_id: sale.id,
+        reference_number: currentSale.sale_number,
+        before_quantity: before,
+        after_quantity: after,
+        created_by: userId,
+        created_by_name: userName,
+        notes: `Stock restauré après annulation de la vente ${currentSale.sale_number}`,
+        created_at: timestamp
+      };
+      updatedStocks.push(stock);
+      movements.push(movement);
+      transaction.set(target.reference, clean(stock));
+      transaction.set(doc(db, MOVEMENTS, movement.id), clean(movement));
+    });
+    transaction.set(saleRef, clean(updatedSale));
     transaction.set(doc(db, AUDIT_LOGS, entry.id), entry);
   });
-  return { sale: updated, auditLog: entry };
+  return { sale: updatedSale, stocks: updatedStocks, movements, releasedCredit, auditLog: entry! };
 }
 
 function stockReference(stocks: StoreStock[], storeId: string, articleId: string) {

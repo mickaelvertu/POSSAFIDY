@@ -871,15 +871,26 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCancelSale = async (saleId: string) => {
+    if (currentAppUser?.roleId !== "SUPER_ADMIN") {
+      alert("L'annulation des ventes est réservée aux super administrateurs.");
+      return;
+    }
     const sale = sales.find(item => item.id === saleId);
     if (!sale || !currentAppUser) return;
     try {
-      const result = await cancelSale(sale, currentAppUser.uid, currentAppUser.displayName);
+      const result = await cancelSale(sale, currentAppUser.uid, currentAppUser.displayName, currentAppUser.roleId, stocks);
       setSales(current => current.map(item => item.id === saleId ? result.sale : item));
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
       if (sale.credit_customer_id) {
-        const amountReleased = Math.max(0, sale.total - sale.amount_paid);
         setCreditCustomers(current => current.map(customer => customer.id === sale.credit_customer_id
-          ? { ...customer, outstanding_balance: Math.max(0, customer.outstanding_balance - amountReleased), updated_at: Date.now() }
+          ? {
+              ...customer,
+              outstanding_balance: Math.max(0, customer.outstanding_balance - result.releasedCredit),
+              ...(result.releasedCredit > 0 ? { last_cancelled_credit_sale_id: sale.id } : {}),
+              updated_at: Date.now()
+            }
           : customer));
       }
       setAuditLogs(current => [result.auditLog, ...current]);

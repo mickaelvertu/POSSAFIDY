@@ -462,9 +462,13 @@ service cloud.firestore {
         request.resource.data.amount_paid == resource.data.amount_paid &&
         request.resource.data.payment_method == resource.data.payment_method &&
         (
-          (resource.data.status == 'DRAFT' && request.resource.data.status in ['CHECKING', 'CANCELLED']) ||
-          (resource.data.status == 'CHECKING' && request.resource.data.status in ['VERIFIED', 'CANCELLED']) ||
-          (resource.data.status == 'VERIFIED' && request.resource.data.status == 'CANCELLED') ||
+          (resource.data.status == 'DRAFT' && request.resource.data.status == 'CHECKING') ||
+          (resource.data.status == 'DRAFT' && request.resource.data.status == 'CANCELLED' && isSuperAdmin()) ||
+          (resource.data.status == 'CHECKING' && request.resource.data.status == 'VERIFIED') ||
+          (resource.data.status == 'CHECKING' && request.resource.data.status == 'CANCELLED' && isSuperAdmin()) ||
+          (resource.data.status == 'VERIFIED' && request.resource.data.status == 'CANCELLED' && isSuperAdmin()) ||
+          (resource.data.status == 'VALIDATED' && request.resource.data.status == 'CANCELLED' && isSuperAdmin() &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])) ||
           (resource.data.status == 'VERIFIED' && request.resource.data.status == 'VALIDATED' && resource.data.customer_type != 'REVENDEUR') ||
           (
             resource.data.status == 'VERIFIED' && request.resource.data.status == 'APPROVED' &&
@@ -474,7 +478,7 @@ service cloud.firestore {
           ) ||
           (
             resource.data.status == 'APPROVED' && request.resource.data.status == 'CANCELLED' &&
-            (isAdmin() || hasStoreAccess(resource.data.store_id))
+            isSuperAdmin()
           ) ||
           (
             resource.data.status == 'APPROVED' && request.resource.data.status == 'VALIDATED' &&
@@ -669,6 +673,19 @@ service cloud.firestore {
           request.resource.data.outstanding_balance - resource.data.outstanding_balance
       ) || (
         isSuperAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'last_cancelled_credit_sale_id', 'updated_at']) &&
+        request.resource.data.outstanding_balance >= 0 &&
+        request.resource.data.last_cancelled_credit_sale_id is string &&
+        exists(/databases/$(database)/documents/sales/$(request.resource.data.last_cancelled_credit_sale_id)) &&
+        existsAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_cancelled_credit_sale_id)) &&
+        get(/databases/$(database)/documents/sales/$(request.resource.data.last_cancelled_credit_sale_id)).data.credit_customer_id == customerId &&
+        get(/databases/$(database)/documents/sales/$(request.resource.data.last_cancelled_credit_sale_id)).data.status == 'VALIDATED' &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_cancelled_credit_sale_id)).data.status == 'CANCELLED' &&
+        resource.data.outstanding_balance - request.resource.data.outstanding_balance ==
+          get(/databases/$(database)/documents/sales/$(request.resource.data.last_cancelled_credit_sale_id)).data.total -
+          get(/databases/$(database)/documents/sales/$(request.resource.data.last_cancelled_credit_sale_id)).data.amount_paid
+      ) || (
+        isSuperAdmin() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'updated_at']) &&
         request.resource.data.outstanding_balance >= 0 &&
         resource.data.last_credit_sale_id is string &&
@@ -779,7 +796,8 @@ service cloud.firestore {
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
           hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
           hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-          hasPermission('production.create') || hasPermission('production.validate')
+          hasPermission('production.create') || hasPermission('production.validate') ||
+          isSuperAdmin()
         );
       allow update: if hasStoreAccess(resource.data.store_id) &&
         request.resource.data.store_id == resource.data.store_id &&
@@ -787,7 +805,8 @@ service cloud.firestore {
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
           hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
           hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-          hasPermission('production.create') || hasPermission('production.validate')
+          hasPermission('production.create') || hasPermission('production.validate') ||
+          isSuperAdmin()
         );
       allow delete: if isAdmin();
     }
@@ -848,9 +867,9 @@ service cloud.firestore {
         request.resource.data.created_at == resource.data.created_at &&
         (
           (
-          hasPermission('transfers.create') &&
           resource.data.status == 'DRAFT' &&
           request.resource.data.status == 'DRAFT' &&
+          hasPermission('transfers.create') &&
           resource.data.requested_by == request.auth.uid &&
           request.resource.data.requested_by == resource.data.requested_by &&
           request.resource.data.requested_by_name == resource.data.requested_by_name &&
@@ -868,20 +887,20 @@ service cloud.firestore {
         ) ||
         (
           (
-            isAdmin() &&
             resource.data.status == 'DRAFT' &&
-            resource.data.requested_by != request.auth.uid &&
             request.resource.data.status == 'APPROVED' &&
+            isAdmin() &&
+            resource.data.requested_by != request.auth.uid &&
             request.resource.data.approved_by == request.auth.uid &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'status', 'approved_by', 'approved_by_name', 'approved_at', 'updated_at'
             ])
           ) ||
           (
-            isAdmin() &&
             resource.data.status == 'DRAFT' &&
-            resource.data.requested_by != request.auth.uid &&
             request.resource.data.status == 'REJECTED' &&
+            isAdmin() &&
+            resource.data.requested_by != request.auth.uid &&
             request.resource.data.rejected_by == request.auth.uid &&
             request.resource.data.rejection_note is string &&
             request.resource.data.rejection_note.size() > 0 &&
@@ -890,22 +909,22 @@ service cloud.firestore {
             ])
           ) ||
           (
-            hasPermission('transfers.ship') &&
-            hasStoreAccess(resource.data.source_store_id) &&
             resource.data.status == 'APPROVED' &&
             request.resource.data.status == 'IN_TRANSIT' &&
+            hasPermission('transfers.ship') &&
+            hasStoreAccess(resource.data.source_store_id) &&
             request.resource.data.shipped_by == request.auth.uid &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'status', 'shipped_by', 'shipped_by_name', 'shipped_at', 'updated_at'
             ])
           ) ||
           (
+            resource.data.status == 'IN_TRANSIT' &&
+            request.resource.data.status == 'RECEIVED' &&
             hasPermission('transfers.receive') &&
             hasStoreAccess(resource.data.destination_store_id) &&
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
             get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
-            resource.data.status == 'IN_TRANSIT' &&
-            request.resource.data.status == 'RECEIVED' &&
             request.resource.data.received_by == request.auth.uid &&
             request.auth.uid != resource.data.requested_by &&
             request.auth.uid != resource.data.approved_by &&
@@ -917,12 +936,12 @@ service cloud.firestore {
             ])
           ) ||
           (
+            resource.data.status == 'RECEIVED' &&
+            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
             hasPermission('transfers.receive') &&
             hasStoreAccess(resource.data.destination_store_id) &&
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
             get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
-            resource.data.status == 'RECEIVED' &&
-            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
             resource.data.received_by is string &&
             request.resource.data.received_by == resource.data.received_by &&
             request.auth.uid != resource.data.received_by &&
@@ -944,12 +963,12 @@ service cloud.firestore {
             ])
           ) ||
           (
+            resource.data.status == 'IN_TRANSIT' &&
+            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
             hasPermission('transfers.receive') &&
             hasStoreAccess(resource.data.destination_store_id) &&
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
             get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type != 'CENTRAL_WAREHOUSE' &&
-            resource.data.status == 'IN_TRANSIT' &&
-            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
             request.resource.data.received_by == request.auth.uid &&
             request.resource.data.validated_by == request.auth.uid &&
             request.auth.uid != resource.data.requested_by &&
@@ -971,13 +990,13 @@ service cloud.firestore {
             ])
           ) ||
           (
+            resource.data.type == 'DIRECT_DEPOSIT' &&
+            resource.data.status == 'APPROVED' &&
+            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
             hasPermission('transfers.receive') &&
             hasStoreAccess(resource.data.destination_store_id) &&
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
             get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
-            resource.data.type == 'DIRECT_DEPOSIT' &&
-            resource.data.status == 'APPROVED' &&
-            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
             request.resource.data.received_by == request.auth.uid &&
             request.resource.data.validated_by == request.auth.uid &&
             request.auth.uid != resource.data.approved_by &&
@@ -990,18 +1009,18 @@ service cloud.firestore {
             ])
           ) ||
           (
-            (hasPermission('production.create') || hasPermission('production.validate')) &&
-            hasStoreAccess(resource.data.destination_store_id) &&
             resource.data.type == 'RECYCLING' &&
             resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
             request.resource.data.status == resource.data.status &&
+            (hasPermission('production.create') || hasPermission('production.validate')) &&
+            hasStoreAccess(resource.data.destination_store_id) &&
             request.resource.data.lines is list &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lines', 'updated_at'])
           ) ||
           (
-            isAdmin() &&
             resource.data.status == 'DISCREPANCY' &&
             request.resource.data.status == 'DISCREPANCY' &&
+            isAdmin() &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'discrepancy_resolved', 'discrepancy_resolution_note', 'updated_at'
             ])
