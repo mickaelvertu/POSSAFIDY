@@ -1066,7 +1066,8 @@ export default function AuthenticatedSessionView() {
       return;
     }
     try {
-      const auditLog = createAuditLog(currentAppUser, "TRANSFER_DRAFT_DELETED", "TRANSFER", transfer.id, transfer, undefined, transfer.source_store_id);
+      const action = transfer.status === "APPROVED" ? "TRANSFER_APPROVED_DELETED" : "TRANSFER_DRAFT_DELETED";
+      const auditLog = createAuditLog(currentAppUser, action, "TRANSFER", transfer.id, transfer, undefined, transfer.source_store_id);
       await deleteDraftTransfer(transfer, auditLog);
       setTransfers(current => current.filter(item => item.id !== transfer.id));
       setAuditLogs(current => [auditLog, ...current]);
@@ -2481,7 +2482,7 @@ export default function AuthenticatedSessionView() {
               <ReportViewer
                 reportType={reportRequest.type}
                 filters={reportRequest.filters}
-                stores={accessibleStores}
+                stores={inventoryStores}
                 categories={categories}
                 articles={articles}
                 stocks={stocks}
@@ -2511,7 +2512,7 @@ export default function AuthenticatedSessionView() {
             </button>
             <AuditView
               auditLogs={visibleAuditLogs}
-              stores={accessibleStores}
+              stores={inventoryStores}
               users={managedUsers}
               canViewConnectionStatus={canManageStores}
             />

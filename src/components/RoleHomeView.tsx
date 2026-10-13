@@ -80,6 +80,7 @@ const auditActionLabels: Record<string, string> = {
   TRANSFER_CREATED: "Transfert créé",
   TRANSFER_DRAFT_UPDATED: "Brouillon de transfert modifié",
   TRANSFER_DRAFT_DELETED: "Brouillon de transfert supprimé",
+  TRANSFER_APPROVED_DELETED: "Transfert approuvé supprimé (non expédié)",
   TRANSFER_APPROVED: "Transfert approuvé",
   TRANSFER_REJECTED: "Transfert refusé",
   TRANSFER_SHIPPED: "Transfert expédié",

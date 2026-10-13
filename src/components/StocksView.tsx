@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import type { ChangeEvent } from "react";
 import { 
   Store, 
@@ -65,6 +65,12 @@ export default function StocksView({
   const [selectedType, setSelectedType] = useState<"ALL" | ArticleTypeCode>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [onlyLowStock, setOnlyLowStock] = useState(false);
+  const STOCK_PAGE_SIZE = 100;
+  const [visibleCount, setVisibleCount] = useState(STOCK_PAGE_SIZE);
+
+  useEffect(() => {
+    setVisibleCount(STOCK_PAGE_SIZE);
+  }, [selectedStoreId, selectedCategoryId, selectedType, searchQuery, onlyLowStock]);
 
   // Adjustment Modal
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
@@ -495,7 +501,7 @@ export default function StocksView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredItems.slice(0, 100).map((item, idx) => {
+              {filteredItems.slice(0, visibleCount).map((item, idx) => {
                 const totalVal = item.quantity * item.article.prix_normal;
                 return (
                   <tr key={idx} className="hover:bg-slate-50">
@@ -563,6 +569,19 @@ export default function StocksView({
               })}
             </tbody>
           </table>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          <span>{Math.min(visibleCount, filteredItems.length)} ligne(s) affichée(s) sur {filteredItems.length}</span>
+          {visibleCount < filteredItems.length && (
+            <span className="flex gap-2">
+              <button type="button" onClick={() => setVisibleCount(count => count + STOCK_PAGE_SIZE)} className="rounded-lg border border-slate-300 bg-white px-3 py-1 font-bold text-slate-700 hover:bg-slate-100">
+                Afficher {Math.min(STOCK_PAGE_SIZE, filteredItems.length - visibleCount)} de plus
+              </button>
+              <button type="button" onClick={() => setVisibleCount(filteredItems.length)} className="rounded-lg bg-slate-900 px-3 py-1 font-bold text-white hover:bg-slate-800">
+                Tout afficher
+              </button>
+            </span>
+          )}
         </div>
       </div>
 

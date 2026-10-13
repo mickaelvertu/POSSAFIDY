@@ -26,6 +26,10 @@
   body:has(.printable-document) *:has(.printable-document) > :not(:has(.printable-document)):not(.printable-document) {
     display: none !important;
   }
+  /* Documents rendered in a portal sit beside #root, so hide the other body children. */
+  body:has(.printable-document) > :not(:has(.printable-document)):not(.printable-document) {
+    display: none !important;
+  }
   .printable-document {
     overflow: visible !important;
     padding: 0 !important;

@@ -4,9 +4,17 @@ import { AuditLog, Expense, SalaryAdvance } from "../types";
 
 const EXPENSES_COLLECTION = "expenses";
 
+// Firestore rejects undefined at any depth (including nested audit snapshots), so strip it recursively.
 function omitUndefined<T>(value: T): T {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
-  return Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)) as T;
+  if (Array.isArray(value)) return value.map(omitUndefined) as T;
+  if (!value || typeof value !== "object") return value;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, fieldValue]) => fieldValue !== undefined)
+      .map(([key, fieldValue]) => [key, omitUndefined(fieldValue)])
+  ) as T;
 }
 
 export async function loadExpenses(storeIds?: string[], userId?: string): Promise<Expense[]> {

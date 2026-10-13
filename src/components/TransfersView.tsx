@@ -899,16 +899,17 @@ export default function TransfersView({
                         Modifier
                       </button>
                     )}
-                    {t.status === "DRAFT" && currentUser.roleId === "SUPER_ADMIN" && (
+                    {(t.status === "DRAFT" || (t.status === "APPROVED" && !t.purchase_id)) && currentUser.roleId === "SUPER_ADMIN" && (
                       <button
                         type="button"
                         onClick={() => {
-                          if (window.confirm(`Supprimer le brouillon ${t.transfer_number} ?`)) {
+                          const label = t.status === "DRAFT" ? "le brouillon" : "le transfert approuvé (non expédié)";
+                          if (window.confirm(`Supprimer ${label} ${t.transfer_number} ?`)) {
                             void onDeleteTransfer(t);
                           }
                         }}
                         className="flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50"
-                        title="Supprimer le brouillon (super administrateur)"
+                        title="Supprimer le transfert non expédié (super administrateur)"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Supprimer

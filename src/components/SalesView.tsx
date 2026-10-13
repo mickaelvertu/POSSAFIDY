@@ -30,8 +30,10 @@ import {
   FileCheck,
   Package,
   WalletCards,
-  Pencil
+  Pencil,
+  Truck
 } from "lucide-react";
+import SaleDeliveryNote from "./SaleDeliveryNote";
 
 interface SalesViewProps {
   sales: Sale[];
@@ -71,6 +73,7 @@ export default function SalesView({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
+  const [deliverySale, setDeliverySale] = useState<Sale | null>(null);
   const [detailSale, setDetailSale] = useState<Sale | null>(null);
 
   // New Sale Form
@@ -682,6 +685,17 @@ export default function SalesView({
                         >
                           <Printer className="h-3.5 w-3.5" />
                         </button>
+
+                        {sale.customer_type === "REVENDEUR" && (
+                          <button
+                            type="button"
+                            onClick={() => setDeliverySale(sale)}
+                            title="Bon de livraison"
+                            className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-200 cursor-pointer"
+                          >
+                            <Truck className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1070,10 +1084,31 @@ export default function SalesView({
                 <Printer className="h-3.5 w-3.5" />
                 Imprimer le Reçu
               </button>
+              {receiptSale.customer_type === "REVENDEUR" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeliverySale(receiptSale);
+                    setReceiptSale(null);
+                  }}
+                  className="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Truck className="h-3.5 w-3.5" />
+                  Bon de livraison
+                </button>
+              )}
             </div>
 
           </div>
         </div>
+      )}
+
+      {deliverySale && (
+        <SaleDeliveryNote
+          sale={sales.find(item => item.id === deliverySale.id) || deliverySale}
+          stores={stores}
+          onClose={() => setDeliverySale(null)}
+        />
       )}
 
     </div>

@@ -873,7 +873,14 @@ service cloud.firestore {
           resource.data.requested_by == request.auth.uid &&
           request.resource.data.requested_by == resource.data.requested_by &&
           request.resource.data.requested_by_name == resource.data.requested_by_name &&
-          request.resource.data.source_store_id != request.resource.data.destination_store_id &&
+          (
+            request.resource.data.source_store_id != request.resource.data.destination_store_id ||
+            (
+              resource.data.type == 'DIRECT_DEPOSIT' &&
+              request.resource.data.type == 'DIRECT_DEPOSIT' &&
+              get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE'
+            )
+          ) &&
           hasStoreAccess(request.resource.data.source_store_id) &&
           exists(/databases/$(database)/documents/stores/$(request.resource.data.source_store_id)) &&
           get(/databases/$(database)/documents/stores/$(request.resource.data.source_store_id)).data.is_active == true &&
@@ -1027,7 +1034,10 @@ service cloud.firestore {
           )
         )
       );
-      allow delete: if isSuperAdmin() && resource.data.status == 'DRAFT';
+      allow delete: if isSuperAdmin() && (
+        resource.data.status == 'DRAFT' ||
+        (resource.data.status == 'APPROVED' && !('purchase_id' in resource.data))
+      );
     }
   }
 }

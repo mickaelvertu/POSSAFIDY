@@ -116,8 +116,10 @@ export async function deleteDraftTransfer(transfer: StockTransfer, auditLog: Aud
   await runTransaction(db, async transaction => {
     const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
     const snapshot = await transaction.get(transferRef);
-    if (!snapshot.exists() || (snapshot.data() as StockTransfer).status !== "DRAFT") {
-      throw new Error("Seul un transfert en brouillon peut être supprimé.");
+    const current = snapshot.exists() ? snapshot.data() as StockTransfer : undefined;
+    // An approved transfer has not moved any stock yet, so deleting it only releases its reservation.
+    if (!current || !["DRAFT", "APPROVED"].includes(current.status) || (current.status === "APPROVED" && current.purchase_id)) {
+      throw new Error("Seul un transfert en brouillon ou approuvé (non expédié) peut être supprimé.");
     }
     transaction.delete(transferRef);
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined({

@@ -12,7 +12,8 @@ export default class AppErrorBoundary extends Component {
   }
 
   retry = () => {
-    this.setState({ error: null });
+    // A full reload also fetches a fresh index.html when the cached build references deleted chunks.
+    window.location.reload();
   };
 
   render() {
