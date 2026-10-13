@@ -71,6 +71,7 @@ const auditActionLabels: Record<string, string> = {
   SALE_CREATED: "Vente créée",
   SALE_DRAFT_UPDATED: "Brouillon de vente modifié",
   SALE_DRAFT_DELETED: "Brouillon de vente supprimé",
+  SALE_CANCELLED_DELETED: "Vente annulée supprimée",
   SALE_CHECKING: "Vente en vérification",
   SALE_VERIFIED: "Vente vérifiée",
   SALE_APPROVED: "Demande revendeur approuvée",

@@ -590,16 +590,17 @@ export default function SalesView({
                             </button>
                           )
                         )}
-                        {sale.status === "DRAFT" && currentUser.roleId === "SUPER_ADMIN" && (
+                        {["DRAFT", "CANCELLED"].includes(sale.status) && currentUser.roleId === "SUPER_ADMIN" && (
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm(`Supprimer le brouillon ${sale.sale_number} ?`)) {
+                              const itemLabel = sale.status === "CANCELLED" ? "la vente annulée" : "le brouillon";
+                              if (window.confirm(`Supprimer ${itemLabel} ${sale.sale_number} ?`)) {
                                 void onDeleteSale(sale);
                               }
                             }}
                             className="inline-flex items-center gap-1 rounded border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50"
-                            title="Supprimer le brouillon (super administrateur)"
+                            title={`${sale.status === "CANCELLED" ? "Supprimer la vente annulée" : "Supprimer le brouillon"} (super administrateur)`}
                           >
                             <Trash2 className="h-3 w-3" /> Supprimer
                           </button>

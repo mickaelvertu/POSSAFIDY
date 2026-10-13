@@ -26,7 +26,7 @@ import {
   recordTransferReceipt,
   updateDraftTransfer,
 } from "../../services/inventoryService";
-import { advanceSale, approveSale, cancelSale, createProduction, deleteDraftSale, deleteDraftProduction, loadOperationalData, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
+import { advanceSale, approveSale, cancelSale, createProduction, deleteCancelledSale, deleteDraftSale, deleteDraftProduction, loadOperationalData, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
 import { createCreditSale, loadCreditCustomerForUser, loadCreditCustomers, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
 import { createResellerOrder, loadResellerStocks, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
@@ -905,6 +905,17 @@ export default function AuthenticatedSessionView() {
       return;
     }
     try {
+      if (sale.status === "CANCELLED") {
+        const result = await deleteCancelledSale(sale, currentAppUser.uid, currentAppUser.displayName);
+        setSales(current => current.filter(item => item.id !== sale.id));
+        if (result.updatedCustomer) {
+          setCreditCustomers(current => current.map(customer =>
+            customer.id === result.updatedCustomer?.id ? result.updatedCustomer : customer
+          ));
+        }
+        setAuditLogs(current => [result.auditLog, ...current]);
+        return;
+      }
       const auditLog = createAuditLog(currentAppUser, "SALE_DRAFT_DELETED", "SALE", sale.id, sale, undefined, sale.store_id);
       const updatedCustomer = await deleteDraftSale(sale, currentAppUser.uid, auditLog);
       setSales(current => current.filter(item => item.id !== sale.id));
@@ -915,7 +926,7 @@ export default function AuthenticatedSessionView() {
       }
       setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Impossible de supprimer le brouillon de vente.");
+      alert(error instanceof Error ? error.message : "Impossible de supprimer la vente.");
     }
   };
 

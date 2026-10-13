@@ -521,7 +521,8 @@ service cloud.firestore {
         request.resource.data.payment_status == 'PAID' &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amount_paid', 'payment_status'])
       );
-      allow delete: if isSuperAdmin() && resource.data.status == 'DRAFT';
+      allow delete: if isSuperAdmin() &&
+        resource.data.status in ['DRAFT', 'CANCELLED'];
     }
 
     match /productions/{productionId} {
@@ -671,6 +672,46 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.total -
           getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.amount_paid ==
           request.resource.data.outstanding_balance - resource.data.outstanding_balance
+      ) || (
+        isSuperAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'last_credit_sale_id', 'last_cancelled_credit_sale_id', 'updated_at'
+        ]) &&
+        request.resource.data.outstanding_balance == resource.data.outstanding_balance &&
+        (
+          (
+            resource.data.last_credit_sale_id is string &&
+            exists(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)) &&
+            !existsAfter(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)) &&
+            get(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)).data.status == 'CANCELLED' &&
+            get(/databases/$(database)/documents/sales/$(resource.data.last_credit_sale_id)).data.credit_customer_id == customerId &&
+            !request.resource.data.keys().hasAny(['last_credit_sale_id']) &&
+            (
+              resource.data.get('last_cancelled_credit_sale_id', null) != resource.data.last_credit_sale_id ||
+              !request.resource.data.keys().hasAny(['last_cancelled_credit_sale_id'])
+            ) &&
+            (
+              !request.resource.data.keys().hasAny(['last_cancelled_credit_sale_id']) ||
+              request.resource.data.last_cancelled_credit_sale_id == resource.data.get('last_cancelled_credit_sale_id', null)
+            )
+          ) ||
+          (
+            resource.data.last_cancelled_credit_sale_id is string &&
+            exists(/databases/$(database)/documents/sales/$(resource.data.last_cancelled_credit_sale_id)) &&
+            !existsAfter(/databases/$(database)/documents/sales/$(resource.data.last_cancelled_credit_sale_id)) &&
+            get(/databases/$(database)/documents/sales/$(resource.data.last_cancelled_credit_sale_id)).data.status == 'CANCELLED' &&
+            get(/databases/$(database)/documents/sales/$(resource.data.last_cancelled_credit_sale_id)).data.credit_customer_id == customerId &&
+            !request.resource.data.keys().hasAny(['last_cancelled_credit_sale_id']) &&
+            (
+              resource.data.get('last_credit_sale_id', null) != resource.data.last_cancelled_credit_sale_id ||
+              !request.resource.data.keys().hasAny(['last_credit_sale_id'])
+            ) &&
+            (
+              !request.resource.data.keys().hasAny(['last_credit_sale_id']) ||
+              request.resource.data.last_credit_sale_id == resource.data.get('last_credit_sale_id', null)
+            )
+          )
+        )
       ) || (
         isSuperAdmin() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'last_cancelled_credit_sale_id', 'updated_at']) &&

@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   doc,
   getDocs,
   query,
@@ -227,6 +228,70 @@ export async function deleteDraftSale(sale: Sale, userId: string, auditLog: Audi
     }));
   });
   return updatedCustomer;
+}
+
+export async function deleteCancelledSale(
+  sale: Sale,
+  userId: string,
+  userName: string
+): Promise<{ auditLog: AuditLog; updatedCustomer?: CreditCustomer }> {
+  if (sale.status !== "CANCELLED") {
+    throw new Error("Seule une vente annulée peut être supprimée.");
+  }
+
+  let result: { auditLog: AuditLog; updatedCustomer?: CreditCustomer } | undefined;
+  await runTransaction(db, async transaction => {
+    const saleRef = doc(db, SALES, sale.id);
+    const snapshot = await transaction.get(saleRef);
+    if (!snapshot.exists() || (snapshot.data() as Sale).status !== "CANCELLED") {
+      throw new Error("Seule une vente annulée peut être supprimée.");
+    }
+    const current = snapshot.data() as Sale;
+    let updatedCustomer: CreditCustomer | undefined;
+    const customerRef = current.credit_customer_id
+      ? doc(db, "creditCustomers", current.credit_customer_id)
+      : undefined;
+
+    if (customerRef) {
+      const customerSnapshot = await transaction.get(customerRef);
+      if (!customerSnapshot.exists()) {
+        throw new Error("Le compte crédit associé à cette vente est introuvable.");
+      }
+      const customer = customerSnapshot.data() as CreditCustomer;
+      const customerUpdates: Record<string, unknown> = {};
+      const clearedCustomer = { ...customer };
+      if (customer.last_credit_sale_id === current.id) {
+        customerUpdates.last_credit_sale_id = deleteField();
+        delete clearedCustomer.last_credit_sale_id;
+      }
+      if (customer.last_cancelled_credit_sale_id === current.id) {
+        customerUpdates.last_cancelled_credit_sale_id = deleteField();
+        delete clearedCustomer.last_cancelled_credit_sale_id;
+      }
+      if (Object.keys(customerUpdates).length > 0) {
+        const updatedAt = Date.now();
+        customerUpdates.updated_at = updatedAt;
+        transaction.update(customerRef, customerUpdates);
+        updatedCustomer = { ...clearedCustomer, updated_at: updatedAt };
+      }
+    }
+
+    const auditLog = audit(
+      "SALE_CANCELLED_DELETED",
+      "SALE",
+      current.id,
+      userId,
+      userName,
+      current.store_id,
+      current
+    );
+    transaction.delete(saleRef);
+    transaction.set(doc(db, AUDIT_LOGS, auditLog.id), auditLog);
+    result = { auditLog, ...(updatedCustomer ? { updatedCustomer } : {}) };
+  });
+
+  if (!result) throw new Error("Impossible de supprimer la vente annulée.");
+  return result;
 }
 
 export async function advanceSale(
