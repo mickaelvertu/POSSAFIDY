@@ -1,5 +1,5 @@
-import { collection, doc, getDocs, query, runTransaction, where, writeBatch } from "firebase/firestore";
-import { db } from "../firebase";
+import { collection, doc, getDocs, query, where, writeBatch } from "firebase/firestore";
+import { db, runOnlineTransaction } from "../firebase";
 import { AuditLog, CreditCustomer, CreditFollowUp, CreditPayment, Sale } from "../types";
 
 const CUSTOMERS = "creditCustomers";
@@ -42,7 +42,7 @@ export async function recordCreditPayment(
   const saleRef = doc(db, SALES, sale.id);
   const customerRef = doc(db, CUSTOMERS, sale.credit_customer_id || "");
   let updatedSale: Sale | undefined;
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const [saleSnapshot, customerSnapshot] = await Promise.all([
       transaction.get(saleRef),
       transaction.get(customerRef)
@@ -82,7 +82,7 @@ export async function recordCreditFollowUp(
 ): Promise<Sale> {
   const saleRef = doc(db, SALES, sale.id);
   let updatedSale: Sale | undefined;
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const snapshot = await transaction.get(saleRef);
     if (!snapshot.exists()) throw new Error("Vente introuvable.");
     const current = snapshot.data() as Sale;
@@ -111,7 +111,14 @@ export async function createCreditSale(
     throw new Error("Un compte de crédit ne peut être associé qu'à une vente revendeur.");
   }
   const saleRef = doc(db, SALES, sale.id);
-  await runTransaction(db, async transaction => {
+  if (typeof navigator !== "undefined" && !navigator.onLine && sale.status === "DRAFT" && !sale.credit_customer_id) {
+    const batch = writeBatch(db);
+    batch.set(saleRef, clean(sale));
+    batch.set(doc(db, AUDIT_LOGS, auditLog.id), clean(auditLog));
+    await batch.commit();
+    return;
+  }
+  await runOnlineTransaction(async transaction => {
     if ((await transaction.get(saleRef)).exists()) throw new Error("Cette vente existe déjà.");
     if (sale.credit_customer_id && sale.payment_status !== "PAID") {
       const customerRef = doc(db, CUSTOMERS, sale.credit_customer_id);

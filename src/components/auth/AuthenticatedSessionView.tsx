@@ -112,7 +112,7 @@ function containsHiddenArticleReference(value: unknown, visibleArticleIds: Set<s
 }
 
 export default function AuthenticatedSessionView() {
-  const { user, logout } = useAuth();
+  const { user, logout, isProfileFromCache, hasPendingWrites } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
@@ -2244,9 +2244,21 @@ export default function AuthenticatedSessionView() {
 
         {/* User preview and Logout button */}
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className={`hidden sm:inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${isOnline ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`} role="status">
-            <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-emerald-400" : "bg-amber-400"}`} />
-            {isOnline ? "En ligne" : "Hors connexion · synchro en attente"}
+          <div
+            className={`inline-flex max-w-[130px] sm:max-w-none truncate items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${isOnline && !isProfileFromCache && !hasPendingWrites ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}
+            role="status"
+            title={!isOnline ? "Hors connexion · les droits ne sont pas vérifiés" : hasPendingWrites ? "Synchronisation en attente" : isProfileFromCache ? "Vérification des droits" : "En ligne"}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${isOnline && !isProfileFromCache && !hasPendingWrites ? "bg-emerald-400" : "bg-amber-400"}`} />
+            {!isOnline
+              ? hasPendingWrites
+                ? "Hors ligne · écritures en attente"
+                : "Hors ligne · cache, droits non vérifiés"
+              : hasPendingWrites
+                ? "Synchronisation en attente"
+                : isProfileFromCache
+                  ? "Vérification des droits…"
+                  : "En ligne"}
           </div>
           <ThemeSwitcher />
           <NotificationBell notifications={actionNotifications} onOpen={setActiveModule} />

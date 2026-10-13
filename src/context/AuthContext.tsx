@@ -3,10 +3,12 @@ import { User, AuthState, SignUpPayload, ResellerSignUpPayload, LoginPayload, Ap
 import { authService } from "../services/authService";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, waitForPendingWrites } from "firebase/firestore";
 import { trackUserPresence } from "../services/presenceService";
 
 interface AuthContextType extends AuthState {
+  isProfileFromCache: boolean;
+  hasPendingWrites: boolean;
   signUp: (payload: SignUpPayload) => Promise<ApiResponse>;
   signUpReseller: (payload: ResellerSignUpPayload) => Promise<ApiResponse>;
   login: (payload: LoginPayload) => Promise<ApiResponse<{ token: string; user: User }>>;
@@ -24,6 +26,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(authService.getToken());
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isProfileFromCache, setIsProfileFromCache] = useState(false);
+  const [hasPendingWrites, setHasPendingWrites] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId: number | undefined;
+
+    const pollPendingWrites = async () => {
+      try {
+        const pendingWrites = waitForPendingWrites(db);
+        let pollTimeoutId: number | undefined;
+        const hasUnacknowledgedWrites = await Promise.race([
+          pendingWrites.then(() => false),
+          new Promise<boolean>(resolve => {
+            pollTimeoutId = window.setTimeout(() => resolve(true), 1000);
+          })
+        ]);
+        if (pollTimeoutId !== undefined) window.clearTimeout(pollTimeoutId);
+        if (!isMounted) return;
+        setHasPendingWrites(hasUnacknowledgedWrites);
+        if (hasUnacknowledgedWrites) await pendingWrites;
+      } catch (error) {
+        console.error("Firestore pending-write check failed:", error);
+        if (isMounted) setHasPendingWrites(false);
+      }
+      if (isMounted) timeoutId = window.setTimeout(() => void pollPendingWrites(), 1000);
+    };
+
+    void pollPendingWrites();
+    return () => {
+      isMounted = false;
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   useEffect(() => {
     if (!user || user.status !== "ACTIVE") return;
@@ -35,7 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
     const unsubscribe = onSnapshot(
       doc(db, "users", user.id),
-      () => {
+      { includeMetadataChanges: true },
+      snapshot => {
+        setIsProfileFromCache(snapshot.metadata.fromCache);
         void authService.getCurrentUser()
           .then(currentUser => {
             if (isMounted && auth.currentUser?.uid === user.id) {
@@ -63,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isMounted) return;
         setUser(keepStableUser(currentUser));
         setToken(authService.getToken());
+        setIsProfileFromCache(Boolean(currentUser) && !navigator.onLine);
       } catch (err) {
         console.error("Firebase session restoration failed:", err);
         if (isMounted) {
@@ -93,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.success && res.data) {
       setUser(res.data.user);
       setToken(res.data.token);
+      setIsProfileFromCache(false);
     }
     return res;
   };
@@ -101,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authService.logout();
     setUser(null);
     setToken(null);
+    setIsProfileFromCache(false);
   };
 
   const handleRefreshUser = async (): Promise<void> => {
@@ -114,6 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     user,
     token,
+    isProfileFromCache,
+    hasPendingWrites,
     signUp: handleSignUp,
     signUpReseller: handleResellerSignUp,
     login: handleLogin,

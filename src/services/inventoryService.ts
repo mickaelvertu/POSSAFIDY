@@ -5,12 +5,11 @@ import {
   getDoc,
   getDocs,
   query,
-  runTransaction,
   setDoc,
   where,
   writeBatch
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, runOnlineTransaction } from "../firebase";
 import { Article, AuditLog, Category, Purchase, PurchaseLine, StockMovement, StockTransfer, Store, StoreStock, Supplier, SupplierPayment } from "../types";
 
 const STORES_COLLECTION = "stores";
@@ -68,6 +67,13 @@ export async function loadInventoryData(storeIds?: string[]): Promise<{ stores: 
 }
 
 export async function saveTransfer(transfer: StockTransfer, auditLog?: AuditLog): Promise<void> {
+  if (transfer.status !== "DRAFT") {
+    await runOnlineTransaction(async transaction => {
+      transaction.set(doc(db, TRANSFERS_COLLECTION, transfer.id), omitUndefined(transfer));
+      if (auditLog) transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+    });
+    return;
+  }
   if (!auditLog) {
     await setDoc(doc(db, TRANSFERS_COLLECTION, transfer.id), omitUndefined(transfer));
     return;
@@ -94,7 +100,7 @@ export async function updateDraftTransfer(
     throw new Error("Seul le demandeur peut modifier un transfert encore en brouillon.");
   }
 
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const transferRef = doc(db, TRANSFERS_COLLECTION, original.id);
     const snapshot = await transaction.get(transferRef);
     if (!snapshot.exists()) throw new Error("Ce transfert n'existe plus.");
@@ -113,7 +119,7 @@ export async function updateDraftTransfer(
 }
 
 export async function deleteDraftTransfer(transfer: StockTransfer, auditLog: AuditLog): Promise<void> {
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
     const snapshot = await transaction.get(transferRef);
     const current = snapshot.exists() ? snapshot.data() as StockTransfer : undefined;
@@ -139,7 +145,7 @@ export async function recordTransferReceipt(transfer: StockTransfer, auditLog: A
     throw new Error("La réception doit être enregistrée avant sa confirmation.");
   }
 
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
     const storeRef = doc(db, STORES_COLLECTION, transfer.destination_store_id);
     const [transferSnapshot, storeSnapshot] = await Promise.all([
@@ -176,7 +182,7 @@ export async function saveTransferWithStockEffects(
       ? { ...existing, quantity: existing.quantity + movement.quantity }
       : movement);
   });
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
     const transferSnapshot = await transaction.get(transferRef);
     if (!transferSnapshot.exists()) throw new Error("Transfert introuvable.");
@@ -365,7 +371,7 @@ export async function saveDraftPurchase(purchase: Purchase, auditLog: AuditLog):
   if (articleSnapshots.some(snapshot => !snapshot.exists() || snapshot.data().article_type !== "RAW_MATERIAL" || snapshot.data().is_active !== true)) {
     throw new Error("Un achat fournisseur ne peut contenir que des matières premières actives.");
   }
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
     if ((await transaction.get(purchaseRef)).exists()) throw new Error("Cet achat existe déjà.");
     transaction.set(purchaseRef, omitUndefined(purchase));
@@ -424,7 +430,7 @@ export async function approvePurchase(
     throw new Error("Les lignes du transfert doivent correspondre à l'achat approuvé.");
   }
 
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
     const transferRef = doc(db, TRANSFERS_COLLECTION, transfer.id);
     const [purchaseSnapshot, transferSnapshot] = await Promise.all([
@@ -445,7 +451,7 @@ export async function approvePurchase(
 export async function recordSupplierPayment(purchase: Purchase, payment: SupplierPayment, auditLog?: AuditLog): Promise<Purchase> {
   if (!Number.isFinite(payment.amount) || payment.amount <= 0) throw new Error("Le montant du paiement doit être positif.");
   let updatedPurchase: Purchase | undefined;
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
     const snapshot = await transaction.get(purchaseRef);
     if (!snapshot.exists()) throw new Error("Achat fournisseur introuvable.");

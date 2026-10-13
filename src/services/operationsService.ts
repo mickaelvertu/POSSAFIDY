@@ -4,11 +4,10 @@ import {
   doc,
   getDocs,
   query,
-  runTransaction,
   setDoc,
   where
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, runOnlineTransaction } from "../firebase";
 import { AppRoleId, AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
 
 const SALES = "sales";
@@ -93,7 +92,7 @@ export async function loadOperationalData(access: { sales: boolean; productions:
 
 export async function createSale(sale: Sale): Promise<AuditLog> {
   const entry = audit("SALE_CREATED", "SALE", sale.id, sale.seller_id, sale.seller_name, sale.store_id, undefined, sale);
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const saleRef = doc(db, SALES, sale.id);
     if ((await transaction.get(saleRef)).exists()) throw new Error("Cette vente existe déjà.");
     transaction.set(saleRef, clean(sale));
@@ -126,7 +125,7 @@ export async function updateDraftSale(
   }
 
   const entry = audit("SALE_DRAFT_UPDATED", "SALE", originalSale.id, userId, userName, originalSale.store_id, originalSale, updatedSale);
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const saleRef = doc(db, SALES, originalSale.id);
     const snapshot = await transaction.get(saleRef);
     if (!snapshot.exists()) throw new Error("Cette vente n'existe plus.");
@@ -178,7 +177,7 @@ export async function updateDraftSale(
 export async function deleteDraftSale(sale: Sale, userId: string, auditLog: AuditLog): Promise<CreditCustomer | undefined> {
   if (auditLog.user_id !== userId) throw new Error("L'utilisateur de l'audit ne correspond pas à l'utilisateur connecté.");
   let updatedCustomer: CreditCustomer | undefined;
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const saleRef = doc(db, SALES, sale.id);
     const snapshot = await transaction.get(saleRef);
     if (!snapshot.exists() || (snapshot.data() as Sale).status !== "DRAFT") {
@@ -240,7 +239,7 @@ export async function deleteCancelledSale(
   }
 
   let result: { auditLog: AuditLog; updatedCustomer?: CreditCustomer } | undefined;
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const saleRef = doc(db, SALES, sale.id);
     const snapshot = await transaction.get(saleRef);
     if (!snapshot.exists() || (snapshot.data() as Sale).status !== "CANCELLED") {
@@ -309,7 +308,7 @@ export async function advanceSale(
     ...(nextStatus === "VERIFIED" ? { verified_by: userId, verified_by_name: userName, verified_at: Date.now() } : {})
   });
   const entry = audit(`SALE_${nextStatus}`, "SALE", sale.id, userId, userName, sale.store_id, sale, updated);
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const saleRef = doc(db, SALES, sale.id);
     const snapshot = await transaction.get(saleRef);
     if (!snapshot.exists() || (snapshot.data() as Sale).status !== sale.status) {
@@ -343,7 +342,7 @@ export async function cancelSale(
   let entry: AuditLog;
   let releasedCredit = 0;
   const timestamp = Date.now();
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     updatedStocks.length = 0;
     movements.length = 0;
     const saleRef = doc(db, SALES, sale.id);
@@ -450,7 +449,7 @@ export async function approveSale(
   }
   const updated: Sale = clean({ ...sale, status: "APPROVED", approved_by: userId, approved_by_name: userName, approved_at: Date.now() });
   const entry = audit("SALE_APPROVED", "SALE", sale.id, userId, userName, sale.store_id, sale, updated);
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const saleRef = doc(db, SALES, sale.id);
     const snapshot = await transaction.get(saleRef);
     if (!snapshot.exists() || (snapshot.data() as Sale).status !== "VERIFIED") {
@@ -479,7 +478,7 @@ export async function validateSale(
   const updatedStocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const saleSnapshot = await transaction.get(saleRef);
     if (!saleSnapshot.exists() || (saleSnapshot.data() as Sale).status !== requiredStatus) {
       throw new Error(requiredStatus === "APPROVED"
@@ -544,7 +543,7 @@ export async function createProduction(
   const updatedStocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const productionRef = doc(db, PRODUCTIONS, production.id);
     const productionSnapshot = await transaction.get(productionRef);
     if (productionSnapshot.exists()) throw new Error("Cette production existe déjà.");
@@ -632,7 +631,7 @@ export async function updateDraftProduction(
     throw new Error("Seul le créateur peut modifier sa production tant qu'elle est en brouillon.");
   }
 
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const productionRef = doc(db, PRODUCTIONS, original.id);
     const snapshot = await transaction.get(productionRef);
     if (!snapshot.exists()) throw new Error("Cette production n'existe plus.");
@@ -661,7 +660,7 @@ export async function updateDraftProduction(
 }
 
 export async function deleteDraftProduction(production: Production, auditLog: AuditLog): Promise<void> {
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const productionRef = doc(db, PRODUCTIONS, production.id);
     const snapshot = await transaction.get(productionRef);
     if (!snapshot.exists() || (snapshot.data() as Production).status !== "DRAFT") {

@@ -1,5 +1,5 @@
-import { doc, runTransaction } from "firebase/firestore";
-import { db } from "../firebase";
+import { doc } from "firebase/firestore";
+import { db, runOnlineTransaction } from "../firebase";
 
 export type SequentialIdPrefix = "ART" | "FOU" | "MAG" | "CAT" | "UTI";
 
@@ -11,7 +11,7 @@ export async function createSequentialId(prefix: SequentialIdPrefix, existingIds
   }, 0);
   const sequenceRef = doc(db, "inventoryMetadata", "id-sequences");
 
-  return runTransaction(db, async transaction => {
+  return runOnlineTransaction(async transaction => {
     const snapshot = await transaction.get(sequenceRef);
     const storedSequence = snapshot.exists() ? Number(snapshot.data()[prefix]) || 0 : 0;
     const nextSequence = Math.max(storedSequence, highestExistingSequence, existingIds.length) + 1;

@@ -2,8 +2,9 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getDatabase } from "firebase/database";
-import { doc, getDocFromServer, getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, runTransaction, type Firestore, type Transaction } from "firebase/firestore";
 import firebaseConfig from "../firebase-applet-config.json";
+import { assertOnlineForTransaction } from "./services/offlineSupport";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -26,6 +27,11 @@ try {
 export const db = firestore;
 export const database = db;
 
+export function runOnlineTransaction<T>(updateFunction: (transaction: Transaction) => Promise<T>): Promise<T> {
+  assertOnlineForTransaction();
+  return runTransaction(db, updateFunction);
+}
+
 const isLocalDevelopment = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
 export const analyticsPromise = !isLocalDevelopment
@@ -36,18 +42,6 @@ export const analyticsPromise = !isLocalDevelopment
         return null;
       })
   : Promise.resolve(null);
-
-// Connection test as required by Firebase skill
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, "test", "connection"));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("the client is offline")) {
-      console.error("Please check your Firebase configuration.");
-    }
-  }
-}
-testConnection();
 
 // Standard Error Handling conforming to Firebase Skill
 export enum OperationType {

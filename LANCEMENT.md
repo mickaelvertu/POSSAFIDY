@@ -36,6 +36,8 @@
 
 Le build local se crée avec `npm run build`. Ne pas déployer les règles ou l'hébergement sans avoir validé les imports et les parcours en préproduction. L'archive créée avant le durcissement se trouve dans `D:\Programs\posaistudio\backups` et permet de revenir à l'état précédent.
 
+L'application web est installable comme PWA depuis un navigateur compatible et son shell statique est mis en cache pour démarrer hors connexion après une première visite en ligne. Firestore conserve ses données en cache local. Une session déjà ouverte peut afficher le profil et les données mis en cache ; les droits affichés hors connexion ne sont pas revalidés avant le retour du réseau. Les nouvelles connexions nécessitent Internet. Les brouillons de vente sans compte crédit et les nouvelles demandes de transfert en brouillon peuvent être mis en attente localement ; leur synchronisation reste soumise aux règles Firestore et aux droits vérifiés au retour du réseau. La création de brouillons liés à un compte crédit, leur modification, ainsi que les approbations nécessitent une connexion. Les ventes finalisées, mouvements de stock, transferts exécutés, productions et autres opérations transactionnelles sont bloqués hors connexion. L'indicateur signale les écritures non encore confirmées.
+
 ## Limites encore connues
 
 - Les modifications de comptes gérés via le service d'authentification sont auditées après la mutation du compte : une panne pendant l'écriture de la trace peut nécessiter une vérification administrative manuelle.

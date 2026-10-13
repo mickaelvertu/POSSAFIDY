@@ -1,5 +1,5 @@
-import { collection, doc, getDocs, onSnapshot, query, runTransaction, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
-import { db } from "../firebase";
+import { collection, doc, getDocs, onSnapshot, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
+import { db, runOnlineTransaction } from "../firebase";
 import { Article, CreditCustomer, ResellerNotification, ResellerOrder, Sale, StockMovement, Store, StoreStock } from "../types";
 
 const ORDERS = "resellerOrders";
@@ -105,7 +105,7 @@ export async function recordResellerCashPayment(
   const saleRef = doc(db, "sales", order.sale_id || `sale-${order.id}`);
   const timestamp = Date.now();
   let result: { order: ResellerOrder; sale: Sale; notification: ResellerNotification } | undefined;
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const [orderSnapshot, saleSnapshot] = await Promise.all([
       transaction.get(orderRef),
       transaction.get(saleRef)
@@ -166,7 +166,7 @@ export async function reviewResellerOrder(
   });
 
   let result: { order: ResellerOrder; stocks: StoreStock[]; movements: StockMovement[]; sale?: Sale; customer?: CreditCustomer; notification: ResellerNotification } | undefined;
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const currentOrderSnapshot = await transaction.get(orderRef);
     if (!currentOrderSnapshot.exists()) throw new Error("Commande introuvable.");
     const currentOrder = currentOrderSnapshot.data() as ResellerOrder;

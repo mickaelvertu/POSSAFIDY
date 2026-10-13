@@ -1,5 +1,5 @@
-import { doc, getDoc, runTransaction } from "firebase/firestore";
-import { db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { db, runOnlineTransaction } from "../firebase";
 import { AppUser, AuditLog, StockMovement, StoreStock } from "../types";
 import type { InitialStockImportRow } from "./stockImportValidation";
 import type { StockSyncRow } from "./stockSyncValidation";
@@ -42,7 +42,7 @@ export async function applyStockSnapshot(
   for (let start = 0; start < rows.length; start += CHUNK_SIZE) {
     const chunk = rows.slice(start, start + CHUNK_SIZE);
     const timestamp = Date.now();
-    const result = await runTransaction(db, async transaction => {
+    const result = await runOnlineTransaction(async transaction => {
       const refs = chunk.map(row => doc(db, STOCKS_COLLECTION, row.id));
       const snapshots = await Promise.all(refs.map(reference => transaction.get(reference)));
       const written: { stock: StoreStock; movement: StockMovement; auditLog: AuditLog }[] = [];
@@ -177,7 +177,7 @@ export async function importInitialStocks(
     }
   }
 
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const snapshot = await transaction.get(runRef);
     if (snapshot.exists()) {
       const current = snapshot.data();
@@ -199,7 +199,7 @@ export async function importInitialStocks(
 
   for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex++) {
     const chunk = preparedRows.slice(chunkIndex * CHUNK_SIZE, (chunkIndex + 1) * CHUNK_SIZE);
-    await runTransaction(db, async transaction => {
+    await runOnlineTransaction(async transaction => {
       const runSnapshot = await transaction.get(runRef);
       if (!runSnapshot.exists()) throw new Error("Le suivi de l'import est introuvable.");
       const run = runSnapshot.data();

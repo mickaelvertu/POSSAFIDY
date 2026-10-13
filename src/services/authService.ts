@@ -307,7 +307,16 @@ export class AuthService {
     try {
       if (!auth.currentUser) return null;
       const user = await this.mapFirebaseUser(auth.currentUser);
-      this.setStoredToken(await auth.currentUser.getIdToken());
+      if (typeof navigator === "undefined" || navigator.onLine) {
+        try {
+          this.setStoredToken(await auth.currentUser.getIdToken());
+        } catch (error) {
+          const isNetworkFailure = typeof error === "object" && error !== null && "code" in error &&
+            error.code === "auth/network-request-failed";
+          if (!isNetworkFailure) throw error;
+          console.warn("Using the cached user profile while Firebase authentication is unreachable.");
+        }
+      }
       return user.status === "ACTIVE" ? user : null;
     } catch (err) {
       console.error("getCurrentUser Firebase error:", err);

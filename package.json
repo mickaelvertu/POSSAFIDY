@@ -8,7 +8,7 @@
     "build": "vite build",
     "start": "tsx server.ts",
     "preview": "vite preview",
-    "test": "tsx --test src/services/stockImportValidation.test.ts src/services/stockSyncValidation.test.ts src/services/inventoryControl.test.ts",
+    "test": "tsx --test src/services/stockImportValidation.test.ts src/services/stockSyncValidation.test.ts src/services/inventoryControl.test.ts src/services/offlineSupport.test.ts",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
   },

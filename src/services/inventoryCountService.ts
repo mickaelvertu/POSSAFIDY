@@ -1,5 +1,5 @@
-import { collection, doc, getDocs, query, runTransaction, setDoc, deleteDoc, where } from "firebase/firestore";
-import { db } from "../firebase";
+import { collection, doc, getDocs, query, setDoc, deleteDoc, where } from "firebase/firestore";
+import { db, runOnlineTransaction } from "../firebase";
 import type { AuditLog, InventoryChargeSettlement, InventoryCount, InventoryReasonDecision, StockMovement, StoreStock } from "../types";
 import { applyDecisions } from "./inventoryControl";
 
@@ -52,7 +52,7 @@ export async function settleInventoryCharges(
   if (counts.length === 0) throw new Error("Aucun inventaire à régler.");
   if (!settlement.reference.trim()) throw new Error("Indiquez une référence (fiche de paie, avance, quittance…).");
   const now = Date.now();
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const references = counts.map(count => doc(db, COUNTS_COLLECTION, count.id));
     const snapshots = await Promise.all(references.map(reference => transaction.get(reference)));
     snapshots.forEach(snapshot => {
@@ -82,7 +82,7 @@ export async function signInventoryCount(
     submitted_at: now,
     updated_at: now
   };
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const reference = doc(db, COUNTS_COLLECTION, count.id);
     const snapshot = await transaction.get(reference);
     if (!snapshot.exists() || (snapshot.data() as InventoryCount).status !== "AWAITING_SIGNATURE") {
@@ -111,7 +111,7 @@ export async function refuseInventorySignature(
     review_note: `Signature refusée : ${note}`,
     updated_at: now
   };
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const reference = doc(db, COUNTS_COLLECTION, count.id);
     const snapshot = await transaction.get(reference);
     if (!snapshot.exists() || (snapshot.data() as InventoryCount).status !== "AWAITING_SIGNATURE") {
@@ -138,7 +138,7 @@ export async function rejectInventoryCount(
     review_note: note,
     updated_at: Date.now()
   };
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const reference = doc(db, COUNTS_COLLECTION, count.id);
     const snapshot = await transaction.get(reference);
     if (!snapshot.exists() || (snapshot.data() as InventoryCount).status !== "SUBMITTED") {
@@ -177,7 +177,7 @@ export async function validateInventoryCount(
   const stocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
-  await runTransaction(db, async transaction => {
+  await runOnlineTransaction(async transaction => {
     const countRef = doc(db, COUNTS_COLLECTION, count.id);
     const countSnapshot = await transaction.get(countRef);
     if (!countSnapshot.exists() || (countSnapshot.data() as InventoryCount).status !== "SUBMITTED") {

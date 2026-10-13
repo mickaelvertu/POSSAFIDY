@@ -1,5 +1,5 @@
-import { collection, doc, getDocs, query, runTransaction, setDoc, where, writeBatch } from "firebase/firestore";
-import { db } from "../firebase";
+import { collection, doc, getDocs, query, setDoc, where, writeBatch } from "firebase/firestore";
+import { db, runOnlineTransaction } from "../firebase";
 import { AuditLog, Expense, SalaryAdvance } from "../types";
 
 const EXPENSES_COLLECTION = "expenses";
@@ -39,7 +39,7 @@ export async function validateExpense(
   salaryAdvance?: SalaryAdvance,
   salaryAdvanceAuditLog?: AuditLog
 ): Promise<Expense> {
-  return runTransaction(db, async transaction => {
+  return runOnlineTransaction(async transaction => {
     const ref = doc(db, EXPENSES_COLLECTION, expense.id);
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists() || snapshot.data().status !== "DRAFT") throw new Error("Cette dépense n'est plus un brouillon.");
@@ -125,7 +125,7 @@ export async function updateDraftExpense(
     "payee", "employee_id", "employee_name", "salary_advance_id",
     "payment_method", "payment_status", "reference", "notes"
   ];
-  return runTransaction(db, async transaction => {
+  return runOnlineTransaction(async transaction => {
     const expenseRef = doc(db, EXPENSES_COLLECTION, original.id);
     const snapshot = await transaction.get(expenseRef);
     if (!snapshot.exists()) throw new Error("Cette dépense n'existe plus.");
