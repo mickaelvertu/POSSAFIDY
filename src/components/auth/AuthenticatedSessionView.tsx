@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { authService, DEFAULT_ARTICLE_VISIBILITY, hasPermission } from "../../services/authService";
-import { AppRoleId, AppUser, Article, AuditLog, Category, CreditCustomer, CreditFollowUp, CreditPayment, Employee, Expense, GeneralFilters, Payslip, Purchase, ResellerNotification, ResellerOrder, Sale, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
+import { AppRoleId, AppUser, Article, AuditLog, Category, CashHandover, CashHandoverDeposit, CreditCustomer, CreditFollowUp, CreditPayment, Employee, Expense, GeneralFilters, Payslip, Purchase, ResellerNotification, ResellerOrder, Sale, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
 import RoleHomeView from "../RoleHomeView";
 import { Production, RECYCLING_DECISION_LABELS, RETURN_REASON_LABELS, RecyclingDecision, StockMovement, StockTransfer, Store, StoreStock } from "../../types";
@@ -39,6 +39,7 @@ import ThemeSwitcher from "../ThemeSwitcher";
 import NotificationBell from "../NotificationBell";
 import { buildActionNotifications } from "../../services/notificationService";
 import { deleteExpense, loadExpenses, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
+import { confirmCashHandoverReceipt, createCashHandover, loadCashHandovers, recordCashHandoverDeposit } from "../../services/cashHandoverService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { applyStockSnapshot, importInitialStocks } from "../../services/stockImportService";
 import type { StockSyncRow } from "../../services/stockSyncValidation";
@@ -53,6 +54,7 @@ const CatalogView = lazy(() => import("../CatalogView"));
 const ProductionView = lazy(() => import("../ProductionView"));
 const ProcurementView = lazy(() => import("../ProcurementView"));
 const ExpensesView = lazy(() => import("../ExpensesView"));
+const CashHandoverView = lazy(() => import("../CashHandoverView"));
 const StaffView = lazy(() => import("../StaffView"));
 const PayrollView = lazy(() => import("../PayrollView"));
 const CreditManagementView = lazy(() => import("../CreditManagementView"));
@@ -72,6 +74,14 @@ import {
 } from "lucide-react";
 
 const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "CONTROLEUR", "PRODUCTION", "COMPTABLE", "GESTIONNAIRE_CREDIT", "STAFF", "REVENDEUR"];
+
+function hasCashHandoverPermission(user: AppUser, action: "view" | "create" | "receive" | "deposit"): boolean {
+  return user.roleId === "ADMIN" || hasPermission(user, `cash_handover.${action}`);
+}
+
+function hasProcurementPermission(user: AppUser): boolean {
+  return user.roleId === "ADMIN" || user.roleId === "SUPER_ADMIN" || hasPermission(user, "procurement.manage");
+}
 
 function toAppUser(user: User): AppUser {
   const roleId = APP_ROLES.includes(user.role as AppRoleId) ? user.role as AppRoleId : "VENDEUR";
@@ -116,7 +126,7 @@ export default function AuthenticatedSessionView() {
   const [showProfile, setShowProfile] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
   const [inventoryCounts, setInventoryCounts] = useState<InventoryCount[]>([]);
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -133,6 +143,8 @@ export default function AuthenticatedSessionView() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [cashHandovers, setCashHandovers] = useState<CashHandover[]>([]);
+  const [cashHandoversError, setCashHandoversError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [salaryAdvances, setSalaryAdvances] = useState<SalaryAdvance[]>([]);
@@ -157,6 +169,9 @@ export default function AuthenticatedSessionView() {
     user.permissions.includes("users.view")
   ));
   const canManageStores = Boolean(user && (user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
+  const canManageProcurement = Boolean(user && user.status === "ACTIVE" && (
+    canManageStores || user.permissions.includes("procurement.manage")
+  ));
 
   useEffect(() => {
     if (!canManageUsers) {
@@ -205,7 +220,10 @@ export default function AuthenticatedSessionView() {
 
       // Each block is independent: stores appear as soon as they load, even if another collection fails.
       const storesPromise = withRetry("Stores", loadStores);
-      const visibleArticleTypes = user.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user.role as AppRoleId] ?? [];
+      const visibleArticleTypes = [...new Set([
+        ...(user.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user.role as AppRoleId] ?? []),
+        ...(canManageProcurement ? ["RAW_MATERIAL" as const] : [])
+      ])];
       const catalogPromise = withRetry("Catalog", async () => {
         const catalog = await loadCatalogData(visibleArticleTypes);
         const loadedUnits = canManageStores
@@ -240,8 +258,8 @@ export default function AuthenticatedSessionView() {
           const resellerStocks = await withRetry("Reseller stocks", () => loadResellerStocks(loadedStores, catalogResult.catalog.articles));
           if (isMounted && resellerStocks) setStocks(resellerStocks);
         }),
-        canManageStores
-          ? withRetry("Procurement", loadProcurementData).then(procurement => {
+        canManageProcurement
+          ? withRetry("Procurement", () => loadProcurementData(canManageStores ? undefined : user.assignedStores)).then(procurement => {
               if (!isMounted || !procurement) return;
               setSuppliers(procurement.suppliers);
               setPurchases(procurement.purchases);
@@ -281,6 +299,28 @@ export default function AuthenticatedSessionView() {
     return () => {
       isMounted = false;
     };
+  }, [canManageStores, canManageProcurement, user]);
+
+  useEffect(() => {
+    const canAccess = user?.status === "ACTIVE" && (
+      canManageStores ||
+      user?.permissions.some(permission => permission.startsWith("cash_handover."))
+    );
+    if (!canAccess || !user) {
+      setCashHandovers([]);
+      setCashHandoversError(null);
+      return;
+    }
+    let isMounted = true;
+    setCashHandoversError(null);
+    setCashHandovers([]);
+    loadCashHandovers(canManageStores ? undefined : user.assignedStores)
+      .then(rows => { if (isMounted) setCashHandovers(rows); })
+      .catch(error => {
+        console.error("Cash handover Firestore load failed:", error);
+        if (isMounted) setCashHandoversError(error instanceof Error ? error.message : "Erreur inconnue.");
+      });
+    return () => { isMounted = false; };
   }, [canManageStores, user]);
 
   useEffect(() => {
@@ -1882,6 +1922,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateSupplier = async (supplier: Supplier) => {
+    if (!currentAppUser || !hasProcurementPermission(currentAppUser)) throw new Error("Vous ne disposez pas de la permission de gérer les fournisseurs.");
     const auditLog = createAuditLog(currentAppUser!, "SUPPLIER_CREATED", "SUPPLIER", supplier.id, undefined, supplier);
     await saveSupplier(supplier, auditLog);
     setSuppliers(current => [...current, supplier]);
@@ -1889,6 +1930,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleToggleSupplier = async (supplier: Supplier) => {
+    if (!currentAppUser || !hasProcurementPermission(currentAppUser)) throw new Error("Vous ne disposez pas de la permission de gérer les fournisseurs.");
     const previous = suppliers.find(item => item.id === supplier.id);
     const auditLog = createAuditLog(currentAppUser!, "SUPPLIER_UPDATED", "SUPPLIER", supplier.id, previous, supplier);
     await saveSupplier(supplier, auditLog);
@@ -1897,6 +1939,9 @@ export default function AuthenticatedSessionView() {
   };
   
   const handleImportSuppliers = async (data: Supplier[]) => {
+    if (!currentAppUser || currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN") {
+      throw new Error("Seul un administrateur peut importer les fournisseurs en lot.");
+    }
     if (!Array.isArray(data) || data.some(supplier => !supplier.id || !supplier.name)) {
       throw new Error("Le fichier fournisseurs est invalide.");
     }
@@ -1910,6 +1955,9 @@ export default function AuthenticatedSessionView() {
   };
   
   const handleResetSuppliers = async () => {
+    if (!currentAppUser || currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN") {
+      throw new Error("Seul un administrateur peut désactiver tous les fournisseurs.");
+    }
     const resetSuppliers = suppliers.map(supplier => ({ ...supplier, is_active: false, updated_at: Date.now() }));
     const auditLogs = resetSuppliers.map(supplier => createAuditLog(
       currentAppUser!, "SUPPLIER_DEACTIVATED", "SUPPLIER", supplier.id,
@@ -1921,8 +1969,11 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreatePurchase = async (purchase: Purchase) => {
-    if (!currentAppUser || (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN")) {
-      throw new Error("Seul un administrateur peut créer un brouillon d'achat.");
+    if (user?.status !== "ACTIVE" || !currentAppUser || !hasProcurementPermission(currentAppUser)) {
+      throw new Error("Vous ne disposez pas de la permission de créer un achat.");
+    }
+    if (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN" && !currentAppUser.storeIds.includes(purchase.store_id)) {
+      throw new Error("Vous ne pouvez créer un achat que pour un magasin qui vous est attribué.");
     }
     const auditLog = createAuditLog(currentAppUser, "PURCHASE_DRAFT_CREATED", "PURCHASE", purchase.id, undefined, purchase, purchase.store_id);
     await saveDraftPurchase(purchase, auditLog);
@@ -1931,11 +1982,14 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleApprovePurchase = async (purchase: Purchase) => {
-    if (!currentAppUser || (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN")) {
-      throw new Error("Seul un administrateur peut approuver un achat.");
+    if (user?.status !== "ACTIVE" || !currentAppUser || !hasProcurementPermission(currentAppUser)) {
+      throw new Error("Vous ne disposez pas de la permission d'approuver un achat.");
     }
-    if (purchase.status !== "DRAFT" || !purchase.created_by || purchase.created_by === currentAppUser.uid) {
-      throw new Error("Un autre administrateur doit approuver ce brouillon d'achat.");
+    if (purchase.status !== "DRAFT" || !purchase.created_by) {
+      throw new Error("Seul un achat en brouillon peut être approuvé.");
+    }
+    if (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN" && !currentAppUser.storeIds.includes(purchase.store_id)) {
+      throw new Error("Vous ne pouvez approuver que les achats d'un magasin qui vous est attribué.");
     }
     const timestamp = Date.now();
     const transferId = `trf-purchase-${purchase.id}`;
@@ -2074,10 +2128,52 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleRecordSupplierPayment = async (purchase: Purchase, payment: SupplierPayment) => {
+    if (user?.status !== "ACTIVE" || !currentAppUser || !hasProcurementPermission(currentAppUser)) {
+      throw new Error("Vous ne disposez pas de la permission d'enregistrer un paiement fournisseur.");
+    }
+    if (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN" && !currentAppUser.storeIds.includes(purchase.store_id)) {
+      throw new Error("Vous ne pouvez régler que les achats d'un magasin qui vous est attribué.");
+    }
     const auditLog = createAuditLog(currentAppUser!, "SUPPLIER_PAYMENT_RECORDED", "PURCHASE", purchase.id, purchase, undefined, purchase.store_id);
     const updatedPurchase = await recordSupplierPayment(purchase, payment, auditLog);
     setPurchases(current => current.map(item => item.id === purchase.id ? updatedPurchase : item));
     setAuditLogs(current => [{ ...auditLog, new_value: updatedPurchase }, ...current]);
+  };
+
+  const handleCreateCashHandover = async (handover: CashHandover) => {
+    if (user?.status !== "ACTIVE" || !currentAppUser || !hasCashHandoverPermission(currentAppUser, "create")) {
+      throw new Error("Vous ne disposez pas de la permission de déclarer une remise de caisse.");
+    }
+    if (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN" && !currentAppUser.storeIds.includes(handover.store_id)) {
+      throw new Error("Vous ne pouvez déclarer une remise que pour un point de vente attribué à votre compte.");
+    }
+    const auditLog = createAuditLog(currentAppUser, "CASH_HANDOVER_DECLARED", "CASH_HANDOVER", handover.id, undefined, handover, handover.store_id);
+    await createCashHandover(handover, auditLog);
+    setCashHandovers(current => [handover, ...current].sort((left, right) => right.business_date.localeCompare(left.business_date)));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleConfirmCashReceipt = async (handover: CashHandover, amount: number, note: string) => {
+    if (user?.status !== "ACTIVE" || !currentAppUser || !hasCashHandoverPermission(currentAppUser, "receive")) {
+      throw new Error("Vous ne disposez pas de la permission de confirmer une réception.");
+    }
+    if (currentAppUser.uid === handover.declared_by) {
+      throw new Error("La réception doit être confirmée par une autre personne que l'auteur de la déclaration.");
+    }
+    const auditLog = createAuditLog(currentAppUser, "CASH_HANDOVER_RECEIVED", "CASH_HANDOVER", handover.id, handover, undefined, handover.store_id);
+    const updated = await confirmCashHandoverReceipt(handover, amount, note, currentAppUser.uid, currentAppUser.displayName, auditLog);
+    setCashHandovers(current => current.map(item => item.id === handover.id ? updated : item));
+    setAuditLogs(current => [{ ...auditLog, new_value: updated }, ...current]);
+  };
+
+  const handleRecordCashDeposit = async (handover: CashHandover, deposit: CashHandoverDeposit) => {
+    if (user?.status !== "ACTIVE" || !currentAppUser || !hasCashHandoverPermission(currentAppUser, "deposit")) {
+      throw new Error("Vous ne disposez pas de la permission d'enregistrer un dépôt bancaire.");
+    }
+    const auditLog = createAuditLog(currentAppUser, "CASH_HANDOVER_BANK_DEPOSIT", "CASH_HANDOVER", handover.id, handover, undefined, handover.store_id);
+    const updated = await recordCashHandoverDeposit(handover, deposit, currentAppUser.uid, auditLog);
+    setCashHandovers(current => current.map(item => item.id === handover.id ? updated : item));
+    setAuditLogs(current => [{ ...auditLog, new_value: updated }, ...current]);
   };
 
   const handleCreateExpense = async (expense: Expense) => {
@@ -2263,6 +2359,7 @@ export default function AuthenticatedSessionView() {
           <ThemeSwitcher />
           <NotificationBell notifications={actionNotifications} onOpen={setActiveModule} />
           {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) && <button type="button" onClick={() => setActiveModule("expenses")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Dépenses</button>}
+          {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || ["view", "create", "receive", "deposit"].some(action => hasPermission(currentAppUser, `cash_handover.${action}`))) && <button type="button" onClick={() => setActiveModule("cashHandovers")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Remises de caisse</button>}
           <button
             type="button"
             onClick={() => setShowProfile(current => !current)}
@@ -2563,7 +2660,7 @@ export default function AuthenticatedSessionView() {
               onDecideRecycling={handleDecideRecycling}
             />
           </section>
-        ) : activeModule === "procurement" && currentAppUser && canManageStores ? (
+        ) : activeModule === "procurement" && currentAppUser && canManageProcurement ? (
           <section className="space-y-4">
             <button
               type="button"
@@ -2575,7 +2672,7 @@ export default function AuthenticatedSessionView() {
             <ProcurementView
               suppliers={suppliers}
               purchases={visiblePurchases}
-              stores={inventoryStores}
+              stores={accessibleStores}
               articles={articles}
               stocks={stocks}
               currentUser={currentAppUser}
@@ -2608,6 +2705,23 @@ export default function AuthenticatedSessionView() {
               onDeleteExpense={handleDeleteExpense}
               onCreateExpense={handleCreateExpense}
               onUpdateExpense={handleUpdateExpense}
+            />
+          </section>
+        ) : activeModule === "cashHandovers" && currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || ["view", "create", "receive", "deposit"].some(action => hasPermission(currentAppUser, `cash_handover.${action}`))) ? (
+          <section className="space-y-4">
+            <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">← Retour à l'accueil</button>
+            <CashHandoverView
+              handovers={cashHandovers}
+              loadError={cashHandoversError}
+              sales={visibleSales}
+              stores={accessibleStores}
+              currentUser={currentAppUser}
+              canCreate={hasCashHandoverPermission(currentAppUser, "create")}
+              canReceive={hasCashHandoverPermission(currentAppUser, "receive")}
+              canDeposit={hasCashHandoverPermission(currentAppUser, "deposit")}
+              onCreate={handleCreateCashHandover}
+              onConfirmReceipt={handleConfirmCashReceipt}
+              onRecordDeposit={handleRecordCashDeposit}
             />
           </section>
         ) : activeModule === "credit" && currentAppUser && (
@@ -2678,6 +2792,7 @@ export default function AuthenticatedSessionView() {
             onOpenCatalog={() => setActiveModule("catalog")}
             onOpenProcurement={() => setActiveModule("procurement")}
             onOpenExpenses={() => setActiveModule("expenses")}
+            onOpenCashHandovers={() => setActiveModule("cashHandovers")}
             onOpenTransfers={() => setActiveModule("transfers")}
             onOpenCredit={() => setActiveModule("credit")}
             onOpenResellerOrders={() => setActiveModule("resellerPortal")}

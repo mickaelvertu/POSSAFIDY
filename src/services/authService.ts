@@ -44,10 +44,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   ADMIN: ALL_PERMISSIONS.filter(permission => permission !== "users.delete"),
   VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit", "credit.sales", "transfers.view", "transfers.create"],
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
-  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count"],
+  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count", "cash_handover.view", "cash_handover.create"],
   CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count"],
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
-  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create"],
+  COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create", "cash_handover.view", "procurement.manage"],
   GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
   STAFF: ["dashboard.view"],
   REVENDEUR: []
@@ -60,16 +60,26 @@ export const DEFAULT_ARTICLE_VISIBILITY: Record<AppRoleId, ArticleTypeCode[]> = 
   MAGASINIER: ["RAW_MATERIAL", "RESALE"],
   RESPONSABLE_MAGASIN: ["RAW_MATERIAL", "RESALE"],
   PRODUCTION: ["RAW_MATERIAL", "RESALE"],
-  COMPTABLE: [],
+  COMPTABLE: ["RAW_MATERIAL"],
   GESTIONNAIRE_CREDIT: ["RESALE"],
   CONTROLEUR: ["RAW_MATERIAL", "RESALE"],
   STAFF: [],
   REVENDEUR: ["RESALE"]
 };
 
+const CASH_HANDOVER_PERMISSION_LABELS: Record<string, string> = {
+  "cash_handover.view": "Voir les remises de caisse",
+  "cash_handover.create": "Déclarer une clôture POS",
+  "cash_handover.receive": "Confirmer la réception de caisse",
+  "cash_handover.deposit": "Enregistrer un dépôt bancaire"
+};
+const PROCUREMENT_PERMISSION_LABELS: Record<string, string> = {
+  "procurement.manage": "Gérer les achats et paiements fournisseurs"
+};
+
 const permissionDefinition = (code: string) => ({
   code,
-  label: code.split(".").map(part => part[0].toUpperCase() + part.slice(1)).join(" "),
+  label: CASH_HANDOVER_PERMISSION_LABELS[code] || PROCUREMENT_PERMISSION_LABELS[code] || code.split(".").map(part => part[0].toUpperCase() + part.slice(1)).join(" "),
   description: `Permission ${code}`
 });
 
@@ -84,6 +94,8 @@ export const PERMISSION_GROUPS = [
   { id: "production", label: "Production", description: "Ordres de production", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("production.")) },
   { id: "reporting", label: "Rapports et audit", description: "Analyse et traçabilité", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("reports.") || permission.startsWith("audit.")) },
   { id: "expenses", label: "Dépenses", description: "Saisie et suivi des frais", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("expenses.")) },
+  { id: "cash_handover", label: "Remises de caisse", description: "Déclarations POS, réception et dépôts bancaires", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("cash_handover.")) },
+  { id: "procurement", label: "Achats & fournisseurs", description: "Saisir, approuver et régler les achats fournisseurs", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("procurement.")) },
   { id: "users", label: "Utilisateurs", description: "Administration des accès", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("users.")) }
 ].map(group => ({ ...group, permissions: group.permissions.map(permissionDefinition) }));
 

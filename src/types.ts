@@ -68,7 +68,10 @@ export const ALL_PERMISSIONS: AppPermission[] = [
   "production.validate", "reports.view", "reports.export", "audit.view",
   "credit.sales", "credit.manage", "inventory.count", "inventory.review",
   "users.view", "users.create", "users.edit", "users.delete", "users.permissions",
-  "expenses.view", "expenses.create", "units.manage"
+  "expenses.view", "expenses.create",
+  "cash_handover.view", "cash_handover.create", "cash_handover.receive", "cash_handover.deposit",
+  "procurement.manage",
+  "units.manage"
 ];
 
 // 1. Types de magasins
@@ -155,6 +158,8 @@ export interface SupplierPayment {
   paid_at: number;
   method: PaymentMethod;
   reference?: string;
+  paid_by?: string;
+  paid_by_name?: string;
 }
 
 export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "FOOD" | "SALARY_ADVANCE" | "OTHER";
@@ -182,6 +187,39 @@ export interface Expense {
   created_by: string;
   created_by_name: string;
   created_at: number;
+}
+
+export type CashHandoverStatus = "DECLARED" | "RECEIVED" | "DISCREPANCY" | "PARTIALLY_DEPOSITED" | "DEPOSITED";
+
+export interface CashHandoverDeposit {
+  amount: number;
+  bank_name: string;
+  reference: string;
+  deposited_by: string;
+  deposited_by_name: string;
+  deposited_at: number;
+}
+
+export interface CashHandover {
+  id: string;
+  handover_number: string;
+  store_id: string;
+  store_name: string;
+  business_date: string;
+  expected_cash_sales: number;
+  cash_sale_count: number;
+  declared_amount: number;
+  declared_by: string;
+  declared_by_name: string;
+  declared_at: number;
+  status: CashHandoverStatus;
+  received_amount?: number;
+  received_by?: string;
+  received_by_name?: string;
+  received_at?: number;
+  discrepancy_note?: string;
+  deposited_amount: number;
+  deposits: CashHandoverDeposit[];
 }
 
 export interface Purchase {

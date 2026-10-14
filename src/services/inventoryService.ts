@@ -314,15 +314,22 @@ export async function saveCategory(category: Category, auditLog?: AuditLog): Pro
   await batch.commit();
 }
 
-export async function loadProcurementData(): Promise<{ suppliers: Supplier[]; purchases: Purchase[] }> {
-  const [suppliersSnapshot, purchasesSnapshot] = await Promise.all([
+export async function loadProcurementData(storeIds?: string[]): Promise<{ suppliers: Supplier[]; purchases: Purchase[] }> {
+  const [suppliersSnapshot, purchases] = await Promise.all([
     getDocs(collection(db, SUPPLIERS_COLLECTION)),
-    getDocs(collection(db, PURCHASES_COLLECTION))
+    storeIds === undefined
+      ? getDocs(collection(db, PURCHASES_COLLECTION)).then(snapshot => snapshot.docs.map(item => item.data() as Purchase))
+      : storeIds.length === 0
+        ? Promise.resolve([] as Purchase[])
+        : Promise.all(storeIds.map(storeId =>
+            getDocs(query(collection(db, PURCHASES_COLLECTION), where("store_id", "==", storeId)))
+          )).then(snapshots => [...new Map(snapshots.flatMap(snapshot => snapshot.docs)
+            .map(item => [item.id, item.data() as Purchase])).values()])
   ]);
 
   return {
     suppliers: suppliersSnapshot.docs.map(snapshot => snapshot.data() as Supplier),
-    purchases: purchasesSnapshot.docs.map(snapshot => snapshot.data() as Purchase)
+    purchases
   };
 }
 
@@ -389,7 +396,6 @@ export async function approvePurchase(
   if (
     purchase.status !== "DRAFT" ||
     !purchase.created_by ||
-    purchase.created_by === updatedPurchase.approved_by ||
     updatedPurchase.status !== "APPROVED" ||
     updatedPurchase.transfer_id !== transfer.id ||
     transfer.type !== "SUPPLIER_TO_STORE" ||
@@ -450,6 +456,7 @@ export async function approvePurchase(
 
 export async function recordSupplierPayment(purchase: Purchase, payment: SupplierPayment, auditLog?: AuditLog): Promise<Purchase> {
   if (!Number.isFinite(payment.amount) || payment.amount <= 0) throw new Error("Le montant du paiement doit être positif.");
+  if (!payment.paid_by || !payment.paid_by_name) throw new Error("L'utilisateur qui enregistre le paiement doit être identifié.");
   let updatedPurchase: Purchase | undefined;
   await runOnlineTransaction(async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);

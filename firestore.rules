@@ -49,6 +49,7 @@ service cloud.firestore {
       let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isSuperAdmin() || (
         isActiveUser() && (
+          (hasPermission('procurement.manage') && articleType == 'RAW_MATERIAL') ||
           ('visibleArticleTypes' in profile && profile.visibleArticleTypes.hasAny([articleType])) ||
           (!('visibleArticleTypes' in profile) && (
             profile.role in ['ADMIN', 'MAGASINIER', 'RESPONSABLE_MAGASIN', 'PRODUCTION'] ||
@@ -146,7 +147,9 @@ service cloud.firestore {
     }
 
     match /suppliers/{supplierId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || hasPermission('procurement.manage');
+      allow create, update: if hasPermission('procurement.manage');
+      allow delete: if false;
     }
 
     match /employees/{employeeId} {
@@ -194,24 +197,128 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /purchases/{purchaseId} {
-      allow get: if isAdmin() || (
-        isActiveUser() &&
-        resource.data.status == 'APPROVED' &&
-        hasStoreAccess(resource.data.store_id)
+    match /cashHandovers/{handoverId} {
+      allow read: if (
+        hasPermission('cash_handover.view') ||
+        hasPermission('cash_handover.create') ||
+        hasPermission('cash_handover.receive') ||
+        hasPermission('cash_handover.deposit')
+      ) && hasStoreAccess(resource.data.store_id);
+      allow create: if hasPermission('cash_handover.create') &&
+        hasStoreAccess(request.resource.data.store_id) &&
+        exists(/databases/$(database)/documents/stores/$(request.resource.data.store_id)) &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'POS' &&
+        request.resource.data.id == handoverId &&
+        request.resource.data.handover_number is string &&
+        request.resource.data.business_date is string &&
+        request.resource.data.store_name is string &&
+        request.resource.data.declared_by_name is string &&
+        request.resource.data.declared_at is number &&
+        request.resource.data.cash_sale_count is number &&
+        request.resource.data.cash_sale_count >= 0 &&
+        request.resource.data.status == 'DECLARED' &&
+        request.resource.data.declared_by == request.auth.uid &&
+        request.resource.data.declared_amount is number &&
+        request.resource.data.declared_amount >= 0 &&
+        request.resource.data.expected_cash_sales is number &&
+        request.resource.data.expected_cash_sales >= 0 &&
+        request.resource.data.deposited_amount == 0 &&
+        request.resource.data.deposits is list &&
+        request.resource.data.deposits.size() == 0 &&
+        request.resource.data.keys().hasAll([
+          'id', 'handover_number', 'store_id', 'store_name', 'business_date',
+          'expected_cash_sales', 'cash_sale_count', 'declared_amount',
+          'declared_by', 'declared_by_name', 'declared_at', 'status',
+          'deposited_amount', 'deposits'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'id', 'handover_number', 'store_id', 'store_name', 'business_date',
+          'expected_cash_sales', 'cash_sale_count', 'declared_amount',
+          'declared_by', 'declared_by_name', 'declared_at', 'status',
+          'deposited_amount', 'deposits'
+        ]);
+      allow update: if (
+        hasPermission('cash_handover.receive') &&
+        hasStoreAccess(resource.data.store_id) &&
+        resource.data.status == 'DECLARED' &&
+        resource.data.declared_by != request.auth.uid &&
+        request.resource.data.status in ['RECEIVED', 'DISCREPANCY'] &&
+        request.resource.data.received_amount is number &&
+        request.resource.data.received_amount >= 0 &&
+        request.resource.data.received_by == request.auth.uid &&
+        request.resource.data.received_at is number &&
+        (
+          (request.resource.data.received_amount == resource.data.declared_amount &&
+            request.resource.data.status == 'RECEIVED') ||
+          (request.resource.data.received_amount != resource.data.declared_amount &&
+            request.resource.data.status == 'DISCREPANCY' &&
+            request.resource.data.get('discrepancy_note', '') is string &&
+            request.resource.data.get('discrepancy_note', '').size() > 0)
+        ) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'received_amount', 'received_by', 'received_by_name',
+          'received_at', 'discrepancy_note'
+        ])
+      ) || (
+        hasPermission('cash_handover.deposit') &&
+        hasStoreAccess(resource.data.store_id) &&
+        resource.data.status in ['RECEIVED', 'DISCREPANCY', 'PARTIALLY_DEPOSITED'] &&
+        request.resource.data.deposits is list &&
+        request.resource.data.deposits.size() == resource.data.deposits.size() + 1 &&
+        request.resource.data.deposits.hasAll(resource.data.deposits) &&
+        request.resource.data.deposited_amount is number &&
+        request.resource.data.deposited_amount ==
+          resource.data.deposited_amount +
+          request.resource.data.deposits[request.resource.data.deposits.size() - 1].amount &&
+        request.resource.data.deposited_amount <= resource.data.received_amount &&
+        request.resource.data.deposits[request.resource.data.deposits.size() - 1].amount is number &&
+        request.resource.data.deposits[request.resource.data.deposits.size() - 1].amount > 0 &&
+        request.resource.data.deposits[request.resource.data.deposits.size() - 1].bank_name is string &&
+        request.resource.data.deposits[request.resource.data.deposits.size() - 1].bank_name.size() > 0 &&
+        request.resource.data.deposits[request.resource.data.deposits.size() - 1].reference is string &&
+        request.resource.data.deposits[request.resource.data.deposits.size() - 1].reference.size() > 0 &&
+        request.resource.data.deposits[request.resource.data.deposits.size() - 1].deposited_by == request.auth.uid &&
+        request.resource.data.deposits[request.resource.data.deposits.size() - 1].deposited_at is number &&
+        (
+          (request.resource.data.deposited_amount == resource.data.received_amount &&
+            request.resource.data.status == 'DEPOSITED') ||
+          (request.resource.data.deposited_amount < resource.data.received_amount &&
+            request.resource.data.status == 'PARTIALLY_DEPOSITED')
+        ) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'deposits', 'deposited_amount', 'status'
+        ])
       );
-      allow list: if isAdmin();
-      allow create: if isAdmin() &&
+      allow delete: if false;
+    }
+
+    match /purchases/{purchaseId} {
+      allow get: if hasPermission('procurement.manage') &&
+        (resource == null || hasStoreAccess(resource.data.store_id));
+      allow list: if hasPermission('procurement.manage') && hasStoreAccess(resource.data.store_id);
+      allow create: if hasPermission('procurement.manage') &&
         request.resource.data.id == purchaseId &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.status == 'DRAFT' &&
+        hasStoreAccess(request.resource.data.store_id) &&
+        exists(/databases/$(database)/documents/stores/$(request.resource.data.store_id)) &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.is_active == true &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type in ['CENTRAL_WAREHOUSE', 'MANUFACTURER'] &&
+        exists(/databases/$(database)/documents/suppliers/$(request.resource.data.supplier_id)) &&
+        get(/databases/$(database)/documents/suppliers/$(request.resource.data.supplier_id)).data.is_active == true &&
         request.resource.data.lines is list &&
-        request.resource.data.lines.size() > 0;
+        request.resource.data.lines.size() > 0 &&
+        request.resource.data.total is number &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.amount_paid == 0 &&
+        request.resource.data.payment_status == 'UNPAID' &&
+        request.resource.data.payments is list &&
+        request.resource.data.payments.size() == 0;
       allow update: if (
-        isAdmin() &&
+        hasPermission('procurement.manage') &&
+        hasStoreAccess(resource.data.store_id) &&
         resource.data.status == 'DRAFT' &&
         request.resource.data.status == 'APPROVED' &&
-        resource.data.created_by != request.auth.uid &&
         request.resource.data.created_by == resource.data.created_by &&
         request.resource.data.store_id == resource.data.store_id &&
         request.resource.data.supplier_id == resource.data.supplier_id &&
@@ -235,12 +342,32 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.destination_store_id == resource.data.store_id &&
         getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.supplier_id == resource.data.supplier_id
       ) || (
-        isAdmin() &&
+        hasPermission('procurement.manage') &&
+        hasStoreAccess(resource.data.store_id) &&
         resource.data.get('status', 'RECEIVED') in ['APPROVED', 'RECEIVED'] &&
         request.resource.data.get('status', 'RECEIVED') == resource.data.get('status', 'RECEIVED') &&
+        request.resource.data.payments is list &&
+        request.resource.data.payments.size() == resource.data.payments.size() + 1 &&
+        request.resource.data.payments.hasAll(resource.data.payments) &&
+        request.resource.data.payments[request.resource.data.payments.size() - 1].amount is number &&
+        request.resource.data.payments[request.resource.data.payments.size() - 1].amount > 0 &&
+        request.resource.data.payments[request.resource.data.payments.size() - 1].paid_by == request.auth.uid &&
+        request.resource.data.payments[request.resource.data.payments.size() - 1].paid_at is number &&
+        request.resource.data.payments[request.resource.data.payments.size() - 1].method in [
+          'CASH', 'MVOLA', 'AIRTEL_MONEY', 'ORANGE_MONEY', 'CHECK', 'BANK_TRANSFER'
+        ] &&
         request.resource.data.amount_paid is number &&
-        request.resource.data.amount_paid >= resource.data.amount_paid &&
+        request.resource.data.amount_paid ==
+          resource.data.amount_paid +
+          request.resource.data.payments[request.resource.data.payments.size() - 1].amount &&
         request.resource.data.amount_paid <= resource.data.total &&
+        (
+          (request.resource.data.amount_paid == resource.data.total &&
+            request.resource.data.payment_status == 'PAID') ||
+          (request.resource.data.amount_paid < resource.data.total &&
+            request.resource.data.payment_status == 'PARTIAL')
+        ) &&
+        request.resource.data.updated_at == request.resource.data.payments[request.resource.data.payments.size() - 1].paid_at &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'amount_paid', 'payment_status', 'payments', 'updated_at'
         ])
@@ -853,7 +980,12 @@ service cloud.firestore {
     }
 
     match /transfers/{transferId} {
-      allow read: if isActiveUser() && (
+      allow get: if isActiveUser() && (
+        resource == null
+          ? (hasPermission('procurement.manage') || hasPermission('transfers.create'))
+          : (hasStoreAccess(resource.data.source_store_id) || hasStoreAccess(resource.data.destination_store_id))
+      );
+      allow list: if isActiveUser() && (
         hasStoreAccess(resource.data.source_store_id) || hasStoreAccess(resource.data.destination_store_id)
       );
       allow create: if (hasPermission('transfers.create') &&
@@ -879,7 +1011,7 @@ service cloud.firestore {
         request.resource.data.status == 'DRAFT' &&
         request.resource.data.lines is list &&
         request.resource.data.lines.size() > 0) || (
-        isAdmin() &&
+        hasPermission('procurement.manage') &&
         request.resource.data.id == transferId &&
         request.resource.data.type == 'SUPPLIER_TO_STORE' &&
         request.resource.data.status == 'IN_TRANSIT' &&
@@ -888,9 +1020,9 @@ service cloud.firestore {
         request.resource.data.supplier_id is string &&
         request.resource.data.source_store_id == 'supplier-' + request.resource.data.supplier_id &&
         request.resource.data.approved_by == request.auth.uid &&
-        request.resource.data.requested_by != request.auth.uid &&
         request.resource.data.lines is list &&
         request.resource.data.lines.size() > 0 &&
+        hasStoreAccess(request.resource.data.destination_store_id) &&
         exists(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)) &&
         get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.is_active == true &&
         request.resource.data.destination_store_id is string &&

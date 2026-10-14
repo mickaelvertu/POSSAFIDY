@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Factory,
   HandCoins,
+  Landmark,
   PackageCheck,
   Receipt,
   Ruler,
@@ -31,6 +32,7 @@ interface RoleHomeViewProps {
   onOpenCatalog: () => void;
   onOpenProcurement: () => void;
   onOpenExpenses: () => void;
+  onOpenCashHandovers: () => void;
   onOpenTransfers: () => void;
   onOpenCredit: () => void;
   onOpenResellerOrders: () => void;
@@ -46,7 +48,7 @@ interface RoleHomeViewProps {
   auditLogs: AuditLog[];
 }
 
-type AuditCategory = "SALE" | "TRANSFER" | "INVENTORY" | "PRODUCTION" | "EXPENSE" | "DEPOT";
+type AuditCategory = "SALE" | "TRANSFER" | "INVENTORY" | "PRODUCTION" | "EXPENSE" | "DEPOT" | "CASH_HANDOVER";
 type AuditPeriod = "HOUR" | "FOUR_HOURS" | "TODAY" | "WEEK";
 
 const auditCategoryLabels: Record<AuditCategory, string> = {
@@ -55,7 +57,8 @@ const auditCategoryLabels: Record<AuditCategory, string> = {
   INVENTORY: "Inventaire",
   PRODUCTION: "Production",
   EXPENSE: "Dépense",
-  DEPOT: "Dépôt"
+  DEPOT: "Dépôt",
+  CASH_HANDOVER: "Remise de caisse"
 };
 
 const auditCategoryCodes: Record<AuditCategory, string> = {
@@ -64,7 +67,8 @@ const auditCategoryCodes: Record<AuditCategory, string> = {
   INVENTORY: "INV",
   PRODUCTION: "PRD",
   EXPENSE: "EXP",
-  DEPOT: "DEP"
+  DEPOT: "DEP",
+  CASH_HANDOVER: "REM"
 };
 
 const auditActionLabels: Record<string, string> = {
@@ -98,7 +102,10 @@ const auditActionLabels: Record<string, string> = {
   EXPENSE_VALIDATED: "Dépense validée",
   EXPENSE_DELETED: "Dépense supprimée",
   STOCK_ADJUSTED: "Stock ajusté",
-  PURCHASE_RECEIVED: "Dépôt réceptionné"
+  PURCHASE_RECEIVED: "Dépôt réceptionné",
+  CASH_HANDOVER_DECLARED: "Clôture POS déclarée",
+  CASH_HANDOVER_RECEIVED: "Remise de caisse réceptionnée",
+  CASH_HANDOVER_BANK_DEPOSIT: "Dépôt bancaire enregistré"
 };
 
 const auditDetailHiddenFields = new Set(["id", "created_at", "updated_at", "device_id", "sale_id", "article_id", "seller_id", "verified_by", "validated_by"]);
@@ -125,7 +132,13 @@ const auditDetailFieldLabels: Record<string, string> = {
   status: "Statut",
   reason: "Motif",
   notes: "Notes",
-  description: "Description"
+  description: "Description",
+  handover_number: "N° de remise",
+  business_date: "Date de clôture",
+  expected_cash_sales: "Ventes espèces attendues",
+  declared_amount: "Montant déclaré",
+  received_amount: "Montant reçu",
+  deposited_amount: "Montant déposé"
 };
 
 function getAuditCategory(log: AuditLog): AuditCategory | null {
@@ -146,6 +159,8 @@ function getAuditCategory(log: AuditLog): AuditCategory | null {
     case "STOCK_DEPOSIT":
     case "PURCHASE":
       return "DEPOT";
+    case "CASH_HANDOVER":
+      return "CASH_HANDOVER";
     default:
       return null;
   }
@@ -161,6 +176,7 @@ function getAuditDescription(log: AuditLog): string {
     value.sale_number,
     value.transfer_number,
     value.purchase_number,
+    value.handover_number,
     value.expense_number,
     value.reference_number,
     value.invoice_number,
@@ -285,6 +301,7 @@ const accessCards = [
   { permission: "catalog.manage", title: "Articles & catégories", description: "Gérer les articles et leur classification", icon: PackageCheck, accent: "indigo" },
   { permission: "procurement.manage", title: "Achats & fournisseurs", description: "Réceptionner les achats et suivre les échéances", icon: Truck, accent: "emerald" },
   { permission: "expenses.view", title: "Dépenses & frais", description: "Suivre les loyers, factures et autres charges", icon: HandCoins, accent: "amber" },
+  { permission: "cash_handover.view", title: "Remises de caisse", description: "Déclarer les clôtures POS, confirmer les réceptions et suivre les dépôts bancaires", icon: Landmark, accent: "teal" },
   { permission: "units.manage", title: "Unités de mesure", description: "Administrer les unités du catalogue", icon: Ruler, accent: "emerald" },
   { permission: "staff.manage", title: "Personnel", description: "Gérer les employés, affectations et contrats", icon: UserRound, accent: "violet" }
 ];
@@ -299,7 +316,7 @@ const accentClasses: Record<string, string> = {
   teal: "bg-teal-50 text-teal-700 border-teal-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenInventory, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenCashHandovers, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenInventory, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -327,8 +344,9 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
   const availableCards = accessCards.filter(card => {
     if (card.permission === "reseller.orders") return isAdmin;
     if (card.permission === "inventory.control") return isAdmin || role === "RESPONSABLE_MAGASIN" || hasPermission(user, "inventory.count") || hasPermission(user, "inventory.review");
-    if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "procurement.manage" || card.permission === "units.manage" || card.permission === "staff.manage") return isAdmin;
+    if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "units.manage" || card.permission === "staff.manage") return isAdmin;
     if (card.permission === "expenses.view") return isAdmin || hasPermission(user, "expenses.view") || hasPermission(user, "expenses.create");
+    if (card.permission === "cash_handover.view") return isAdmin || ["view", "create", "receive", "deposit"].some(action => hasPermission(user, `cash_handover.${action}`));
     if (card.permission === "transfers.view" && isAdmin) return true;
     if (card.permission === "reports.view" && isAdmin) return true;
     if (card.permission === "credit.manage" && isAdmin) return true;
@@ -625,6 +643,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isCatalogCard = card.permission === "catalog.manage";
               const isProcurementCard = card.permission === "procurement.manage";
               const isExpensesCard = card.permission === "expenses.view";
+              const isCashHandoverCard = card.permission === "cash_handover.view";
               const isTransfersCard = card.permission === "transfers.view";
               const isCreditCard = card.permission === "credit.manage";
               const isUnitsCard = card.permission === "units.manage";
@@ -633,12 +652,12 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isStaffCard = card.permission === "staff.manage";
               const isResellerOrdersCard = card.permission === "reseller.orders";
               const isInventoryCard = card.permission === "inventory.control";
-              const isActionable = isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
+              const isActionable = isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isCashHandoverCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
               return (
                 <button
                   key={card.permission}
                   type="button"
-                  onClick={isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
+                  onClick={isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isCashHandoverCard ? onOpenCashHandovers : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >
