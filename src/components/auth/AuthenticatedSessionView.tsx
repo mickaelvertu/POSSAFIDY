@@ -143,6 +143,7 @@ export default function AuthenticatedSessionView() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expensesLoadError, setExpensesLoadError] = useState<string | null>(null);
   const [cashHandovers, setCashHandovers] = useState<CashHandover[]>([]);
   const [cashHandoversError, setCashHandoversError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -349,13 +350,15 @@ export default function AuthenticatedSessionView() {
     const canViewExpenses = user?.status === "ACTIVE" && (canManageStores || user.permissions.includes("expenses.view") || user.permissions.includes("expenses.create"));
     if (!canViewExpenses) {
       setExpenses([]);
+      setExpensesLoadError("Accès aux dépenses nécessaire pour calculer la clôture POS.");
       return;
     }
+    setExpensesLoadError("Chargement des dépenses en cours.");
     loadExpenses(user?.role === "SUPER_ADMIN" ? undefined : user?.assignedStores, user?.id)
       .then(loadedExpenses => {
-        if (isMounted) setExpenses(loadedExpenses);
+        if (isMounted) { setExpenses(loadedExpenses); setExpensesLoadError(null); }
       })
-      .catch(error => console.error("Expense Firestore load failed:", error));
+      .catch(error => { console.error("Expense Firestore load failed:", error); if (isMounted) setExpensesLoadError("Impossible de charger les dépenses pour calculer la clôture POS."); });
     return () => {
       isMounted = false;
     };
@@ -2712,8 +2715,9 @@ export default function AuthenticatedSessionView() {
             <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">← Retour à l'accueil</button>
             <CashHandoverView
               handovers={cashHandovers}
-              loadError={cashHandoversError}
-              sales={visibleSales}
+              loadError={cashHandoversError || expensesLoadError}
+              sales={sales}
+              expenses={expenses}
               stores={accessibleStores}
               currentUser={currentAppUser}
               canCreate={hasCashHandoverPermission(currentAppUser, "create")}

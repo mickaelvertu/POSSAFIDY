@@ -1,11 +1,13 @@
 import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { Banknote, Building2, CheckCircle2, ClipboardCheck, Landmark, Plus, ReceiptText } from "lucide-react";
-import { AppUser, CashHandover, CashHandoverDeposit, Sale, Store } from "../types";
+import { AppUser, CashHandover, CashHandoverDeposit, Expense, Sale, Store } from "../types";
+import { calculateCashClosing } from "../services/cashClosingCalculation";
 
 interface CashHandoverViewProps {
   handovers: CashHandover[];
   loadError?: string | null;
   sales: Sale[];
+  expenses: Expense[];
   stores: Store[];
   currentUser: AppUser;
   canCreate: boolean;
@@ -31,7 +33,7 @@ const statusLabels: Record<CashHandover["status"], string> = {
 };
 
 export default function CashHandoverView({
-  handovers, loadError, sales, stores, currentUser, canCreate, canReceive, canDeposit,
+  handovers, loadError, sales, expenses, stores, currentUser, canCreate, canReceive, canDeposit,
   onCreate, onConfirmReceipt, onRecordDeposit
 }: CashHandoverViewProps) {
   const posStores = stores.filter(store => store.store_type === "POS" && store.is_active);
@@ -40,7 +42,6 @@ export default function CashHandoverView({
   const [depositHandover, setDepositHandover] = useState<CashHandover | null>(null);
   const [storeId, setStoreId] = useState(posStores.length === 1 ? posStores[0].id : "");
   const [businessDate, setBusinessDate] = useState(localDate(Date.now()));
-  const [declaredAmount, setDeclaredAmount] = useState("");
   const [receivedAmount, setReceivedAmount] = useState("");
   const [discrepancyNote, setDiscrepancyNote] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
@@ -49,12 +50,9 @@ export default function CashHandoverView({
   const [formError, setFormError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const expectedCashFor = (targetStoreId: string, targetDate: string) => sales
-    .filter(sale => sale.store_id === targetStoreId && sale.status === "VALIDATED" &&
-      sale.payment_method === "CASH" && sale.payment_status !== "PENDING" &&
-      localDate(sale.created_at) === targetDate)
-    .reduce((total, sale) => total + Math.max(0, sale.amount_paid - (sale.change_returned || 0)), 0);
-  const expectedCash = useMemo(() => expectedCashFor(storeId, businessDate), [sales, storeId, businessDate]);
+  const closing = useMemo(() => calculateCashClosing(sales, expenses, storeId, businessDate), [sales, expenses, storeId, businessDate]);
+  const expectedCash = closing.salesAmount;
+  const declaredAmount = closing.netAmount;
 
   const resetCreateForm = () => {
     setIsCreateOpen(false);
@@ -63,6 +61,8 @@ export default function CashHandoverView({
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
+    if (loadError) { setFormError(loadError); return; }
+    if (declaredAmount < 0) { setFormError("Les dépenses dépassent les ventes espèces du jour. Vérifiez la caisse avant de déclarer la clôture."); return; }
     const store = posStores.find(item => item.id === storeId);
     const amount = Number(declaredAmount);
     if (!store || !businessDate || !Number.isInteger(amount) || amount < 0) {
@@ -90,9 +90,7 @@ export default function CashHandoverView({
       store_name: store.name,
       business_date: businessDate,
       expected_cash_sales: expectedCash,
-      cash_sale_count: sales.filter(sale => sale.store_id === store.id && sale.status === "VALIDATED" &&
-        sale.payment_method === "CASH" && sale.payment_status !== "PENDING" &&
-        localDate(sale.created_at) === businessDate).length,
+      cash_sale_count: closing.saleCount,
       declared_amount: amount,
       declared_by: currentUser.uid,
       declared_by_name: currentUser.displayName,
@@ -105,7 +103,6 @@ export default function CashHandoverView({
     setFormError("");
     try {
       await onCreate(handover);
-      setDeclaredAmount("");
       resetCreateForm();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Impossible d'enregistrer la déclaration.");
@@ -207,7 +204,7 @@ export default function CashHandoverView({
           <h1 className="text-xl font-black text-slate-900">Remises de caisse</h1>
           <p className="mt-1 text-sm text-slate-600">Déclaration POS, confirmation de réception et suivi des dépôts bancaires.</p>
         </div>
-        {canCreate && <button type="button" onClick={() => { setFormError(""); setDeclaredAmount(String(expectedCash)); setIsCreateOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white"><Plus className="h-4 w-4" /> Déclarer une clôture POS</button>}
+        {canCreate && <button type="button" onClick={() => { setFormError(""); setIsCreateOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white"><Plus className="h-4 w-4" /> Déclarer une clôture POS</button>}
       </header>
 
       <aside className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
@@ -256,10 +253,11 @@ export default function CashHandoverView({
       </div>
 
       {isCreateOpen && modal("Déclarer la clôture POS", "Envoyer la déclaration", handleCreate, <>
-      <label className="block space-y-1 text-xs font-semibold text-slate-700">Point de vente<select required value={storeId} onChange={event => { setStoreId(event.target.value); setDeclaredAmount(String(expectedCashFor(event.target.value, businessDate))); }} className={inputClass}><option value="">Choisir un point de vente</option>{posStores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select></label>
-      <label className="block space-y-1 text-xs font-semibold text-slate-700">Date de clôture<input required type="date" max={localDate(Date.now())} value={businessDate} onChange={event => { setBusinessDate(event.target.value); setDeclaredAmount(String(expectedCashFor(storeId, event.target.value))); }} className={inputClass} /></label>
+      <label className="block space-y-1 text-xs font-semibold text-slate-700">Point de vente<select required value={storeId} onChange={event => { setStoreId(event.target.value); }} className={inputClass}><option value="">Choisir un point de vente</option>{posStores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select></label>
+      <label className="block space-y-1 text-xs font-semibold text-slate-700">Date de clôture<input required type="date" max={localDate(Date.now())} value={businessDate} onChange={event => { setBusinessDate(event.target.value); }} className={inputClass} /></label>
         <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Ventes espèces validées enregistrées : <strong className="text-slate-900">{money(expectedCash)}</strong></div>
-        <label className="block space-y-1 text-xs font-semibold text-slate-700">Montant réellement déclaré (Ar)<input required type="number" min="0" step="1" value={declaredAmount} onChange={event => setDeclaredAmount(event.target.value)} className={inputClass} /></label>
+        <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Dépenses espèces payées du jour : <strong>{money(closing.expensesAmount)}</strong></div>
+        <label className="block space-y-1 text-xs font-semibold text-slate-700">Montant déclaré : ventes − dépenses (Ar)<input required type="number" min="0" step="1" value={declaredAmount} readOnly className={inputClass} /></label>
       </>)}
 
       {receiptHandover && modal(`Confirmer la réception · ${receiptHandover.handover_number}`, "Confirmer la réception", handleReceipt, <>

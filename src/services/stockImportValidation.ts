@@ -1,4 +1,4 @@
-import { Article, Store, StoreStock } from "../types";
+import { Article, Store, StoreStock, StockMovement } from "../types";
 
 const MAX_IMPORT_ROWS = 5000;
 
@@ -107,4 +107,40 @@ export function validateInitialStockImport(
   });
 
   return { rows, errors };
+}
+
+export const INITIAL_STOCK_REFERENCE_TYPES = ["INITIAL_STOCK_IMPORT", "INITIAL_STOCK_REIMPORT"];
+
+const pairKey = (storeId: string, articleId: string) => `${storeId}\u0000${articleId}`;
+
+// The initial baseline of a store/article is the sum of its initial import and re-import movements;
+// every other movement (transfers, sales, production...) is activity that happened on top of it.
+export function sumInitialBaselines(movements: Pick<StockMovement, "store_id" | "article_id" | "quantity" | "reference_type" | "stock_bucket">[]): Map<string, number> {
+  const baselines = new Map<string, number>();
+  movements.forEach(movement => {
+    if (!INITIAL_STOCK_REFERENCE_TYPES.includes(movement.reference_type) || movement.stock_bucket) return;
+    const key = pairKey(movement.store_id, movement.article_id);
+    baselines.set(key, (baselines.get(key) || 0) + movement.quantity);
+  });
+  return baselines;
+}
+
+// Lines of the previous import that are missing from the corrected file get a new initial quantity of 0,
+// so stock imported in the wrong store is removed while its later movements are kept.
+export function planInitialStockReimport(
+  rows: InitialStockImportRow[],
+  baselines: Map<string, number>
+): { row: InitialStockImportRow; baseline: number }[] {
+  const plan = rows.map(row => ({ row, baseline: baselines.get(pairKey(row.store_id, row.article_id)) || 0 }));
+  const kept = new Set(rows.map(row => pairKey(row.store_id, row.article_id)));
+  baselines.forEach((baseline, key) => {
+    if (kept.has(key) || baseline === 0) return;
+    const [store_id, article_id] = key.split("\u0000");
+    plan.push({ row: { id: `stock-${store_id}-${article_id}`, store_id, article_id, quantity: 0 }, baseline });
+  });
+  return plan;
+}
+
+export function computeReimportQuantity(newInitial: number, baseline: number, current: number): number {
+  return current - baseline + newInitial;
 }

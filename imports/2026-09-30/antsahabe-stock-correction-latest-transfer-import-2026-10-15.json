@@ -1,0 +1,491 @@
+{
+  "version": 1,
+  "purpose": "Correct initial stock while retaining balances from the latest stock export",
+  "baseline_reference": "SYNC-109F1A1D",
+  "source_exported_at": "2026-10-15T11:31:48.682Z",
+  "summary": {
+    "stock_exported_at": "2026-10-15T11:31:48.682Z",
+    "changed_articles": 59,
+    "latest_activity_articles": 11,
+    "latest_activity_net_quantity": 58,
+    "current_store_total": 498,
+    "adjustment_total": 11,
+    "corrected_store_total": 509,
+    "corrected_initial_total": 485,
+    "other_store_rows_in_import": 0
+  },
+  "data": [
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-aloe-miel",
+      "article_code": "AM002",
+      "article_name": "ALOE MIEL",
+      "expected_current_quantity": 11,
+      "quantity": 12
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-aloe-noni",
+      "article_code": "AN001",
+      "article_name": "ALOE NONI",
+      "expected_current_quantity": 4,
+      "quantity": 2
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-aloe-pur",
+      "article_code": "AP004",
+      "article_name": "ALOE PUR",
+      "expected_current_quantity": 11,
+      "quantity": 7
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-ananambo",
+      "article_code": "AN003",
+      "article_name": "ANANAMBO",
+      "expected_current_quantity": 5,
+      "quantity": 4
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-anjarasoa",
+      "article_code": "AN034",
+      "article_name": "ANJARASOA",
+      "expected_current_quantity": 7,
+      "quantity": 5
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-anti-stress",
+      "article_code": "AS017",
+      "article_name": "ANTI STRESS",
+      "expected_current_quantity": 4,
+      "quantity": 8
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-avr",
+      "article_code": "AV012",
+      "article_name": "AVR",
+      "expected_current_quantity": 14,
+      "quantity": 10
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-argile-verte",
+      "article_code": "AV026",
+      "article_name": "ARGILE VERTE",
+      "expected_current_quantity": 3,
+      "quantity": 5
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-baobab",
+      "article_code": "BA036",
+      "article_name": "BAOBAB",
+      "expected_current_quantity": 5,
+      "quantity": 7
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-baume-alavonto",
+      "article_code": "BA006",
+      "article_name": "Baume ALAVONTO",
+      "expected_current_quantity": 8,
+      "quantity": 19
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-baume-anti-cellulites",
+      "article_code": "BA010",
+      "article_name": "Baume Anti cellulites",
+      "expected_current_quantity": 6,
+      "quantity": 5
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-baume-anti-virus",
+      "article_code": "BA041",
+      "article_name": "Baume ANTI VIRUS",
+      "expected_current_quantity": 7,
+      "quantity": 15
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-baume-champion",
+      "article_code": "BC037",
+      "article_name": "Baume CHAMPION",
+      "expected_current_quantity": 28,
+      "quantity": 15
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-baume-memoire",
+      "article_code": "BM008",
+      "article_name": "Baume MEMOIRE",
+      "expected_current_quantity": 1,
+      "quantity": 6
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-baume-radriaka",
+      "article_code": "BR025",
+      "article_name": "Baume RADRIAKA",
+      "expected_current_quantity": 11,
+      "quantity": 3
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-baume-ravitsara",
+      "article_code": "BR150",
+      "article_name": "Baume RAVINTSARA",
+      "expected_current_quantity": 7,
+      "quantity": 3
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-beroberoka",
+      "article_code": "BE031",
+      "article_name": "BEROBEROKA",
+      "expected_current_quantity": 29,
+      "quantity": 7
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-beurre-de-karite",
+      "article_code": "BK016",
+      "article_name": "BEURRE DE KARITE",
+      "expected_current_quantity": 4,
+      "quantity": 11
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-bois-de-rose",
+      "article_code": "BR019",
+      "article_name": "BOIS DE ROSE",
+      "expected_current_quantity": 0,
+      "quantity": 3
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-calcium-masy",
+      "article_code": "CM040",
+      "article_name": "CALCIUM MASY",
+      "expected_current_quantity": 6,
+      "quantity": 11
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-circulation",
+      "article_code": "CI032",
+      "article_name": "CIRCULATION",
+      "expected_current_quantity": 5,
+      "quantity": 3
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-corofar-gm",
+      "article_code": "CG024",
+      "article_name": "COROFAR GM",
+      "expected_current_quantity": 9,
+      "quantity": 13
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-creme-coiffante",
+      "article_code": "CC013",
+      "article_name": "CREME COIFFANTE",
+      "expected_current_quantity": 9,
+      "quantity": 0
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-derma-g",
+      "article_code": "DG039",
+      "article_name": "DERMA-G",
+      "expected_current_quantity": 6,
+      "quantity": 3
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-desmofar-gm",
+      "article_code": "DG011",
+      "article_name": "DESMOFAR GM",
+      "expected_current_quantity": 25,
+      "quantity": 31
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-detox",
+      "article_code": "DE030",
+      "article_name": "DETOX",
+      "expected_current_quantity": 5,
+      "quantity": 13
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-eau-micellaire-gm",
+      "article_code": "EM023",
+      "article_name": "EAU MICELLAIRE GM",
+      "expected_current_quantity": 9,
+      "quantity": 8
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-eau-micellaire-pm",
+      "article_code": "EM007",
+      "article_name": "EAU MICELLAIRE PM",
+      "expected_current_quantity": 4,
+      "quantity": 10
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-fanazava",
+      "article_code": "FA029",
+      "article_name": "FANAZAVA",
+      "expected_current_quantity": 3,
+      "quantity": 5
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-fandravagodro",
+      "article_code": "FA014",
+      "article_name": "FANDRAVAGODRO",
+      "expected_current_quantity": 1,
+      "quantity": 4
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-g-articulation",
+      "article_code": "GA020",
+      "article_name": "G-ARTICULATION",
+      "expected_current_quantity": 9,
+      "quantity": 4
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-he-radriaka",
+      "article_code": "HR089",
+      "article_name": "HE RADRIAKA",
+      "expected_current_quantity": 5,
+      "quantity": 4
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-he-ravintsara",
+      "article_code": "HR046",
+      "article_name": "HE RAVINTSARA",
+      "expected_current_quantity": 0,
+      "quantity": 1
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-hodipotsy",
+      "article_code": "HO043",
+      "article_name": "HODIPOTSY",
+      "expected_current_quantity": 7,
+      "quantity": 6
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-kinana",
+      "article_code": "KI044",
+      "article_name": "KINANA",
+      "expected_current_quantity": 2,
+      "quantity": 5
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-komima",
+      "article_code": "KO064",
+      "article_name": "KOMIMA",
+      "expected_current_quantity": 2,
+      "quantity": 6
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-lotion-intime",
+      "article_code": "LI047",
+      "article_name": "LOTION INTIME",
+      "expected_current_quantity": 4,
+      "quantity": 6
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-madetussyl",
+      "article_code": "MA045",
+      "article_name": "MADETUSSYL",
+      "expected_current_quantity": 4,
+      "quantity": 5
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-miel",
+      "article_code": "MI061",
+      "article_name": "MIEL",
+      "expected_current_quantity": 5,
+      "quantity": 10
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-noni",
+      "article_code": "NO052",
+      "article_name": "NONI",
+      "expected_current_quantity": 8,
+      "quantity": 12
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-oac",
+      "article_code": "OA049",
+      "article_name": "OAC",
+      "expected_current_quantity": 1,
+      "quantity": 0
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-ody-vato",
+      "article_code": "OV054",
+      "article_name": "ODY VATO",
+      "expected_current_quantity": 0,
+      "quantity": 1
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-omega-3-gm",
+      "article_code": "O3050",
+      "article_name": "OMEGA 3 GM",
+      "expected_current_quantity": 13,
+      "quantity": 10
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-omega-3-pm",
+      "article_code": "O3055",
+      "article_name": "OMEGA 3 PM",
+      "expected_current_quantity": 22,
+      "quantity": 20
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-omega-diabete",
+      "article_code": "OD065",
+      "article_name": "OMEGA DIABETE",
+      "expected_current_quantity": 7,
+      "quantity": 6
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-protofar-gm",
+      "article_code": "PG077",
+      "article_name": "PROTOFAR GM",
+      "expected_current_quantity": 7,
+      "quantity": 6
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-protofar-pm",
+      "article_code": "PP081",
+      "article_name": "PROTOFAR PM",
+      "expected_current_quantity": 12,
+      "quantity": 19
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-rois-des-herbes",
+      "article_code": "RH090",
+      "article_name": "ROIS DES HERBES",
+      "expected_current_quantity": 0,
+      "quantity": 1
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-revitalisant",
+      "article_code": "RE070",
+      "article_name": "REVITALISANT",
+      "expected_current_quantity": 8,
+      "quantity": 18
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-savon-anti-rides",
+      "article_code": "SA079",
+      "article_name": "SAVON ANTI RIDES",
+      "expected_current_quantity": 6,
+      "quantity": 1
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-savon-manazava",
+      "article_code": "SM068",
+      "article_name": "SAVON MANAZAVA",
+      "expected_current_quantity": 3,
+      "quantity": 5
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-savon-vahona",
+      "article_code": "SV066",
+      "article_name": "SAVON VAHONA",
+      "expected_current_quantity": 6,
+      "quantity": 3
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-spray",
+      "article_code": "SP102",
+      "article_name": "SPRAY",
+      "expected_current_quantity": 3,
+      "quantity": 4
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-spiruline",
+      "article_code": "SP076",
+      "article_name": "SPIRULINE",
+      "expected_current_quantity": 7,
+      "quantity": 10
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-tanjaka",
+      "article_code": "TA083",
+      "article_name": "TANJAKA",
+      "expected_current_quantity": 12,
+      "quantity": 5
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-tanjaka-plus",
+      "article_code": "TP074",
+      "article_name": "TANJAKA PLUS",
+      "expected_current_quantity": 9,
+      "quantity": 10
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-vinaigre-pm",
+      "article_code": "VP069",
+      "article_name": "VINAIGRE PM",
+      "expected_current_quantity": 4,
+      "quantity": 2
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-voamboatavo-gm",
+      "article_code": "VG084",
+      "article_name": "VOAMBOATAVO GM",
+      "expected_current_quantity": 18,
+      "quantity": 13
+    },
+    {
+      "store_id": "store-pos-02",
+      "article_id": "article-resale-voamboatavo-pm",
+      "article_code": "VP085",
+      "article_name": "VOAMBOATAVO PM",
+      "expected_current_quantity": 14,
+      "quantity": 15
+    }
+  ]
+}
