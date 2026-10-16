@@ -5,6 +5,15 @@ export const cashBusinessDate = (timestamp: number) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
+export function calculateStoreDailyTotals(sales: Sale[], expenses: Expense[], storeId: string, businessDate: string) {
+  const validatedSales = sales.filter(sale => sale.store_id === storeId && sale.status === "VALIDATED" && cashBusinessDate(sale.created_at) === businessDate);
+  const salesAmount = validatedSales.reduce((total, sale) => total + sale.total, 0);
+  const expensesAmount = expenses.filter(expense => expense.store_id === storeId && expense.status !== "DRAFT" &&
+    expense.payment_status === "PAID" && cashBusinessDate(expense.expense_date) === businessDate)
+    .reduce((total, expense) => total + expense.amount, 0);
+  return { salesAmount, expensesAmount, netAmount: salesAmount - expensesAmount };
+}
+
 export function calculateCashClosing(sales: Sale[], expenses: Expense[], storeId: string, businessDate: string) {
   const cashSales = sales.filter(sale => sale.store_id === storeId && sale.status === "VALIDATED" &&
     sale.payment_method === "CASH" && sale.payment_status !== "PENDING" && cashBusinessDate(sale.created_at) === businessDate);

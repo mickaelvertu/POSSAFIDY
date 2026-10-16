@@ -1,0 +1,214 @@
+{
+    "version":  1,
+    "purpose":  "Set diagnostic test stock from user-confirmed zero balances",
+    "quantity_mode":  "ABSOLUTE",
+    "confirmed_current_stock":  0,
+    "summary":  [
+                    {
+                        "store_code":  "POS-22",
+                        "rows":  9,
+                        "quantity":  92
+                    },
+                    {
+                        "store_code":  "POS-21",
+                        "rows":  9,
+                        "quantity":  65
+                    },
+                    {
+                        "store_code":  "POS-04",
+                        "rows":  9,
+                        "quantity":  202
+                    }
+                ],
+    "data":  [
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "FT117",
+                     "article_name":  "FIEVRE TYPHO",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "FT117",
+                     "article_name":  "FIEVRE TYPHO",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "FT117",
+                     "article_name":  "FIEVRE TYPHO",
+                     "quantity":  8,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "TO104",
+                     "article_name":  "TOXO",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "TO104",
+                     "article_name":  "TOXO",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "TO104",
+                     "article_name":  "TOXO",
+                     "quantity":  3,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "VIH",
+                     "article_name":  "VIH Combo",
+                     "quantity":  0,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "VIH",
+                     "article_name":  "VIH Combo",
+                     "quantity":  0,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "VIH",
+                     "article_name":  "VIH Combo",
+                     "quantity":  22,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "HC110",
+                     "article_name":  "HCG",
+                     "quantity":  19,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "HC110",
+                     "article_name":  "HCG",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "HC110",
+                     "article_name":  "HCG",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "LH",
+                     "article_name":  "LH TEST D\u0027OVULATION",
+                     "quantity":  18,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "LH",
+                     "article_name":  "LH TEST D\u0027OVULATION",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "LH",
+                     "article_name":  "LH TEST D\u0027OVULATION",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "HB107",
+                     "article_name":  "HEPATITE B",
+                     "quantity":  0,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "HB107",
+                     "article_name":  "HEPATITE B",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "HB107",
+                     "article_name":  "HEPATITE B",
+                     "quantity":  31,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "HEP-C",
+                     "article_name":  "HEPATITE C",
+                     "quantity":  0,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "HEP-C",
+                     "article_name":  "HEPATITE C",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "HEP-C",
+                     "article_name":  "HEPATITE C",
+                     "quantity":  32,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "PA113",
+                     "article_name":  "PALU",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "PA113",
+                     "article_name":  "PALU",
+                     "quantity":  5,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "PA113",
+                     "article_name":  "PALU",
+                     "quantity":  30,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-22",
+                     "article_code":  "GL109",
+                     "article_name":  "GLYCEMIE",
+                     "quantity":  40,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-21",
+                     "article_code":  "GL109",
+                     "article_name":  "GLYCEMIE",
+                     "quantity":  30,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_code":  "POS-04",
+                     "article_code":  "GL109",
+                     "article_name":  "GLYCEMIE",
+                     "quantity":  66,
+                     "expected_current_quantity":  0
+                 }
+             ]
+}

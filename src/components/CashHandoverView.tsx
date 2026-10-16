@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { Banknote, Building2, CheckCircle2, ClipboardCheck, Landmark, Plus, ReceiptText } from "lucide-react";
 import { AppUser, CashHandover, CashHandoverDeposit, Expense, Sale, Store } from "../types";
-import { calculateCashClosing } from "../services/cashClosingCalculation";
+import { calculateCashClosing, calculateStoreDailyTotals } from "../services/cashClosingCalculation";
 
 interface CashHandoverViewProps {
   handovers: CashHandover[];
@@ -42,6 +42,8 @@ export default function CashHandoverView({
   const [depositHandover, setDepositHandover] = useState<CashHandover | null>(null);
   const [storeId, setStoreId] = useState(posStores.length === 1 ? posStores[0].id : "");
   const [businessDate, setBusinessDate] = useState(localDate(Date.now()));
+  const [reviewDate, setReviewDate] = useState(localDate(Date.now()));
+  const [reviewStoreId, setReviewStoreId] = useState("");
   const [receivedAmount, setReceivedAmount] = useState("");
   const [discrepancyNote, setDiscrepancyNote] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
@@ -53,6 +55,12 @@ export default function CashHandoverView({
   const closing = useMemo(() => calculateCashClosing(sales, expenses, storeId, businessDate), [sales, expenses, storeId, businessDate]);
   const expectedCash = closing.salesAmount;
   const declaredAmount = closing.netAmount;
+  const dailyRows = useMemo(() => stores.filter(store => !reviewStoreId || store.id === reviewStoreId).map(store => ({
+    store,
+    totals: calculateStoreDailyTotals(sales, expenses, store.id, reviewDate),
+    cash: calculateCashClosing(sales, expenses, store.id, reviewDate),
+    handover: handovers.find(item => item.store_id === store.id && item.business_date === reviewDate)
+  })), [stores, sales, expenses, handovers, reviewDate, reviewStoreId]);
 
   const resetCreateForm = () => {
     setIsCreateOpen(false);
@@ -213,6 +221,37 @@ export default function CashHandoverView({
       </aside>
 
       {loadError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">Impossible de charger les remises de caisse : {loadError}</p>}
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="space-y-3 border-b border-slate-100 p-4">
+          <h2 className="font-bold text-slate-900">Ventes − dépenses par magasin</h2>
+          <p className="text-xs text-slate-600">Toutes les ventes validées, y compris à crédit, moins les dépenses payées. Le net espèces correspond aux fonds à remettre et à confirmer comme reçus.</p>
+          <div className="flex flex-wrap gap-3">
+            <label className="text-xs font-semibold text-slate-700">Journée<input type="date" value={reviewDate} max={localDate(Date.now())} onChange={event => setReviewDate(event.target.value)} className={inputClass} /></label>
+            <label className="text-xs font-semibold text-slate-700">Magasin<select value={reviewStoreId} onChange={event => setReviewStoreId(event.target.value)} className={inputClass}><option value="">Tous les magasins</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select></label>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[950px] text-left text-xs">
+            <thead className="bg-slate-50 text-slate-600"><tr>{["Magasin", "Ventes", "Dépenses payées", "Ventes − dépenses", "Net espèces à remettre", "Montant reçu", "Statut / Actions"].map(label => <th key={label} className="px-4 py-3">{label}</th>)}</tr></thead>
+            <tbody className="divide-y divide-slate-100">{dailyRows.map(({ store, totals, cash, handover }) => <tr key={store.id}>
+              <td className="px-4 py-3 font-bold text-slate-900">{store.name}</td>
+              <td className="px-4 py-3">{money(totals.salesAmount)}</td>
+              <td className="px-4 py-3">{money(totals.expensesAmount)}</td>
+              <td className="px-4 py-3 font-bold">{money(totals.netAmount)}</td>
+              <td className="px-4 py-3">{money(cash.netAmount)}{handover && handover.declared_amount !== cash.netAmount && <p className="mt-1 text-rose-700">Déclaré : {money(handover.declared_amount)} · données modifiées après déclaration</p>}</td>
+              <td className="px-4 py-3">{handover?.received_by ? money(handover.received_amount ?? 0) : "En attente"}</td>
+              <td className="space-y-2 px-4 py-3">
+                <p>{handover ? statusLabels[handover.status] : "Non déclaré"}</p>
+                {!handover && canCreate && store.store_type === "POS" && store.is_active && <button type="button" disabled={!!loadError || !reviewDate || cash.netAmount < 0} onClick={() => { setStoreId(store.id); setBusinessDate(reviewDate); setFormError(""); setIsCreateOpen(true); }} className="font-semibold text-emerald-700 disabled:opacity-40">Déclarer la remise</button>}
+                {handover && canReceive && handover.status === "DECLARED" && handover.declared_by !== currentUser.uid && <button type="button" disabled={!!loadError} onClick={() => openReceipt(handover)} className="flex items-center gap-1 font-semibold text-blue-700 disabled:opacity-40"><ClipboardCheck className="h-4 w-4" /> Confirmer réception</button>}
+              </td>
+            </tr>)}</tbody>
+            <tfoot className="border-t bg-slate-50 font-bold"><tr><td className="px-4 py-3">Total</td>{[dailyRows.reduce((sum, row) => sum + row.totals.salesAmount, 0), dailyRows.reduce((sum, row) => sum + row.totals.expensesAmount, 0), dailyRows.reduce((sum, row) => sum + row.totals.netAmount, 0), dailyRows.reduce((sum, row) => sum + row.cash.netAmount, 0), dailyRows.reduce((sum, row) => sum + (row.handover?.received_amount ?? 0), 0)].map((amount, index) => <td key={index} className="px-4 py-3">{money(amount)}</td>)}<td /></tr></tfoot>
+          </table>
+          {dailyRows.length === 0 && <p className="p-6 text-center text-sm text-slate-500">Aucun magasin accessible.</p>}
+        </div>
+      </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-800"><ReceiptText className="h-4 w-4 text-emerald-700" /> Historique des remises</div>

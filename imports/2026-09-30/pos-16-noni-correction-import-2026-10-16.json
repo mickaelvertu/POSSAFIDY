@@ -1,0 +1,26 @@
+{
+    "version":  1,
+    "purpose":  "Correct 2 units recorded as NONI instead of ALOE NONI in POS-16",
+    "transfer_reference":  "TRF-20261014-155445-6009",
+    "source_stock_export":  "C:\\Users\\Administrator\\Downloads\\stock-POS-16-2026-10-16.csv",
+    "data":  [
+                 {
+                     "store_id":  "store-pos-16",
+                     "store_code":  "POS-16",
+                     "article_id":  "article-resale-noni",
+                     "article_code":  "NO052",
+                     "article_name":  "NONI",
+                     "expected_current_quantity":  5,
+                     "quantity":  3
+                 },
+                 {
+                     "store_id":  "store-pos-16",
+                     "store_code":  "POS-16",
+                     "article_id":  "article-resale-aloe-noni",
+                     "article_code":  "AN001",
+                     "article_name":  "ALOE NONI",
+                     "expected_current_quantity":  2,
+                     "quantity":  4
+                 }
+             ]
+}

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Expense, Sale } from "../types";
-import { calculateCashClosing, cashBusinessDate } from "./cashClosingCalculation";
+import { calculateCashClosing, calculateStoreDailyTotals, cashBusinessDate } from "./cashClosingCalculation";
 
 const today = new Date(2026, 9, 15, 12).getTime();
 const sale = { store_id: "pos", status: "VALIDATED", payment_method: "CASH", payment_status: "PAID", amount_paid: 1200, change_returned: 200, created_at: today } as Sale;
@@ -28,4 +28,21 @@ test("closing excludes other stores, dates, drafts, unpaid and noncash transacti
 
 test("expenses exceeding sales preserve the deficit instead of silently declaring zero", () => {
   assert.equal(calculateCashClosing([], [expense], "pos", cashBusinessDate(today)).netAmount, -300);
+});
+
+test("store overview includes credit and noncash sales, but only paid expenses", () => {
+  const sales = [
+    { ...sale, total: 1000 },
+    { ...sale, total: 2000, payment_method: "MOBILE_MONEY" },
+    { ...sale, total: 3000, payment_status: "PENDING", amount_paid: 0 },
+    { ...sale, total: 9000, status: "DRAFT" },
+    { ...sale, total: 9000, store_id: "other" },
+    { ...sale, total: 9000, created_at: today - 86400000 }
+  ] as Sale[];
+  const expenses = [expense, { ...expense, payment_method: "MOBILE_MONEY", amount: 200 },
+    { ...expense, status: "DRAFT" }, { ...expense, payment_status: "PENDING" },
+    { ...expense, store_id: "other" }, { ...expense, expense_date: today - 86400000 }] as Expense[];
+  assert.deepEqual(calculateStoreDailyTotals(sales, expenses, "pos", cashBusinessDate(today)), {
+    salesAmount: 6000, expensesAmount: 500, netAmount: 5500
+  });
 });
