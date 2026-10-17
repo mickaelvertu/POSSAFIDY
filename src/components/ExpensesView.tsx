@@ -45,6 +45,7 @@ const dateInputValue = (timestamp: number) => {
 const dateLabel = (timestamp: number) => new Date(timestamp).toLocaleDateString("fr-FR");
 const categoryLabel = (category: ExpenseCategory) => CATEGORIES.find(item => item.value === category)?.label || "Autres frais";
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
+const employeeLabel = (employee: Employee) => `${employee.last_name} ${employee.first_name} · ${employee.position} · ${employee.code || employee.id}`;
 
 export default function ExpensesView({ expenses, employees, stores, currentUser, canCreate, canCreateSalaryAdvance, onCreateExpense, onUpdateExpense, onValidateExpense, onDeleteExpense }: ExpensesViewProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -56,6 +57,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   const [storeId, setStoreId] = useState("");
   const [payee, setPayee] = useState("");
   const [employeeId, setEmployeeId] = useState("");
+  const [employeeQuery, setEmployeeQuery] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [paymentStatus, setPaymentStatus] = useState<Expense["payment_status"]>("PAID");
   const [reference, setReference] = useState("");
@@ -80,6 +82,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
     setStoreId("");
     setPayee("");
     setEmployeeId("");
+    setEmployeeQuery("");
     setPaymentMethod("CASH");
     setPaymentStatus("PAID");
     setReference("");
@@ -97,6 +100,8 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
     setStoreId(expense.store_id || "");
     setPayee(expense.payee || "");
     setEmployeeId(expense.employee_id || "");
+    const employee = employees.find(item => item.id === expense.employee_id);
+    setEmployeeQuery(employee ? employeeLabel(employee) : "");
     setPaymentMethod(expense.payment_method);
     setPaymentStatus(expense.payment_status);
     setReference(expense.reference || "");
@@ -260,13 +265,24 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
           <form onSubmit={handleCreateExpense} className="my-auto w-full max-w-2xl space-y-4 rounded-xl bg-white p-5 shadow-2xl sm:p-6">
             <div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-bold text-slate-900">{editingExpense ? "Modifier le brouillon de dépense" : "Nouvelle dépense"}</h3><p className="mt-1 text-xs text-slate-500">La dépense sera enregistrée en brouillon et prise en compte après votre validation.</p></div><button type="button" onClick={() => setIsFormOpen(false)} aria-label="Fermer" className="rounded-md px-2 py-1 text-lg text-slate-500 hover:bg-slate-100">×</button></div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Catégorie<select value={category} onChange={event => { const next = event.target.value as ExpenseCategory; if (category === "SALARY_ADVANCE" && next !== "SALARY_ADVANCE") setPayee(""); setCategory(next); if (next === "SALARY_ADVANCE") setPaymentStatus("PAID"); else setEmployeeId(""); }} className={inputClass}>{categoryOptions.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700">Catégorie<select value={category} onChange={event => { const next = event.target.value as ExpenseCategory; if (category === "SALARY_ADVANCE" && next !== "SALARY_ADVANCE") setPayee(""); setCategory(next); if (next === "SALARY_ADVANCE") setPaymentStatus("PAID"); else { setEmployeeId(""); setEmployeeQuery(""); } }} className={inputClass}>{categoryOptions.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Montant (Ar)<input required type="number" min="1" step="any" value={amount} onChange={event => setAmount(event.target.value)} placeholder="0" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Motif / description{isSalaryAdvance ? " *" : " (facultatif)"}<input required={isSalaryAdvance} value={description} onChange={event => setDescription(event.target.value)} placeholder={isSalaryAdvance ? "Ex. avance pour frais médicaux" : "Facultatif"} className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Date<input required type="date" value={expenseDate} onChange={event => setExpenseDate(event.target.value)} className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense ? <option value="">Tous magasins / siège</option> : <option value="">Sélectionner un magasin</option>}{stores.filter(store => store.is_active && (canUseGlobalExpense || currentUser.storeIds.includes(store.id))).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
               {isSalaryAdvance ? (
-                <label className="space-y-1 text-xs font-semibold text-slate-700">Employé bénéficiaire<select required value={employeeId} onChange={event => setEmployeeId(event.target.value)} className={inputClass}><option value="">Sélectionner un employé</option>{employees.filter(employee => employee.is_active).map(employee => <option key={employee.id} value={employee.id}>{employee.last_name} {employee.first_name} · {employee.position}</option>)}</select></label>
+                <label className="space-y-1 text-xs font-semibold text-slate-700">Employé bénéficiaire
+                  <input required list="expense-employee-options" value={employeeQuery} onFocus={event => event.target.select()} onChange={event => {
+                    const query = event.target.value;
+                    setEmployeeQuery(query);
+                    const employee = employees.find(item => item.is_active && employeeLabel(item) === query);
+                    setEmployeeId(employee?.id || "");
+                  }} placeholder="Saisir un nom, prénom ou matricule…" autoComplete="off" className={inputClass} aria-describedby="expense-employee-help" />
+                  <datalist id="expense-employee-options">
+                    {employees.filter(employee => employee.is_active).sort((a, b) => employeeLabel(a).localeCompare(employeeLabel(b), "fr-FR")).map(employee => <option key={employee.id} value={employeeLabel(employee)} />)}
+                  </datalist>
+                  <span id="expense-employee-help" className="block text-[11px] font-normal text-slate-500">Tapez puis sélectionnez un employé dans les suggestions.</span>
+                </label>
               ) : (
                 <label className="space-y-1 text-xs font-semibold text-slate-700">Bénéficiaire / fournisseur<input value={payee} onChange={event => setPayee(event.target.value)} placeholder="Nom du bailleur ou prestataire" className={inputClass} /></label>
               )}

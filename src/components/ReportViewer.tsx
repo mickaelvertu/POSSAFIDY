@@ -14,7 +14,7 @@ import {
   Expense,
   GeneralFilters 
 } from "../types";
-import { filterReportData } from "../services/reportService";
+import { filterReportData, RESELLER_PAYMENT_LABELS } from "../services/reportService";
 import { downloadReportCsv, getReportTableConfig } from "../services/reportColumns";
 import ReportDataTable, { ReportSortState } from "./ReportDataTable";
 import StockLedgerGrid from "./StockLedgerGrid";
@@ -71,7 +71,7 @@ export default function ReportViewer({
   const getStoreName = (id: string) => { const s = stores.find(st => st.id === id); return s ? storeLabel(s) : id; };
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
   const getArticle = (id: string) => articles.find(a => a.id === id);
-  const filteredData = filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses }, filters);
+  const filteredData = filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses }, reportType === "RESELLER_CREDIT" ? { ...filters, statuses: [], resellerPaymentStatus: filters.resellerPaymentStatus || "ALL" } : filters);
   const reportStocks = filteredData.stocks;
   const reportTransfers = filteredData.transfers;
   const reportMovements = filteredData.movements;
@@ -197,11 +197,18 @@ export default function ReportViewer({
     }
     if (filters.movementDirection === "IN") parts.push("Mouvements: entrées uniquement");
     if (filters.movementDirection === "OUT") parts.push("Mouvements: sorties uniquement");
+    if (reportType === "RESELLER_CREDIT") {
+      parts.push(`Paiement : ${RESELLER_PAYMENT_LABELS[filters.resellerPaymentStatus || "ALL"]} (par vente)`);
+      parts.push("Ventes validées ; période selon la date de vente ; encaissements cumulés et soldes à ce jour.");
+    }
+    if (filters.customerName) parts.push(`Client / revendeur : ${filters.customerName}`);
+    if (filters.searchRef) parts.push(`Recherche : ${filters.searchRef}`);
     return parts;
   };
 
   // Title dictionary
   const REPORT_TITLES: Record<ReportType, string> = {
+    RESELLER_CREDIT: "N° 17 — CRÉDITS & ENCAISSEMENTS DES REVENDEURS",
     STOCK_STATUS: "RAPPORT OFFICIEL DE L'ÉTAT DU STOCK MULTI-MAGASINS",
     STOCK_MOVEMENTS: "JOURNAL DÉTAILLÉ DES MOUVEMENTS DE STOCK (TOUS FLUX)",
     STOCK_LEDGER: "GRILLE DES MOUVEMENTS DE STOCK PAR ARTICLE (VUE EXCEL)",

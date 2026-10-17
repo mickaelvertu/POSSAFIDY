@@ -43,6 +43,7 @@ export default function CreditManagementView({
   onRecordFollowUp
 }: CreditManagementViewProps) {
   const [search, setSearch] = useState("");
+  const [selectedReseller, setSelectedReseller] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<CreditCustomer | null>(null);
   const [paymentSale, setPaymentSale] = useState<Sale | null>(null);
   const [followUpSale, setFollowUpSale] = useState<Sale | null>(null);
@@ -53,16 +54,50 @@ export default function CreditManagementView({
   const [saving, setSaving] = useState(false);
 
   const money = (value: number) => `${value.toLocaleString("fr-FR")} Ar`;
+  const resellerKey = (sale: Sale) => sale.credit_customer_id
+    ? `id:${sale.credit_customer_id}`
+    : `legacy:${JSON.stringify([sale.customer_name.trim().toLocaleLowerCase("fr-FR"), sale.customer_phone || ""])}`;
+  const resellerOptions = useMemo(() => {
+    const options = new Map(customers.map(customer => [`id:${customer.id}`, { name: customer.name, phone: customer.phone }]));
+    for (const sale of sales) {
+      if (sale.customer_type !== "REVENDEUR") continue;
+      const key = resellerKey(sale);
+      if (!options.has(key)) options.set(key, { name: sale.customer_name, phone: sale.customer_phone || "" });
+    }
+    return [...options.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name, "fr-FR"));
+  }, [customers, sales]);
   const outstandingSales = useMemo(
     () => sales.filter(sale => sale.credit_customer_id && sale.status !== "CANCELLED" && sale.payment_status !== "PAID"),
     [sales]
   );
   const visibleSales = outstandingSales
     .filter(sale => {
+      if (selectedReseller && resellerKey(sale) !== selectedReseller) return false;
       const customer = customers.find(item => item.id === sale.credit_customer_id);
       return `${customer?.name || sale.customer_name} ${sale.sale_number}`.toLowerCase().includes(search.trim().toLowerCase());
     })
     .sort((left, right) => (left.credit_due_at || Number.MAX_SAFE_INTEGER) - (right.credit_due_at || Number.MAX_SAFE_INTEGER));
+  const recentReceipts = useMemo(() => sales
+    .filter(sale => sale.customer_type === "REVENDEUR" && sale.status === "VALIDATED" && sale.amount_paid > 0)
+    .map(sale => ({
+      sale,
+      lastPayment: [...(sale.credit_payments || [])].sort((a, b) => b.paid_at - a.paid_at)[0]
+    }))
+    .sort((a, b) => (b.lastPayment?.paid_at || b.sale.validated_at || b.sale.created_at) - (a.lastPayment?.paid_at || a.sale.validated_at || a.sale.created_at)), [sales]);
+  const matchingReceipts = recentReceipts.filter(({ sale }) => {
+    if (selectedReseller && resellerKey(sale) !== selectedReseller) return false;
+    const customer = customers.find(item => item.id === sale.credit_customer_id);
+    return `${customer?.name || sale.customer_name} ${sale.sale_number}`.toLowerCase().includes(search.trim().toLowerCase());
+  });
+  const livePaymentSale = paymentSale ? sales.find(sale => sale.id === paymentSale.id) || paymentSale : null;
+  const paymentBalance = livePaymentSale ? Math.max(0, livePaymentSale.total - livePaymentSale.amount_paid) : 0;
+  const validPayment = Boolean(livePaymentSale?.status === "VALIDATED" && Number.isFinite(amount) && amount > 0 && amount <= paymentBalance);
+  const openPayment = (sale: Sale, partial = false) => {
+    setPaymentSale(sale);
+    setAmount(partial ? 0 : Math.max(0, sale.total - sale.amount_paid));
+    setMethod("CASH");
+    setReference("");
+  };
   const totalDue = customers.reduce((sum, customer) => sum + customer.outstanding_balance, 0);
   const overdue = outstandingSales.filter(sale =>
     sale.status === "VALIDATED" && (sale.credit_due_at || 0) < Date.now()
@@ -86,18 +121,22 @@ export default function CreditManagementView({
 
   const submitPayment = async (event: FormEvent) => {
     event.preventDefault();
-    if (!paymentSale || saving || amount <= 0) return;
+    if (!livePaymentSale || saving || !validPayment) return;
     setSaving(true);
-    const saved = await onRecordPayment(paymentSale, {
-      id: `credit-payment-${crypto.randomUUID()}`,
-      amount,
-      method,
-      reference: reference.trim() || undefined,
-      paid_at: Date.now(),
-      recorded_by: currentUser.uid,
-      recorded_by_name: currentUser.displayName || currentUser.email
-    });
-    setSaving(false);
+    let saved = false;
+    try {
+      saved = await onRecordPayment(livePaymentSale, {
+        id: `credit-payment-${crypto.randomUUID()}`,
+        amount,
+        method,
+        reference: reference.trim() || undefined,
+        paid_at: Date.now(),
+        recorded_by: currentUser.uid,
+        recorded_by_name: currentUser.displayName || currentUser.email
+      });
+    } finally {
+      setSaving(false);
+    }
     if (saved) {
       setPaymentSale(null);
       setAmount(0);
@@ -144,6 +183,17 @@ export default function CreditManagementView({
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><p className="flex items-center gap-1 text-xs font-semibold text-rose-700"><CircleAlert className="h-3.5 w-3.5" /> Factures en retard</p><p className="mt-1 text-xl font-black text-rose-800">{overdue.length}</p></div>
       </div>
 
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4">
+        <label className="block w-full text-xs font-bold sm:w-80" htmlFor="credit-reseller-filter">Filtrer les listes par revendeur
+          <select id="credit-reseller-filter" value={selectedReseller} onChange={event => setSelectedReseller(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm font-normal">
+            <option value="">Tous les revendeurs</option>
+            {resellerOptions.map(([key, customer]) => <option key={key} value={key}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</option>)}
+          </select>
+        </label>
+        {selectedReseller && <button type="button" onClick={() => setSelectedReseller("")} className="rounded-lg px-3 py-2.5 text-xs font-semibold text-teal-700 hover:bg-teal-50">Tous les revendeurs</button>}
+        <p className="text-xs text-slate-500">S’applique aux échéances et aux ventes récemment encaissées.</p>
+      </div>
+
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-teal-700" /><h3 className="font-bold">Échéances et relances</h3></div>
@@ -152,9 +202,9 @@ export default function CreditManagementView({
             <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Rechercher revendeur ou facture…" className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm" />
           </label>
         </div>
-        <div className="overflow-x-auto">
+        <div className="max-h-[680px] overflow-auto" tabIndex={0} role="region" aria-label="Liste défilante des ventes">
           <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Revendeur / facture</th><th className="px-4 py-3">Échéance</th><th className="px-4 py-3 text-right">Reste à payer</th><th className="px-4 py-3">Règlements</th><th className="px-4 py-3">Dernière relance</th><th className="px-4 py-3">Actions</th></tr></thead>
+            <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Revendeur / facture</th><th className="px-4 py-3">Échéance</th><th className="px-4 py-3 text-right">Reste à payer</th><th className="px-4 py-3">Règlements</th><th className="px-4 py-3">Dernière relance</th><th className="px-4 py-3">Actions</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
               {visibleSales.map(sale => {
                 const customer = customers.find(item => item.id === sale.credit_customer_id);
@@ -163,7 +213,7 @@ export default function CreditManagementView({
                 const lastFollowUp = sale.credit_followups?.at(-1);
                 const canAct = sale.status === "VALIDATED";
                 return (
-                  <tr key={sale.id} className={isOverdue ? "bg-rose-50/60" : ""}>
+                  <tr key={sale.id} className={`h-16 ${isOverdue ? "bg-rose-50/60" : ""}`}>
                     <td className="px-4 py-3"><strong className="block">{customer?.name || sale.customer_name}</strong><span className="text-xs text-slate-500">{sale.sale_number} · {sale.status === "VALIDATED" ? "Livrée" : "Vente en cours"}</span></td>
                     <td className="px-4 py-3">{sale.credit_due_at ? <span className={isOverdue ? "font-bold text-rose-700" : "text-slate-700"}>{new Date(sale.credit_due_at).toLocaleDateString("fr-FR")}{isOverdue && " · En retard"}</span> : <span className="text-slate-400">Non définie</span>}</td>
                     <td className="px-4 py-3 text-right font-mono font-bold">{money(balance)}</td>
@@ -184,13 +234,41 @@ export default function CreditManagementView({
                       )}
                     </td>
                     <td className="px-4 py-3"><div className="flex gap-2">
-                      {canAct && <button type="button" onClick={() => { setPaymentSale(sale); setAmount(balance); setMethod("CASH"); }} className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-800">Encaisser</button>}
+                      {canAct && <button type="button" onClick={() => openPayment(sale, true)} className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-800">Encaissement partiel</button>}
+                      {canAct && <button type="button" onClick={() => openPayment(sale)} className="rounded-lg border border-teal-300 px-3 py-1.5 text-xs font-bold text-teal-800 hover:bg-teal-50">Solder</button>}
                       {canAct && <button type="button" onClick={() => { setFollowUpSale(sale); setFollowUpNote(""); }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">Consigner relance</button>}
                     </div></td>
                   </tr>
                 );
               })}
               {visibleSales.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">Aucune échéance ne correspond à la recherche.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 p-4">
+          <div><h3 className="flex items-center gap-2 font-bold"><Banknote className="h-4 w-4 text-teal-700" />Ventes récemment encaissées</h3><p className="mt-1 text-xs text-slate-500">Ventes revendeurs validées, soldées ou partiellement encaissées, classées par dernier règlement. La recherche ci-dessus s’applique aussi à cette liste.</p></div>
+          <span className="text-xs font-semibold text-slate-500">{matchingReceipts.length} vente(s)</span>
+        </div>
+        <div className="max-h-[680px] overflow-auto" tabIndex={0} role="region" aria-label="Liste défilante des ventes">
+          <table className="w-full min-w-[850px] text-left text-sm">
+            <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Revendeur / facture</th><th className="px-4 py-3">Dernier encaissement</th><th className="px-4 py-3 text-right">Total facture</th><th className="px-4 py-3 text-right">Déjà encaissé</th><th className="px-4 py-3 text-right">Reste à payer</th><th className="px-4 py-3">État</th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {matchingReceipts.map(({ sale, lastPayment }) => {
+                const customer = customers.find(item => item.id === sale.credit_customer_id);
+                const balance = Math.max(0, sale.total - sale.amount_paid);
+                return <tr key={sale.id} className="h-16">
+                  <td className="px-4 py-3"><strong className="block">{customer?.name || sale.customer_name}</strong><span className="text-xs text-slate-500">{sale.sale_number}</span></td>
+                  <td className="px-4 py-3 text-xs text-slate-600">{new Date(lastPayment?.paid_at || sale.validated_at || sale.created_at).toLocaleString("fr-FR")}<span className="mt-1 block">{lastPayment ? `${money(lastPayment.amount)} · ${paymentMethods.find(item => item.value === lastPayment.method)?.label || lastPayment.method}` : "Encaissement à la vente"}</span></td>
+                  <td className="px-4 py-3 text-right font-mono">{money(sale.total)}</td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-teal-700">{money(sale.amount_paid)}</td>
+                  <td className="px-4 py-3 text-right font-mono">{money(balance)}</td>
+                  <td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${balance > 0 ? "bg-amber-50 text-amber-800" : "bg-teal-50 text-teal-800"}`}>{balance > 0 ? "Paiement partiel" : "Soldée"}</span></td>
+                </tr>;
+              })}
+              {matchingReceipts.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">Aucune vente encaissée ne correspond à la recherche.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -242,11 +320,13 @@ export default function CreditManagementView({
       {paymentSale && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <form onSubmit={submitPayment} className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 text-slate-900 shadow-2xl">
-            <h3 className="font-bold">Encaisser une facture</h3><p className="text-sm text-slate-600">{paymentSale.sale_number} · Solde {money(paymentSale.total - paymentSale.amount_paid)}</p>
-            <label className="block text-xs font-bold">Montant (Ar)<input required min={1} max={paymentSale.total - paymentSale.amount_paid} type="number" value={amount} onChange={event => setAmount(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm" /></label>
+            <h3 className="font-bold">Encaissement partiel ou total</h3><p className="text-sm text-slate-600">{paymentSale.sale_number} · Solde {money(paymentBalance)}</p>
+            <label className="block text-xs font-bold">Montant à encaisser (Ar)<input required min={1} max={paymentBalance} type="number" value={amount || ""} onChange={event => setAmount(Number(event.target.value))} placeholder="Saisir le montant reçu" className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm" /></label>
+            <button type="button" disabled={saving || paymentBalance <= 0} onClick={() => setAmount(paymentBalance)} className="text-xs font-semibold text-teal-700 disabled:opacity-50">Régler tout le solde : {money(paymentBalance)}</button>
+            <p aria-live="polite" className="rounded-lg bg-teal-50 p-3 text-sm text-teal-900">{validPayment ? `Après encaissement : ${money(paymentBalance - amount)} restant · ${amount < paymentBalance ? "Paiement partiel" : "Facture soldée"}` : "Saisissez un montant supérieur à zéro, sans dépasser le solde restant."}</p>
             <label className="block text-xs font-bold">Mode de paiement<select value={method} onChange={event => setMethod(event.target.value as PaymentMethod)} className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm">{paymentMethods.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
             <label className="block text-xs font-bold">Référence (facultatif)<input value={reference} onChange={event => setReference(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm" /></label>
-            <div className="flex justify-end gap-2 border-t border-slate-200 pt-3"><button type="button" onClick={() => setPaymentSale(null)} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600">Annuler</button><button disabled={saving} className="inline-flex items-center gap-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Banknote className="h-4 w-4" />Enregistrer le paiement</button></div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 pt-3"><button type="button" disabled={saving} onClick={() => setPaymentSale(null)} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600">Annuler</button><button disabled={saving || !validPayment} className="inline-flex items-center gap-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Banknote className="h-4 w-4" />{saving ? "Enregistrement…" : "Enregistrer le paiement"}</button></div>
           </form>
         </div>
       )}

@@ -18,7 +18,7 @@ import {
   MovementDirection,
   ArticleTypeCode
 } from "../types";
-import { filterReportData, getReportKpis } from "../services/reportService";
+import { filterReportData, getReportKpis, RESELLER_PAYMENT_LABELS } from "../services/reportService";
 import { 
   FileText, 
   Printer, 
@@ -88,6 +88,7 @@ export default function ReportsView({
   const [minQty, setMinQty] = useState<number | undefined>(undefined);
   const [maxQty, setMaxQty] = useState<number | undefined>(undefined);
   const [customerName, setCustomerName] = useState<string>("");
+  const [resellerPaymentStatus, setResellerPaymentStatus] = useState<NonNullable<GeneralFilters["resellerPaymentStatus"]>>("ALL");
   const [articleIds, setArticleIds] = useState<string[]>([]);
   const [articleQuery, setArticleQuery] = useState<string>("");
 
@@ -123,14 +124,20 @@ export default function ReportsView({
     icon: Wallet,
     color: "text-rose-600 bg-rose-50 border-rose-200"
   } : undefined;
-  const reportCount = 14 + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
-  const allReports = EXPENSES_REPORT ? [...REPORTS_CATALOG, EXPENSES_REPORT] : REPORTS_CATALOG;
+  const resellerReport: (typeof REPORTS_CATALOG)[number] = {
+    type: "RESELLER_CREDIT", number: 17, title: "Crédits & encaissements revendeurs",
+    description: "Par revendeur : total facturé, montants encaissés et crédit en cours. Filtre des paiements partiels.",
+    icon: Wallet, color: "text-amber-600 bg-amber-50 border-amber-200"
+  };
+  const reportCount = REPORTS_CATALOG.length + 1 + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
+  const allReports = [...REPORTS_CATALOG, ...(EXPENSES_REPORT ? [EXPENSES_REPORT] : []), resellerReport];
 
   const filters = useMemo<GeneralFilters>(() => ({
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     storeIds: selectedStoreIds,
-    statuses: selectedStatuses,
+    statuses: selectedReport === "RESELLER_CREDIT" ? [] : selectedStatuses,
+    resellerPaymentStatus: selectedReport === "RESELLER_CREDIT" ? resellerPaymentStatus : undefined,
     movementTypes: selectedMovementTypes,
     movementDirection,
     categoryIds: selectedCategoryIds,
@@ -140,7 +147,7 @@ export default function ReportsView({
     maxQty,
     customerName: customerName || undefined,
     articleIds: selectedReport === "STOCK_LEDGER" && articleIds.length ? articleIds : undefined
-  }), [selectedReport, articleIds, startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
+  }), [selectedReport, resellerPaymentStatus, articleIds, startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
 
   const filteredData = useMemo(() => filterReportData({
     articles,
@@ -334,6 +341,7 @@ export default function ReportsView({
           </button>
         )}
         {EXPENSES_REPORT && renderReportCard(EXPENSES_REPORT)}
+        {renderReportCard(resellerReport)}
         </div>
       </section>
 
@@ -364,6 +372,7 @@ export default function ReportsView({
               setMinQty(undefined);
               setMaxQty(undefined);
               setCustomerName("");
+              setResellerPaymentStatus("ALL");
               setArticleIds([]);
               setArticleQuery("");
             }}
@@ -376,7 +385,7 @@ export default function ReportsView({
         {/* Row 1: Date Range, Article Type, Search Ref */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           
-          {(statusOptions.length > 0 || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
+          {(statusOptions.length > 0 || selectedReport === "RESELLER_CREDIT" || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
             <label className="block font-bold text-slate-700 mb-1">Date Début :</label>
             <input
               type="date"
@@ -468,6 +477,15 @@ export default function ReportsView({
                 <button type="button" onClick={() => setArticleIds([])} className="px-2 py-1.5 font-semibold text-slate-500 hover:text-slate-900">Tout retirer</button>
               </div>
             )}
+          </div>
+        )}
+        {selectedReport === "RESELLER_CREDIT" && (
+          <div className="space-y-2 text-xs">
+            <label htmlFor="reseller-payment-status" className="block font-bold text-slate-700">État du paiement :</label>
+            <select id="reseller-payment-status" value={resellerPaymentStatus} onChange={e => setResellerPaymentStatus(e.target.value as NonNullable<GeneralFilters["resellerPaymentStatus"]>)} className="w-full sm:w-72 bg-slate-50 border border-slate-300 rounded-lg p-2">
+              {Object.entries(RESELLER_PAYMENT_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <p className="text-slate-500">Ventes validées uniquement. La période porte sur la date de vente ; les montants encaissés et les soldes sont ceux à ce jour. Le filtre de paiement sélectionne les ventes avant regroupement par revendeur.</p>
           </div>
         )}
         {/* Row 2: Multi-selection Stores */}

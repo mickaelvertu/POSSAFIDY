@@ -57,6 +57,43 @@ export interface ReportKpi {
   value: string;
 }
 
+export const RESELLER_PAYMENT_LABELS = { ALL: "Tous les paiements", PENDING: "Non payé", PARTIAL: "Paiement partiel", PAID: "Soldé" };
+
+export function resellerPaymentStatus(sale: Sale): "PENDING" | "PARTIAL" | "PAID" {
+  return sale.amount_paid >= sale.total ? "PAID" : sale.amount_paid > 0 ? "PARTIAL" : "PENDING";
+}
+
+export interface ResellerCreditRow {
+  id: string;
+  name: string;
+  phone: string;
+  storeIds: string[];
+  count: number;
+  total: number;
+  paid: number;
+  balance: number;
+  partialCount: number;
+}
+
+export function buildResellerCreditRows(sales: Sale[]): ResellerCreditRow[] {
+  const groups = new Map<string, ResellerCreditRow>();
+  for (const sale of sales) {
+    if (sale.customer_type !== "REVENDEUR" || sale.status !== "VALIDATED") continue;
+    const id = sale.credit_customer_id || JSON.stringify([sale.customer_name.trim().toLocaleLowerCase("fr-FR"), sale.customer_phone || ""]);
+    const row = groups.get(id) || { id, name: sale.customer_name, phone: sale.customer_phone || "", storeIds: [], count: 0, total: 0, paid: 0, balance: 0, partialCount: 0 };
+    const paid = Math.min(sale.total, Math.max(0, sale.amount_paid));
+    row.count += 1;
+    row.total += sale.total;
+    // amount_paid already includes credit_payments: never add those twice.
+    row.paid += paid;
+    row.balance += Math.max(0, sale.total - paid);
+    row.partialCount += resellerPaymentStatus(sale) === "PARTIAL" ? 1 : 0;
+    if (!row.storeIds.includes(sale.store_id)) row.storeIds.push(sale.store_id);
+    groups.set(id, row);
+  }
+  return [...groups.values()].sort((a, b) => b.balance - a.balance || a.name.localeCompare(b.name, "fr-FR"));
+}
+
 const normalize = (value: unknown) => String(value || "").toLocaleLowerCase("fr-FR");
 
 function isInPeriod(timestamp: number, filters: GeneralFilters): boolean {
@@ -122,6 +159,10 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
   });
 
   const sales = data.sales.filter(sale => {
+    if (filters.resellerPaymentStatus !== undefined && (
+      sale.customer_type !== "REVENDEUR" || sale.status !== "VALIDATED" ||
+      (filters.resellerPaymentStatus !== "ALL" && resellerPaymentStatus(sale) !== filters.resellerPaymentStatus)
+    )) return false;
     const matchingLines = sale.lines.filter(line => matchesArticle(line.article_id));
     const lineQuantity = matchingLines.reduce((sum, line) => sum + line.quantity, 0);
     return matchesStore(sale.store_id) && isInPeriod(sale.created_at, filters) && matchesStatus(sale.status) &&
@@ -186,6 +227,15 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
   const allSalesLines = data.sales.flatMap(sale => sale.lines);
 
   switch (reportType) {
+    case "RESELLER_CREDIT": {
+      const rows = buildResellerCreditRows(data.sales);
+      return [
+        { label: "Revendeurs", value: String(rows.length) },
+        { label: "Total facturé", value: money(rows.reduce((sum, row) => sum + row.total, 0)) },
+        { label: "Déjà encaissé", value: money(rows.reduce((sum, row) => sum + row.paid, 0)) },
+        { label: "Crédit en cours", value: money(rows.reduce((sum, row) => sum + row.balance, 0)) }
+      ];
+    }
     case "STOCK_STATUS":
       return [
         { label: "Lignes de stock", value: String(data.stocks.length) },

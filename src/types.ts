@@ -671,6 +671,7 @@ export interface GeneralFilters {
   articleId?: string;
   articleIds?: string[]; // multi-sélection d'articles précis
   customerName?: string;
+  resellerPaymentStatus?: "ALL" | PaymentStatus;
   sellerId?: string;
 }
 
@@ -690,6 +691,7 @@ export type ReportType =
   | "PRODUCTION"
   | "RETURNS"
   | "AUDIT_LOG"
+  | "RESELLER_CREDIT"
   | "EXPENSES";
 
 export type EmployeeContractType = "CDI" | "CDD" | "TEMPORARY" | "INTERN" | "DAILY";
