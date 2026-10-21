@@ -1,0 +1,48 @@
+{
+    "version":  1,
+    "purpose":  "Correct POS-03 initial stock for KOMIMA, KOMIMA CANCER and MADETOXYL while preserving subsequent movements",
+    "source_stock_ledger":  "C:\\Users\\Administrator\\Downloads\\rapport-stock_ledger-2026-10-21 (1).csv",
+    "initial_stock_reference":  "SYNC-109F1A1D",
+    "application_rule":  "quantity = expected_current_quantity - previous_initial_quantity + corrected_initial_quantity",
+    "data":  [
+                 {
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "store_name":  "Rex",
+                     "article_id":  "article-resale-komima",
+                     "article_code":  "KO064",
+                     "article_name":  "KOMIMA",
+                     "expected_current_quantity":  2,
+                     "quantity":  0,
+                     "previous_initial_quantity":  4,
+                     "corrected_initial_quantity":  2,
+                     "correction_delta":  -2
+                 },
+                 {
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "store_name":  "Rex",
+                     "article_id":  "article-resale-komima-cancer",
+                     "article_code":  "KC056",
+                     "article_name":  "KOMIMA CANCER",
+                     "expected_current_quantity":  2,
+                     "quantity":  6,
+                     "previous_initial_quantity":  2,
+                     "corrected_initial_quantity":  6,
+                     "correction_delta":  4
+                 },
+                 {
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "store_name":  "Rex",
+                     "article_id":  "article-resale-madetoxyl",
+                     "article_code":  "MA051",
+                     "article_name":  "MADETOXYL",
+                     "expected_current_quantity":  3,
+                     "quantity":  5,
+                     "previous_initial_quantity":  5,
+                     "corrected_initial_quantity":  7,
+                     "correction_delta":  2
+                 }
+             ]
+}
