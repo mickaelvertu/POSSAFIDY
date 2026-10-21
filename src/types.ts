@@ -326,6 +326,9 @@ export interface StockTransferLine {
 }
 
 export interface StockTransfer {
+  cancelled_by?: string;
+  cancelled_by_name?: string;
+  cancelled_at?: number;
   id: string;
   transfer_number: string; // ex: TRF-2026-0001
   type: TransferTypeCode;

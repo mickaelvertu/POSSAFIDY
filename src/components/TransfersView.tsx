@@ -41,6 +41,7 @@ interface TransfersViewProps {
   currentUser: UserProfile;
   onCreateTransfer: (transfer: StockTransfer) => Promise<boolean>;
   onUpdateTransfer: (originalTransfer: StockTransfer, transfer: StockTransfer) => Promise<boolean>;
+  onCancelTransfer: (transfer: StockTransfer) => Promise<void>;
   onDeleteTransfer: (transfer: StockTransfer) => Promise<void>;
   onApproveTransfer: (transferId: string) => void;
   onRejectTransfer: (transferId: string, rejectionNote: string) => Promise<boolean>;
@@ -91,6 +92,7 @@ export default function TransfersView({
   currentUser,
   onCreateTransfer,
   onUpdateTransfer,
+  onCancelTransfer,
   onDeleteTransfer,
   onApproveTransfer,
   onRejectTransfer,
@@ -621,6 +623,7 @@ export default function TransfersView({
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
           {[
             ["ALL", "Tous"],
+            ["CANCELLED", "Annulés"],
             ["DRAFT", "En attente"],
             ["APPROVED", "Approuvés"],
             ["REJECTED", "Refusés"],
@@ -913,6 +916,14 @@ export default function TransfersView({
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Supprimer
+                      </button>
+                    )}
+                    {currentUser.roleId === "SUPER_ADMIN" && !["CANCELLED", "REJECTED"].includes(t.status) && (
+                      <button type="button" className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50"
+                        onClick={() => {
+                          if (window.confirm(`Annuler ${t.transfer_number} et inverser ses mouvements de stock ? L'historique sera conservé.`)) void onCancelTransfer(t);
+                        }}>
+                        Annuler le transfert
                       </button>
                     )}
                     {/* Step 1 -> 2: Approve DRAFT */}

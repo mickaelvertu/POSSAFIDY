@@ -1,0 +1,32 @@
+{
+    "version":  1,
+    "purpose":  "Add 10 HODIPOTSY to REV-08 and 10 BAOBAB to POS-11",
+    "source_stock_exports":  [
+                                 "C:\\Users\\Administrator\\Downloads\\stock-REV-08-2026-10-21.json",
+                                 "C:\\Users\\Administrator\\Downloads\\stock-POS-11-2026-10-21.json"
+                             ],
+    "data":  [
+                 {
+                     "store_id":  "store-rev-08",
+                     "store_code":  "REV-08",
+                     "store_name":  "Mr Jean Yves Antsirabe",
+                     "article_id":  "article-resale-hodipotsy",
+                     "article_code":  "HO043",
+                     "article_name":  "HODIPOTSY",
+                     "unit":  "Piece",
+                     "expected_current_quantity":  0,
+                     "quantity":  10
+                 },
+                 {
+                     "store_id":  "store-pos-11",
+                     "store_code":  "POS-11",
+                     "store_name":  "Akoor Digue",
+                     "article_id":  "article-resale-baobab",
+                     "article_code":  "BA036",
+                     "article_name":  "BAOBAB",
+                     "unit":  "Piece",
+                     "expected_current_quantity":  0,
+                     "quantity":  10
+                 }
+             ]
+}

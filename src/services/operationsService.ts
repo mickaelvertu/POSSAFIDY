@@ -8,6 +8,7 @@ import {
   where
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
+import { saleLinesEqual } from "./saleComparison";
 import { AppRoleId, AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
 
 const SALES = "sales";
@@ -140,7 +141,7 @@ export async function updateDraftSale(
       currentSale.customer_name !== originalSale.customer_name ||
       currentSale.customer_phone !== originalSale.customer_phone ||
       currentSale.notes !== originalSale.notes ||
-      JSON.stringify(currentSale.lines) !== JSON.stringify(originalSale.lines)
+      !saleLinesEqual(currentSale.lines, originalSale.lines)
     ) {
       throw new Error("La vente a changé depuis son ouverture. Rechargez les données avant de la modifier.");
     }

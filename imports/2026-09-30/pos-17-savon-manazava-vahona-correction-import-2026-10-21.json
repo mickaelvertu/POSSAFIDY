@@ -1,0 +1,31 @@
+{
+    "version":  1,
+    "purpose":  "Add 1 SAVON MANAZAVA and 1 SAVON VAHONA to POS-17",
+    "source_stock_exports":  [
+                                 "C:\\Users\\Administrator\\Downloads\\stock-POS-17-2026-10-21.json"
+                             ],
+    "data":  [
+                 {
+                     "store_id":  "store-pos-17",
+                     "store_code":  "POS-17",
+                     "store_name":  "Mr Ismael Commercial",
+                     "article_id":  "article-resale-savon-manazava",
+                     "article_code":  "SM068",
+                     "article_name":  "SAVON MANAZAVA",
+                     "unit":  "Piece",
+                     "expected_current_quantity":  0,
+                     "quantity":  1
+                 },
+                 {
+                     "store_id":  "store-pos-17",
+                     "store_code":  "POS-17",
+                     "store_name":  "Mr Ismael Commercial",
+                     "article_id":  "article-resale-savon-vahona",
+                     "article_code":  "SV066",
+                     "article_name":  "SAVON VAHONA",
+                     "unit":  "Piece",
+                     "expected_current_quantity":  0,
+                     "quantity":  1
+                 }
+             ]
+}

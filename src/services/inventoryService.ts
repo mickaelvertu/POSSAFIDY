@@ -10,6 +10,10 @@ import {
   writeBatch
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
+import { transferLinesEqual } from "./transferComparison";
+import { cancellationEffects } from "./transferCancellation";
+import type { AppUser } from "../types";
+import { createAuditLog } from "./auditService";
 import { Article, AuditLog, Category, Purchase, PurchaseLine, StockMovement, StockTransfer, Store, StoreStock, Supplier, SupplierPayment } from "../types";
 
 const STORES_COLLECTION = "stores";
@@ -21,6 +25,54 @@ const PURCHASES_COLLECTION = "purchases";
 const MOVEMENTS_COLLECTION = "movements";
 const TRANSFERS_COLLECTION = "transfers";
 const USERS_COLLECTION = "users";
+
+export async function cancelTransfer(original: StockTransfer, user: AppUser) {
+  if (user.roleId !== "SUPER_ADMIN") throw new Error("Annulation réservée au Super Admin.");
+  const effects = cancellationEffects(original);
+  const grouped = new Map<string, typeof effects[number]>();
+  for (const effect of effects) {
+    const key = `${effect.storeId}:${effect.articleId}:${effect.quarantine}`;
+    grouped.set(key, { ...effect, quantity: effect.quantity + (grouped.get(key)?.quantity || 0) });
+  }
+  const targets = await Promise.all([...grouped.values()].filter(effect => effect.quantity !== 0).map(async effect => {
+    const rows = await getDocs(query(collection(db, STOCKS_COLLECTION), where("store_id", "==", effect.storeId), where("article_id", "==", effect.articleId)));
+    if (rows.size > 1) throw new Error("Plusieurs stocks existent pour cet article. Corrigez les doublons avant annulation.");
+    return { effect, ref: rows.docs[0]?.ref || doc(db, STOCKS_COLLECTION, `stock-${effect.storeId}-${effect.articleId}`) };
+  }));
+  return runOnlineTransaction(async transaction => {
+    const transferRef = doc(db, TRANSFERS_COLLECTION, original.id);
+    const snapshot = await transaction.get(transferRef);
+    if (!snapshot.exists()) throw new Error("Transfert introuvable.");
+    const current = snapshot.data() as StockTransfer;
+    if (current.status !== original.status || current.updated_at !== original.updated_at || !transferLinesEqual(current.lines, original.lines)) {
+      throw new Error("Le transfert a changé. Rechargez les données avant annulation.");
+    }
+    cancellationEffects(current);
+    const snapshots = await Promise.all(targets.map(target => transaction.get(target.ref)));
+    const now = Date.now();
+    const transfer = { ...current, status: "CANCELLED" as const, cancelled_by: user.uid, cancelled_by_name: user.displayName || user.email, cancelled_at: now, updated_at: now };
+    const stocks: StoreStock[] = [];
+    const movements: StockMovement[] = [];
+    targets.forEach(({ effect, ref }, index) => {
+      const stock = snapshots[index].exists() ? snapshots[index].data() as StoreStock : undefined;
+      const before = (effect.quarantine ? stock?.quarantine_quantity : stock?.quantity) || 0;
+      const after = before + effect.quantity;
+      if (!Number.isFinite(after) || after < 0 || (!effect.quarantine && after < (stock?.reserved_quantity || 0))) {
+        throw new Error(`Annulation impossible : stock disponible insuffisant pour ${effect.articleId} dans ${effect.storeId}.`);
+      }
+      const updated: StoreStock = { ...stock, id: ref.id, store_id: effect.storeId, article_id: effect.articleId, quantity: effect.quarantine ? stock?.quantity || 0 : after, reserved_quantity: stock?.reserved_quantity || 0, updated_at: now, ...(effect.quarantine ? { quarantine_quantity: after } : {}) };
+      const movement: StockMovement = { id: `cancel-${original.id}-${index}`, store_id: effect.storeId, article_id: effect.articleId, movement_type: "INVENTORY_ADJUSTMENT", quantity: effect.quantity, reference_type: "TRANSFER", reference_id: original.id, reference_number: original.transfer_number, before_quantity: before, after_quantity: after, created_by: user.uid, created_by_name: user.displayName || user.email, created_at: now, notes: "Annulation du transfert", ...(effect.quarantine ? { stock_bucket: "QUARANTINE" as const } : {}) };
+      stocks.push(updated);
+      movements.push(movement);
+    });
+    const auditLog = createAuditLog(user, "TRANSFER_CANCELLED", "TRANSFER", original.id, current, transfer, original.source_store_id);
+    stocks.forEach((stock, index) => transaction.set(targets[index].ref, omitUndefined(stock)));
+    movements.forEach(movement => transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement)));
+    transaction.set(transferRef, omitUndefined(transfer));
+    transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+    return { transfer, stocks, movements, auditLog };
+  });
+}
 
 function omitUndefined<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -109,7 +161,7 @@ export async function updateDraftTransfer(
       current.status !== "DRAFT" ||
       current.requested_by !== original.requested_by ||
       current.updated_at !== original.updated_at ||
-      JSON.stringify(current.lines) !== JSON.stringify(original.lines)
+      !transferLinesEqual(current.lines, original.lines)
     ) {
       throw new Error("Le transfert a changé depuis son ouverture. Rechargez les données avant de le modifier.");
     }
@@ -202,7 +254,7 @@ export async function saveTransferWithStockEffects(
           && Boolean(currentTransfer.received_by)
           && currentTransfer.received_by !== transfer.validated_by
           && currentTransfer.received_by === transfer.received_by
-          && JSON.stringify(currentTransfer.lines) === JSON.stringify(transfer.lines);
+          && transferLinesEqual(currentTransfer.lines, transfer.lines);
     if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");
     let purchaseRef: ReturnType<typeof doc> | undefined;
     let updatedPurchase: Purchase | undefined;

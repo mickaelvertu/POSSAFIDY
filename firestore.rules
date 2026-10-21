@@ -1040,6 +1040,17 @@ service cloud.firestore {
         request.resource.data.created_at == resource.data.created_at &&
         (
           (
+            isSuperAdmin() &&
+            resource.data.status in ['DRAFT', 'APPROVED', 'SHIPPED', 'IN_TRANSIT', 'RECEIVED', 'VALIDATED', 'DISCREPANCY'] &&
+            request.resource.data.status == 'CANCELLED' &&
+            !('purchase_id' in resource.data) &&
+            request.resource.data.cancelled_by == request.auth.uid &&
+            request.resource.data.cancelled_at is number &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'cancelled_by', 'cancelled_by_name', 'cancelled_at', 'updated_at'
+            ])
+          ) ||
+          (
           resource.data.status == 'DRAFT' &&
           request.resource.data.status == 'DRAFT' &&
           hasPermission('transfers.create') &&

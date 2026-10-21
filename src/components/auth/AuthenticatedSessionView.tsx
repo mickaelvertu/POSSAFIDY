@@ -9,6 +9,7 @@ import { generateRef, getArticleStock, updateQuarantineQuantity, updateStockQuan
 import {
   deleteStore,
   deleteDraftTransfer,
+  cancelTransfer,
   loadCatalogData,
   loadInventoryData,
   loadStores,
@@ -1113,6 +1114,20 @@ export default function AuthenticatedSessionView() {
 
   const handleCreateTransfer = (transfer: StockTransfer) => handleSaveTransfer(transfer);
   const handleUpdateTransfer = (originalTransfer: StockTransfer, transfer: StockTransfer) => handleSaveTransfer(transfer, originalTransfer);
+
+  const handleCancelTransfer = async (transfer: StockTransfer) => {
+    if (!currentAppUser || currentAppUser.roleId !== "SUPER_ADMIN") return;
+    try {
+      const result = await cancelTransfer(transfer, currentAppUser);
+      setTransfers(current => current.map(item => item.id === transfer.id ? result.transfer : item));
+      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
+        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
+      setMovements(current => [...result.movements, ...current]);
+      setAuditLogs(current => [result.auditLog, ...current]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d'annuler le transfert.");
+    }
+  };
 
   const handleDeleteTransfer = async (transfer: StockTransfer) => {
     if (currentAppUser?.roleId !== "SUPER_ADMIN") {
@@ -2568,6 +2583,7 @@ export default function AuthenticatedSessionView() {
               onCreateTransfer={handleCreateTransfer}
               onUpdateTransfer={handleUpdateTransfer}
               onDeleteTransfer={handleDeleteTransfer}
+              onCancelTransfer={handleCancelTransfer}
               onApproveTransfer={handleApproveTransfer}
               onRejectTransfer={handleRejectTransfer}
               onShipTransfer={handleShipTransfer}
