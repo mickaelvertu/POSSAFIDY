@@ -45,6 +45,7 @@ import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { applyStockSnapshot, importInitialStocks } from "../../services/stockImportService";
 import type { StockSyncRow } from "../../services/stockSyncValidation";
 import type { InitialStockImportRow } from "../../services/stockImportValidation";
+import { consumeRawMaterial } from "../../services/operationsService";
 const UsersView = lazy(() => import("../UsersView"));
 const SalesView = lazy(() => import("../SalesView"));
 const StocksView = lazy(() => import("../StocksView"));
@@ -974,6 +975,18 @@ export default function AuthenticatedSessionView() {
     }
   };
 
+  const handleConsumeMaterial = async (storeId: string, articleId: string, quantity: number, reason: string) => {
+    const article = articles.find(item => item.id === articleId);
+    const store = accessibleStores.find(store => store.id === storeId && store.is_active);
+    if (!currentAppUser || !article || !store) {
+      throw new Error("Magasin ou matière première inaccessible.");
+    }
+    const result = await consumeRawMaterial(currentAppUser, store, article, quantity, reason, stocks);
+    setStocks(current => current.map(stock => stock.id === result.stock.id ? result.stock : stock));
+    setMovements(current => [result.movement, ...current]);
+    setAuditLogs(current => [result.auditLog, ...current]);
+  };
+
   const handleCreateProduction = async (production: Production) => {
     try {
       const result = await createProduction(production, stocks);
@@ -1069,9 +1082,9 @@ export default function AuthenticatedSessionView() {
       alert("Seul le demandeur peut modifier un transfert encore en brouillon.");
       return false;
     }
-    const allowedArticles = destinationStore.store_type === "POS" || destinationStore.store_type === "RESELLER"
-      ? articles.filter(article => article.article_type === "RESALE" && article.is_active)
-      : articles.filter(article => article.is_active);
+    const rawMaterialsAllowed = ["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(sourceStore.store_type)
+      && ["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(destinationStore.store_type);
+    const allowedArticles = articles.filter(article => article.is_active && (rawMaterialsAllowed || article.article_type === "RESALE"));
     const requestedByArticle = new Map<string, number>();
     for (const line of transfer.lines) {
       if (!allowedArticles.some(article => article.id === line.article_id)
@@ -2476,6 +2489,7 @@ export default function AuthenticatedSessionView() {
               movements={movements}
               currentUser={currentAppUser}
               onAdjustStock={handleAdjustStock}
+              onConsumeMaterial={handleConsumeMaterial}
               onImportInitialStocks={handleImportInitialStocks}
               onSyncStocks={handleSyncStocks}
             />

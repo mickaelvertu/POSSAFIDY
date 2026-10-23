@@ -45,6 +45,11 @@ service cloud.firestore {
       );
     }
 
+    function canStoreArticle(storeId, articleId) {
+      return get(/databases/$(database)/documents/stores/$(storeId)).data.store_type in ['CENTRAL_WAREHOUSE', 'MANUFACTURER'] ||
+        get(/databases/$(database)/documents/articles/$(articleId)).data.article_type == 'RESALE';
+    }
+
     function canViewArticleType(articleType) {
       let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isSuperAdmin() || (
@@ -293,8 +298,24 @@ service cloud.firestore {
     }
 
     match /purchases/{purchaseId} {
-      allow get: if hasPermission('procurement.manage') &&
-        (resource == null || hasStoreAccess(resource.data.store_id));
+      // Receipt transactions read the linked purchase before crediting stock.
+      // Keep this document-only access separate from procurement list/manage rights.
+      function canReadForReceipt() {
+        let transferId = resource.data.get('transfer_id', '');
+        let transfer = get(/databases/$(database)/documents/transfers/$(transferId)).data;
+        return hasPermission('transfers.receive') &&
+          hasStoreAccess(resource.data.store_id) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.store_id]) &&
+          resource.data.status == 'APPROVED' &&
+          transfer.type == 'SUPPLIER_TO_STORE' &&
+          transfer.purchase_id == purchaseId &&
+          transfer.destination_store_id == resource.data.store_id &&
+          transfer.status in ['IN_TRANSIT', 'RECEIVED'];
+      }
+
+      allow get: if (hasPermission('procurement.manage') &&
+        (resource == null || hasStoreAccess(resource.data.store_id))) ||
+        (resource != null && canReadForReceipt());
       allow list: if hasPermission('procurement.manage') && hasStoreAccess(resource.data.store_id);
       allow create: if hasPermission('procurement.manage') &&
         request.resource.data.id == purchaseId &&
@@ -488,10 +509,19 @@ service cloud.firestore {
 
     match /movements/{movementId} {
       allow read: if isActiveUser() && hasStoreAccess(resource.data.store_id);
-      allow create: if hasStoreAccess(request.resource.data.store_id) && (
+      allow create: if hasStoreAccess(request.resource.data.store_id) &&
+        canStoreArticle(request.resource.data.store_id, request.resource.data.article_id) && (
         hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
         hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-        hasPermission('production.create') || hasPermission('production.validate')
+        hasPermission('production.create') || hasPermission('production.validate') ||
+        (hasPermission('stock.edit') &&
+          request.resource.data.movement_type == 'CONSUMPTION' &&
+          request.resource.data.reference_type == 'CONSUMPTION' &&
+          request.resource.data.created_by == request.auth.uid &&
+          request.resource.data.quantity is number && request.resource.data.quantity < 0 &&
+          request.resource.data.after_quantity >= 0 &&
+          request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
+          get(/databases/$(database)/documents/articles/$(request.resource.data.article_id)).data.article_type == 'RAW_MATERIAL')
       );
     }
 
@@ -961,6 +991,7 @@ service cloud.firestore {
         )
       );
       allow create: if hasStoreAccess(request.resource.data.store_id) &&
+        canStoreArticle(request.resource.data.store_id, request.resource.data.article_id) &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
           hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
           hasPermission('transfers.receive') || hasPermission('sales.validate') ||
@@ -968,12 +999,17 @@ service cloud.firestore {
           isSuperAdmin()
         );
       allow update: if hasStoreAccess(resource.data.store_id) &&
+        canStoreArticle(resource.data.store_id, resource.data.article_id) &&
         request.resource.data.store_id == resource.data.store_id &&
         request.resource.data.article_id == resource.data.article_id &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
           hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
           hasPermission('transfers.receive') || hasPermission('sales.validate') ||
           hasPermission('production.create') || hasPermission('production.validate') ||
+          (hasPermission('stock.edit') &&
+            request.resource.data.quantity < resource.data.quantity &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updated_at']) &&
+            get(/databases/$(database)/documents/articles/$(resource.data.article_id)).data.article_type == 'RAW_MATERIAL') ||
           isSuperAdmin()
         );
       allow delete: if isAdmin();

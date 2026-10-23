@@ -46,7 +46,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
   RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count", "cash_handover.view", "cash_handover.create"],
   CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count"],
-  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
+  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create", "cash_handover.view", "procurement.manage"],
   GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
   STAFF: ["dashboard.view"],

@@ -12,7 +12,7 @@ const articles = [
 ] as Article[];
 const stocks = [{ id: "stock-s1-a1", store_id: "s1", article_id: "a1", quantity: 5, reserved_quantity: 0, updated_at: 1 }] as StoreStock[];
 
-test("export skips raw materials for POS and round-trips through CSV", () => {
+test("export excludes raw materials for POS and round-trips through CSV", () => {
   const records = buildStockExportRecords(stores, articles, stocks);
   assert.equal(records.length, 1);
   const parsed = parseCsv(toStockCsv(records));
@@ -29,7 +29,7 @@ test("changed quantity yields a row with before/after", () => {
   assert.equal(result.rows[0].quantity, 7.5);
 });
 
-test("rejects duplicates, raw material in POS, negatives, unknown store", () => {
+test("rejects duplicates, raw materials in POS, negatives and unknown stores", () => {
   const result = validateStockSync([
     { store_id: "s1", article_id: "a1", quantity: 1 },
     { store_id: "s1", article_id: "a1", quantity: 2 },
@@ -38,6 +38,14 @@ test("rejects duplicates, raw material in POS, negatives, unknown store", () => 
     { store_id: "nope", article_id: "a1", quantity: 1 }
   ], stores, articles, stocks);
   assert.equal(result.errors.length, 4);
+});
+
+test("raw materials remain available for depot and production", () => {
+  for (const store_type of ["CENTRAL_WAREHOUSE", "MANUFACTURER"] as const) {
+    const sites = [{ ...stores[0], store_type }];
+    assert.equal(buildStockExportRecords(sites, articles, stocks).length, 2);
+    assert.deepEqual(validateStockSync([{ store_id: "s1", article_id: "a2", quantity: 2 }], sites, articles, stocks).errors, []);
+  }
 });
 
 test("JSON file accepts data array", () => {

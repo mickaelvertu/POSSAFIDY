@@ -9,6 +9,8 @@ import {
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
 import { saleLinesEqual } from "./saleComparison";
+import { canConsumeMaterials, validateMaterialConsumption } from "./materialConsumption";
+import type { Article, Store, UserProfile } from "../types";
 import { AppRoleId, AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
 
 const SALES = "sales";
@@ -16,6 +18,36 @@ const PRODUCTIONS = "productions";
 const STOCKS = "stocks";
 const MOVEMENTS = "movements";
 const AUDIT_LOGS = "auditLogs";
+
+export async function consumeRawMaterial(
+  user: UserProfile, store: Store, article: Article, quantity: number, reason: string, knownStocks: StoreStock[]
+): Promise<{ stock: StoreStock; movement: StockMovement; auditLog: AuditLog }> {
+  if (!canConsumeMaterials(user, store)) throw new Error("La consommation de matières premières est réservée au dépôt et à la production.");
+  const storeId = store.id;
+  const target = stockReference(knownStocks, storeId, article.id);
+  const id = `consumption-${crypto.randomUUID()}`;
+  return runOnlineTransaction(async transaction => {
+    const snapshot = await transaction.get(target.reference);
+    if (!snapshot.exists()) throw new Error("Stock introuvable dans ce magasin.");
+    const current = snapshot.data() as StoreStock;
+    if (current.store_id !== storeId || current.article_id !== article.id) throw new Error("Stock incompatible avec la consommation.");
+    validateMaterialConsumption(article, quantity, current.quantity, reason);
+    const timestamp = Date.now();
+    const stock = { ...current, quantity: current.quantity - quantity, updated_at: timestamp };
+    const movement: StockMovement = {
+      id, store_id: storeId, article_id: article.id, movement_type: "CONSUMPTION",
+      quantity: -quantity, reference_type: "CONSUMPTION", reference_id: id, reference_number: id,
+      before_quantity: current.quantity, after_quantity: stock.quantity,
+      created_by: user.uid, created_by_name: user.displayName || user.email,
+      notes: reason.trim(), created_at: timestamp
+    };
+    const entry = audit("RAW_MATERIAL_CONSUMED", "STOCK", current.id, user.uid, movement.created_by_name, storeId, current, stock);
+    transaction.update(target.reference, { quantity: stock.quantity, updated_at: timestamp });
+    transaction.set(doc(db, MOVEMENTS, id), movement);
+    transaction.set(doc(db, AUDIT_LOGS, entry.id), entry);
+    return { stock, movement, auditLog: entry };
+  });
+}
 
 function clean<T>(value: T): T {
   if (Array.isArray(value)) return value.map(clean) as T;

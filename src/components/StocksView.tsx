@@ -12,6 +12,7 @@ import {
 import { getArticleStock, getQuarantineStock } from "../services/stockService";
 import SearchableSelect from "./SearchableSelect";
 import MovementsView from "./MovementsView";
+import MaterialConsumptionForm from "./MaterialConsumptionForm";
 import { 
   Boxes, 
   Search, 
@@ -38,6 +39,7 @@ interface StocksViewProps {
   stocks: StoreStock[];
   movements: StockMovement[];
   currentUser: UserProfile;
+  onConsumeMaterial: (storeId: string, articleId: string, quantity: number, reason: string) => Promise<void>;
   onAdjustStock: (
     storeId: string, 
     articleId: string, 
@@ -56,6 +58,7 @@ export default function StocksView({
   stocks,
   movements,
   currentUser,
+  onConsumeMaterial,
   onAdjustStock,
   onImportInitialStocks,
   onSyncStocks
@@ -93,7 +96,7 @@ export default function StocksView({
 
   const canStoreRawMaterials = (storeId: string) => {
     const store = stores.find(item => item.id === storeId);
-    return store?.store_type !== "POS" && store?.store_type !== "RESELLER";
+    return store?.store_type === "CENTRAL_WAREHOUSE" || store?.store_type === "MANUFACTURER";
   };
 
   const isAdmin = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN";
@@ -277,6 +280,8 @@ export default function StocksView({
           </p>
         </div>
       </div>
+
+      <MaterialConsumptionForm stores={stores} articles={articles} stocks={stocks} user={currentUser} onConsume={onConsumeMaterial} />
 
       {isSuperAdmin && (
         <section className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50 p-5" aria-labelledby="stock-sync-title">

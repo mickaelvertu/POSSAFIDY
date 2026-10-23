@@ -1,4 +1,5 @@
 import { Article, Store, StoreStock, StockMovement } from "../types";
+import { canStoreRawMaterials } from "./materialConsumption";
 
 const MAX_IMPORT_ROWS = 5000;
 
@@ -81,8 +82,8 @@ export function validateInitialStockImport(
       errors.push(`Ligne ${rowNumber} : article absent ou inactif (${articleId}).`);
       return;
     }
-    if ((store.store_type === "POS" || store.store_type === "RESELLER") && article.article_type !== "RESALE") {
-      errors.push(`Ligne ${rowNumber} : un magasin ${store.store_type} ne peut pas recevoir de matière première.`);
+    if (article.article_type === "RAW_MATERIAL" && !canStoreRawMaterials(store)) {
+      errors.push(`Ligne ${rowNumber} : les matières premières sont réservées au dépôt et à la production.`);
       return;
     }
 

@@ -108,14 +108,14 @@ export default function ProductionView({
   const centralStore = stores.find(s => s.store_type === "CENTRAL_WAREHOUSE") || stores[0];
 
   const rawArticles = articles.filter(a => a.article_type === "RAW_MATERIAL");
-  const resaleArticles = articles.filter(a => a.article_type === "RESALE");
+  const outputArticles = articles.filter(a => a.is_active);
 
   // Production Form State
   const [consumptions, setConsumptions] = useState<Array<{ article_id: string; quantity: number }>>([
     { article_id: rawArticles[0]?.id || "", quantity: 10 }
   ]);
   const [outputs, setOutputs] = useState<Array<{ article_id: string; quantity: number }>>([
-    { article_id: resaleArticles[0]?.id || "", quantity: 5 }
+    { article_id: outputArticles[0]?.id || "", quantity: 5 }
   ]);
   const [batchNote, setBatchNote] = useState("");
 
@@ -149,7 +149,7 @@ export default function ProductionView({
     setRecycledConsumptions([]);
     setEditingProduction(null);
     setConsumptions([{ article_id: rawArticles[0]?.id || "", quantity: 10 }]);
-    setOutputs([{ article_id: resaleArticles[0]?.id || "", quantity: 5 }]);
+    setOutputs([{ article_id: outputArticles[0]?.id || "", quantity: 5 }]);
     setBatchNote("");
     setIsModalOpen(true);
   };
@@ -170,7 +170,7 @@ export default function ProductionView({
   };
 
   const handleAddOutputLine = () => {
-    setOutputs([...outputs, { article_id: resaleArticles[0]?.id || "", quantity: 5 }]);
+    setOutputs([...outputs, { article_id: outputArticles[0]?.id || "", quantity: 5 }]);
   };
 
   const handleSubmitProduction = async (e: FormEvent) => {
@@ -188,9 +188,9 @@ export default function ProductionView({
       outputs.length === 0 ||
       recycledConsumptions.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !line.article_id) ||
       consumptions.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !rawArticles.some(article => article.id === line.article_id)) ||
-      outputs.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !resaleArticles.some(article => article.id === line.article_id))
+      outputs.some(line => !Number.isFinite(line.quantity) || line.quantity <= 0 || !outputArticles.some(article => article.id === line.article_id))
     ) {
-      alert("Veuillez renseigner au moins une matière première consommée et un produit fini fabriqué.");
+      alert("Veuillez renseigner au moins une matière première consommée et un article fabriqué.");
       return;
     }
 
@@ -307,7 +307,7 @@ export default function ProductionView({
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Section 6 : Consommation validée de matières premières (diminution MP) et fabrication de produits finis (crédit PF).
+            Consommation de matières premières et fabrication de matières premières ou de produits finis.
           </p>
         </div>
 
@@ -346,8 +346,8 @@ export default function ProductionView({
             Diminue immédiatement le stock MP du laboratoire lors de la fabrication.
           </div>
           <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700">
-            <span className="text-emerald-400 font-bold block mb-1">3. SORTIE PRODUIT FINI</span>
-            Crédite le stock de produits finis (Articles de Revente) prêt à distribuer.
+            <span className="text-emerald-400 font-bold block mb-1">3. ARTICLES FABRIQUÉS</span>
+            Crédite les matières premières ou produits finis fabriqués, prêts à transférer vers les magasins.
           </div>
         </div>
       </div>
@@ -496,7 +496,7 @@ export default function ProductionView({
               <div className="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 text-xs">
                 <div className="font-bold text-emerald-800 mb-2 flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4" />
-                  Produits Finis Fabriqués (Entrée en stock Revente) :
+                  Articles fabriqués (entrée en stock) :
                 </div>
                 <div className="space-y-1.5">
                   {p.outputs.map((o) => (
@@ -666,14 +666,14 @@ export default function ProductionView({
                 <div className="flex items-center justify-between mb-2">
                   <label className="font-bold text-emerald-900 flex items-center gap-1.5">
                     <Sparkles className="h-4 w-4" />
-                    2. Produits Finis à fabriquer (Sortie) :
+                    2. Articles à fabriquer : matières premières ou produits finis
                   </label>
                   <button
                     type="button"
                     onClick={handleAddOutputLine}
                     className="font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Ajouter Produit Fini
+                    <Plus className="h-3.5 w-3.5" /> Ajouter un article
                   </button>
                 </div>
 
@@ -689,9 +689,9 @@ export default function ProductionView({
                         }}
                         className="flex-1 bg-white border border-slate-300 rounded-lg p-2 font-medium"
                       >
-                        {resaleArticles.map((a) => (
+                        {outputArticles.map((a) => (
                           <option key={a.id} value={a.id}>
-                            [{a.code}] {a.name} ({a.unit})
+                            [{a.code}] {a.name} ({a.unit}) — {a.article_type === "RAW_MATERIAL" ? "Matière première" : "Produit fini"}
                           </option>
                         ))}
                       </select>

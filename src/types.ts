@@ -561,7 +561,7 @@ export interface ProductionConsumptionLine {
 
 export interface ProductionOutputLine {
   id: string;
-  article_id: string; // Produit fini
+  article_id: string; // Matière première fabriquée ou produit fini
   article_code: string;
   article_name: string;
   unit: string;

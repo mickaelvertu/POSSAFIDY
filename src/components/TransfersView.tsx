@@ -146,10 +146,12 @@ export default function TransfersView({
     : activeStores.filter(store => currentUser.storeIds.includes(store.id));
   const getTransferArticles = (destinationStoreId: string) => {
     if (transferKind !== "STANDARD") return articles.filter(article => article.article_type === "RESALE");
+    const source = stores.find(store => store.id === sourceStoreId);
     const destination = stores.find(store => store.id === destinationStoreId);
-    return destination?.store_type === "POS" || destination?.store_type === "RESELLER"
-      ? articles.filter(article => article.article_type === "RESALE")
-      : articles;
+    const rawMaterialsAllowed = source && destination
+      && ["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(source.store_type)
+      && ["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(destination.store_type);
+    return rawMaterialsAllowed ? articles : articles.filter(article => article.article_type === "RESALE");
   };
   const getDispatchableStock = (storeId: string, articleId: string, excludeTransferId?: string) => {
     if (transferKind === "DIRECT_DEPOSIT") return getArticleStock(stocks, storeId, articleId) + 1e9;
@@ -426,13 +428,6 @@ export default function TransfersView({
       return;
     }
     const transferArticles = getTransferArticles(destStoreId);
-    if (destinationStore?.store_type === "POS" || destinationStore?.store_type === "RESELLER") {
-      const rawMaterialLine = transferLines.find(line => articles.find(article => article.id === line.article_id)?.article_type === "RAW_MATERIAL");
-      if (rawMaterialLine) {
-        alert("Les matières premières ne peuvent pas être transférées vers un point de vente ou un magasin revendeur.");
-        return;
-      }
-    }
     if (transferLines.some(line => !transferArticles.some(article => article.id === line.article_id))) {
       alert("L'article sélectionné n'est pas autorisé pour ce magasin destinataire.");
       return;
