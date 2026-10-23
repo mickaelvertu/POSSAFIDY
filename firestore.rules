@@ -445,6 +445,11 @@ service cloud.firestore {
     }
 
     match /expenses/{expenseId} {
+      // Employees may check their own advance source, including a deleted source.
+      allow get: if isActiveUser() && (resource == null || isAdmin() || (
+        resource.data.get('employee_id', null) != null &&
+        get(/databases/$(database)/documents/employees/$(resource.data.employee_id)).data.get('user_id', null) == request.auth.uid
+      ));
       allow read: if (hasPermission('expenses.view') || hasPermission('expenses.create')) &&
         (isSuperAdmin() || resource.data.created_by == request.auth.uid || hasExpenseStoreAccess(resource.data.get('store_id', null)));
       allow create: if hasPermission('expenses.create') &&
@@ -510,6 +515,9 @@ service cloud.firestore {
     match /movements/{movementId} {
       allow read: if isActiveUser() && hasStoreAccess(resource.data.store_id);
       allow create: if hasStoreAccess(request.resource.data.store_id) &&
+        (!(request.resource.data.get('movement_type', '') == 'CONSUMPTION' || request.resource.data.get('reference_type', '') == 'CONSUMPTION') ||
+          (get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'MANUFACTURER' &&
+           get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.is_active == true)) &&
         canStoreArticle(request.resource.data.store_id, request.resource.data.article_id) && (
         hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
         hasPermission('transfers.receive') || hasPermission('sales.validate') ||
@@ -1007,6 +1015,7 @@ service cloud.firestore {
           hasPermission('transfers.receive') || hasPermission('sales.validate') ||
           hasPermission('production.create') || hasPermission('production.validate') ||
           (hasPermission('stock.edit') &&
+            get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type == 'MANUFACTURER' &&
             request.resource.data.quantity < resource.data.quantity &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updated_at']) &&
             get(/databases/$(database)/documents/articles/$(resource.data.article_id)).data.article_type == 'RAW_MATERIAL') ||

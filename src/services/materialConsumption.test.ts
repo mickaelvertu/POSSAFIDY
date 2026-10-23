@@ -1,27 +1,34 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Article, Store, UserProfile } from "../types";
-import { canConsumeMaterials, validateMaterialConsumption } from "./materialConsumption";
+import { canConsumeMaterials, canStoreRawMaterials, validateMaterialConsumption } from "./materialConsumption";
 
 const material = { is_active: true, article_type: "RAW_MATERIAL" } as Article;
 const manager = { roleId: "RESPONSABLE_MAGASIN", storeIds: ["depot"], permissions: ["stock.edit"] } as UserProfile;
 const depot = { id: "depot", store_type: "CENTRAL_WAREHOUSE", is_active: true } as Store;
 
-test("assigned store managers can consume materials, without access to other stores", () => {
-  assert.equal(canConsumeMaterials(manager, depot), true);
+test("assigned manufacturer managers can consume materials, without access to other stores", () => {
+  const factory = { ...depot, store_type: "MANUFACTURER" } as Store;
+  assert.equal(canConsumeMaterials(manager, factory), true);
   assert.equal(canConsumeMaterials(manager, { ...depot, id: "other" }), false);
   assert.equal(canConsumeMaterials({ ...manager, permissions: ["stock.view"] }, depot), false);
-  assert.equal(canConsumeMaterials({ ...manager, permissions: ["production.create"] }, depot), true);
+  assert.equal(canConsumeMaterials({ ...manager, permissions: ["production.create"] }, factory), true);
   assert.equal(canConsumeMaterials(manager, { ...depot, store_type: "MANUFACTURER" }), true);
 });
 
 test("POS and reseller stores cannot consume raw materials, including as administrator", () => {
   for (const roleId of ["RESPONSABLE_MAGASIN", "ADMIN", "SUPER_ADMIN"] as const) {
-    for (const store_type of ["POS", "RESELLER"] as const) {
+    for (const store_type of ["CENTRAL_WAREHOUSE", "POS", "RESELLER"] as const) {
       assert.equal(canConsumeMaterials({ ...manager, roleId }, { ...depot, store_type }), false);
     }
   }
   assert.equal(canConsumeMaterials(manager, { ...depot, is_active: false }), false);
+});
+
+test("depots still accept raw materials for storage and transfers", () => {
+  assert.equal(canStoreRawMaterials(depot), true);
+  assert.equal(canConsumeMaterials(manager, depot), false);
+  assert.equal(canStoreRawMaterials({ ...depot, store_type: "MANUFACTURER" }), true);
 });
 
 test("material consumption supports fractional quantities and consuming the remaining stock", () => {

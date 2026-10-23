@@ -1,4 +1,5 @@
 import { useState, FormEvent } from "react";
+import MaterialConsumptionForm from "./MaterialConsumptionForm";
 import { 
   Production, 
   ProductionConsumptionLine, 
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 
 interface ProductionViewProps {
+  onConsumeMaterial: (storeId: string, articleId: string, quantity: number, reason: string) => Promise<void>;
   productions: Production[];
   stores: Store[];
   articles: Article[];
@@ -47,6 +49,7 @@ interface ProductionViewProps {
 }
 
 export default function ProductionView({
+  onConsumeMaterial,
   productions,
   stores,
   articles,
@@ -296,6 +299,7 @@ export default function ProductionView({
 
   return (
     <div className="space-y-6">
+      <MaterialConsumptionForm stores={stores} articles={articles} stocks={stocks} user={currentUser} onConsume={onConsumeMaterial} />
       
       {/* Header Banner */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

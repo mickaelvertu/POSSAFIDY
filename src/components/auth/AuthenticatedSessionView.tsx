@@ -33,7 +33,7 @@ import { createResellerOrder, loadResellerStocks, markResellerNotificationsRead,
 import { createAuditLog } from "../../services/auditService";
 import { deleteInventoryCountDraft, loadInventoryCounts, refuseInventorySignature, rejectInventoryCount, saveInventoryCount, settleInventoryCharges, signInventoryCount, validateInventoryCount } from "../../services/inventoryCountService";
 import type { InventoryCount, InventoryReasonDecision } from "../../types";
-import { loadEmployees, saveEmployee } from "../../services/employeeService";
+import { linkEmployeeAccount, loadEmployees, saveEmployee } from "../../services/employeeService";
 import { loadPayslips, loadSalaryAdvances, savePayslip, saveSalaryAdvance } from "../../services/payrollService";
 import UserAuditReport from "../UserAuditReport";
 import ThemeSwitcher from "../ThemeSwitcher";
@@ -396,6 +396,16 @@ export default function AuthenticatedSessionView() {
     await saveEmployee(employee, auditLog);
     setEmployees(current => isNew ? [...current, employee] : current.map(item => item.id === employee.id ? employee : item));
     setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleLinkEmployee = async (employee: Employee, userId: string) => {
+    const user = managedUsers.find(item => item.uid === userId);
+    if (!user) throw new Error("Compte introuvable.");
+    const updated = { ...employee, user_id: userId, updated_at: Date.now() };
+    const audit = createAuditLog(currentAppUser!, "EMPLOYEE_UPDATED", "EMPLOYEE", employee.id, employee, updated, employee.store_id);
+    await linkEmployeeAccount(employee.id, userId, audit);
+    setEmployees(await loadEmployees());
+    setAuditLogs(current => [audit, ...current]);
   };
 
   const handleSaveAdvance = async (advance: SalaryAdvance) => {
@@ -2336,6 +2346,7 @@ export default function AuthenticatedSessionView() {
     const auditLog = createAuditLog(currentAppUser, "EXPENSE_DELETED", "EXPENSE", expense.id, expense, undefined, expense.store_id);
     await deleteExpense(expense, auditLog);
     setExpenses(current => current.filter(item => item.id !== expense.id));
+    setSalaryAdvances(current => current.filter(item => item.expense_id !== expense.id));
     setAuditLogs(current => [auditLog, ...current]);
   };
 
@@ -2489,7 +2500,6 @@ export default function AuthenticatedSessionView() {
               movements={movements}
               currentUser={currentAppUser}
               onAdjustStock={handleAdjustStock}
-              onConsumeMaterial={handleConsumeMaterial}
               onImportInitialStocks={handleImportInitialStocks}
               onSyncStocks={handleSyncStocks}
             />
@@ -2680,6 +2690,7 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <ProductionView
+              onConsumeMaterial={handleConsumeMaterial}
               productions={visibleProductions}
               stores={accessibleStores}
               articles={articles}
@@ -2790,7 +2801,7 @@ export default function AuthenticatedSessionView() {
             >
               ← Retour à l'accueil
             </button>
-            <StaffView employees={employees} stores={inventoryStores} expenses={expenses} advances={salaryAdvances} onOpenPayroll={() => setActiveModule("payroll")} onSaveEmployee={handleSaveEmployee} />
+            <StaffView users={managedUsers} onLinkAccount={handleLinkEmployee} onOpenUsers={openUserManagement} employees={employees} stores={inventoryStores} expenses={expenses} advances={salaryAdvances} onOpenPayroll={() => setActiveModule("payroll")} onSaveEmployee={handleSaveEmployee} />
           </section>
         ) : activeModule === "payroll" && currentAppUser && canManageStores ? (
           <section className="space-y-4">

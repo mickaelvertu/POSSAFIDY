@@ -22,7 +22,7 @@ const AUDIT_LOGS = "auditLogs";
 export async function consumeRawMaterial(
   user: UserProfile, store: Store, article: Article, quantity: number, reason: string, knownStocks: StoreStock[]
 ): Promise<{ stock: StoreStock; movement: StockMovement; auditLog: AuditLog }> {
-  if (!canConsumeMaterials(user, store)) throw new Error("La consommation de matières premières est réservée au dépôt et à la production.");
+  if (!canConsumeMaterials(user, store)) throw new Error("La consommation de matières premières est réservée aux sites de fabrication (MANUFACTURER).");
   const storeId = store.id;
   const target = stockReference(knownStocks, storeId, article.id);
   const id = `consumption-${crypto.randomUUID()}`;

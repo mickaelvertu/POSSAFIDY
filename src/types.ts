@@ -700,6 +700,7 @@ export type ReportType =
 export type EmployeeContractType = "CDI" | "CDD" | "TEMPORARY" | "INTERN" | "DAILY";
 
 export interface Employee {
+  linked_archive_id?: string;
   id: string;
   code?: string;
   first_name: string;

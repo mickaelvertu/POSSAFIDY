@@ -5,7 +5,7 @@ export function canStoreRawMaterials(store: Store | undefined): boolean {
 }
 
 export function canConsumeMaterials(user: UserProfile, store: Store): boolean {
-  if (!store.is_active || !canStoreRawMaterials(store)) return false;
+  if (!store.is_active || store.store_type !== "MANUFACTURER") return false;
   return user.roleId === "ADMIN" || user.roleId === "SUPER_ADMIN" || (
     user.storeIds.includes(store.id) &&
     (user.permissions.includes("stock.edit") || user.permissions.includes("production.create") || user.permissions.includes("production.validate"))

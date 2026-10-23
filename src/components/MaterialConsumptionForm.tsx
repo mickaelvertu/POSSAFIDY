@@ -33,7 +33,7 @@ export default function MaterialConsumptionForm({ stores, articles, stocks, user
   return (
     <form onSubmit={submit} className="space-y-3 rounded-2xl border border-rose-200 bg-white p-5 text-sm text-slate-900">
       <h3 className="font-bold">Consommer une matière première</h3>
-      <p className="text-xs text-slate-600">Enregistrez l'utilisation dans le magasin destinataire. Le stock est diminué et un mouvement de consommation est conservé.</p>
+      <p className="text-xs text-slate-600">Consommation réservée aux sites de fabrication. Les dépôts peuvent stocker et transférer les matières premières.</p>
       <fieldset disabled={busy} className="grid gap-3 sm:grid-cols-2">
         <label>Magasin
           <select required value={storeId} onChange={event => { setStoreId(event.target.value); setArticleId(""); }} className="mt-1 w-full rounded border p-2">
