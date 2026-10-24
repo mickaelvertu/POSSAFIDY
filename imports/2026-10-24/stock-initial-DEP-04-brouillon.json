@@ -2,13 +2,14 @@
     "version":  1,
     "review":  {
                    "ready_to_apply":  false,
-                   "reason":  "Identifiant interne de DEP-04 et rapprochement du catalogue matieres premieres manquants. Unites du classeur conservees, a verifier notamment sucre glace et vaseline."
+                   "reason":  "DEP-04 identifie : MAG-046. Catalogue matieres premieres a completer ; rapprochement des articles et verification des unites requis avant import."
                },
     "destination":  {
                         "store_code":  "DEP-04",
                         "store_type":  "CENTRAL_WAREHOUSE",
                         "location":  "Mahamasina",
-                        "store_name":  "Matiere Premiere"
+                        "store_name":  "Matiere Premiere",
+                        "store_id":  "MAG-046"
                     },
     "source":  {
                    "sheet":  "Sheet1",
@@ -1154,5 +1155,6 @@
                             "entries":  0,
                             "exits":  0
                         }
-                    ]
+                    ],
+    "stock_export_source":  "stock-DEP-04-2026-10-24.json"
 }

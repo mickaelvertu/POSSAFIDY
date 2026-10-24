@@ -1,0 +1,55 @@
+{
+  "store_id": "MAG-046",
+  "store_code": "DEP-04",
+  "source_rows": 126,
+  "articles_created": 126,
+  "categories_reused": [
+    {
+      "id": "cat-mp",
+      "name": "MP"
+    }
+  ],
+  "units_created": [
+    "Gramme",
+    "GONY",
+    "KPK",
+    "PACK",
+    "Millilitre",
+    "FEUILLE",
+    "BOTY",
+    "FATORANA",
+    "BOUTEILLE"
+  ],
+  "stock_rows": 126,
+  "unresolved": [],
+  "checks": {
+    "unique_ids": true,
+    "unique_article_codes": true,
+    "stock_article_references": true,
+    "quantities_preserved": true
+  },
+  "unit_alerts": [
+    {
+      "id": "stock-MAG-046-article-raw-material-dep04-sucre-glace",
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-sucre-glace",
+      "article_code": "MP04-112",
+      "article_name": "Sucre glace",
+      "unit": "Gramme",
+      "quantity": 13250
+    },
+    {
+      "id": "stock-MAG-046-article-raw-material-dep04-vaseline",
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-vaseline",
+      "article_code": "MP04-120",
+      "article_name": "VASELINE",
+      "unit": "Gramme",
+      "quantity": 750
+    }
+  ]
+}
