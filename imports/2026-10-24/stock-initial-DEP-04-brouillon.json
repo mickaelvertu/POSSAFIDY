@@ -1,0 +1,1158 @@
+{
+    "version":  1,
+    "review":  {
+                   "ready_to_apply":  false,
+                   "reason":  "Identifiant interne de DEP-04 et rapprochement du catalogue matieres premieres manquants. Unites du classeur conservees, a verifier notamment sucre glace et vaseline."
+               },
+    "destination":  {
+                        "store_code":  "DEP-04",
+                        "store_type":  "CENTRAL_WAREHOUSE",
+                        "location":  "Mahamasina",
+                        "store_name":  "Matiere Premiere"
+                    },
+    "source":  {
+                   "sheet":  "Sheet1",
+                   "nonzero_rows":  62,
+                   "quantity_column":  "E",
+                   "row_count":  126,
+                   "date":  "2026-10-23",
+                   "balance_errors":  0,
+                   "file":  "STOCK PM DU 23 OCTOBRE 2026.xlsx"
+               },
+    "source_rows":  [
+                        {
+                            "source_row":  3,
+                            "article_name":  "ALCOOL",
+                            "quantity":  3,
+                            "unit":  "L",
+                            "opening_quantity":  3,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  4,
+                            "article_name":  "ALOE NONI",
+                            "quantity":  110,
+                            "unit":  "L",
+                            "opening_quantity":  110,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  5,
+                            "article_name":  "ANJARASOA",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  6,
+                            "article_name":  "ARGILE ROUGE ",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  7,
+                            "article_name":  "ARGILE VERTE",
+                            "quantity":  5,
+                            "unit":  "G",
+                            "opening_quantity":  5,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  8,
+                            "article_name":  "ASCORBIGUE",
+                            "quantity":  296,
+                            "unit":  "KG",
+                            "opening_quantity":  296,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  9,
+                            "article_name":  "BACTODERM CREME",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  10,
+                            "article_name":  "BAOBAB",
+                            "quantity":  67.5,
+                            "unit":  "KG",
+                            "opening_quantity":  71.699999999999989,
+                            "entries":  0,
+                            "exits":  4.2
+                        },
+                        {
+                            "source_row":  11,
+                            "article_name":  "BEROKA RAVINY",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  12,
+                            "article_name":  "BEROKAFAKANY",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  13,
+                            "article_name":  "BEURE DE Karité",
+                            "quantity":  3742,
+                            "unit":  "G",
+                            "opening_quantity":  3742,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  14,
+                            "article_name":  "Beurre de cacao",
+                            "quantity":  10,
+                            "unit":  "KG",
+                            "opening_quantity":  10,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  15,
+                            "article_name":  "BOIS DE ROSE",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  16,
+                            "article_name":  "CHARBON",
+                            "quantity":  0,
+                            "unit":  "GONY",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  17,
+                            "article_name":  "CAJOU",
+                            "quantity":  62.7,
+                            "unit":  "KG",
+                            "opening_quantity":  57,
+                            "entries":  30,
+                            "exits":  24.3
+                        },
+                        {
+                            "source_row":  18,
+                            "article_name":  "CALOPHILUM",
+                            "quantity":  18,
+                            "unit":  "L",
+                            "opening_quantity":  18,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  19,
+                            "article_name":  "CAMPHRE ",
+                            "quantity":  90,
+                            "unit":  "G",
+                            "opening_quantity":  90,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  20,
+                            "article_name":  "CANELLE",
+                            "quantity":  2500,
+                            "unit":  "G",
+                            "opening_quantity":  2500,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  21,
+                            "article_name":  "CIRE D\u0027ABEIL",
+                            "quantity":  23875,
+                            "unit":  "G",
+                            "opening_quantity":  23875,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  22,
+                            "article_name":  "CITRIQUE",
+                            "quantity":  7427,
+                            "unit":  "G",
+                            "opening_quantity":  7427,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  23,
+                            "article_name":  "CITRON",
+                            "quantity":  6,
+                            "unit":  "L",
+                            "opening_quantity":  6,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  24,
+                            "article_name":  "CLOU DE GIROFLE",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  25,
+                            "article_name":  "COLA MILONA",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  26,
+                            "article_name":  "COLLE PROTOFAR",
+                            "quantity":  1,
+                            "unit":  "PIECE",
+                            "opening_quantity":  2,
+                            "entries":  0,
+                            "exits":  1
+                        },
+                        {
+                            "source_row":  27,
+                            "article_name":  "COURGE MADIO",
+                            "quantity":  450,
+                            "unit":  "KPK",
+                            "opening_quantity":  450,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  28,
+                            "article_name":  "COURGE MALOTO",
+                            "quantity":  294,
+                            "unit":  "KPK",
+                            "opening_quantity":  294,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  29,
+                            "article_name":  "CURCUMA",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  30,
+                            "article_name":  "CUVEE BLANCHE",
+                            "quantity":  1.5,
+                            "unit":  "L",
+                            "opening_quantity":  1.5,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  31,
+                            "article_name":  "DESM",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  32,
+                            "article_name":  "DESM MAINA ",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  33,
+                            "article_name":  "DETOX",
+                            "quantity":  20,
+                            "unit":  "L",
+                            "opening_quantity":  20,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  34,
+                            "article_name":  "EAU THERMALE",
+                            "quantity":  0,
+                            "unit":  "PACK",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  35,
+                            "article_name":  "EAU VIVE",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  36,
+                            "article_name":  "Faka beroka maina",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  37,
+                            "article_name":  "FARINE DE BANANE",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  38,
+                            "article_name":  "FARINE DE LAIN",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  39,
+                            "article_name":  "FARINE DE RIZ",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  40,
+                            "article_name":  "Fenugrec",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  41,
+                            "article_name":  "FENUGREC POUDRE",
+                            "quantity":  0.75,
+                            "unit":  "KG",
+                            "opening_quantity":  0.75,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  42,
+                            "article_name":  "Feuille d\u0027Hibiscus",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  43,
+                            "article_name":  "G-ARTICUL",
+                            "quantity":  80,
+                            "unit":  "L",
+                            "opening_quantity":  80,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  44,
+                            "article_name":  "GLYCERINE",
+                            "quantity":  425,
+                            "unit":  "ML",
+                            "opening_quantity":  425,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  45,
+                            "article_name":  "H.E PALAMAROSA ",
+                            "quantity":  1724,
+                            "unit":  "ML",
+                            "opening_quantity":  1724,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  46,
+                            "article_name":  "HE Cypres",
+                            "quantity":  0,
+                            "unit":  "ML",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  47,
+                            "article_name":  "HE Teatree",
+                            "quantity":  1890,
+                            "unit":  "ML",
+                            "opening_quantity":  1890,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  48,
+                            "article_name":  "HIBISCUS",
+                            "quantity":  0,
+                            "unit":  "",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  49,
+                            "article_name":  "HODIPOTSY",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  50,
+                            "article_name":  "Huile coco",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  51,
+                            "article_name":  "Huile d\u0027amande",
+                            "quantity":  1.7,
+                            "unit":  "L",
+                            "opening_quantity":  1.7,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  52,
+                            "article_name":  "HUILE D\u0027ARGAN ",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  53,
+                            "article_name":  "HUILE D\u0027OLIVE",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  54,
+                            "article_name":  "HUILE DE BAOBAB ",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  55,
+                            "article_name":  "HUILE DE PEPIN DE RAISIN ",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  56,
+                            "article_name":  "HUILE HINA",
+                            "quantity":  8,
+                            "unit":  "L",
+                            "opening_quantity":  8,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  57,
+                            "article_name":  "HUILE JOJOBA",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  58,
+                            "article_name":  "HUILE TOURNESOL",
+                            "quantity":  6,
+                            "unit":  "L",
+                            "opening_quantity":  6,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  59,
+                            "article_name":  "HUILE VEGETAL",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  60,
+                            "article_name":  "HYD CITRIODORAT",
+                            "quantity":  40,
+                            "unit":  "L",
+                            "opening_quantity":  40,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  61,
+                            "article_name":  "HYD CYPRES",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  62,
+                            "article_name":  "HYDGERA",
+                            "quantity":  35.5,
+                            "unit":  "L",
+                            "opening_quantity":  35.5,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  63,
+                            "article_name":  "HYDRAV",
+                            "quantity":  44,
+                            "unit":  "L",
+                            "opening_quantity":  44,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  64,
+                            "article_name":  "HYD ROMBA ",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  65,
+                            "article_name":  "KALANJY",
+                            "quantity":  4,
+                            "unit":  "PIECE",
+                            "opening_quantity":  24,
+                            "entries":  0,
+                            "exits":  20
+                        },
+                        {
+                            "source_row":  66,
+                            "article_name":  "KINANA",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  67,
+                            "article_name":  "KOLZA",
+                            "quantity":  5.5,
+                            "unit":  "L",
+                            "opening_quantity":  10,
+                            "entries":  0,
+                            "exits":  4.5
+                        },
+                        {
+                            "source_row":  68,
+                            "article_name":  "MANDRAVA-SAROTRA",
+                            "quantity":  45,
+                            "unit":  "KG",
+                            "opening_quantity":  45,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  69,
+                            "article_name":  "MASMAHA ",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  70,
+                            "article_name":  "MENAKA (Dr) ",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  71,
+                            "article_name":  "MENAKA MANDRY",
+                            "quantity":  6,
+                            "unit":  "L",
+                            "opening_quantity":  6,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  72,
+                            "article_name":  "MICONAX CREME",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  73,
+                            "article_name":  "MIEL",
+                            "quantity":  21,
+                            "unit":  "L",
+                            "opening_quantity":  21,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  74,
+                            "article_name":  "MIELMANDRY",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  75,
+                            "article_name":  "MORINGA ",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  76,
+                            "article_name":  "MORVITE",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  77,
+                            "article_name":  "N\" 01 ",
+                            "quantity":  16710,
+                            "unit":  "ML",
+                            "opening_quantity":  16710,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  78,
+                            "article_name":  "N\" 02 ",
+                            "quantity":  800,
+                            "unit":  "ML",
+                            "opening_quantity":  800,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  79,
+                            "article_name":  "N\" 03 ",
+                            "quantity":  2570,
+                            "unit":  "ML",
+                            "opening_quantity":  2570,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  80,
+                            "article_name":  "N\u0027\u002704",
+                            "quantity":  250,
+                            "unit":  "ML",
+                            "opening_quantity":  250,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  81,
+                            "article_name":  "N\" 05",
+                            "quantity":  0,
+                            "unit":  "ML",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  82,
+                            "article_name":  "N\" 06 ",
+                            "quantity":  80,
+                            "unit":  "ML",
+                            "opening_quantity":  80,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  83,
+                            "article_name":  "N\" 07",
+                            "quantity":  10,
+                            "unit":  "ML",
+                            "opening_quantity":  10,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  84,
+                            "article_name":  "N\" 08 ",
+                            "quantity":  200,
+                            "unit":  "ML",
+                            "opening_quantity":  200,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  85,
+                            "article_name":  "N\" 09 ",
+                            "quantity":  100,
+                            "unit":  "ML",
+                            "opening_quantity":  100,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  86,
+                            "article_name":  "N\" 10",
+                            "quantity":  250,
+                            "unit":  "ML",
+                            "opening_quantity":  250,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  87,
+                            "article_name":  "N\" 11",
+                            "quantity":  225,
+                            "unit":  "ML",
+                            "opening_quantity":  225,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  88,
+                            "article_name":  "N\" 12 ",
+                            "quantity":  985,
+                            "unit":  "ML",
+                            "opening_quantity":  985,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  89,
+                            "article_name":  "N\"13 ",
+                            "quantity":  400,
+                            "unit":  "ML",
+                            "opening_quantity":  400,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  90,
+                            "article_name":  "N\" 14 ",
+                            "quantity":  140,
+                            "unit":  "ML",
+                            "opening_quantity":  140,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  91,
+                            "article_name":  "N\"15 ",
+                            "quantity":  720,
+                            "unit":  "ML",
+                            "opening_quantity":  720,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  92,
+                            "article_name":  "N\"° 16",
+                            "quantity":  550,
+                            "unit":  "ML",
+                            "opening_quantity":  550,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  93,
+                            "article_name":  "NICO",
+                            "quantity":  0,
+                            "unit":  "",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  94,
+                            "article_name":  "NONI",
+                            "quantity":  10,
+                            "unit":  "L",
+                            "opening_quantity":  10,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  95,
+                            "article_name":  "PAPIER CUISSON ",
+                            "quantity":  30,
+                            "unit":  "FEUILLE",
+                            "opening_quantity":  30,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  96,
+                            "article_name":  "PERYLE",
+                            "quantity":  0,
+                            "unit":  "BOTY",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  97,
+                            "article_name":  "POMME",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  98,
+                            "article_name":  "POUDRE CAFE",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  99,
+                            "article_name":  "Ravina beroka maina",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  100,
+                            "article_name":  "REVITALISANT",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  101,
+                            "article_name":  "ROFIA ",
+                            "quantity":  9,
+                            "unit":  "FATORANA",
+                            "opening_quantity":  9,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  102,
+                            "article_name":  "RONONO",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  103,
+                            "article_name":  "SACHET PROTOFAR",
+                            "quantity":  14,
+                            "unit":  "PIECE",
+                            "opening_quantity":  14,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  104,
+                            "article_name":  "SAKAMALAO",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  105,
+                            "article_name":  "SESAM",
+                            "quantity":  128,
+                            "unit":  "KG",
+                            "opening_quantity":  128,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  106,
+                            "article_name":  "SOANAMBO POUDRE ",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  107,
+                            "article_name":  "SOJA",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  108,
+                            "article_name":  "SORBATE",
+                            "quantity":  8381,
+                            "unit":  "G",
+                            "opening_quantity":  8565,
+                            "entries":  0,
+                            "exits":  184
+                        },
+                        {
+                            "source_row":  109,
+                            "article_name":  "SOUDE",
+                            "quantity":  6,
+                            "unit":  "KG",
+                            "opening_quantity":  6,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  110,
+                            "article_name":  "SPIRU CACAPIG",
+                            "quantity":  4,
+                            "unit":  "KG",
+                            "opening_quantity":  4,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  111,
+                            "article_name":  "SPIRU POUDRE",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  112,
+                            "article_name":  "STEVIA",
+                            "quantity":  0,
+                            "unit":  "",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  113,
+                            "article_name":  "savlah",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  114,
+                            "article_name":  "Sucre glace",
+                            "quantity":  13250,
+                            "unit":  "KG",
+                            "opening_quantity":  19500,
+                            "entries":  0,
+                            "exits":  6250
+                        },
+                        {
+                            "source_row":  115,
+                            "article_name":  "Taho beroka maina",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  116,
+                            "article_name":  "TANJAKA MIBOTSINA",
+                            "quantity":  0,
+                            "unit":  "BOUTEILLE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  117,
+                            "article_name":  "TK",
+                            "quantity":  0,
+                            "unit":  "KG",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  118,
+                            "article_name":  "TONGOLO",
+                            "quantity":  0,
+                            "unit":  "KPK",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  119,
+                            "article_name":  "TONGOLO GASY",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  120,
+                            "article_name":  "TSUNAMI",
+                            "quantity":  0,
+                            "unit":  "G",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  121,
+                            "article_name":  "TURBO ",
+                            "quantity":  1670,
+                            "unit":  "G",
+                            "opening_quantity":  1670,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  122,
+                            "article_name":  "VASELINE",
+                            "quantity":  750,
+                            "unit":  "L",
+                            "opening_quantity":  750,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  123,
+                            "article_name":  "VIN",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  124,
+                            "article_name":  "Vin blanc @ bidon fotsy",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  125,
+                            "article_name":  "VIN MAHASOA",
+                            "quantity":  0,
+                            "unit":  "L",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  126,
+                            "article_name":  "VINAIGRE",
+                            "quantity":  60,
+                            "unit":  "BOUTEILLE",
+                            "opening_quantity":  60,
+                            "entries":  0,
+                            "exits":  0
+                        },
+                        {
+                            "source_row":  127,
+                            "article_name":  "VINAIGRE DE VIN",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  6,
+                            "entries":  0,
+                            "exits":  6
+                        },
+                        {
+                            "source_row":  128,
+                            "article_name":  "VAHONA",
+                            "quantity":  0,
+                            "unit":  "PIECE",
+                            "opening_quantity":  0,
+                            "entries":  0,
+                            "exits":  0
+                        }
+                    ]
+}
