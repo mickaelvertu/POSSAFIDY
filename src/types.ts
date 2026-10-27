@@ -71,7 +71,7 @@ export const ALL_PERMISSIONS: AppPermission[] = [
   "expenses.view", "expenses.create",
   "cash_handover.view", "cash_handover.create", "cash_handover.receive", "cash_handover.deposit",
   "procurement.manage",
-  "units.manage"
+  "units.manage", "employee_presentation.control"
 ];
 
 // 1. Types de magasins

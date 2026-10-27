@@ -41,6 +41,7 @@ interface RoleHomeViewProps {
   onOpenStaff: () => void;
   onOpenReports: () => void;
   onOpenAudit: () => void;
+  onOpenEmployeePresentation: () => void;
   onOpenInventory: () => void;
   stores: Store[];
   sales: Sale[];
@@ -291,6 +292,7 @@ const accessCards = [
   { permission: "credit.manage", title: "Crédits revendeurs", description: "Gérer les plafonds, échéances, paiements et relances", icon: HandCoins, accent: "teal" },
   { permission: "reseller.orders", title: "Commandes revendeurs", description: "Examiner les commandes et notifier les décisions", icon: ShoppingCart, accent: "amber", adminOnly: true },
   { permission: "stock.view", title: "Stocks", description: "Suivre les disponibilités par magasin", icon: Boxes, accent: "blue" },
+  { permission: "employee_presentation.control", title: "Contrôle des employés", description: "Présentation, hygiène et points validés", icon: ClipboardList, accent: "teal" },
   { permission: "inventory.control", title: "Contrôle d'inventaire", description: "Compter le stock, justifier les écarts et valider les ajustements", icon: ClipboardList, accent: "teal" },
   { permission: "transfers.view", title: "Transferts", description: "Suivre les mouvements inter-magasins", icon: ArrowRightLeft, accent: "amber" },
   { permission: "production.view", title: "Production", description: "Suivre les fabrications et consommations", icon: Factory, accent: "indigo" },
@@ -316,7 +318,7 @@ const accentClasses: Record<string, string> = {
   teal: "bg-teal-50 text-teal-700 border-teal-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenCashHandovers, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenInventory, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenCashHandovers, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenEmployeePresentation, onOpenInventory, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -343,6 +345,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
         : "Production";
   const availableCards = accessCards.filter(card => {
     if (card.permission === "reseller.orders") return isAdmin;
+    if (card.permission === "employee_presentation.control") return isAdmin || role === "CONTROLEUR" || role === "RESPONSABLE_MAGASIN" || hasPermission(user, card.permission);
     if (card.permission === "inventory.control") return isAdmin || role === "RESPONSABLE_MAGASIN" || hasPermission(user, "inventory.count") || hasPermission(user, "inventory.review");
     if (card.permission === "stores.manage" || card.permission === "catalog.manage" || card.permission === "units.manage" || card.permission === "staff.manage") return isAdmin;
     if (card.permission === "expenses.view") return isAdmin || hasPermission(user, "expenses.view") || hasPermission(user, "expenses.create");
@@ -652,12 +655,13 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isStaffCard = card.permission === "staff.manage";
               const isResellerOrdersCard = card.permission === "reseller.orders";
               const isInventoryCard = card.permission === "inventory.control";
-              const isActionable = isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isCashHandoverCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
+              const isEmployeePresentationCard = card.permission === "employee_presentation.control";
+              const isActionable = isEmployeePresentationCard || isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isCashHandoverCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
               return (
                 <button
                   key={card.permission}
                   type="button"
-                  onClick={isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isCashHandoverCard ? onOpenCashHandovers : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
+                  onClick={isEmployeePresentationCard ? onOpenEmployeePresentation : isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isCashHandoverCard ? onOpenCashHandovers : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >

@@ -33,6 +33,8 @@ import {
   Pencil
 } from "lucide-react";
 
+import { canApproveTransfer, isWorkshopTransfer } from "../services/transferApproval";
+
 interface TransfersViewProps {
   transfers: StockTransfer[];
   stores: Store[];
@@ -55,7 +57,6 @@ interface TransfersViewProps {
   onReceiveDirectDeposit: (transferId: string) => void;
   onResolveDiscrepancy: (transferId: string, resolutionNote: string) => void;
   canCreate: boolean;
-  canApprove: boolean;
   canReject: boolean;
   canShip: boolean;
   canReceive: boolean;
@@ -102,7 +103,6 @@ export default function TransfersView({
   onReceiveDirectDeposit,
   onResolveDiscrepancy,
   canCreate,
-  canApprove,
   canReject,
   canShip,
   canReceive,
@@ -703,6 +703,7 @@ export default function TransfersView({
               && (t.status !== "RECEIVED" || currentUser.uid !== t.received_by);
             const isCentralDestination = dst?.store_type === "CENTRAL_WAREHOUSE";
             const isSupplierDelivery = t.type === "SUPPLIER_TO_STORE";
+            const workshopTransfer = isWorkshopTransfer(t, stores);
             const isSourceOperator = currentUser.roleId === "ADMIN"
               || currentUser.roleId === "SUPER_ADMIN"
               || (!isSupplierDelivery && currentUser.storeIds.includes(t.source_store_id));
@@ -728,6 +729,7 @@ export default function TransfersView({
                       Type: {isSupplierDelivery ? "Achat fournisseur" : ({ STORE_RETURN: "Retour magasin", RECYCLING: "Recyclage" }[t.type as string] || t.type)}
                     </span>
                     {isSupplierDelivery && t.purchase_number && <span className="text-xs font-medium text-teal-700">Achat {t.purchase_number}</span>}
+                    {workshopTransfer && <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Approbation par l’atelier source</span>}
                     {isCentralDestination && (
                       <span className="text-[10px] font-bold uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full" title="Entrée au dépôt central : réception saisie par une personne, confirmée par une autre">
                         Contrôle à 2
@@ -922,14 +924,14 @@ export default function TransfersView({
                       </button>
                     )}
                     {/* Step 1 -> 2: Approve DRAFT */}
-                    {t.status === "DRAFT" && canApprove && currentUser.uid !== t.requested_by && (
+                    {canApproveTransfer(currentUser, t, stores) && (
                       <button
                         type="button"
                         onClick={() => onApproveTransfer(t.id)}
                         className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <ShieldCheck className="h-3.5 w-3.5" />
-                        Approuver le Transfert
+                        {workshopTransfer ? "Approuver depuis l’atelier source" : "Approuver le Transfert"}
                       </button>
                     )}
                     {t.status === "DRAFT" && canReject && currentUser.uid !== t.requested_by && (

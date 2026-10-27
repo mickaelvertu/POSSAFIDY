@@ -729,6 +729,59 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+
+    function canControlPresentation() {
+      return isAdmin() || (isActiveUser() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['CONTROLEUR', 'RESPONSABLE_MAGASIN'] ||
+        hasPermission('employee_presentation.control')));
+    }
+    match /employeeDirectory/{employeeId} {
+      allow read: if canControlPresentation() && hasStoreAccess(resource.data.store_id);
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['id', 'first_name', 'last_name', 'position', 'store_id', 'is_active']) && request.resource.data.id == employeeId;
+      allow delete: if isAdmin();
+    }
+    match /employeePresentationChecks/{checkId} {
+      function validFinding(f, submitted) {
+        return f.keys().hasOnly(['result', 'note', 'photo']) &&
+          f.result in ['OK', 'ISSUE', 'NA'] && f.note is string && f.note.size() <= 4000 &&
+          f.photo is string && f.photo.size() <= 2000 && (f.photo == '' || f.photo.matches('https://.*')) &&
+          (!submitted || f.result != 'ISSUE' || f.note.size() >= 5);
+      }
+      function validCheck() {
+        let d = request.resource.data;
+        let submitted = d.status != 'DRAFT';
+        return d.keys().hasOnly(['id', 'store_id', 'employee_id', 'employee_name', 'created_by', 'created_by_name', 'created_at', 'updated_at', 'status', 'findings', 'review_note', 'reviewed_by', 'reviewed_at']) &&
+          d.id == checkId && d.status in ['DRAFT', 'SUBMITTED', 'VALIDATED', 'CORRECTION'] &&
+          d.findings is list && d.findings.size() == 4 &&
+          validFinding(d.findings[0], submitted) && validFinding(d.findings[1], submitted) &&
+          validFinding(d.findings[2], submitted) && validFinding(d.findings[3], submitted) &&
+          (!submitted || d.findings[0].result != 'NA' || d.findings[1].result != 'NA' || d.findings[2].result != 'NA' || d.findings[3].result != 'NA') &&
+          d.review_note is string && d.review_note.size() <= 4000 &&
+          d.created_by_name is string && d.employee_name is string && d.created_at is number && d.updated_at is number;
+      }
+      function validEmployee() {
+        let d = request.resource.data;
+        let e = get(/databases/$(database)/documents/employees/$(d.employee_id)).data;
+        return e.is_active == true && e.get('linked_archive_id', '') == '' && e.store_id == d.store_id &&
+          d.employee_name == e.first_name + ' ' + e.last_name;
+      }
+      allow read: if canControlPresentation() && hasStoreAccess(resource.data.store_id);
+      allow create: if canControlPresentation() && validCheck() && validEmployee() &&
+        hasStoreAccess(request.resource.data.store_id) && request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.status in ['DRAFT', 'SUBMITTED'] && request.resource.data.reviewed_by == '' && request.resource.data.reviewed_at == 0 && request.resource.data.review_note == '';
+      allow update: if validCheck() && (
+        (canControlPresentation() && hasStoreAccess(resource.data.store_id) && validEmployee() &&
+          resource.data.created_by == request.auth.uid && resource.data.status in ['DRAFT', 'CORRECTION'] &&
+          request.resource.data.status in ['DRAFT', 'SUBMITTED'] && request.resource.data.reviewed_by == '' && request.resource.data.reviewed_at == 0 && request.resource.data.review_note == '' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'findings', 'updated_at', 'review_note', 'reviewed_by', 'reviewed_at'])) ||
+        (isAdmin() && resource.data.status == 'SUBMITTED' && resource.data.created_by != request.auth.uid &&
+          request.resource.data.status in ['VALIDATED', 'CORRECTION'] && request.resource.data.reviewed_by == request.auth.uid && request.resource.data.reviewed_at is number &&
+          (request.resource.data.status != 'CORRECTION' || request.resource.data.review_note.size() > 0) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updated_at', 'review_note', 'reviewed_by', 'reviewed_at']))
+      );
+      allow delete: if false;
+    }
+
     match /inventoryCounts/{countId} {
       function isCounter() {
         return isActiveUser() && (
@@ -1125,8 +1178,21 @@ service cloud.firestore {
           (
             resource.data.status == 'DRAFT' &&
             request.resource.data.status == 'APPROVED' &&
-            isAdmin() &&
-            resource.data.requested_by != request.auth.uid &&
+            (
+              (isAdmin() && resource.data.requested_by != request.auth.uid) ||
+              (
+                hasPermission('transfers.create') && hasPermission('transfers.ship') &&
+                isActiveUser() &&
+                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.source_store_id]) &&
+                resource.data.source_store_id != resource.data.destination_store_id &&
+                resource.data.type in ['MANUFACTURER_TO_STORE', 'STORE_TO_STORE'] &&
+                !('purchase_id' in resource.data) &&
+                get(/databases/$(database)/documents/stores/$(resource.data.source_store_id)).data.store_type == 'MANUFACTURER' &&
+                get(/databases/$(database)/documents/stores/$(resource.data.source_store_id)).data.is_active == true &&
+                get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'MANUFACTURER' &&
+                get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.is_active == true
+              )
+            ) &&
             request.resource.data.approved_by == request.auth.uid &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'status', 'approved_by', 'approved_by_name', 'approved_at', 'updated_at'

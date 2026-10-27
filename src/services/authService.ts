@@ -44,8 +44,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   ADMIN: ALL_PERMISSIONS.filter(permission => permission !== "users.delete"),
   VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit", "credit.sales", "transfers.view", "transfers.create"],
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
-  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count", "cash_handover.view", "cash_handover.create"],
-  CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count"],
+  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count", "employee_presentation.control", "cash_handover.view", "cash_handover.create"],
+  CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count", "employee_presentation.control"],
   PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create", "cash_handover.view", "procurement.manage"],
   GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
@@ -86,6 +86,7 @@ const permissionDefinition = (code: string) => ({
 export const PERMISSION_GROUPS = [
   { id: "dashboard", label: "Tableau de bord", description: "Accès aux indicateurs", permissions: ["dashboard.view"] },
   { id: "catalog", label: "Produits et stocks", description: "Catalogue et inventaire", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("products.") || permission.startsWith("stock.")) },
+  { id: "employee_presentation", label: "Contrôle des employés", description: "Présentation sur le lieu de travail", permissions: ["employee_presentation.control"] },
   { id: "inventory", label: "Contrôle d'inventaire", description: "Comptage et validation des écarts", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("inventory.")) },
   { id: "units", label: "Unités de mesure", description: "Gérer les unités des articles", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("units.")) },
   { id: "sales", label: "Ventes", description: "Cycle de vente", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("sales.")) },

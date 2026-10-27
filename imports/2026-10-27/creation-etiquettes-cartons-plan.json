@@ -1,0 +1,2145 @@
+{
+  "project": "stockgileada",
+  "preparedAt": "2026-10-27T14:44:07.611Z",
+  "creates": [
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-aloe-miel",
+        "code": "MP-ETQ-001",
+        "name": "Etiquette Autocollant ALOE MIEL",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-aloe-noni",
+        "code": "MP-ETQ-002",
+        "name": "Etiquette Autocollant ALOE NONI",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-aloe-pur",
+        "code": "MP-ETQ-003",
+        "name": "Etiquette Autocollant ALOE PUR",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-ananambo",
+        "code": "MP-ETQ-004",
+        "name": "Etiquette Autocollant ANANAMBO",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-anjarasoa",
+        "code": "MP-ETQ-005",
+        "name": "Etiquette Autocollant ANJARASOA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-anti-stress-gm",
+        "code": "MP-ETQ-006",
+        "name": "Etiquette Autocollant ANTI STRESS GM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-avr",
+        "code": "MP-ETQ-007",
+        "name": "Etiquette Autocollant AVR",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-argile-jaune",
+        "code": "MP-ETQ-008",
+        "name": "Etiquette Autocollant ARGILE JAUNE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-argile-rouge",
+        "code": "MP-ETQ-009",
+        "name": "Etiquette Autocollant ARGILE ROUGE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-argile-verte",
+        "code": "MP-ETQ-010",
+        "name": "Etiquette Autocollant ARGILE VERTE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baobab",
+        "code": "MP-ETQ-011",
+        "name": "Etiquette Autocollant BAOBAB",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-alavonto",
+        "code": "MP-ETQ-012",
+        "name": "Etiquette Autocollant BAUME ALAVONTO",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-anti-cellulite",
+        "code": "MP-ETQ-013",
+        "name": "Etiquette Autocollant BAUME ANTI CELLULITE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-antivirus",
+        "code": "MP-ETQ-014",
+        "name": "Etiquette Autocollant BAUME ANTIVIRUS",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-champion",
+        "code": "MP-ETQ-015",
+        "name": "Etiquette Autocollant BAUME CHAMPION",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-cypres",
+        "code": "MP-ETQ-016",
+        "name": "Etiquette Autocollant BAUME CYPRES",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-katrafay",
+        "code": "MP-ETQ-017",
+        "name": "Etiquette Autocollant BAUME KATRAFAY",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-memoire",
+        "code": "MP-ETQ-018",
+        "name": "Etiquette Autocollant BAUME MÉMOIRE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-radriaka",
+        "code": "MP-ETQ-019",
+        "name": "Etiquette Autocollant BAUME RADRIAKA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-rambia",
+        "code": "MP-ETQ-020",
+        "name": "Etiquette Autocollant BAUME RAMBIA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-baume-ravintsara",
+        "code": "MP-ETQ-021",
+        "name": "Etiquette Autocollant BAUME RAVINTSARA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-beroberoka",
+        "code": "MP-ETQ-022",
+        "name": "Etiquette Autocollant BEROBEROKA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-beure-de-karite",
+        "code": "MP-ETQ-023",
+        "name": "Etiquette Autocollant BEURE DE KARITE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-bois-de-rose",
+        "code": "MP-ETQ-024",
+        "name": "Etiquette Autocollant BOIS DE ROSE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-cataplasme",
+        "code": "MP-ETQ-025",
+        "name": "Etiquette Autocollant CATAPLASME",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-circulation",
+        "code": "MP-ETQ-026",
+        "name": "Etiquette Autocollant CIRCULATION",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-corofar-gm",
+        "code": "MP-ETQ-027",
+        "name": "Etiquette Autocollant COROFAR GM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-creme-coiffante",
+        "code": "MP-ETQ-028",
+        "name": "Etiquette Autocollant CREME COIFFANTE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-dermag-gm",
+        "code": "MP-ETQ-029",
+        "name": "Etiquette Autocollant DERMAG GM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-desmofar-gm",
+        "code": "MP-ETQ-030",
+        "name": "Etiquette Autocollant DESMOFAR GM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-detox",
+        "code": "MP-ETQ-031",
+        "name": "Etiquette Autocollant DETOX",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-eau-micellaire-gm",
+        "code": "MP-ETQ-032",
+        "name": "Etiquette Autocollant EAU MICELLAIRE GM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-eau-micellaire-pm",
+        "code": "MP-ETQ-033",
+        "name": "Etiquette Autocollant EAU MICELLAIRE PM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-g-articulation",
+        "code": "MP-ETQ-034",
+        "name": "Etiquette Autocollant G ARTICULATION",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-he-radriaka",
+        "code": "MP-ETQ-035",
+        "name": "Etiquette Autocollant HE RADRIAKA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-he-ravitsara",
+        "code": "MP-ETQ-036",
+        "name": "Etiquette Autocollant HE RAVITSARA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-hodipotsy",
+        "code": "MP-ETQ-037",
+        "name": "Etiquette Autocollant HODIPOTSY",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-he-eucalupt",
+        "code": "MP-ETQ-038",
+        "name": "Etiquette Autocollant HE EUCALUPT",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-kinana",
+        "code": "MP-ETQ-039",
+        "name": "Etiquette Autocollant KINANA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-komima",
+        "code": "MP-ETQ-040",
+        "name": "Etiquette Autocollant KOMIMA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-komima-cancer",
+        "code": "MP-ETQ-041",
+        "name": "Etiquette Autocollant KOMIMA CANCER",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-lotion-intime",
+        "code": "MP-ETQ-042",
+        "name": "Etiquette Autocollant LOTION INTIME",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-noni-gm",
+        "code": "MP-ETQ-043",
+        "name": "Etiquette Autocollant NONI GM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-omega-3",
+        "code": "MP-ETQ-044",
+        "name": "Etiquette Autocollant OMEGA 3",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-omega-3-diabeta",
+        "code": "MP-ETQ-045",
+        "name": "Etiquette Autocollant OMEGA 3 DIABETA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-protofar-pm",
+        "code": "MP-ETQ-046",
+        "name": "Etiquette Autocollant PROTOFAR PM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-revitalisant",
+        "code": "MP-ETQ-047",
+        "name": "Etiquette Autocollant REVITALISANT",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-savlah",
+        "code": "MP-ETQ-048",
+        "name": "Etiquette Autocollant SAVLAH",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-spray",
+        "code": "MP-ETQ-049",
+        "name": "Etiquette Autocollant SPRAY",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-spiruline",
+        "code": "MP-ETQ-050",
+        "name": "Etiquette Autocollant SPIRULINE",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-tanjaka",
+        "code": "MP-ETQ-051",
+        "name": "Etiquette Autocollant TANJAKA",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-tanjaka-plus",
+        "code": "MP-ETQ-052",
+        "name": "Etiquette Autocollant TANJAKA PLUS",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-vinaigre-gm",
+        "code": "MP-ETQ-053",
+        "name": "Etiquette Autocollant VINAIGRE GM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-vinaigre-pm",
+        "code": "MP-ETQ-054",
+        "name": "Etiquette Autocollant VINAIGRE PM",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-etiquette-autocollant-voamboatavo",
+        "code": "MP-ETQ-055",
+        "name": "Etiquette Autocollant VOAMBOATAVO",
+        "category_id": "CAT-032",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-beroka-fakany",
+        "code": "MP-PCI-001",
+        "name": "Papier Carton IMPRIMÉ BEROKA FAKANY",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-omega-gm",
+        "code": "MP-PCI-002",
+        "name": "Papier Carton IMPRIMÉ OMEGA GM",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-omega-pm",
+        "code": "MP-PCI-003",
+        "name": "Papier Carton IMPRIMÉ OMEGA PM",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-omega-diabeta",
+        "code": "MP-PCI-004",
+        "name": "Papier Carton IMPRIMÉ OMEGA DIABETA",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-protofar-gm",
+        "code": "MP-PCI-005",
+        "name": "Papier Carton IMPRIMÉ PROTOFAR GM",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-protofar-pm",
+        "code": "MP-PCI-006",
+        "name": "Papier Carton IMPRIMÉ PROTOFAR PM",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-savon-acne",
+        "code": "MP-PCI-007",
+        "name": "Papier Carton IMPRIMÉ SAVON ACNE",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-savon-aminc",
+        "code": "MP-PCI-008",
+        "name": "Papier Carton IMPRIMÉ SAVON AMINC",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-savon-antiride",
+        "code": "MP-PCI-009",
+        "name": "Papier Carton IMPRIMÉ SAVON ANTIRIDE",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-savon-manazava",
+        "code": "MP-PCI-010",
+        "name": "Papier Carton IMPRIMÉ SAVON MANAZAVA",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-savon-rep",
+        "code": "MP-PCI-011",
+        "name": "Papier Carton IMPRIMÉ SAVON REP",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-savon-vahona",
+        "code": "MP-PCI-012",
+        "name": "Papier Carton IMPRIMÉ SAVON VAHONA",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-voamboatavo-gm",
+        "code": "MP-PCI-013",
+        "name": "Papier Carton IMPRIMÉ VOAMBOATAVO GM",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "articles",
+      "data": {
+        "id": "article-raw-material-papier-carton-imprime-voamboatavo-pm",
+        "code": "MP-PCI-014",
+        "name": "Papier Carton IMPRIMÉ VOAMBOATAVO PM",
+        "category_id": "CAT-033",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1793112247611,
+        "updated_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-d236d659-a95d-4e5d-be9c-02fa57bb5013",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-aloe-miel",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-85c86cb8-9337-4714-8a56-1cbbbdcc208a",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-aloe-noni",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-4fef452b-412b-47e8-a148-7046c12b24aa",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-aloe-pur",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-1d87db62-7ad0-47ac-9112-a04a41535979",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-ananambo",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-00b11baa-e008-42c8-b0b9-ff96d6a3cb8d",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-anjarasoa",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-75ac7122-e723-44b9-a4bd-db41f138fd5e",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-anti-stress-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-b7cee654-f534-4aa9-a6e4-d1fdc4b2ec48",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-avr",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-62eb0052-45d3-48e9-bfa0-6c3f892974c9",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-argile-jaune",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-59340574-97e3-4d57-8f9b-f681a40bf3e2",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-argile-rouge",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-65fae191-4e70-4cd9-8fdd-c8ba1cdddcf6",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-argile-verte",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-f6ded8aa-5864-4bf5-b8a6-5095af13851b",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baobab",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-1f28eeb1-af27-46c1-9df1-66afe9f0c254",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-alavonto",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-249dcc68-a55a-4057-acd5-9f7e9e58f73a",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-anti-cellulite",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-75f37d6d-7bc8-4a40-8c91-5fff847376ad",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-antivirus",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-b0090914-d770-44f8-b4be-8cac3cc00cd7",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-champion",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-c17ea0df-a51d-4f08-b6e1-5d432f229167",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-cypres",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-27df2a9b-f73c-43fd-91b3-20a512986768",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-katrafay",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-06ddd82d-bc81-4067-8c3b-ec15b100bbcd",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-memoire",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-681ab109-93f2-4682-8ff6-b47579d57dc1",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-radriaka",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-bea781f3-1fc2-4527-927a-55d6b71c4e3e",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-rambia",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-4e4e911d-4253-4874-9558-f8e2dcd43c38",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-baume-ravintsara",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-e2f3f0c1-03c3-4c21-952a-4fb72f72144c",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-beroberoka",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-2d82f31b-89f5-4d34-b247-075b16cdea1b",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-beure-de-karite",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-3e7d94d7-8b9a-44a6-87df-b873eb96abad",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-bois-de-rose",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-894059d7-e547-4b5e-87aa-8fd5d887a7a2",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-cataplasme",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-f0ccb94e-81c2-45d5-b2b5-5c95ecf16654",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-circulation",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-28da7312-9072-49d4-989c-0a45aa682d25",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-corofar-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-0ff542c2-492e-40d5-9731-3dea5d06e425",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-creme-coiffante",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-85eeb120-46ab-4e74-9352-fc5efbfa026f",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-dermag-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-a3effef6-ead7-4346-8c16-782e7c7164af",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-desmofar-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-1c9a07b8-f172-4337-8a0f-45f72ca51d9b",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-detox",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-897c26d9-9493-4721-8dfa-50cbd9b5ca11",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-eau-micellaire-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-d8a68d1d-367a-4933-be6e-97fbe3531028",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-eau-micellaire-pm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-ac79edfb-46d8-4dda-91ff-8b985efe48e2",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-g-articulation",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-d1d68646-a45d-4fcc-a8a0-f947e1ad4502",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-he-radriaka",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-2b579e78-918e-4a35-b4a0-1d76be61a552",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-he-ravitsara",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-47c49ba5-d78b-4568-9565-f55e528404da",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-hodipotsy",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-6d86a7d3-0ed3-44d0-a31c-48cb30c83d7f",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-he-eucalupt",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-818b7414-9963-4511-a205-a239c0339298",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-kinana",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-b7d68b39-8826-4a17-acc9-bbb6d7bb6a58",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-komima",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-59ac23b3-fd37-4c74-b1d8-8ec3fc413f24",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-komima-cancer",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-cbba9fc0-adb8-4d35-abeb-3d8e7aa2931c",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-lotion-intime",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-e851dd5d-fc35-4d01-a363-e99189070f8f",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-noni-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-e1de3515-eae0-49c1-ba4f-d6c0149e3e79",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-omega-3",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-01b2d859-58c4-43b6-9db6-2c3e18396761",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-omega-3-diabeta",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-65ca17a3-8fe3-42b5-9e70-544d843ce934",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-protofar-pm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-8d73c162-afdc-41de-924e-99f27e602795",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-revitalisant",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-36fb1805-601c-4bd3-9eba-798464bf294d",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-savlah",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-50d36ec6-cfcb-4516-9944-ae0917823c1b",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-spray",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-6ee22b3d-3bd4-40b0-8de5-fc25609edcc9",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-spiruline",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-0813251d-1892-4fd1-ae3d-8573111645f3",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-tanjaka",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-a861c820-900e-44ee-9a22-0c4faa0c3927",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-tanjaka-plus",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-742714f7-f2c8-4c5c-b62b-f1c11bcc0aae",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-vinaigre-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-af2615e8-4bfc-42af-bb1b-098241b67688",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-vinaigre-pm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-b7d70b4e-c8e9-4b45-892b-5678d454ac5c",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-etiquette-autocollant-voamboatavo",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-1099922f-cf79-4e8d-bcbe-6e35b438728a",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-beroka-fakany",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-2a120625-d87e-4202-890f-832738a271f8",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-omega-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-aa316fae-80b0-471b-a6c1-94f3c675d3f2",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-omega-pm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-d1291433-7625-402a-89aa-f6046419a0fb",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-omega-diabeta",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-fa1fefb5-5812-484a-a983-b2a37dfa3789",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-protofar-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-14020696-eb2b-4875-928b-5ce615b26831",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-protofar-pm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-5261a019-b679-400d-bf53-0a36cec07094",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-savon-acne",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-18f1c42c-6049-4f8d-abc0-8bdac365a737",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-savon-aminc",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-6ed332fb-9751-4aaa-ab3f-0b2b0d0b43f4",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-savon-antiride",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-75ff2686-a50d-4c13-9b2b-11e2f12f4174",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-savon-manazava",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-3c0bb424-0e1c-4328-8072-2ec5414eead7",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-savon-rep",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-af740fd0-87fe-4c2a-ac45-a65bee7c0835",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-savon-vahona",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-d7dd2240-df60-41e4-96ac-a003457ce674",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-voamboatavo-gm",
+        "created_at": 1793112247611
+      }
+    },
+    {
+      "collection": "auditLogs",
+      "data": {
+        "id": "audit-7d88df61-617b-43e1-ac00-370c4dd584ec",
+        "user_id": "rsafidymiarintsoa@gmail.com",
+        "user_name": "rsafidymiarintsoa@gmail.com",
+        "device_id": "CODEX-IMPORT",
+        "action": "ARTICLE_CREATED",
+        "entity_type": "ARTICLE",
+        "entity_id": "article-raw-material-papier-carton-imprime-voamboatavo-pm",
+        "created_at": 1793112247611
+      }
+    }
+  ]
+}

@@ -46,9 +46,11 @@ import { applyStockSnapshot, importInitialStocks } from "../../services/stockImp
 import type { StockSyncRow } from "../../services/stockSyncValidation";
 import type { InitialStockImportRow } from "../../services/stockImportValidation";
 import { consumeRawMaterial } from "../../services/operationsService";
+import { canApproveTransfer } from "../../services/transferApproval";
 const UsersView = lazy(() => import("../UsersView"));
 const SalesView = lazy(() => import("../SalesView"));
 const StocksView = lazy(() => import("../StocksView"));
+const EmployeePresentationView = lazy(() => import("../EmployeePresentationView"));
 const InventoryControlView = lazy(() => import("../InventoryControlView"));
 const AuditView = lazy(() => import("../AuditView"));
 const StoresView = lazy(() => import("../StoresView"));
@@ -128,7 +130,7 @@ export default function AuthenticatedSessionView() {
   const [showProfile, setShowProfile] = useState(false);
   const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory" | "employeePresentation">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
   const [inventoryCounts, setInventoryCounts] = useState<InventoryCount[]>([]);
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -1169,14 +1171,10 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleApproveTransfer = async (transferId: string) => {
-    if (currentAppUser?.roleId !== "ADMIN" && currentAppUser?.roleId !== "SUPER_ADMIN") {
-      alert("Seul un administrateur peut approuver un transfert.");
-      return;
-    }
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "DRAFT") return;
-    if (transfer.requested_by === currentAppUser.uid) {
-      alert("Un administrateur différent du demandeur doit approuver ce transfert.");
+    if (!currentAppUser || !canApproveTransfer(currentAppUser, transfer, inventoryStores)) {
+      alert("L’approbation nécessite un opérateur autorisé de l’atelier source pour un transfert entre ateliers, ou un administrateur différent du demandeur.");
       return;
     }
     const timestamp = Date.now();
@@ -2504,6 +2502,11 @@ export default function AuthenticatedSessionView() {
               onSyncStocks={handleSyncStocks}
             />
           </section>
+        ) : activeModule === "employeePresentation" && currentAppUser ? (
+          <section className="space-y-4">
+            <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300">← Retour à l’accueil</button>
+            <EmployeePresentationView user={currentAppUser} stores={accessibleStores} employees={employees} />
+          </section>
         ) : activeModule === "inventory" && currentAppUser && (canCountInventory || canReviewInventory) ? (
           <section className="space-y-4">
             <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">
@@ -2599,7 +2602,6 @@ export default function AuthenticatedSessionView() {
               stocks={stocks}
               currentUser={currentAppUser}
               canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "transfers.create")}
-              canApprove={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               canReject={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               canShip={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "transfers.ship")}
               canReceive={hasPermission(currentAppUser, "transfers.receive")}
@@ -2846,6 +2848,7 @@ export default function AuthenticatedSessionView() {
             onOpenStaff={() => setActiveModule("staff")}
             onOpenReports={() => setActiveModule("reports")}
             onOpenAudit={() => setActiveModule("audit")}
+            onOpenEmployeePresentation={() => setActiveModule("employeePresentation")}
             onOpenInventory={() => setActiveModule("inventory")}
           />
         )}

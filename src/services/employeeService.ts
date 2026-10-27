@@ -1,3 +1,4 @@
+import { directoryEmployee } from "./employeePresentationService";
 import { collection, doc, getDocs, query, where, writeBatch, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
 import { AuditLog, Employee } from "../types";
@@ -21,6 +22,7 @@ export async function loadEmployees(): Promise<Employee[]> {
 export async function saveEmployee(employee: Employee, auditLog: AuditLog): Promise<void> {
   const batch = writeBatch(db);
   batch.set(doc(db, "employees", employee.id), omitUndefined(employee));
+  batch.set(doc(db, "employeeDirectory", employee.id), directoryEmployee(employee));
   batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   await batch.commit();
 }
@@ -38,7 +40,10 @@ export async function linkEmployeeAccount(employeeId: string, userId: string, au
     for (const other of others) {
       if (!other.exists() || other.data().user_id !== userId) throw new Error("Les fiches ont change. Rechargez la page.");
     }
-    for (const other of others) transaction.update(other.ref, { is_active: false, linked_archive_id: employeeId, updated_at: Date.now() });
+    for (const other of others) {
+      transaction.update(other.ref, { is_active: false, linked_archive_id: employeeId, updated_at: Date.now() });
+      transaction.set(doc(db, "employeeDirectory", other.id), directoryEmployee({ ...other.data(), id: other.id, is_active: false } as Employee));
+    }
     transaction.update(employeeRef, { user_id: userId, updated_at: Date.now() });
     transaction.update(userRef, { linked_employee_id: employeeId });
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));

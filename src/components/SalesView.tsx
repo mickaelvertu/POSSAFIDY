@@ -687,16 +687,15 @@ export default function SalesView({
                           <Printer className="h-3.5 w-3.5" />
                         </button>
 
-                        {sale.customer_type === "REVENDEUR" && (
-                          <button
-                            type="button"
-                            onClick={() => setDeliverySale(sale)}
-                            title="Bon de livraison"
-                            className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-200 cursor-pointer"
-                          >
-                            <Truck className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setDeliverySale(sale)}
+                          title="Imprimer la facture et/ou le bon de livraison"
+                          className="inline-flex items-center gap-1 rounded p-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-200 hover:text-slate-800 cursor-pointer"
+                        >
+                          <FileCheck className="h-3.5 w-3.5" />
+                          Facture / BL
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1085,8 +1084,7 @@ export default function SalesView({
                 <Printer className="h-3.5 w-3.5" />
                 Imprimer le Reçu
               </button>
-              {receiptSale.customer_type === "REVENDEUR" && (
-                <button
+              <button
                   type="button"
                   onClick={() => {
                     setDeliverySale(receiptSale);
@@ -1095,9 +1093,8 @@ export default function SalesView({
                   className="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Truck className="h-3.5 w-3.5" />
-                  Bon de livraison
-                </button>
-              )}
+                  Facture / Livraison
+              </button>
             </div>
 
           </div>
