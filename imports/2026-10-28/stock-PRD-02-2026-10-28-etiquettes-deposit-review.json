@@ -1,0 +1,324 @@
+{
+  "source": "C:/Users/Administrator/Downloads/stock-PRD-02-2026-10-28 (1).json",
+  "operation": "Add initial deposit to quantities in supplied snapshot; blank entries unchanged",
+  "store_code": "PRD-02",
+  "changed_articles": 45,
+  "total_added": 569,
+  "data": [
+    {
+      "article_code": "MP-ETQ-0041",
+      "article_name": "Etiquette Autocollant ANANAMBO KL",
+      "previous_quantity": 0,
+      "initial_deposit": 3,
+      "final_quantity": 3
+    },
+    {
+      "article_code": "MP-ETQ-0111",
+      "article_name": "Etiquette Autocollant BAOBAB KL",
+      "previous_quantity": 0,
+      "initial_deposit": 1,
+      "final_quantity": 1
+    },
+    {
+      "article_code": "MP-ETQ-0211",
+      "article_name": "Etiquette Autocollant BAUME RAVINTSARA RCT",
+      "previous_quantity": 0,
+      "initial_deposit": 20,
+      "final_quantity": 20
+    },
+    {
+      "article_code": "MP-ETQ-0151",
+      "article_name": "Etiquette Autocollant BAUME CHAMPION RCT",
+      "previous_quantity": 0,
+      "initial_deposit": 4,
+      "final_quantity": 4
+    },
+    {
+      "article_code": "MP-ETQ-0191",
+      "article_name": "Etiquette Autocollant BAUME RADRIAKA RCT",
+      "previous_quantity": 0,
+      "initial_deposit": 11,
+      "final_quantity": 11
+    },
+    {
+      "article_code": "MP-ETQ-0121",
+      "article_name": "Etiquette Autocollant BAUME ALAVONTO RCT",
+      "previous_quantity": 0,
+      "initial_deposit": 10,
+      "final_quantity": 10
+    },
+    {
+      "article_code": "MP-ETQ-003",
+      "article_name": "Etiquette Autocollant ALOE PUR",
+      "previous_quantity": 0,
+      "initial_deposit": 1,
+      "final_quantity": 1
+    },
+    {
+      "article_code": "MP-ETQ-004",
+      "article_name": "Etiquette Autocollant ANANAMBO LHB",
+      "previous_quantity": 0,
+      "initial_deposit": 3,
+      "final_quantity": 3
+    },
+    {
+      "article_code": "MP-ETQ-005",
+      "article_name": "Etiquette Autocollant ANJARASOA",
+      "previous_quantity": 0,
+      "initial_deposit": 10,
+      "final_quantity": 10
+    },
+    {
+      "article_code": "MP-ETQ-006",
+      "article_name": "Etiquette Autocollant ANTI STRESS GM",
+      "previous_quantity": 0,
+      "initial_deposit": 101,
+      "final_quantity": 101
+    },
+    {
+      "article_code": "MP-ETQ-009",
+      "article_name": "Etiquette Autocollant ARGILE ROUGE",
+      "previous_quantity": 0,
+      "initial_deposit": 3,
+      "final_quantity": 3
+    },
+    {
+      "article_code": "MP-ETQ-011",
+      "article_name": "Etiquette Autocollant BAOBAB LHB",
+      "previous_quantity": 0,
+      "initial_deposit": 1,
+      "final_quantity": 1
+    },
+    {
+      "article_code": "MP-ETQ-012",
+      "article_name": "Etiquette Autocollant BAUME ALAVONTO RND",
+      "previous_quantity": 0,
+      "initial_deposit": 14,
+      "final_quantity": 14
+    },
+    {
+      "article_code": "MP-ETQ-013",
+      "article_name": "Etiquette Autocollant BAUME ANTI CELLULITE",
+      "previous_quantity": 0,
+      "initial_deposit": 3,
+      "final_quantity": 3
+    },
+    {
+      "article_code": "MP-ETQ-014",
+      "article_name": "Etiquette Autocollant BAUME ANTIVIRUS RND",
+      "previous_quantity": 0,
+      "initial_deposit": 77,
+      "final_quantity": 77
+    },
+    {
+      "article_code": "MP-ETQ-018",
+      "article_name": "Etiquette Autocollant BAUME MÉMOIRE LHB",
+      "previous_quantity": 0,
+      "initial_deposit": 5,
+      "final_quantity": 5
+    },
+    {
+      "article_code": "MP-ETQ-019",
+      "article_name": "Etiquette Autocollant BAUME RADRIAKA RND",
+      "previous_quantity": 0,
+      "initial_deposit": 41,
+      "final_quantity": 41
+    },
+    {
+      "article_code": "MP-ETQ-021",
+      "article_name": "Etiquette Autocollant BAUME RAVINTSARA RND",
+      "previous_quantity": 0,
+      "initial_deposit": 33,
+      "final_quantity": 33
+    },
+    {
+      "article_code": "MP-ETQ-022",
+      "article_name": "Etiquette Autocollant BEROBEROKA",
+      "previous_quantity": 0,
+      "initial_deposit": 1,
+      "final_quantity": 1
+    },
+    {
+      "article_code": "MP-ETQ-023",
+      "article_name": "Etiquette Autocollant BEURE DE KARITE",
+      "previous_quantity": 0,
+      "initial_deposit": 3,
+      "final_quantity": 3
+    },
+    {
+      "article_code": "MP-ETQ-024",
+      "article_name": "Etiquette Autocollant BOIS DE ROSE",
+      "previous_quantity": 0,
+      "initial_deposit": 9,
+      "final_quantity": 9
+    },
+    {
+      "article_code": "MP-ETQ-026",
+      "article_name": "Etiquette Autocollant CIRCULATION",
+      "previous_quantity": 0,
+      "initial_deposit": 11,
+      "final_quantity": 11
+    },
+    {
+      "article_code": "MP-ETQ-027",
+      "article_name": "Etiquette Autocollant COROFAR GM",
+      "previous_quantity": 0,
+      "initial_deposit": 3,
+      "final_quantity": 3
+    },
+    {
+      "article_code": "MP-ETQ-028",
+      "article_name": "Etiquette Autocollant CREME COIFFANTE",
+      "previous_quantity": 0,
+      "initial_deposit": 13,
+      "final_quantity": 13
+    },
+    {
+      "article_code": "MP-ETQ-029",
+      "article_name": "Etiquette Autocollant DERMAG RND",
+      "previous_quantity": 0,
+      "initial_deposit": 9,
+      "final_quantity": 9
+    },
+    {
+      "article_code": "MP-ETQ-031",
+      "article_name": "Etiquette Autocollant DETOX",
+      "previous_quantity": 0,
+      "initial_deposit": 1,
+      "final_quantity": 1
+    },
+    {
+      "article_code": "MP-ETQ-033",
+      "article_name": "Etiquette Autocollant EAU MICELLAIRE PM",
+      "previous_quantity": 0,
+      "initial_deposit": 6,
+      "final_quantity": 6
+    },
+    {
+      "article_code": "MP-ETQ-034",
+      "article_name": "Etiquette Autocollant G ARTICULATION",
+      "previous_quantity": 0,
+      "initial_deposit": 2,
+      "final_quantity": 2
+    },
+    {
+      "article_code": "MP-ETQ-035",
+      "article_name": "Etiquette Autocollant HE RADRIAKA",
+      "previous_quantity": 0,
+      "initial_deposit": 7,
+      "final_quantity": 7
+    },
+    {
+      "article_code": "MP-ETQ-036",
+      "article_name": "Etiquette Autocollant HE RAVITSARA",
+      "previous_quantity": 0,
+      "initial_deposit": 30,
+      "final_quantity": 30
+    },
+    {
+      "article_code": "MP-ETQ-037",
+      "article_name": "Etiquette Autocollant HODIPOTSY",
+      "previous_quantity": 0,
+      "initial_deposit": 11,
+      "final_quantity": 11
+    },
+    {
+      "article_code": "MP-ETQ-040",
+      "article_name": "Etiquette Autocollant KOMIMA",
+      "previous_quantity": 0,
+      "initial_deposit": 10,
+      "final_quantity": 10
+    },
+    {
+      "article_code": "MP-ETQ-041",
+      "article_name": "Etiquette Autocollant KOMIMA CANCER",
+      "previous_quantity": 0,
+      "initial_deposit": 6,
+      "final_quantity": 6
+    },
+    {
+      "article_code": "MP-ETQ-042",
+      "article_name": "Etiquette Autocollant LOTION INTIME",
+      "previous_quantity": 0,
+      "initial_deposit": 2,
+      "final_quantity": 2
+    },
+    {
+      "article_code": "MP-ETQ-044",
+      "article_name": "Etiquette Autocollant OMEGA 3",
+      "previous_quantity": 0,
+      "initial_deposit": 15,
+      "final_quantity": 15
+    },
+    {
+      "article_code": "MP-ETQ-045",
+      "article_name": "Etiquette Autocollant OMEGA 3 DIABETA",
+      "previous_quantity": 0,
+      "initial_deposit": 10,
+      "final_quantity": 10
+    },
+    {
+      "article_code": "MP-ETQ-047",
+      "article_name": "Etiquette Autocollant REVITALISANT",
+      "previous_quantity": 0,
+      "initial_deposit": 6,
+      "final_quantity": 6
+    },
+    {
+      "article_code": "MP-ETQ-048",
+      "article_name": "Etiquette Autocollant SAVLAH",
+      "previous_quantity": 0,
+      "initial_deposit": 7,
+      "final_quantity": 7
+    },
+    {
+      "article_code": "MP-ETQ-050",
+      "article_name": "Etiquette Autocollant SPIRULINE LHB",
+      "previous_quantity": 0,
+      "initial_deposit": 6,
+      "final_quantity": 6
+    },
+    {
+      "article_code": "MP-ETQ-049",
+      "article_name": "Etiquette Autocollant SPRAY",
+      "previous_quantity": 0,
+      "initial_deposit": 2,
+      "final_quantity": 2
+    },
+    {
+      "article_code": "MP-ETQ-054",
+      "article_name": "Etiquette Autocollant VINAIGRE PM",
+      "previous_quantity": 0,
+      "initial_deposit": 1,
+      "final_quantity": 1
+    },
+    {
+      "article_code": "MP-ETQ-055",
+      "article_name": "Etiquette Autocollant VOAMBOATAVO",
+      "previous_quantity": 0,
+      "initial_deposit": 3,
+      "final_quantity": 3
+    },
+    {
+      "article_code": "MP-ETQ-09991",
+      "article_name": "Etiquette Autocollant BEROKA FAKANY",
+      "previous_quantity": 0,
+      "initial_deposit": 23,
+      "final_quantity": 23
+    },
+    {
+      "article_code": "MP-ETQ-0181",
+      "article_name": "Etiquette Autocollant BAUME MÉMOIRE KL",
+      "previous_quantity": 0,
+      "initial_deposit": 25,
+      "final_quantity": 25
+    },
+    {
+      "article_code": "MP-ETQ-0291",
+      "article_name": "Etiquette Autocollant DERMAG RCT",
+      "previous_quantity": 0,
+      "initial_deposit": 6,
+      "final_quantity": 6
+    }
+  ]
+}

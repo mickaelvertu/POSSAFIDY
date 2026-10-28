@@ -1,0 +1,456 @@
+{
+  "version": 1,
+  "source_exportedAt": "2026-10-28T15:07:39.253Z",
+  "data": [
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-382",
+      "article_code": "MP-ETQ-0041",
+      "article_name": "Etiquette Autocollant ANANAMBO KL",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-383",
+      "article_code": "MP-ETQ-0111",
+      "article_name": "Etiquette Autocollant BAOBAB KL",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-385",
+      "article_code": "MP-ETQ-0211",
+      "article_name": "Etiquette Autocollant BAUME RAVINTSARA RCT",
+      "unit": "Piece",
+      "quantity": 20
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-386",
+      "article_code": "MP-ETQ-0151",
+      "article_name": "Etiquette Autocollant BAUME CHAMPION RCT",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-388",
+      "article_code": "MP-ETQ-0191",
+      "article_name": "Etiquette Autocollant BAUME RADRIAKA RCT",
+      "unit": "Piece",
+      "quantity": 11
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-390",
+      "article_code": "MP-ETQ-0121",
+      "article_name": "Etiquette Autocollant BAUME ALAVONTO RCT",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-aloe-pur",
+      "article_code": "MP-ETQ-003",
+      "article_name": "Etiquette Autocollant ALOE PUR",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-ananambo",
+      "article_code": "MP-ETQ-004",
+      "article_name": "Etiquette Autocollant ANANAMBO LHB",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-anjarasoa",
+      "article_code": "MP-ETQ-005",
+      "article_name": "Etiquette Autocollant ANJARASOA",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-anti-stress-gm",
+      "article_code": "MP-ETQ-006",
+      "article_name": "Etiquette Autocollant ANTI STRESS GM",
+      "unit": "Piece",
+      "quantity": 101
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-argile-rouge",
+      "article_code": "MP-ETQ-009",
+      "article_name": "Etiquette Autocollant ARGILE ROUGE",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baobab",
+      "article_code": "MP-ETQ-011",
+      "article_name": "Etiquette Autocollant BAOBAB LHB",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-alavonto",
+      "article_code": "MP-ETQ-012",
+      "article_name": "Etiquette Autocollant BAUME ALAVONTO RND",
+      "unit": "Piece",
+      "quantity": 14
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-anti-cellulite",
+      "article_code": "MP-ETQ-013",
+      "article_name": "Etiquette Autocollant BAUME ANTI CELLULITE",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-antivirus",
+      "article_code": "MP-ETQ-014",
+      "article_name": "Etiquette Autocollant BAUME ANTIVIRUS RND",
+      "unit": "Piece",
+      "quantity": 77
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-memoire",
+      "article_code": "MP-ETQ-018",
+      "article_name": "Etiquette Autocollant BAUME MÉMOIRE LHB",
+      "unit": "Piece",
+      "quantity": 5
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-radriaka",
+      "article_code": "MP-ETQ-019",
+      "article_name": "Etiquette Autocollant BAUME RADRIAKA RND",
+      "unit": "Piece",
+      "quantity": 41
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-ravintsara",
+      "article_code": "MP-ETQ-021",
+      "article_name": "Etiquette Autocollant BAUME RAVINTSARA RND",
+      "unit": "Piece",
+      "quantity": 33
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-beroberoka",
+      "article_code": "MP-ETQ-022",
+      "article_name": "Etiquette Autocollant BEROBEROKA",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-beure-de-karite",
+      "article_code": "MP-ETQ-023",
+      "article_name": "Etiquette Autocollant BEURE DE KARITE",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-bois-de-rose",
+      "article_code": "MP-ETQ-024",
+      "article_name": "Etiquette Autocollant BOIS DE ROSE",
+      "unit": "Piece",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-circulation",
+      "article_code": "MP-ETQ-026",
+      "article_name": "Etiquette Autocollant CIRCULATION",
+      "unit": "Piece",
+      "quantity": 11
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-corofar-gm",
+      "article_code": "MP-ETQ-027",
+      "article_name": "Etiquette Autocollant COROFAR GM",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-creme-coiffante",
+      "article_code": "MP-ETQ-028",
+      "article_name": "Etiquette Autocollant CREME COIFFANTE",
+      "unit": "Piece",
+      "quantity": 13
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-dermag-gm",
+      "article_code": "MP-ETQ-029",
+      "article_name": "Etiquette Autocollant DERMAG RND",
+      "unit": "Piece",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-detox",
+      "article_code": "MP-ETQ-031",
+      "article_name": "Etiquette Autocollant DETOX",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-eau-micellaire-pm",
+      "article_code": "MP-ETQ-033",
+      "article_name": "Etiquette Autocollant EAU MICELLAIRE PM",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-g-articulation",
+      "article_code": "MP-ETQ-034",
+      "article_name": "Etiquette Autocollant G ARTICULATION",
+      "unit": "Piece",
+      "quantity": 2
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-he-radriaka",
+      "article_code": "MP-ETQ-035",
+      "article_name": "Etiquette Autocollant HE RADRIAKA",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-he-ravitsara",
+      "article_code": "MP-ETQ-036",
+      "article_name": "Etiquette Autocollant HE RAVITSARA",
+      "unit": "Piece",
+      "quantity": 30
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-hodipotsy",
+      "article_code": "MP-ETQ-037",
+      "article_name": "Etiquette Autocollant HODIPOTSY",
+      "unit": "Piece",
+      "quantity": 11
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-komima",
+      "article_code": "MP-ETQ-040",
+      "article_name": "Etiquette Autocollant KOMIMA",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-komima-cancer",
+      "article_code": "MP-ETQ-041",
+      "article_name": "Etiquette Autocollant KOMIMA CANCER",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-lotion-intime",
+      "article_code": "MP-ETQ-042",
+      "article_name": "Etiquette Autocollant LOTION INTIME",
+      "unit": "Piece",
+      "quantity": 2
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-omega-3",
+      "article_code": "MP-ETQ-044",
+      "article_name": "Etiquette Autocollant OMEGA 3",
+      "unit": "Piece",
+      "quantity": 15
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-omega-3-diabeta",
+      "article_code": "MP-ETQ-045",
+      "article_name": "Etiquette Autocollant OMEGA 3 DIABETA",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-revitalisant",
+      "article_code": "MP-ETQ-047",
+      "article_name": "Etiquette Autocollant REVITALISANT",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-savlah",
+      "article_code": "MP-ETQ-048",
+      "article_name": "Etiquette Autocollant SAVLAH",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-spiruline",
+      "article_code": "MP-ETQ-050",
+      "article_name": "Etiquette Autocollant SPIRULINE LHB",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-spray",
+      "article_code": "MP-ETQ-049",
+      "article_name": "Etiquette Autocollant SPRAY",
+      "unit": "Piece",
+      "quantity": 2
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-vinaigre-pm",
+      "article_code": "MP-ETQ-054",
+      "article_name": "Etiquette Autocollant VINAIGRE PM",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-voamboatavo",
+      "article_code": "MP-ETQ-055",
+      "article_name": "Etiquette Autocollant VOAMBOATAVO",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-391",
+      "article_code": "MP-ETQ-09991",
+      "article_name": "Etiquette Autocollant BEROKA FAKANY",
+      "unit": "Piece",
+      "quantity": 23
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-384",
+      "article_code": "MP-ETQ-0181",
+      "article_name": "Etiquette Autocollant BAUME MÉMOIRE KL",
+      "unit": "Piece",
+      "quantity": 25
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-387",
+      "article_code": "MP-ETQ-0291",
+      "article_name": "Etiquette Autocollant DERMAG RCT",
+      "unit": "Piece",
+      "quantity": 6
+    }
+  ]
+}

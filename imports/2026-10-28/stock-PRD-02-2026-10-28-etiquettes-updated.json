@@ -1,0 +1,3916 @@
+{
+  "version": 1,
+  "exportedAt": "2026-10-28T15:07:39.253Z",
+  "data": [
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-149",
+      "article_code": "PCA3",
+      "article_name": "Papier Carton A3",
+      "unit": "FEUILLE",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-150",
+      "article_code": "PCA4",
+      "article_name": "Papier Carton A4",
+      "unit": "FEUILLE",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-151",
+      "article_code": "PAA4",
+      "article_name": "Papier Autocollant A4",
+      "unit": "FEUILLE",
+      "quantity": 1618
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-178",
+      "article_code": "THE CANELLE",
+      "article_name": "THE CANELLE",
+      "unit": "Unité",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-179",
+      "article_code": "VIH",
+      "article_name": "VIH Combo",
+      "unit": "Unité",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-180",
+      "article_code": "LH",
+      "article_name": "LH TEST D'OVULATION",
+      "unit": "Unité",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-181",
+      "article_code": "HEP-C",
+      "article_name": "HEPATITE C",
+      "unit": "Unité",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-182",
+      "article_code": "PF-A4",
+      "article_name": "Papier Flyers Carton Savon",
+      "unit": "FEUILLE",
+      "quantity": 15
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-183",
+      "article_code": "CCGMA3",
+      "article_name": "Carton Courge GM",
+      "unit": "Piece",
+      "quantity": 5
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-184",
+      "article_code": "CCPMA4",
+      "article_name": "Carton Courge PM",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-311",
+      "article_code": "VELIN",
+      "article_name": "Papier Velin A4",
+      "unit": "FEUILLE",
+      "quantity": 2000
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-381",
+      "article_code": "MP-ETQ-0501",
+      "article_name": "Etiquette Autocollant SPIRULINE KL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-382",
+      "article_code": "MP-ETQ-0041",
+      "article_name": "Etiquette Autocollant ANANAMBO KL",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-383",
+      "article_code": "MP-ETQ-0111",
+      "article_name": "Etiquette Autocollant BAOBAB KL",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-384",
+      "article_code": "MP-ETQ-0181",
+      "article_name": "Etiquette Autocollant BAUME MÉMOIRE KL",
+      "unit": "Piece",
+      "quantity": 25
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-385",
+      "article_code": "MP-ETQ-0211",
+      "article_name": "Etiquette Autocollant BAUME RAVINTSARA RCT",
+      "unit": "Piece",
+      "quantity": 20
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-386",
+      "article_code": "MP-ETQ-0151",
+      "article_name": "Etiquette Autocollant BAUME CHAMPION RCT",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-387",
+      "article_code": "MP-ETQ-0291",
+      "article_name": "Etiquette Autocollant DERMAG RCT",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-388",
+      "article_code": "MP-ETQ-0191",
+      "article_name": "Etiquette Autocollant BAUME RADRIAKA RCT",
+      "unit": "Piece",
+      "quantity": 11
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-389",
+      "article_code": "MP-ETQ-0141",
+      "article_name": "Etiquette Autocollant BAUME ANTIVIRUS RCT",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-390",
+      "article_code": "MP-ETQ-0121",
+      "article_name": "Etiquette Autocollant BAUME ALAVONTO RCT",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-ambre-100ml",
+      "article_code": "A1126",
+      "article_name": "AMBRE 100ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-ambre-125ml",
+      "article_code": "A1125",
+      "article_name": "AMBRE 125ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-ambre-250ml",
+      "article_code": "A2124",
+      "article_name": "AMBRE 250ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-ambre-500ml-02",
+      "article_code": "A5121",
+      "article_name": "AMBRE 500ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-ambre-50ml",
+      "article_code": "A5127",
+      "article_name": "AMBRE 50ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-beroka",
+      "article_code": "BE086",
+      "article_name": "Beroka",
+      "unit": "Kilo",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-beurre-de-karite-brut-presse-a-froid",
+      "article_code": "BK140",
+      "article_name": "Beurre de Karité brut pressé à froid",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-bouteille-10ml",
+      "article_code": "B1133",
+      "article_name": "Bouteille 10ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-cannel",
+      "article_code": "CA123",
+      "article_name": "cannel",
+      "unit": "Kilo",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-cire-d-abeille-d-opercule-filtree",
+      "article_code": "CD139",
+      "article_name": "Cire d'abeille d'opercule filtrée",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-cristal-100ml",
+      "article_code": "C1131",
+      "article_name": "CRISTAL 100ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-cristal-125ml",
+      "article_code": "C1130",
+      "article_name": "CRISTAL 125ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-cristal-250ml",
+      "article_code": "C2129",
+      "article_name": "CRISTAL 250ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-cristal-500ml",
+      "article_code": "C5128",
+      "article_name": "CRISTAL 500ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-cristal-50ml",
+      "article_code": "C5132",
+      "article_name": "CRISTAL 50ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-alcool",
+      "article_code": "MP04-001",
+      "article_name": "ALCOOL",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-aloe-noni",
+      "article_code": "MP04-002",
+      "article_name": "ALOE NONI",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-anjarasoa",
+      "article_code": "MP04-003",
+      "article_name": "ANJARASOA",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-argile-rouge",
+      "article_code": "MP04-004",
+      "article_name": "ARGILE ROUGE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-argile-verte",
+      "article_code": "MP04-005",
+      "article_name": "ARGILE VERTE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-ascorbigue",
+      "article_code": "MP04-006",
+      "article_name": "ASCORBIGUE",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-bactoderm-creme",
+      "article_code": "MP04-007",
+      "article_name": "BACTODERM CREME",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-baobab",
+      "article_code": "MP04-008",
+      "article_name": "BAOBAB",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-beroka-raviny",
+      "article_code": "MP04-009",
+      "article_name": "BEROKA RAVINY",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-berokafakany",
+      "article_code": "MP04-010",
+      "article_name": "BEROKAFAKANY",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-beure-de-karite",
+      "article_code": "MP04-011",
+      "article_name": "BEURE DE Karité",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-beurre-de-cacao",
+      "article_code": "MP04-012",
+      "article_name": "Beurre de cacao",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-bois-de-rose",
+      "article_code": "MP04-013",
+      "article_name": "BOIS DE ROSE",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-cajou",
+      "article_code": "MP04-015",
+      "article_name": "CAJOU",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-calophilum",
+      "article_code": "MP04-016",
+      "article_name": "CALOPHILUM",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-camphre",
+      "article_code": "MP04-017",
+      "article_name": "CAMPHRE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-canelle",
+      "article_code": "MP04-018",
+      "article_name": "CANELLE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-charbon",
+      "article_code": "MP04-014",
+      "article_name": "CHARBON",
+      "unit": "GONY",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-cire-d-abeil",
+      "article_code": "MP04-019",
+      "article_name": "CIRE D'ABEIL",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-citrique",
+      "article_code": "MP04-020",
+      "article_name": "CITRIQUE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-citron",
+      "article_code": "MP04-021",
+      "article_name": "CITRON",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-clou-de-girofle",
+      "article_code": "MP04-022",
+      "article_name": "CLOU DE GIROFLE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-cola-milona",
+      "article_code": "MP04-023",
+      "article_name": "COLA MILONA",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-colle-protofar",
+      "article_code": "MP04-024",
+      "article_name": "COLLE PROTOFAR",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-courge-madio",
+      "article_code": "MP04-025",
+      "article_name": "COURGE MADIO",
+      "unit": "KPK",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-courge-maloto",
+      "article_code": "MP04-026",
+      "article_name": "COURGE MALOTO",
+      "unit": "KPK",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-curcuma",
+      "article_code": "MP04-027",
+      "article_name": "CURCUMA",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-cuvee-blanche",
+      "article_code": "MP04-028",
+      "article_name": "CUVEE BLANCHE",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-desm",
+      "article_code": "MP04-029",
+      "article_name": "DESM",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-desm-maina",
+      "article_code": "MP04-030",
+      "article_name": "DESM MAINA",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-detox",
+      "article_code": "MP04-031",
+      "article_name": "DETOX",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-eau-thermale",
+      "article_code": "MP04-032",
+      "article_name": "EAU THERMALE",
+      "unit": "PACK",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-eau-vive",
+      "article_code": "MP04-033",
+      "article_name": "EAU VIVE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-faka-beroka-maina",
+      "article_code": "MP04-034",
+      "article_name": "Faka beroka maina",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-farine-de-banane",
+      "article_code": "MP04-035",
+      "article_name": "FARINE DE BANANE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-farine-de-lain",
+      "article_code": "MP04-036",
+      "article_name": "FARINE DE LAIN",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-farine-de-riz",
+      "article_code": "MP04-037",
+      "article_name": "FARINE DE RIZ",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-fenugrec",
+      "article_code": "MP04-038",
+      "article_name": "Fenugrec",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-fenugrec-poudre",
+      "article_code": "MP04-039",
+      "article_name": "FENUGREC POUDRE",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-feuille-d-hibiscus",
+      "article_code": "MP04-040",
+      "article_name": "Feuille d'Hibiscus",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-g-articul",
+      "article_code": "MP04-041",
+      "article_name": "G-ARTICUL",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-glycerine",
+      "article_code": "MP04-042",
+      "article_name": "GLYCERINE",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-h-e-palamarosa",
+      "article_code": "MP04-043",
+      "article_name": "H.E PALAMAROSA",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-he-cypres",
+      "article_code": "MP04-044",
+      "article_name": "HE Cypres",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-he-teatree",
+      "article_code": "MP04-045",
+      "article_name": "HE Teatree",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-hibiscus",
+      "article_code": "MP04-046",
+      "article_name": "HIBISCUS",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-hodipotsy",
+      "article_code": "MP04-047",
+      "article_name": "HODIPOTSY",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-coco",
+      "article_code": "MP04-048",
+      "article_name": "Huile coco",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-d-amande",
+      "article_code": "MP04-049",
+      "article_name": "Huile d'amande",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-d-argan",
+      "article_code": "MP04-050",
+      "article_name": "HUILE D'ARGAN",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-d-olive",
+      "article_code": "MP04-051",
+      "article_name": "HUILE D'OLIVE",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-de-baobab",
+      "article_code": "MP04-052",
+      "article_name": "HUILE DE BAOBAB",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-de-pepin-de-raisin",
+      "article_code": "MP04-053",
+      "article_name": "HUILE DE PEPIN DE RAISIN",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-hina",
+      "article_code": "MP04-054",
+      "article_name": "HUILE HINA",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-jojoba",
+      "article_code": "MP04-055",
+      "article_name": "HUILE JOJOBA",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-tournesol",
+      "article_code": "MP04-056",
+      "article_name": "HUILE TOURNESOL",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-huile-vegetal",
+      "article_code": "MP04-057",
+      "article_name": "HUILE VEGETAL",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-hyd-citriodorat",
+      "article_code": "MP04-058",
+      "article_name": "HYD CITRIODORAT",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-hyd-cypres",
+      "article_code": "MP04-059",
+      "article_name": "HYD CYPRES",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-hyd-romba",
+      "article_code": "MP04-062",
+      "article_name": "HYD ROMBA",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-hydgera",
+      "article_code": "MP04-060",
+      "article_name": "HYDGERA",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-hydrav",
+      "article_code": "MP04-061",
+      "article_name": "HYDRAV",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-kalanjy",
+      "article_code": "MP04-063",
+      "article_name": "KALANJY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-kinana",
+      "article_code": "MP04-064",
+      "article_name": "KINANA",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-kolza",
+      "article_code": "MP04-065",
+      "article_name": "KOLZA",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-mandrava-sarotra",
+      "article_code": "MP04-066",
+      "article_name": "MANDRAVA-SAROTRA",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-masmaha",
+      "article_code": "MP04-067",
+      "article_name": "MASMAHA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-menaka-dr",
+      "article_code": "MP04-068",
+      "article_name": "MENAKA (Dr)",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-menaka-mandry",
+      "article_code": "MP04-069",
+      "article_name": "MENAKA MANDRY",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-miconax-creme",
+      "article_code": "MP04-070",
+      "article_name": "MICONAX CREME",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-miel",
+      "article_code": "MP04-071",
+      "article_name": "MIEL",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-mielmandry",
+      "article_code": "MP04-072",
+      "article_name": "MIELMANDRY",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-moringa",
+      "article_code": "MP04-073",
+      "article_name": "MORINGA",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-morvite",
+      "article_code": "MP04-074",
+      "article_name": "MORVITE",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-01",
+      "article_code": "MP04-075",
+      "article_name": "N\" 01",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-02",
+      "article_code": "MP04-076",
+      "article_name": "N\" 02",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-03",
+      "article_code": "MP04-077",
+      "article_name": "N\" 03",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-04",
+      "article_code": "MP04-078",
+      "article_name": "N''04",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-05",
+      "article_code": "MP04-079",
+      "article_name": "N\" 05",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-06",
+      "article_code": "MP04-080",
+      "article_name": "N\" 06",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-07",
+      "article_code": "MP04-081",
+      "article_name": "N\" 07",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-08",
+      "article_code": "MP04-082",
+      "article_name": "N\" 08",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-09",
+      "article_code": "MP04-083",
+      "article_name": "N\" 09",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-10",
+      "article_code": "MP04-084",
+      "article_name": "N\" 10",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-11",
+      "article_code": "MP04-085",
+      "article_name": "N\" 11",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-12",
+      "article_code": "MP04-086",
+      "article_name": "N\" 12",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-13",
+      "article_code": "MP04-087",
+      "article_name": "N\"13",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-14",
+      "article_code": "MP04-088",
+      "article_name": "N\" 14",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-15",
+      "article_code": "MP04-089",
+      "article_name": "N\"15",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-n-16",
+      "article_code": "MP04-090",
+      "article_name": "N\"° 16",
+      "unit": "Millilitre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-nico",
+      "article_code": "MP04-091",
+      "article_name": "NICO",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-noni",
+      "article_code": "MP04-092",
+      "article_name": "NONI",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-papier-cuisson",
+      "article_code": "MP04-093",
+      "article_name": "PAPIER CUISSON",
+      "unit": "FEUILLE",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-peryle",
+      "article_code": "MP04-094",
+      "article_name": "PERYLE",
+      "unit": "BOTY",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-pomme",
+      "article_code": "MP04-095",
+      "article_name": "POMME",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-poudre-cafe",
+      "article_code": "MP04-096",
+      "article_name": "POUDRE CAFE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-ravina-beroka-maina",
+      "article_code": "MP04-097",
+      "article_name": "Ravina beroka maina",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-revitalisant",
+      "article_code": "MP04-098",
+      "article_name": "REVITALISANT",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-rofia",
+      "article_code": "MP04-099",
+      "article_name": "ROFIA",
+      "unit": "FATORANA",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-ronono",
+      "article_code": "MP04-100",
+      "article_name": "RONONO",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-sachet-protofar",
+      "article_code": "MP04-101",
+      "article_name": "SACHET PROTOFAR",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-sakamalao",
+      "article_code": "MP04-102",
+      "article_name": "SAKAMALAO",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-savlah",
+      "article_code": "MP04-111",
+      "article_name": "savlah",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-sesam",
+      "article_code": "MP04-103",
+      "article_name": "SESAM",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-soanambo-poudre",
+      "article_code": "MP04-104",
+      "article_name": "SOANAMBO POUDRE",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-soja",
+      "article_code": "MP04-105",
+      "article_name": "SOJA",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-sorbate",
+      "article_code": "MP04-106",
+      "article_name": "SORBATE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-soude",
+      "article_code": "MP04-107",
+      "article_name": "SOUDE",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-spiru-cacapig",
+      "article_code": "MP04-108",
+      "article_name": "SPIRU CACAPIG",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-spiru-poudre",
+      "article_code": "MP04-109",
+      "article_name": "SPIRU POUDRE",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-stevia",
+      "article_code": "MP04-110",
+      "article_name": "STEVIA",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-sucre-glace",
+      "article_code": "MP04-112",
+      "article_name": "Sucre glace",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-taho-beroka-maina",
+      "article_code": "MP04-113",
+      "article_name": "Taho beroka maina",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-tanjaka-mibotsina",
+      "article_code": "MP04-114",
+      "article_name": "TANJAKA MIBOTSINA",
+      "unit": "BOUTEILLE",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-tk",
+      "article_code": "MP04-115",
+      "article_name": "TK",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-tongolo",
+      "article_code": "MP04-116",
+      "article_name": "TONGOLO",
+      "unit": "KPK",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-tongolo-gasy",
+      "article_code": "MP04-117",
+      "article_name": "TONGOLO GASY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-tsunami",
+      "article_code": "MP04-118",
+      "article_name": "TSUNAMI",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-turbo",
+      "article_code": "MP04-119",
+      "article_name": "TURBO",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-vahona",
+      "article_code": "MP04-126",
+      "article_name": "VAHONA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-vaseline",
+      "article_code": "MP04-120",
+      "article_name": "VASELINE",
+      "unit": "Gramme",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-vin",
+      "article_code": "MP04-121",
+      "article_name": "VIN",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-vin-blanc-bidon-fotsy",
+      "article_code": "MP04-122",
+      "article_name": "Vin blanc @ bidon fotsy",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-vin-mahasoa",
+      "article_code": "MP04-123",
+      "article_name": "VIN MAHASOA",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-vinaigre",
+      "article_code": "MP04-124",
+      "article_name": "VINAIGRE",
+      "unit": "BOUTEILLE",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-dep04-vinaigre-de-vin",
+      "article_code": "MP04-125",
+      "article_name": "VINAIGRE DE VIN",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-ecorce-sechee-de-katrafay-sauvage",
+      "article_code": "ES141",
+      "article_name": "Écorce séchée de Katrafay sauvage",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-aloe-miel",
+      "article_code": "MP-ETQ-001",
+      "article_name": "Etiquette Autocollant ALOE MIEL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-aloe-noni",
+      "article_code": "MP-ETQ-002",
+      "article_name": "Etiquette Autocollant ALOE NONI",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-aloe-pur",
+      "article_code": "MP-ETQ-003",
+      "article_name": "Etiquette Autocollant ALOE PUR",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-ananambo",
+      "article_code": "MP-ETQ-004",
+      "article_name": "Etiquette Autocollant ANANAMBO LHB",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-anjarasoa",
+      "article_code": "MP-ETQ-005",
+      "article_name": "Etiquette Autocollant ANJARASOA",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-anti-stress-gm",
+      "article_code": "MP-ETQ-006",
+      "article_name": "Etiquette Autocollant ANTI STRESS GM",
+      "unit": "Piece",
+      "quantity": 101
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-argile-jaune",
+      "article_code": "MP-ETQ-008",
+      "article_name": "Etiquette Autocollant ARGILE JAUNE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-argile-rouge",
+      "article_code": "MP-ETQ-009",
+      "article_name": "Etiquette Autocollant ARGILE ROUGE",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-argile-verte",
+      "article_code": "MP-ETQ-010",
+      "article_name": "Etiquette Autocollant ARGILE VERTE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-avr",
+      "article_code": "MP-ETQ-007",
+      "article_name": "Etiquette Autocollant AVR",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baobab",
+      "article_code": "MP-ETQ-011",
+      "article_name": "Etiquette Autocollant BAOBAB LHB",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-alavonto",
+      "article_code": "MP-ETQ-012",
+      "article_name": "Etiquette Autocollant BAUME ALAVONTO RND",
+      "unit": "Piece",
+      "quantity": 14
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-anti-cellulite",
+      "article_code": "MP-ETQ-013",
+      "article_name": "Etiquette Autocollant BAUME ANTI CELLULITE",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-antivirus",
+      "article_code": "MP-ETQ-014",
+      "article_name": "Etiquette Autocollant BAUME ANTIVIRUS RND",
+      "unit": "Piece",
+      "quantity": 77
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-champion",
+      "article_code": "MP-ETQ-015",
+      "article_name": "Etiquette Autocollant BAUME CHAMPION RND",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-cypres",
+      "article_code": "MP-ETQ-016",
+      "article_name": "Etiquette Autocollant BAUME CYPRES",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-katrafay",
+      "article_code": "MP-ETQ-017",
+      "article_name": "Etiquette Autocollant BAUME KATRAFAY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-memoire",
+      "article_code": "MP-ETQ-018",
+      "article_name": "Etiquette Autocollant BAUME MÉMOIRE LHB",
+      "unit": "Piece",
+      "quantity": 5
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-radriaka",
+      "article_code": "MP-ETQ-019",
+      "article_name": "Etiquette Autocollant BAUME RADRIAKA RND",
+      "unit": "Piece",
+      "quantity": 41
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-rambia",
+      "article_code": "MP-ETQ-020",
+      "article_name": "Etiquette Autocollant BAUME RAMBIA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-baume-ravintsara",
+      "article_code": "MP-ETQ-021",
+      "article_name": "Etiquette Autocollant BAUME RAVINTSARA RND",
+      "unit": "Piece",
+      "quantity": 33
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-beroberoka",
+      "article_code": "MP-ETQ-022",
+      "article_name": "Etiquette Autocollant BEROBEROKA",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-beure-de-karite",
+      "article_code": "MP-ETQ-023",
+      "article_name": "Etiquette Autocollant BEURE DE KARITE",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-bois-de-rose",
+      "article_code": "MP-ETQ-024",
+      "article_name": "Etiquette Autocollant BOIS DE ROSE",
+      "unit": "Piece",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-cataplasme",
+      "article_code": "MP-ETQ-025",
+      "article_name": "Etiquette Autocollant CATAPLASME",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-circulation",
+      "article_code": "MP-ETQ-026",
+      "article_name": "Etiquette Autocollant CIRCULATION",
+      "unit": "Piece",
+      "quantity": 11
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-corofar-gm",
+      "article_code": "MP-ETQ-027",
+      "article_name": "Etiquette Autocollant COROFAR GM",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-creme-coiffante",
+      "article_code": "MP-ETQ-028",
+      "article_name": "Etiquette Autocollant CREME COIFFANTE",
+      "unit": "Piece",
+      "quantity": 13
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-dermag-gm",
+      "article_code": "MP-ETQ-029",
+      "article_name": "Etiquette Autocollant DERMAG RND",
+      "unit": "Piece",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-desmofar-gm",
+      "article_code": "MP-ETQ-030",
+      "article_name": "Etiquette Autocollant DESMOFAR GM",
+      "unit": "Piece",
+      "quantity": 183
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-detox",
+      "article_code": "MP-ETQ-031",
+      "article_name": "Etiquette Autocollant DETOX",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-eau-micellaire-gm",
+      "article_code": "MP-ETQ-032",
+      "article_name": "Etiquette Autocollant EAU MICELLAIRE GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-eau-micellaire-pm",
+      "article_code": "MP-ETQ-033",
+      "article_name": "Etiquette Autocollant EAU MICELLAIRE PM",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-g-articulation",
+      "article_code": "MP-ETQ-034",
+      "article_name": "Etiquette Autocollant G ARTICULATION",
+      "unit": "Piece",
+      "quantity": 2
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-he-eucalupt",
+      "article_code": "MP-ETQ-038",
+      "article_name": "Etiquette Autocollant HE EUCALUPT",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-he-radriaka",
+      "article_code": "MP-ETQ-035",
+      "article_name": "Etiquette Autocollant HE RADRIAKA",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-he-ravitsara",
+      "article_code": "MP-ETQ-036",
+      "article_name": "Etiquette Autocollant HE RAVITSARA",
+      "unit": "Piece",
+      "quantity": 30
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-hodipotsy",
+      "article_code": "MP-ETQ-037",
+      "article_name": "Etiquette Autocollant HODIPOTSY",
+      "unit": "Piece",
+      "quantity": 11
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-kinana",
+      "article_code": "MP-ETQ-039",
+      "article_name": "Etiquette Autocollant KINANA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-komima",
+      "article_code": "MP-ETQ-040",
+      "article_name": "Etiquette Autocollant KOMIMA",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-komima-cancer",
+      "article_code": "MP-ETQ-041",
+      "article_name": "Etiquette Autocollant KOMIMA CANCER",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-lotion-intime",
+      "article_code": "MP-ETQ-042",
+      "article_name": "Etiquette Autocollant LOTION INTIME",
+      "unit": "Piece",
+      "quantity": 2
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-noni-gm",
+      "article_code": "MP-ETQ-043",
+      "article_name": "Etiquette Autocollant NONI GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-omega-3",
+      "article_code": "MP-ETQ-044",
+      "article_name": "Etiquette Autocollant OMEGA 3",
+      "unit": "Piece",
+      "quantity": 15
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-omega-3-diabeta",
+      "article_code": "MP-ETQ-045",
+      "article_name": "Etiquette Autocollant OMEGA 3 DIABETA",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-protofar-pm",
+      "article_code": "MP-ETQ-046",
+      "article_name": "Etiquette Autocollant PROTOFAR PM",
+      "unit": "Piece",
+      "quantity": 196
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-revitalisant",
+      "article_code": "MP-ETQ-047",
+      "article_name": "Etiquette Autocollant REVITALISANT",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-savlah",
+      "article_code": "MP-ETQ-048",
+      "article_name": "Etiquette Autocollant SAVLAH",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-spiruline",
+      "article_code": "MP-ETQ-050",
+      "article_name": "Etiquette Autocollant SPIRULINE LHB",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-spray",
+      "article_code": "MP-ETQ-049",
+      "article_name": "Etiquette Autocollant SPRAY",
+      "unit": "Piece",
+      "quantity": 2
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-tanjaka",
+      "article_code": "MP-ETQ-051",
+      "article_name": "Etiquette Autocollant TANJAKA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-tanjaka-plus",
+      "article_code": "MP-ETQ-052",
+      "article_name": "Etiquette Autocollant TANJAKA PLUS",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-vinaigre-gm",
+      "article_code": "MP-ETQ-053",
+      "article_name": "Etiquette Autocollant VINAIGRE GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-vinaigre-pm",
+      "article_code": "MP-ETQ-054",
+      "article_name": "Etiquette Autocollant VINAIGRE PM",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-etiquette-autocollant-voamboatavo",
+      "article_code": "MP-ETQ-055",
+      "article_name": "Etiquette Autocollant VOAMBOATAVO",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-feuilles-fraiches-de-ravintsara-de-cueillette",
+      "article_code": "FF145",
+      "article_name": "Feuilles fraîches de Ravintsara de cueillette",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-flacon-verre-ambre-10ml-avec-codigoutte",
+      "article_code": "FV143",
+      "article_name": "Flacon verre ambré 10ml avec codigoutte",
+      "unit": "Unité",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-miel-pur-de-foret-non-pasteurise-brut",
+      "article_code": "MP142",
+      "article_name": "Miel pur de forêt non pasteurisé (brut)",
+      "unit": "Litre",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-beroka-fakany",
+      "article_code": "MP-PCI-001",
+      "article_name": "Papier Carton IMPRIMÉ BEROKA FAKANY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-omega-diabeta",
+      "article_code": "MP-PCI-004",
+      "article_name": "Papier Carton IMPRIMÉ OMEGA DIABETA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-omega-gm",
+      "article_code": "MP-PCI-002",
+      "article_name": "Papier Carton IMPRIMÉ OMEGA GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-omega-pm",
+      "article_code": "MP-PCI-003",
+      "article_name": "Papier Carton IMPRIMÉ OMEGA PM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-protofar-gm",
+      "article_code": "MP-PCI-005",
+      "article_name": "Papier Carton IMPRIMÉ PROTOFAR GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-protofar-pm",
+      "article_code": "MP-PCI-006",
+      "article_name": "Papier Carton IMPRIMÉ PROTOFAR PM",
+      "unit": "Piece",
+      "quantity": 210
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-savon-acne",
+      "article_code": "MP-PCI-007",
+      "article_name": "Papier Carton IMPRIMÉ SAVON ACNE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-savon-aminc",
+      "article_code": "MP-PCI-008",
+      "article_name": "Papier Carton IMPRIMÉ SAVON AMINC",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-savon-antiride",
+      "article_code": "MP-PCI-009",
+      "article_name": "Papier Carton IMPRIMÉ SAVON ANTIRIDE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-savon-manazava",
+      "article_code": "MP-PCI-010",
+      "article_name": "Papier Carton IMPRIMÉ SAVON MANAZAVA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-savon-rep",
+      "article_code": "MP-PCI-011",
+      "article_name": "Papier Carton IMPRIMÉ SAVON REP",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-savon-vahona",
+      "article_code": "MP-PCI-012",
+      "article_name": "Papier Carton IMPRIMÉ SAVON VAHONA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-voamboatavo-gm",
+      "article_code": "MP-PCI-013",
+      "article_name": "Papier Carton IMPRIMÉ VOAMBOATAVO GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-papier-carton-imprime-voamboatavo-pm",
+      "article_code": "MP-PCI-014",
+      "article_name": "Papier Carton IMPRIMÉ VOAMBOATAVO PM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-pot-50ml-blanc",
+      "article_code": "P5134",
+      "article_name": "POT 50ML BLANC",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-pot-alu-200ml",
+      "article_code": "PA137",
+      "article_name": "POT ALU 200ML",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-pot-alu-50g",
+      "article_code": "PA135",
+      "article_name": "POT ALU 50G",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-pot-aluminium-verni-50ml-pour-baume",
+      "article_code": "PA144",
+      "article_name": "Pot aluminium verni 50ml pour baume",
+      "unit": "Unité",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-pot-blanc-30g",
+      "article_code": "PB138",
+      "article_name": "POT BLANC 30G",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-pot-cosmetique-50g",
+      "article_code": "PC136",
+      "article_name": "POT COSMETIQUE 50G",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-sakamalaho",
+      "article_code": "SA120",
+      "article_name": "Sakamalaho",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-raw-material-tongolo",
+      "article_code": "TO122",
+      "article_name": "TONGOLO",
+      "unit": "Kg",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-alben-cp",
+      "article_code": "AC091",
+      "article_name": "ALBEN CP",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-alben-sp",
+      "article_code": "AS105",
+      "article_name": "ALBEN SP",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-aloe-miel",
+      "article_code": "AM002",
+      "article_name": "ALOE MIEL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-aloe-noni",
+      "article_code": "AN001",
+      "article_name": "ALOE NONI",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-aloe-pur",
+      "article_code": "AP004",
+      "article_name": "ALOE PUR",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-ampi-inj",
+      "article_code": "AI095",
+      "article_name": "AMPI INJ",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-ananambo",
+      "article_code": "AN003",
+      "article_name": "ANANAMBO",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-anjarasoa",
+      "article_code": "AN034",
+      "article_name": "ANJARASOA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-anti-stress",
+      "article_code": "AS017",
+      "article_name": "ANTI STRESS",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-argile-jaune",
+      "article_code": "AJ021",
+      "article_name": "ARGILE JAUNE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-argile-rouge",
+      "article_code": "AR005",
+      "article_name": "ARGILE ROUGE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-argile-verte",
+      "article_code": "AV026",
+      "article_name": "ARGILE VERTE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-arina",
+      "article_code": "AR112",
+      "article_name": "ARINA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-ashvagandha",
+      "article_code": "AS087",
+      "article_name": "ASHVAGANDHA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-atropine",
+      "article_code": "AT103",
+      "article_name": "ATROPINE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-avr",
+      "article_code": "AV012",
+      "article_name": "AVR",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baobab",
+      "article_code": "BA036",
+      "article_name": "BAOBAB",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-alavonto",
+      "article_code": "BA006",
+      "article_name": "Baume ALAVONTO",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-anti-cellulites",
+      "article_code": "BA010",
+      "article_name": "Baume Anti cellulites",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-anti-virus",
+      "article_code": "BA041",
+      "article_name": "Baume ANTI VIRUS",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-champion",
+      "article_code": "BC037",
+      "article_name": "Baume CHAMPION",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-cypres",
+      "article_code": "BC018",
+      "article_name": "Baume Cyprès",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-katrafay",
+      "article_code": "BK009",
+      "article_name": "Baume KATRAFAY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-memoire",
+      "article_code": "BM008",
+      "article_name": "Baume MEMOIRE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-radriaka",
+      "article_code": "BR025",
+      "article_name": "Baume RADRIAKA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-rambiazina",
+      "article_code": "BR149",
+      "article_name": "Baume RAMBIAZINA",
+      "unit": "Pot 50ml",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-ramiazina",
+      "article_code": "BR015",
+      "article_name": "Baume RAMIAZINA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-ravintsara",
+      "article_code": "BR028",
+      "article_name": "Baume RAVINTSARA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-baume-ravitsara",
+      "article_code": "BR150",
+      "article_name": "Baume RAVINTSARA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-beroberoka",
+      "article_code": "BE031",
+      "article_name": "BEROBEROKA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-beroka-fakany",
+      "article_code": "BF088",
+      "article_name": "BEROKA FAKANY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-beurre-de-karite",
+      "article_code": "BK016",
+      "article_name": "BEURRE DE KARITE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-bois-de-rose",
+      "article_code": "BR019",
+      "article_name": "BOIS DE ROSE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-calcium-masy",
+      "article_code": "CM040",
+      "article_name": "CALCIUM MASY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-cataplasme",
+      "article_code": "CA035",
+      "article_name": "CATAPLASME",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-chlorpheniramine",
+      "article_code": "CH115",
+      "article_name": "CHLORPHENIRAMINE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-circulation",
+      "article_code": "CI032",
+      "article_name": "CIRCULATION",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-corofar-gm",
+      "article_code": "CG024",
+      "article_name": "COROFAR GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-creme-coiffante",
+      "article_code": "CC013",
+      "article_name": "CREME COIFFANTE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-derma-g",
+      "article_code": "DG039",
+      "article_name": "DERMA-G",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-desmofar-gm",
+      "article_code": "DG011",
+      "article_name": "DESMOFAR GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-detox",
+      "article_code": "DE030",
+      "article_name": "DETOX",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-dexa",
+      "article_code": "DE118",
+      "article_name": "DEXA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-diclo",
+      "article_code": "DI096",
+      "article_name": "DICLO",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-eau-micellaire-gm",
+      "article_code": "EM023",
+      "article_name": "EAU MICELLAIRE GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-eau-micellaire-pm",
+      "article_code": "EM007",
+      "article_name": "EAU MICELLAIRE PM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-fanazava",
+      "article_code": "FA029",
+      "article_name": "FANAZAVA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-fandravagodro",
+      "article_code": "FA014",
+      "article_name": "FANDRAVAGODRO",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-fanjatony",
+      "article_code": "FA022",
+      "article_name": "FANJATONY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-fievre-typho",
+      "article_code": "FT117",
+      "article_name": "FIEVRE TYPHO",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-g-articulation",
+      "article_code": "GA020",
+      "article_name": "G-ARTICULATION",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-glycemie",
+      "article_code": "GL109",
+      "article_name": "GLYCEMIE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-gudichi",
+      "article_code": "GU092",
+      "article_name": "GUDICHI",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-hcg",
+      "article_code": "HC110",
+      "article_name": "HCG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-cypres",
+      "article_code": "HC027",
+      "article_name": "HE CYPRES",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-eucaluptus",
+      "article_code": "HE106",
+      "article_name": "HE EUCALUPTUS",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-geranium",
+      "article_code": "HG038",
+      "article_name": "HE GERANIUM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-girofle",
+      "article_code": "HG033",
+      "article_name": "HE GIROFLE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-helichryse",
+      "article_code": "HH059",
+      "article_name": "HE HELICHRYSE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-katrafay",
+      "article_code": "HK042",
+      "article_name": "HE KATRAFAY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-menthe",
+      "article_code": "HM060",
+      "article_name": "HE MENTHE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-radriaka",
+      "article_code": "HR089",
+      "article_name": "HE RADRIAKA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-ravintsara",
+      "article_code": "HR046",
+      "article_name": "HE RAVINTSARA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-he-saro",
+      "article_code": "HS053",
+      "article_name": "HE SARO",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-hepatite-b",
+      "article_code": "HB107",
+      "article_name": "HEPATITE B",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-hodipotsy",
+      "article_code": "HO043",
+      "article_name": "HODIPOTSY",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-injection",
+      "article_code": "IN094",
+      "article_name": "INJECTION",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-kapikachu",
+      "article_code": "KA097",
+      "article_name": "KAPIKACHU",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-karela",
+      "article_code": "KA098",
+      "article_name": "KARELA",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-kinana",
+      "article_code": "KI044",
+      "article_name": "KINANA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-komima",
+      "article_code": "KO064",
+      "article_name": "KOMIMA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-komima-cancer",
+      "article_code": "KC056",
+      "article_name": "KOMIMA CANCER",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-lotion-intime",
+      "article_code": "LI047",
+      "article_name": "LOTION INTIME",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-madeglucyl",
+      "article_code": "MA048",
+      "article_name": "MADEGLUCYL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-madetonyl",
+      "article_code": "MA062",
+      "article_name": "MADETONYL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-madetoxyl",
+      "article_code": "MA051",
+      "article_name": "MADETOXYL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-madetussyl",
+      "article_code": "MA045",
+      "article_name": "MADETUSSYL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-magasine",
+      "article_code": "MA099",
+      "article_name": "MAGASINE",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-masy-pagyl",
+      "article_code": "MP058",
+      "article_name": "MASY PAGYL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-miel",
+      "article_code": "MI061",
+      "article_name": "MIEL",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-mrg",
+      "article_code": "MR100",
+      "article_name": "MRG",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-noni",
+      "article_code": "NO052",
+      "article_name": "NONI",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-oac",
+      "article_code": "OA049",
+      "article_name": "OAC",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-ody-vato",
+      "article_code": "OV054",
+      "article_name": "ODY VATO",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-ofa",
+      "article_code": "OF057",
+      "article_name": "OFA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-ofm",
+      "article_code": "OF063",
+      "article_name": "OFM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-omega-3-gm",
+      "article_code": "O3050",
+      "article_name": "OMEGA 3 GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-omega-3-pm",
+      "article_code": "O3055",
+      "article_name": "OMEGA 3 PM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-omega-diabete",
+      "article_code": "OD065",
+      "article_name": "OMEGA DIABETE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-palu",
+      "article_code": "PA113",
+      "article_name": "PALU",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-paraceta-500mg",
+      "article_code": "P5114",
+      "article_name": "PARACETA 500MG",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-predni-50g",
+      "article_code": "P5093",
+      "article_name": "PREDNI 50G",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-protofar-gm",
+      "article_code": "PG077",
+      "article_name": "PROTOFAR GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-protofar-pm",
+      "article_code": "PP081",
+      "article_name": "PROTOFAR PM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-amoxiciline500mg",
+      "article_code": "TMP004",
+      "article_name": "AMOXICILINE 500MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-ampibact1ginjection",
+      "article_code": "TMP011",
+      "article_name": "AMPIBACT 1G INJECTION",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-becilaninjection250mg",
+      "article_code": "TMP013",
+      "article_name": "BECILAN INJECTION 250MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-calciuminjection10",
+      "article_code": "TMP016",
+      "article_name": "CALCIUM INJECTION 10%",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-chloruredesodium09",
+      "article_code": "TMP017",
+      "article_name": "CHLORURE DE SODIUM 0,9%",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-ciprofloxacine500mg",
+      "article_code": "TMP005",
+      "article_name": "CIPROFLOXACINE 500MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-complexbinjection",
+      "article_code": "TMP014",
+      "article_name": "COMPLEX B INJECTION",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-confido",
+      "article_code": "TMP020",
+      "article_name": "CONFIDO",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-coton200g",
+      "article_code": "TMP026",
+      "article_name": "COTON 200G",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-dexainjection4mg",
+      "article_code": "TMP012",
+      "article_name": "DEXA INJECTION 4MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-dicloinjection75mg",
+      "article_code": "TMP015",
+      "article_name": "DICLO INJECTION 75MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-glucose5",
+      "article_code": "TMP018",
+      "article_name": "GLUCOSE 5%",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-lasuna",
+      "article_code": "TMP019",
+      "article_name": "LASUNA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-metronis500mg",
+      "article_code": "TMP006",
+      "article_name": "METRONIS 500MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-microperfuseurbleu",
+      "article_code": "TMP024",
+      "article_name": "MICROPERFUSEUR BLEU",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-nim100",
+      "article_code": "TMP001",
+      "article_name": "NIM 100",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-opral20mg",
+      "article_code": "TMP003",
+      "article_name": "OPRAL 20MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-paracetamol1g",
+      "article_code": "TMP009",
+      "article_name": "PARACETAMOL 1G",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-paracetamol500mg",
+      "article_code": "TMP002",
+      "article_name": "PARACETAMOL 500MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-perfusseur",
+      "article_code": "TMP025",
+      "article_name": "PERFUSSEUR",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-predisolone5mg",
+      "article_code": "TMP007",
+      "article_name": "PREDISOLONE 5MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-seringue10cc",
+      "article_code": "TMP022",
+      "article_name": "SERINGUE10CC",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-seringue20cc",
+      "article_code": "TMP023",
+      "article_name": "SERINGUE 20CC",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-seringue5cc",
+      "article_code": "TMP021",
+      "article_name": "SERINGUE 5CC",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-vitaminec500mg",
+      "article_code": "TMP008",
+      "article_name": "VITAMINE C 500MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-provisional-vitaminecinjection500mg",
+      "article_code": "TMP010",
+      "article_name": "VITAMINE C INJECTION 500MG",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-punarnava",
+      "article_code": "PU101",
+      "article_name": "PUNARNAVA",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-revitalisant",
+      "article_code": "RE070",
+      "article_name": "REVITALISANT",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-rois-des-herbes",
+      "article_code": "RH090",
+      "article_name": "ROIS DES HERBES",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-savlah",
+      "article_code": "SA082",
+      "article_name": "SAVLAH",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-savon-aminci",
+      "article_code": "SA071",
+      "article_name": "SAVON AMINCI",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-savon-anti-acne",
+      "article_code": "SA073",
+      "article_name": "SAVON ANTI ACNE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-savon-anti-rides",
+      "article_code": "SA079",
+      "article_name": "SAVON ANTI RIDES",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-savon-manazava",
+      "article_code": "SM068",
+      "article_name": "SAVON MANAZAVA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-savon-repousse",
+      "article_code": "SR078",
+      "article_name": "SAVON REPOUSSE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-savon-vahona",
+      "article_code": "SV066",
+      "article_name": "SAVON VAHONA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-seringue",
+      "article_code": "SE119",
+      "article_name": "SERINGUE",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-spiruline",
+      "article_code": "SP076",
+      "article_name": "SPIRULINE",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-spray",
+      "article_code": "SP102",
+      "article_name": "SPRAY",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-st",
+      "article_code": "FT111",
+      "article_name": "FT",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-tanjaka",
+      "article_code": "TA083",
+      "article_name": "TANJAKA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-tanjaka-plus",
+      "article_code": "TP074",
+      "article_name": "TANJAKA PLUS",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-the-beroberoka",
+      "article_code": "TB072",
+      "article_name": "THE BEROBEROKA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-the-beroka",
+      "article_code": "TB154",
+      "article_name": "THE BEROKA",
+      "unit": "Sachet 100g",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-the-hibiscus",
+      "article_code": "TH067",
+      "article_name": "THE HIBISCUS",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-the-olive",
+      "article_code": "TO116",
+      "article_name": "THE OLIVE",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-the-stevia",
+      "article_code": "TS080",
+      "article_name": "THE STEVIA",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-toxo",
+      "article_code": "TO104",
+      "article_name": "TOXO",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-vinaigre-gm",
+      "article_code": "VG075",
+      "article_name": "VINAIGRE GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-vinaigre-pm",
+      "article_code": "VP069",
+      "article_name": "VINAIGRE PM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-vitamine-c",
+      "article_code": "VC108",
+      "article_name": "VITAMINE C",
+      "unit": "",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-voamboatavo-gm",
+      "article_code": "VG084",
+      "article_name": "VOAMBOATAVO GM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "article-resale-voamboatavo-pm",
+      "article_code": "VP085",
+      "article_name": "VOAMBOATAVO PM",
+      "unit": "Piece",
+      "quantity": 0
+    },
+    {
+      "store_id": "MAG-031",
+      "store_code": "PRD-02",
+      "store_name": "Communication",
+      "article_id": "ART-391",
+      "article_code": "MP-ETQ-09991",
+      "article_name": "Etiquette Autocollant BEROKA FAKANY",
+      "unit": "Piece",
+      "quantity": 23
+    }
+  ]
+}
