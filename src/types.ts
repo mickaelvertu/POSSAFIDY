@@ -259,6 +259,7 @@ export interface StoreStock {
   quarantine_quantity?: number; // retours à recycler, jamais vendables
   reserved_quantity: number;
   updated_at: number;
+  transfer_receipt?: { transfer_id: string; line_index: number };
 }
 
 // 5. Transferts & Réceptions
@@ -402,6 +403,7 @@ export interface StockMovement {
   notes?: string;
   stock_bucket?: "QUARANTINE";
   created_at: number;
+  transfer_receipt?: { transfer_id: string; line_index: number };
 }
 
 // 7. Ventes & Lignes de vente

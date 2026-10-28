@@ -1,21 +1,21 @@
 Attached Element Context from Integrated Browser
 
-Element: tr.hover:bg-slate-50
+Element: form#payroll-form.space-y-4.rounded-xl.bg-white.p-5.shadow-sm
 
 URL: http://127.0.0.1:3000/
 
-HTML Path: div#root > div.theme-app.min-h-screen.bg-slate-900.text-slate-100.flex.flex-col > main.flex-1.max-w-6xl.w-full.mx-auto.px-4.sm:px-6.py-8.space-y-6 > section.space-y-4 > div.space-y-6 > div.bg-white.rounded-2xl.border.border-slate-200.shadow-xs.overflow-hidden > div.overflow-x-auto > table.w-full.text-xs.text-left.border-collapse > tbody.divide-y.divide-slate-100 > tr.hover:bg-slate-50
+HTML Path: div#root > div.theme-app.min-h-screen.bg-slate-900.text-slate-100.flex.flex-col > main.flex-1.max-w-6xl.w-full.mx-auto.px-4.sm:px-6.py-8.space-y-6 > section.space-y-4 > section.space-y-5.text-slate-900 > form#payroll-form.space-y-4.rounded-xl.bg-white.p-5.shadow-sm
 
 Outer HTML:
 ```html
-<tr class="hover:bg-slate-50"><td class="py-2.5 px-3 font-mono font-bold text-emerald-800">VTE-20261010-222935-B9B4</td><td class="py-2.5 px-3 text-slate-500 font-mono text-[11px]">10/10/2026</td><td class="py-2.5 px-3"><span class="font-semibold text-slate-800">Mahamasina</span><div class="text-[10px] text-slate-400 font-mono">CENTRAL_WAREHOUSE</div></td><td class="py-2.5 px-3"><div class="font-medium text-slate-900">Safidy</div><span class="text-[10px] text-slate-400 font-semibold">REVENDEUR</span></td><td class="py-2.5 px-3 text-slate-600">ANTI STRESS (x2)</td><td class="py-2.5 px-3 font-mono font-semibold text-slate-700">CASH</td><td class="py-2.5 px-3 text-right font-mono font-bold text-slate-900 text-sm">19 000 Ar</td><td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300">VERIFIED</span><div class="mt-1 text-[10px] font-bold text-amber-700">En attente d'approbation admin</div></td><td class="py-2.5 px-3 text-right"><div class="flex items-center justify-end gap-1.5"><button type="button" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] shadow-xs flex items-center gap-1 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check h-3 w-3" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>Approuver &amp; débiter le stock</button><button type="button" title="Imprimer le ticket" class="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-200 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-printer h-3.5 w-3.5" aria-hidden="true"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"></path><rect x="6" y="14" width="12" height="8" rx="1"></rect></svg></button></div></td></tr>
+<form id="payroll-form" class="space-y-4 rounded-xl bg-white p-5 shadow-sm"><h3 class="font-bold">Nouvelle fiche de paie</h3><div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"><label class="space-y-1 text-xs font-semibold text-slate-600">Employé *<select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" required=""><option value="">Sélectionner un employé actif</option><option value="emp-13fbe644-ffb3-49e0-b31b-f6b335e8f986">Ismael À compléter</option><option value="emp-31135f05-1b7d-49d9-ad8c-44cc4013bce5">Lova À compléter</option><option value="emp-34b3f92f-df33-4b9e-8f95-2c1527575372">Mi massage À compléter</option><option value="emp-3c8256d1-de55-4953-8dc7-a77b3b82843c">Riana À compléter</option><option value="emp-4fb3d3e6-b838-43e4-bc00-d1cd42931023">Hanitra À compléter</option><option value="emp-5a01f73e-2605-447b-ab0a-29fa850c1ef4">Fetra À compléter</option><option value="emp-6119bf7a-0203-4c0b-9521-20d4987cf14f">Natanaela À compléter</option><option value="emp-64cd7706-2a72-41ac-97a2-dee87ae5f75d">Nandrianina À compléter</option><option value="emp-69f98fc4-feb7-4403-86af-cfe5269dd19b">Joceline À compléter</option><option value="emp-718b4c65-6685-4717-8a1d-6d27de3dbf01">Fanomezantsoa À compléter</option><option value="emp-7d70c8ff-edbd-43b3-b35f-d431e5fb6f3b">Evah À compléter</option><option value="emp-7da560c2-f808-4256-bbaa-3ae774fde534">Sahondra À compléter</option><option value="emp-84c35d5d-68f8-42f0-9fd0-9cff1f3a37e9">Rova À compléter</option><option value="emp-95f88e52-9333-4a82-8262-ce4cdd4311be">Dericho À compléter</option><option value="emp-a02ad19e-0143-421b-990b-a38c551aad30">Njiva À compléter</option><option value="emp-a7b74eea-c921-4386-a5dd-31a294c44c52">Tsoa À compléter</option><option value="emp-b35a874c-6815-4446-9d91-652768e05340">Mahandry À compléter</option><option value="emp-b5848ce9-adf6-4682-a6c2-cf621137b188">Miranto À compléter</option><option value="emp-c16d327d-e223-4d9e-a191-36db2842ea4f">Ony À compléter</option><option value="emp-c3b1556d-32c4-469e-ad3f-e4a6727353e1">Finaritra À compléter</option><option value="emp-c9e4386f-7ebd-4ff7-9dae-257861db7c4b">Julienne À compléter</option><option value="emp-ca7c97d3-da29-41ab-8243-6437edcfb197">Claudia À compléter</option><option value="emp-d8fcdcbd-e638-4d4f-a444-0cefd32b9eef">Jeanne À compléter</option><option value="emp-dad66c0a-0196-42f0-9a1f-032228c624f1">Nate À compléter</option><option value="emp-f9809378-5695-4eae-b2ab-9d51235fd204">Mickael À compléter</option><option value="Hb6vbEXe1lNX0Pn7BIwdYbHC2Uh1">Marie Christianah Fitiavana Andriamamonjisoa</option><option value="3jRzKcKYsTYVbmNBcYSegtAaQ9f2">Hoby malala Andriamavoniaina</option><option value="emp-da4df315-52cb-470e-969c-1a5d7acd8fae">Andoniaina ANDRIANANTENAINA</option><option value="AKUpEd0qHmXXALxob30dWWslVQ92">Tsilavina Anjara</option><option value="cUKrVX3R7wgRcC1ErwY4TZMos6c2">Nomena FIFALIANTSOA</option><option value="xgADVg01ZIQBWesQpr032ReUz512">Tinarilala Salohy Valerie HERIVOLOLONIAINA</option><option value="YoWGNjYv2fOrETeFL9yJKiy6Db02">Chantal Marie</option><option value="EYjpWxs8IYSiTyn0dVKhjYKGsfF2">mandanirina RABMANANJARA</option><option value="QboBkMs8W1g13b2xVKzNWfF9ACl1">narindra rakoto</option><option value="btsVX870fyRYtq2Gs17uvozI22X2">EURIN RAKOTONDRAINIBE</option><option value="emp-c1ca276d-c010-4a0c-b869-0adbc4116de4">KOLOINA RAKOTONDRAINIBE</option><option value="LHbEVJFX3ZMfErcATGHJSSZgxKO2">Arianalatiana RAMBININTSOA</option><option value="zeUl8XrwRfQ5wxsGQs0eD5t5XAu1">Aina Nomenjanahary Randriamanantsoa</option><option value="zTXkf30k9USk4T7GlCnT7dco5LH3">HARIKOLOINA RANDRIANAJATIANA</option><option value="emp-89b0bd9a-cee8-4454-a7f1-ab252f6c5000">HARIMALALA RASOLONIRINA</option><option value="0qfKl4aaM3UTTpH4BugitVAP0Dn1">Lanto RAZAFIMAMONJY</option><option value="emp-a09e58c6-a36d-4b2b-a971-c07e2588be5d">Iandry Jessy RAZAFIMANDIMBY</option><option value="emp-d73fbe6e-debe-4f16-9bf4-8f5ed0602205">Jean Jose Herizo RAZAFINDRATSIMA</option><option value="BhspMRQksnQ9adywefDobW3RNe63">Kanto Razakarivoavy</option><option value="emp-1428a0dd-0f17-4cbb-88b3-3daa02ca08e7">Koloina Volatiana</option></select></label><label class="space-y-1 text-xs font-semibold text-slate-600">Mois de paie *<input class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" required="" type="month" value="2026-10"></label><label class="space-y-1 text-xs font-semibold text-slate-600">Salaire de base (Ar) *<input min="0" step="1" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" required="" type="number" value="0"></label><label class="space-y-1 text-xs font-semibold text-slate-600">Primes / indemnités (Ar)<input min="0" step="1" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" type="number" value="0"></label><label class="space-y-1 text-xs font-semibold text-slate-600">Retenues (Ar)<input min="0" step="1" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" type="number" value="0"></label><label class="space-y-1 text-xs font-semibold text-slate-600">Statut du paiement<select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="PENDING">À payer</option><option value="PAID">Payé</option></select></label></div><label class="flex items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"><input type="checkbox" checked="">Déduire les avances en cours (2) : <strong>71 500 Ar</strong></label><div class="rounded-lg bg-slate-50 p-3 text-sm"><span class="text-slate-600">Net à payer </span><strong>-71 500 Ar</strong><p class="mt-1 text-xs text-slate-500">Calcul : salaire de base + primes − retenues − avances. Les retenues sont saisies manuellement.</p></div><div class="flex gap-2"><button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check h-4 w-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Créer la fiche</button></div></form>
 ```
 
 Dimensions:
-- top: 318px
-- left: 72px
-- width: 1109px
-- height: 85px
+- top: 208px
+- left: 109px
+- width: 1104px
+- height: 412px
 
 CSS:
 ```css
@@ -23,63 +23,59 @@ CSS:
     margin: 0;
     padding: 0;
     border: 0 solid; }
-:where(& > :not(:last-child)) { --tw-divide-y-reverse: 0;
-      border-bottom-style: var(--tw-border-style);
-      border-top-style: var(--tw-border-style);
-      border-top-width: calc(1px * var(--tw-divide-y-reverse));
-      border-bottom-width: calc(1px * calc(1 - var(--tw-divide-y-reverse))); }
-:where(& > :not(:last-child)) { border-color: var(--color-slate-100); }
-.hover\:bg-slate-50 { &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-slate-50);
-      }
+:where(& > :not(:last-child)) { --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 5) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 5) * calc(1 - var(--tw-space-y-reverse))); }
+.space-y-4 { :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 4) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse)));
     } }
-&:hover { @media (hover: hover) {
-        background-color: var(--color-slate-50);
-      } }
- { background-color: var(--color-slate-50); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.bg-white { background-color: var(--color-white); }
+.p-5 { padding: calc(var(--spacing) * 5); }
+.shadow-sm { --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow); }
 
 /* Inherited */
-table { text-indent: 0 }
-.text-left { text-align: left }
-.text-xs { font-size: var(--text-xs); line-height: var(--tw-leading, var(--text-xs--line-height)) }
+.text-slate-900 { color: var(--color-slate-900) }
 .text-slate-100 { color: var(--color-slate-100) }
 html, body { color: var(--theme-ink) }
 .font-sans { font-family: var(--font-sans) }
-.text-slate-900 { color: var(--color-slate-900) }
 html, :host { line-height: 1.5; tab-size: 4; font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"); font-feature-settings: var(--default-font-feature-settings, normal) }
 
 /* Resolved values */
-margin: 0px;
-padding: 0px;
-border-width: 0px 0px 1px;
-border-style: solid;
-border-color: oklch(0.968 0.007 247.896);
-background-color: oklch(0.984 0.003 247.858);
+margin: 0px 0px 20px;
+padding: 20px;
+border: 0px solid oklch(0.208 0.042 265.755);
+background-color: rgb(255, 255, 255);
+box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
 box-sizing: border-box;
-color: oklch(0.968 0.007 247.896);
-display: table-row;
+color: oklch(0.208 0.042 265.755);
+display: block;
 font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 font-feature-settings: normal;
-font-size: 12px;
-height: 85px;
-line-height: 16px;
+height: 392px;
+line-height: 24px;
+margin-block-end: 20px;
+margin-block-start: 0px;
 tab-size: 4;
-text-align: left;
-text-indent: 0px;
 unicode-bidi: isolate /*UA*/;
-vertical-align: middle /*UA*/;
-width: 1108.53px;
+width: 1104px;
 
 /* CSS variables */
+--tw-ring-shadow: 0 0 #0000;
 --color-slate-900: oklch(20.8% 0.042 265.755);
+--tw-inset-ring-shadow: 0 0 #0000;
+--tw-inset-shadow: 0 0 #0000;
+--color-white: #fff;
 --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
---text-xs--line-height: calc(1 / 0.75);
 --default-font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
---color-slate-50: oklch(98.4% 0.003 247.858);
+--tw-ring-offset-shadow: 0 0 #0000;
+--spacing: 0.25rem;
 --color-slate-100: oklch(96.8% 0.007 247.896);
---tw-divide-y-reverse: 0;
---tw-border-style: solid;
---text-xs: 0.75rem;
---theme-ink: #e7f7f1;
+--tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+--theme-ink: #f7efe5;
+--radius-xl: 0.75rem;
+--tw-space-y-reverse: 0;
 ```

@@ -1,5 +1,6 @@
 import { useState, FormEvent } from "react";
 import MaterialConsumptionForm from "./MaterialConsumptionForm";
+import SearchableSelect from "./SearchableSelect";
 import { 
   Production, 
   ProductionConsumptionLine, 
@@ -564,21 +565,14 @@ export default function ProductionView({
                     const stockAvail = getArticleStock(stocks, manufStore.id, c.article_id);
                     return (
                       <div key={idx} className="flex items-center gap-2">
-                        <select
+                        <SearchableSelect
                           value={c.article_id}
-                          onChange={(e) => {
-                            const newCons = [...consumptions];
-                            newCons[idx].article_id = e.target.value;
-                            setConsumptions(newCons);
-                          }}
-                          className="flex-1 bg-white border border-slate-300 rounded-lg p-2 font-medium"
-                        >
-                          {rawArticles.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              [{a.code}] {a.name} ({a.unit})
-                            </option>
-                          ))}
-                        </select>
+                          onChange={articleId => setConsumptions(consumptions.map((line, i) => i === idx ? { ...line, article_id: articleId } : line))}
+                          options={rawArticles.map(a => ({ value: a.id, label: `[${a.code}] ${a.name} (${a.unit})` }))}
+                          placeholder="Rechercher une matière première…"
+                          className="min-w-0 flex-1"
+                          clearable={false}
+                        />
 
                         <div className="w-24">
                           <input
@@ -633,15 +627,14 @@ export default function ProductionView({
                       const available = recycledAvailability(c.article_id);
                       return (
                         <div key={idx} className="flex items-center gap-2">
-                          <select
-                            value={c.article_id}
-                            onChange={(e) => setRecycledConsumptions(recycledConsumptions.map((line, i) => i === idx ? { ...line, article_id: e.target.value } : line))}
-                            className="flex-1 bg-white border border-slate-300 rounded-lg p-2 font-medium"
-                          >
-                            {articles.filter(a => recycledAvailability(a.id) > 0 || a.id === c.article_id).map(a => (
-                              <option key={a.id} value={a.id}>[{a.code}] {a.name} ({a.unit})</option>
-                            ))}
-                          </select>
+                          <SearchableSelect
+                          value={c.article_id}
+                          onChange={articleId => setRecycledConsumptions(recycledConsumptions.map((line, i) => i === idx ? { ...line, article_id: articleId } : line))}
+                          options={articles.filter(a => recycledAvailability(a.id) > 0 || a.id === c.article_id).map(a => ({ value: a.id, label: `[${a.code}] ${a.name} (${a.unit})` }))}
+                          placeholder="Rechercher un article recyclé…"
+                          className="min-w-0 flex-1"
+                          clearable={false}
+                        />
                           <input
                             type="number"
                             min="1"
@@ -684,21 +677,14 @@ export default function ProductionView({
                 <div className="space-y-2">
                   {outputs.map((o, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <select
-                        value={o.article_id}
-                        onChange={(e) => {
-                          const newOuts = [...outputs];
-                          newOuts[idx].article_id = e.target.value;
-                          setOutputs(newOuts);
-                        }}
-                        className="flex-1 bg-white border border-slate-300 rounded-lg p-2 font-medium"
-                      >
-                        {outputArticles.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            [{a.code}] {a.name} ({a.unit}) — {a.article_type === "RAW_MATERIAL" ? "Matière première" : "Produit fini"}
-                          </option>
-                        ))}
-                      </select>
+                      <SearchableSelect
+                          value={o.article_id}
+                          onChange={articleId => setOutputs(outputs.map((line, i) => i === idx ? { ...line, article_id: articleId } : line))}
+                          options={outputArticles.map(a => ({ value: a.id, label: `[${a.code}] ${a.name} (${a.unit})`, description: a.article_type === "RAW_MATERIAL" ? "Matière première" : "Produit fini" }))}
+                          placeholder="Rechercher un article à fabriquer…"
+                          className="min-w-0 flex-1"
+                          clearable={false}
+                        />
 
                       <div className="w-24">
                         <input

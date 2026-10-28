@@ -1,0 +1,31 @@
+{
+    "version":  1,
+    "purpose":  "Correct mistaken initial stock assignment: 702 sheets belong to PCA3, not PCA4, in PRD-02.",
+    "import_mode":  "STOCK_SNAPSHOT_CORRECTION",
+    "source_stock":  "stock-PRD-02-2026-10-28.json",
+    "source_exportedAt":  "2026-10-28T10:16:01.727Z",
+    "data":  [
+                 {
+                     "store_id":  "MAG-031",
+                     "store_code":  "PRD-02",
+                     "store_name":  "Communication",
+                     "article_id":  "ART-149",
+                     "article_code":  "PCA3",
+                     "article_name":  "Papier Carton A3",
+                     "unit":  "FEUILLE",
+                     "quantity":  702,
+                     "expected_current_quantity":  0
+                 },
+                 {
+                     "store_id":  "MAG-031",
+                     "store_code":  "PRD-02",
+                     "store_name":  "Communication",
+                     "article_id":  "ART-150",
+                     "article_code":  "PCA4",
+                     "article_name":  "Papier Carton A4",
+                     "unit":  "FEUILLE",
+                     "quantity":  0,
+                     "expected_current_quantity":  702
+                 }
+             ]
+}

@@ -13,6 +13,7 @@ interface SearchableSelectProps {
   onChange: (value: string) => void;
   placeholder: string;
   allLabel?: string;
+  clearable?: boolean;
   className?: string;
 }
 
@@ -22,6 +23,7 @@ export default function SearchableSelect({
   onChange,
   placeholder,
   allLabel,
+  clearable = true,
   className = "w-72"
 }: SearchableSelectProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,7 +64,10 @@ export default function SearchableSelect({
         <input
           type="search"
           value={query}
-          onFocus={() => setIsOpen(true)}
+          onFocus={event => {
+            setIsOpen(true);
+            event.currentTarget.select();
+          }}
           onChange={event => {
             setQuery(event.target.value);
             setIsOpen(true);
@@ -71,7 +76,7 @@ export default function SearchableSelect({
           className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400"
           aria-label={placeholder}
         />
-        {value !== "ALL" && (
+        {clearable && value !== "ALL" && (
           <button
             type="button"
             onClick={() => selectOption("ALL", allLabel || "")}

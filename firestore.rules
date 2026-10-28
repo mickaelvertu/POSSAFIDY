@@ -50,6 +50,35 @@ service cloud.firestore {
         get(/databases/$(database)/documents/articles/$(articleId)).data.article_type == 'RESALE';
     }
 
+    // Large POS receipts must not read one catalog document per line: an
+    // atomic transaction has a shared document-access budget. Trust only an
+    // already approved and shipped central transfer, completed in this commit.
+    function canCreditPosReceipt(data, delta) {
+      let receipt = data.get('transfer_receipt', {});
+      let transferId = receipt.get('transfer_id', '');
+      let index = receipt.get('line_index', -1);
+      let before = get(/databases/$(database)/documents/transfers/$(transferId)).data;
+      let after = getAfter(/databases/$(database)/documents/transfers/$(transferId)).data;
+      return transferId != '' && index is int && index >= 0 &&
+        index < before.lines.size() && index < after.lines.size() &&
+        before.type == 'CENTRAL_TO_POS' && before.status == 'IN_TRANSIT' &&
+        before.approved_by is string && before.shipped_by is string &&
+        after.status in ['VALIDATED', 'DISCREPANCY'] &&
+        after.received_by == request.auth.uid && after.validated_by == request.auth.uid &&
+        hasPermission('transfers.receive') && hasStoreAccess(before.destination_store_id) &&
+        request.auth.uid != before.requested_by && request.auth.uid != before.approved_by &&
+        data.store_id == before.destination_store_id &&
+        get(/databases/$(database)/documents/stores/$(before.destination_store_id)).data.store_type == 'POS' &&
+        get(/databases/$(database)/documents/stores/$(before.source_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+        before.lines[index].article_id == data.article_id &&
+        after.lines[index].article_id == before.lines[index].article_id &&
+        after.lines[index].quantity_sent == before.lines[index].quantity_sent &&
+        after.lines[index].quantity_accepted > 0 &&
+        after.lines[index].quantity_accepted <= after.lines[index].quantity_received &&
+        after.lines[index].quantity_received <= before.lines[index].quantity_sent &&
+        delta == after.lines[index].quantity_accepted;
+    }
+
     function canViewArticleType(articleType) {
       let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isSuperAdmin() || (
@@ -518,7 +547,13 @@ service cloud.firestore {
         (!(request.resource.data.get('movement_type', '') == 'CONSUMPTION' || request.resource.data.get('reference_type', '') == 'CONSUMPTION') ||
           (get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'MANUFACTURER' &&
            get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.is_active == true)) &&
-        canStoreArticle(request.resource.data.store_id, request.resource.data.article_id) && (
+        ((request.resource.data.keys().hasAny(['transfer_receipt']) &&
+          request.resource.data.reference_type == 'TRANSFER' &&
+          request.resource.data.reference_id == request.resource.data.transfer_receipt.transfer_id &&
+          request.resource.data.created_by == request.auth.uid &&
+          request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
+          canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
+          canStoreArticle(request.resource.data.store_id, request.resource.data.article_id)) && (
         hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
         hasPermission('transfers.receive') || hasPermission('sales.validate') ||
         hasPermission('production.create') || hasPermission('production.validate') ||
@@ -1052,7 +1087,11 @@ service cloud.firestore {
         )
       );
       allow create: if hasStoreAccess(request.resource.data.store_id) &&
-        canStoreArticle(request.resource.data.store_id, request.resource.data.article_id) &&
+        ((request.resource.data.keys().hasAny(['transfer_receipt']) &&
+          request.resource.data.get('quarantine_quantity', 0) == 0 &&
+          request.resource.data.reserved_quantity == 0 &&
+          canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
+          canStoreArticle(request.resource.data.store_id, request.resource.data.article_id)) &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
           hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
           hasPermission('transfers.receive') || hasPermission('sales.validate') ||
@@ -1060,7 +1099,11 @@ service cloud.firestore {
           isSuperAdmin()
         );
       allow update: if hasStoreAccess(resource.data.store_id) &&
-        canStoreArticle(resource.data.store_id, resource.data.article_id) &&
+        ((request.resource.data.keys().hasAny(['transfer_receipt']) &&
+          request.resource.data.get('quarantine_quantity', 0) == resource.data.get('quarantine_quantity', 0) &&
+          request.resource.data.reserved_quantity == resource.data.reserved_quantity &&
+          canCreditPosReceipt(request.resource.data, request.resource.data.quantity - resource.data.quantity)) ||
+          canStoreArticle(resource.data.store_id, resource.data.article_id)) &&
         request.resource.data.store_id == resource.data.store_id &&
         request.resource.data.article_id == resource.data.article_id &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (

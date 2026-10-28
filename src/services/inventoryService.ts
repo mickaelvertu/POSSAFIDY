@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
 import { transferLinesEqual } from "./transferComparison";
+import { posReceiptProof } from "./transferReceipt";
 import { cancellationEffects } from "./transferCancellation";
 import type { AppUser } from "../types";
 import { createAuditLog } from "./auditService";
@@ -298,6 +299,9 @@ export async function saveTransferWithStockEffects(
       const before = (quarantine ? current?.quarantine_quantity : current?.quantity) || 0;
       const after = before + target.movement.quantity;
       if (after < 0) throw new Error(`Stock insuffisant pour l'article ${target.movement.article_id}. Disponible : ${before}.`);
+      // A shipped, approved transfer provides one shared authorization document
+      // for large POS receipts instead of one rules lookup per catalog article.
+      const transferReceipt = posReceiptProof(currentTransfer, transfer, target.movement);
       const stock: StoreStock = {
         id: current?.id || target.reference.id,
         store_id: target.movement.store_id,
@@ -307,9 +311,10 @@ export async function saveTransferWithStockEffects(
           ? { quarantine_quantity: quarantine ? after : current?.quarantine_quantity }
           : {}),
         reserved_quantity: current?.reserved_quantity || 0,
+        ...transferReceipt,
         updated_at: transfer.updated_at
       };
-      const movement = { ...target.movement, before_quantity: before, after_quantity: after };
+      const movement = { ...target.movement, ...transferReceipt, before_quantity: before, after_quantity: after };
       persistedStocks.push(stock);
       persistedMovements.push(movement);
       transaction.set(target.reference, omitUndefined(stock));
