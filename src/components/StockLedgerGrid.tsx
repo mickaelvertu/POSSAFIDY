@@ -1,4 +1,6 @@
 import { formatSignedQuantity, LedgerBlock } from "../services/stockLedger";
+import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 interface StockLedgerGridProps {
   blocks: LedgerBlock[];
@@ -8,13 +10,24 @@ const dateTime = (timestamp: number) => new Date(timestamp).toLocaleString("fr-F
 const day = (timestamp: number) => new Date(timestamp).toLocaleDateString("fr-FR");
 
 export default function StockLedgerGrid({ blocks }: StockLedgerGridProps) {
+  const [blockCount, setBlockCount] = useState(10);
+  const [entryCounts, setEntryCounts] = useState<Record<string, number>>({});
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    const before = () => flushSync(() => setPrinting(true));
+    const after = () => setPrinting(false);
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => { window.removeEventListener("beforeprint", before); window.removeEventListener("afterprint", after); };
+  }, []);
   if (blocks.length === 0) {
     return <p className="py-6 text-center text-xs italic text-slate-400">Aucun mouvement pour ces filtres.</p>;
   }
 
   return (
     <div className="space-y-5">
-      {blocks.map(block => (
+      <p className="text-xs text-slate-600 print:hidden">Affichage progressif pour garder la grille fluide. L’export et l’impression incluent toutes les lignes.</p>
+      {(printing ? blocks : blocks.slice(0, blockCount)).map(block => (
         <table key={block.key} className="w-full table-fixed border-collapse border border-slate-400 text-xs [break-inside:avoid]">
           <colgroup>
             <col className="w-[22%]" />
@@ -50,7 +63,7 @@ export default function StockLedgerGrid({ blocks }: StockLedgerGridProps) {
               <td className="border border-slate-300 px-2 py-1.5 text-right font-mono">{block.before}</td>
               <td className="border border-slate-300 px-2 py-1.5" />
             </tr>
-            {block.entries.map(entry => (
+            {(printing ? block.entries : block.entries.slice(0, entryCounts[block.key] || 50)).map(entry => (
               <tr key={entry.id}>
                 <td className="border border-slate-300 px-2 py-1.5 text-slate-600">{dateTime(entry.date)}</td>
                 <td className={`border border-slate-300 px-2 py-1.5 text-right font-mono font-bold ${entry.change > 0 ? "text-emerald-700" : "text-rose-700"}`}>{formatSignedQuantity(entry.change)}</td>
@@ -59,6 +72,13 @@ export default function StockLedgerGrid({ blocks }: StockLedgerGridProps) {
                 <td className="truncate border border-slate-300 px-2 py-1.5 font-mono text-[10px] text-slate-500">{entry.reference}</td>
               </tr>
             ))}
+            {!printing && block.entries.length > (entryCounts[block.key] || 50) && (
+              <tr className="print:hidden"><td colSpan={5} className="p-2">
+                <button type="button" onClick={() => setEntryCounts(current => ({ ...current, [block.key]: (current[block.key] || 50) + 100 }))} className="rounded border border-blue-300 bg-blue-50 px-3 py-2 font-bold text-blue-800">
+                  Afficher la suite ({entryCounts[block.key] || 50} / {block.entries.length} mouvements)
+                </button>
+              </td></tr>
+            )}
           </tbody>
           <tfoot>
             <tr className="bg-slate-100 font-bold text-slate-900">
@@ -74,6 +94,7 @@ export default function StockLedgerGrid({ blocks }: StockLedgerGridProps) {
           </tfoot>
         </table>
       ))}
+      {!printing && blocks.length > blockCount && <button type="button" onClick={() => setBlockCount(count => count + 10)} className="rounded border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800 print:hidden">Afficher les articles suivants ({blockCount} / {blocks.length})</button>}
     </div>
   );
 }

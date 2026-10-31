@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { Check, Pencil, Printer, ReceiptText } from "lucide-react";
 import { Employee, InventoryCount, PaymentMethod, Payslip, SalaryAdvance } from "../types";
 import SalaryAdvancesPanel from "./SalaryAdvancesPanel";
+import { pendingInventoryCharges } from "../services/inventoryChargeAssignment";
 
 interface PayrollViewProps {
   employees: Employee[];
@@ -38,7 +39,7 @@ const periodLabel = (period: string) => {
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
 
 export default function PayrollView({ employees, payslips, advances, inventoryCounts = [], currentUserId, onSavePayslip, onSaveAdvance }: PayrollViewProps) {
-  const activeEmployees = useMemo(() => employees.filter(employee => employee.is_active), [employees]);
+  const activeEmployees = useMemo(() => employees.filter(employee => employee.is_active || pendingInventoryCharges(inventoryCounts, employee).length > 0), [employees, inventoryCounts]);
   const [editing, setEditing] = useState<Payslip | null>(null);
   const [employeeId, setEmployeeId] = useState("");
   const [period, setPeriod] = useState(currentPeriod);
@@ -65,9 +66,9 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
   const missingAdvanceCount = editing ? (editing.advance_ids || []).filter(id => !formAdvances.some(advance => advance.id === id)).length : 0;
   const advancesAmount = editing ? editing.advances_deducted || 0 : deductAdvances ? outstandingTotal : 0;
   const [deductInventory, setDeductInventory] = useState(true);
-  const pendingInventory = editing || !selectedEmployee?.user_id
+  const pendingInventory = editing || !selectedEmployee
     ? []
-    : inventoryCounts.filter(count => count.status === "VALIDATED" && !count.charge_settlement && (count.total_charged_amount || 0) > 0 && count.created_by === selectedEmployee.user_id);
+    : pendingInventoryCharges(inventoryCounts, selectedEmployee);
   const pendingInventoryTotal = pendingInventory.reduce((total, count) => total + (count.total_charged_amount || 0), 0);
   const inventoryAmount = editing ? editing.inventory_charges_deducted || 0 : deductInventory ? pendingInventoryTotal : 0;
 
@@ -82,6 +83,7 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
     setPaymentDate(dateValue(Date.now()));
     setPaymentMethod("CASH");
     setDeductAdvances(true);
+    setDeductInventory(true);
     setFormError("");
   };
 
@@ -193,10 +195,10 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <label className="space-y-1 text-xs font-semibold text-slate-600">Employé *
             <select className={inputClass} value={employeeId} onChange={event => handleEmployeeChange(event.target.value)} required disabled={Boolean(editing)}>
-              <option value="">Sélectionner un employé actif</option>
+              <option value="">Sélectionner un employé</option>
               {(editing && selectedEmployee && !activeEmployees.some(employee => employee.id === editing.employee_id)
                 ? [...activeEmployees, selectedEmployee]
-                : activeEmployees).map(employee => <option key={employee.id} value={employee.id}>{employee.first_name} {employee.last_name}</option>)}
+                : activeEmployees).map(employee => <option key={employee.id} value={employee.id}>{employee.first_name} {employee.last_name}{!employee.is_active ? " (inactif · retenue en attente)" : ""}</option>)}
             </select>
           </label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Mois de paie *

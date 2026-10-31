@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppUser, AuditLog, Expense, Sale, Store } from "../types";
+import { AppUser, Expense, Sale, Store } from "../types";
 import { hasPermission } from "../services/authService";
 import MyInfoView from "./MyInfoView";
 import {
@@ -46,217 +46,6 @@ interface RoleHomeViewProps {
   stores: Store[];
   sales: Sale[];
   expenses: Expense[];
-  auditLogs: AuditLog[];
-}
-
-type AuditCategory = "SALE" | "TRANSFER" | "INVENTORY" | "PRODUCTION" | "EXPENSE" | "DEPOT" | "CASH_HANDOVER";
-type AuditPeriod = "HOUR" | "FOUR_HOURS" | "TODAY" | "WEEK";
-
-const auditCategoryLabels: Record<AuditCategory, string> = {
-  SALE: "Vente",
-  TRANSFER: "Transfert",
-  INVENTORY: "Inventaire",
-  PRODUCTION: "Production",
-  EXPENSE: "Dépense",
-  DEPOT: "Dépôt",
-  CASH_HANDOVER: "Remise de caisse"
-};
-
-const auditCategoryCodes: Record<AuditCategory, string> = {
-  SALE: "VTE",
-  TRANSFER: "TRF",
-  INVENTORY: "INV",
-  PRODUCTION: "PRD",
-  EXPENSE: "EXP",
-  DEPOT: "DEP",
-  CASH_HANDOVER: "REM"
-};
-
-const auditActionLabels: Record<string, string> = {
-  SALE_CREATED: "Vente créée",
-  SALE_DRAFT_UPDATED: "Brouillon de vente modifié",
-  SALE_DRAFT_DELETED: "Brouillon de vente supprimé",
-  SALE_CANCELLED_DELETED: "Vente annulée supprimée",
-  SALE_CHECKING: "Vente en vérification",
-  SALE_VERIFIED: "Vente vérifiée",
-  SALE_APPROVED: "Demande revendeur approuvée",
-  SALE_SHIPPED: "Vente revendeur expédiée",
-  SALE_VALIDATED: "Vente validée",
-  SALE_CANCELLED: "Vente annulée",
-  TRANSFER_CREATED: "Transfert créé",
-  TRANSFER_DRAFT_UPDATED: "Brouillon de transfert modifié",
-  TRANSFER_DRAFT_DELETED: "Brouillon de transfert supprimé",
-  TRANSFER_APPROVED_DELETED: "Transfert approuvé supprimé (non expédié)",
-  TRANSFER_APPROVED: "Transfert approuvé",
-  TRANSFER_REJECTED: "Transfert refusé",
-  TRANSFER_SHIPPED: "Transfert expédié",
-  TRANSFER_RECEIVED: "Transfert réceptionné",
-  TRANSFER_DISCREPANCY_RECORDED: "Écart de transfert signalé",
-  TRANSFER_DISCREPANCY_RESOLVED: "Écart de transfert résolu",
-  CREDIT_CUSTOMER_UPDATED: "Compte revendeur modifié",
-  CREDIT_PAYMENT_RECORDED: "Règlement revendeur enregistré",
-  CREDIT_FOLLOW_UP_RECORDED: "Relance revendeur consignée",
-  PRODUCTION_DRAFT_UPDATED: "Brouillon de production modifié",
-  PRODUCTION_DRAFT_DELETED: "Brouillon de production supprimé",
-  EXPENSE_CREATED: "Brouillon de dépense créé",
-  EXPENSE_DRAFT_UPDATED: "Brouillon de dépense modifié",
-  EXPENSE_VALIDATED: "Dépense validée",
-  EXPENSE_DELETED: "Dépense supprimée",
-  STOCK_ADJUSTED: "Stock ajusté",
-  PURCHASE_RECEIVED: "Dépôt réceptionné",
-  CASH_HANDOVER_DECLARED: "Clôture POS déclarée",
-  CASH_HANDOVER_RECEIVED: "Remise de caisse réceptionnée",
-  CASH_HANDOVER_BANK_DEPOSIT: "Dépôt bancaire enregistré"
-};
-
-const auditDetailHiddenFields = new Set(["id", "created_at", "updated_at", "device_id", "sale_id", "article_id", "seller_id", "verified_by", "validated_by"]);
-const auditDetailFieldLabels: Record<string, string> = {
-  sale_number: "N° de vente",
-  transfer_number: "N° de transfert",
-  purchase_number: "N° de dépôt",
-  expense_number: "N° de dépense",
-  reference_number: "Référence",
-  invoice_number: "N° de facture",
-  customer_name: "Client",
-  customer_phone: "Téléphone",
-  customer_type: "Type de client",
-  seller_name: "Vendeur",
-  amount: "Montant",
-  total: "Total",
-  quantity: "Quantité",
-  quantity_sent: "Quantité expédiée",
-  quantity_received: "Quantité reçue",
-  before_quantity: "Quantité avant",
-  after_quantity: "Quantité après",
-  payment_method: "Mode de paiement",
-  payment_status: "Statut du paiement",
-  status: "Statut",
-  reason: "Motif",
-  notes: "Notes",
-  description: "Description",
-  handover_number: "N° de remise",
-  business_date: "Date de clôture",
-  expected_cash_sales: "Ventes espèces attendues",
-  declared_amount: "Montant déclaré",
-  received_amount: "Montant reçu",
-  deposited_amount: "Montant déposé"
-};
-
-function getAuditCategory(log: AuditLog): AuditCategory | null {
-  switch (log.entity_type.toUpperCase()) {
-    case "SALE":
-      return "SALE";
-    case "TRANSFER":
-    case "STOCK_TRANSFER":
-    case "MOVEMENT":
-      return "TRANSFER";
-    case "INVENTORY_COUNT":
-      return "INVENTORY";
-    case "PRODUCTION":
-      return "PRODUCTION";
-    case "EXPENSE":
-      return "EXPENSE";
-    case "STOCK":
-    case "STOCK_DEPOSIT":
-    case "PURCHASE":
-      return "DEPOT";
-    case "CASH_HANDOVER":
-      return "CASH_HANDOVER";
-    default:
-      return null;
-  }
-}
-
-function getAuditDescription(log: AuditLog): string {
-  const value = log.new_value && typeof log.new_value === "object"
-    ? log.new_value as Record<string, unknown>
-    : log.old_value && typeof log.old_value === "object"
-      ? log.old_value as Record<string, unknown>
-      : {};
-  const reference = [
-    value.sale_number,
-    value.transfer_number,
-    value.purchase_number,
-    value.handover_number,
-    value.expense_number,
-    value.reference_number,
-    value.invoice_number,
-    value.customer_name,
-    value.reason,
-    value.notes
-  ].find(entry => typeof entry === "string" && entry.trim());
-  return typeof reference === "string" ? reference : `Réf. ${log.entity_id}`;
-}
-
-function auditDetailLabel(field: string): string {
-  if (auditDetailFieldLabels[field]) return auditDetailFieldLabels[field];
-  const label = field.replace(/_/g, " ");
-  return label.charAt(0).toLocaleUpperCase("fr") + label.slice(1);
-}
-
-function formatAuditDetailValue(field: string, value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "boolean") return value ? "Oui" : "Non";
-  if (typeof value === "number" && ["amount", "total", "subtotal", "discount", "tax", "unit_price", "price"].includes(field)) {
-    return `${value.toLocaleString("fr-FR")} Ar`;
-  }
-  if (typeof value === "number" && (field.endsWith("_at") || field.endsWith("_date"))) {
-    return new Date(value).toLocaleString("fr-FR");
-  }
-  if (typeof value === "object") return JSON.stringify(value, null, 2);
-  return String(value);
-}
-
-function AuditDetailLines({ lines }: { lines: unknown[] }) {
-  if (lines.length === 0) return <span>—</span>;
-  return (
-    <ul className="max-h-48 divide-y divide-slate-100 overflow-y-auto rounded-lg bg-slate-50 text-xs">
-      {lines.map((line, index) => {
-        const item = (line && typeof line === "object" ? line : {}) as Record<string, unknown>;
-        const name = String(item.article_name ?? item.article_code ?? item.name ?? `Ligne ${index + 1}`);
-        const hasPrice = typeof item.unit_price === "number";
-        const quantity = item.quantity ?? item.quantity_sent;
-        return (
-          <li key={String(item.id ?? index)} className="flex items-center justify-between gap-3 px-2 py-1.5">
-            <span className="min-w-0 truncate font-semibold text-slate-800">{name}</span>
-            <span className="shrink-0 text-slate-600">
-              {quantity !== undefined && `${Number(quantity).toLocaleString("fr-FR")}`}
-              {hasPrice && ` × ${(item.unit_price as number).toLocaleString("fr-FR")}`}
-              {typeof item.total === "number" && <strong className="ml-1 text-slate-900">= {item.total.toLocaleString("fr-FR")} Ar</strong>}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-function AuditDetailValues({ value }: { value: unknown }) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return <p className="text-sm text-slate-500">{formatAuditDetailValue("", value)}</p>;
-  }
-  const entries = Object.entries(value as Record<string, unknown>)
-    .filter(([field]) => !auditDetailHiddenFields.has(field));
-  if (entries.length === 0) return <p className="text-sm text-slate-500">Aucun détail disponible.</p>;
-  return (
-    <dl className="space-y-2">
-      {entries.map(([field, entry]) => (
-        <div key={field} className="grid gap-1 border-b border-slate-100 pb-2 last:border-0 last:pb-0 sm:grid-cols-[minmax(8rem,0.35fr)_1fr]">
-          <dt className="text-xs font-semibold text-slate-500">{auditDetailLabel(field)}</dt>
-          <dd className="break-words text-sm text-slate-800">
-            {Array.isArray(entry)
-              ? <AuditDetailLines lines={entry} />
-              : typeof entry === "object" && entry !== null
-                ? Object.entries(entry as Record<string, unknown>)
-                    .filter(([key, nested]) => !auditDetailHiddenFields.has(key) && (typeof nested !== "object" || nested === null))
-                    .map(([key, nested]) => `${auditDetailLabel(key)} : ${formatAuditDetailValue(key, nested)}`)
-                    .join(" · ") || "—"
-                : formatAuditDetailValue(field, entry)}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
 }
 
 const roleLabels: Record<string, string> = {
@@ -318,13 +107,9 @@ const accentClasses: Record<string, string> = {
   teal: "bg-teal-50 text-teal-700 border-teal-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenCashHandovers, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenEmployeePresentation, onOpenInventory, stores, sales, expenses, auditLogs }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenCashHandovers, onOpenTransfers, onOpenCredit, onOpenResellerOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenEmployeePresentation, onOpenInventory, stores, sales, expenses }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
-  const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
-  const [auditPeriod, setAuditPeriod] = useState<AuditPeriod>("WEEK");
-  const [auditCategory, setAuditCategory] = useState<AuditCategory | "ALL">("ALL");
-  const [showAllAuditLogs, setShowAllAuditLogs] = useState(false);
   const role = user.role || "UNASSIGNED";
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   const pointOfSales = stores.filter(store => store.store_type === "POS" && store.is_active);
@@ -353,25 +138,10 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
     if (card.permission === "transfers.view" && isAdmin) return true;
     if (card.permission === "reports.view" && isAdmin) return true;
     if (card.permission === "credit.manage" && isAdmin) return true;
-    if (card.adminOnly && !hasPermission(user, "users.view")) return false;
+    if (card.adminOnly) return isAdmin;
     if (card.permission === "audit.view" && !isAdmin) return false;
     return hasPermission(user, card.permission);
   });
-  const now = Date.now();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  const periodStart = auditPeriod === "HOUR"
-    ? now - 60 * 60 * 1000
-    : auditPeriod === "FOUR_HOURS"
-      ? now - 4 * 60 * 60 * 1000
-      : auditPeriod === "TODAY"
-        ? startOfToday
-        : now - 7 * 24 * 60 * 60 * 1000;
-  const filteredAuditLogs = auditLogs
-    .filter(log => getAuditCategory(log) !== null)
-    .filter(log => log.created_at >= periodStart && log.created_at <= now)
-    .filter(log => auditCategory === "ALL" || getAuditCategory(log) === auditCategory)
-    .sort((left, right) => right.created_at - left.created_at);
-  const displayedAuditLogs = showAllAuditLogs ? filteredAuditLogs : filteredAuditLogs.slice(0, 5);
 
   return (
     <section className="space-y-5">
@@ -543,90 +313,6 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
         </section>
       )}
 
-      {isAdmin && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Activité récente</h2>
-              <p className="text-xs text-slate-500">Ventes, transferts, inventaires, dépôts et dépenses · {filteredAuditLogs.length} événement(s)</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:flex">
-              <label className="text-xs font-semibold text-slate-600">
-                Période
-                <select
-                  value={auditPeriod}
-                  onChange={event => { setAuditPeriod(event.target.value as AuditPeriod); setShowAllAuditLogs(false); }}
-                  className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                >
-                  <option value="HOUR">Dernière heure</option>
-                  <option value="FOUR_HOURS">4 dernières heures</option>
-                  <option value="TODAY">Aujourd’hui</option>
-                  <option value="WEEK">7 derniers jours</option>
-                </select>
-              </label>
-            </div>
-          </div>
-          <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filtrer par catégorie">
-            {(["ALL", ...Object.keys(auditCategoryLabels)] as Array<AuditCategory | "ALL">).map(option => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={auditCategory === option}
-                title={option === "ALL" ? "Toutes les catégories" : auditCategoryLabels[option]}
-                onClick={() => { setAuditCategory(option); setShowAllAuditLogs(false); }}
-                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${auditCategory === option ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50"}`}
-              >
-                {option === "ALL" ? "TOUS" : auditCategoryCodes[option]}
-              </button>
-            ))}
-          </div>
-          {filteredAuditLogs.length > 0 ? (
-            <>
-              <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
-                {displayedAuditLogs.map(log => {
-                  const category = getAuditCategory(log);
-                  if (!category) return null;
-                  const storeName = stores.find(store => store.id === log.store_id)?.name;
-                  return (
-                    <li key={log.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedAuditLog(log)}
-                        className="flex w-full flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 text-left transition hover:border-emerald-200 hover:bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:flex-row sm:items-center sm:justify-between"
-                        aria-label={`Afficher le détail : ${auditActionLabels[log.action] || log.action}, ${getAuditDescription(log)}`}
-                      >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">{auditCategoryLabels[category]}</span>
-                          <span className="text-sm font-bold text-slate-800">{auditActionLabels[log.action] || log.action.replace(/_/g, " ")}</span>
-                        </div>
-                        <p className="mt-1 truncate text-xs text-slate-600">{getAuditDescription(log)}{storeName ? ` · ${storeName}` : ""}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-500">Par {log.user_name || "Utilisateur"}</p>
-                      </div>
-                      <time className="shrink-0 text-xs font-medium text-slate-500" dateTime={new Date(log.created_at).toISOString()}>
-                        {new Date(log.created_at).toLocaleString("fr-FR")}
-                      </time>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              {filteredAuditLogs.length > 5 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllAuditLogs(current => !current)}
-                  className="mt-3 text-sm font-bold text-emerald-700 hover:text-emerald-800"
-                >
-                  {showAllAuditLogs ? "Afficher les 5 plus récents" : `Afficher tous les événements (${filteredAuditLogs.length})`}
-                </button>
-              )}
-            </>
-          ) : (
-            <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">Aucune activité pour cette période et cette catégorie.</p>
-          )}
-        </section>
-      )}
-
       {availableCards.length > 0 ? (
         <div>
           <div className="mb-3 flex items-center justify-between">
@@ -659,7 +345,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isActionable = isEmployeePresentationCard || isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isCashHandoverCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
               return (
                 <button
-                  key={card.permission}
+                  key={card.title}
                   type="button"
                   onClick={isEmployeePresentationCard ? onOpenEmployeePresentation : isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isCashHandoverCard ? onOpenCashHandovers : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
                   disabled={!isActionable}
@@ -686,65 +372,6 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
           Votre compte est actif, mais aucun rôle métier ne lui a encore été attribué. Un administrateur doit configurer vos permissions.
         </div>
       )}
-
-      {selectedAuditLog && (() => {
-        const category = getAuditCategory(selectedAuditLog);
-        const storeName = stores.find(store => store.id === selectedAuditLog.store_id)?.name;
-        return (
-          <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-            onClick={() => setSelectedAuditLog(null)}
-            onKeyDown={event => {
-              if (event.key === "Escape") setSelectedAuditLog(null);
-            }}
-          >
-            <section
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="audit-detail-title"
-              className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl sm:max-w-2xl sm:rounded-2xl sm:p-6"
-              onClick={event => event.stopPropagation()}
-            >
-              <header className="mb-4 flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-                <div>
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    {category && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">{auditCategoryLabels[category]}</span>}
-                    <span className="text-xs text-slate-500">{new Date(selectedAuditLog.created_at).toLocaleString("fr-FR")}</span>
-                  </div>
-                  <h2 id="audit-detail-title" className="text-lg font-black text-slate-900">
-                    {auditActionLabels[selectedAuditLog.action] || selectedAuditLog.action.replace(/_/g, " ")}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">{getAuditDescription(selectedAuditLog)}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedAuditLog(null)}
-                  className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                  aria-label="Fermer les détails"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </header>
-              <dl className="mb-5 grid gap-3 rounded-xl bg-slate-50 p-3 text-sm sm:grid-cols-2">
-                <div><dt className="text-xs font-semibold text-slate-500">Utilisateur</dt><dd className="mt-0.5 font-medium text-slate-800">{selectedAuditLog.user_name || "Utilisateur"}</dd></div>
-                <div><dt className="text-xs font-semibold text-slate-500">Magasin</dt><dd className="mt-0.5 font-medium text-slate-800">{storeName || "Système global"}</dd></div>
-                <div><dt className="text-xs font-semibold text-slate-500">Entité</dt><dd className="mt-0.5 font-medium text-slate-800">{selectedAuditLog.entity_type}</dd></div>
-                <div><dt className="text-xs font-semibold text-slate-500">Identifiant</dt><dd className="mt-0.5 break-all font-mono text-xs text-slate-700">{selectedAuditLog.entity_id}</dd></div>
-              </dl>
-              <div className="space-y-4">
-                <section className="rounded-xl border border-rose-100 p-4">
-                  <h3 className="mb-3 text-sm font-bold text-rose-800">Détails avant</h3>
-                  <AuditDetailValues value={selectedAuditLog.old_value} />
-                </section>
-                <section className="rounded-xl border border-emerald-100 p-4">
-                  <h3 className="mb-3 text-sm font-bold text-emerald-800">Détails après</h3>
-                  <AuditDetailValues value={selectedAuditLog.new_value} />
-                </section>
-              </div>
-            </section>
-          </div>
-        );
-      })()}
 
       {selectedStore && (() => {
         const storeSales = sales.filter(sale => sale.store_id === selectedStore.id && sale.status === "VALIDATED" && isToday(sale.created_at));

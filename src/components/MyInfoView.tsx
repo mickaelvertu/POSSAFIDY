@@ -27,7 +27,7 @@ export default function MyInfoView({ user }: { user: UserProfile }) {
         const [myAdvances, myPayslips, myCharges] = await Promise.all([
           loadMySalaryAdvances(ids),
           loadMyPayslips(ids),
-          loadMyInventoryCharges(user.uid)
+          loadMyInventoryCharges(user.uid, ids)
         ]);
         if (!mounted) return;
         setEmployees(myEmployees);

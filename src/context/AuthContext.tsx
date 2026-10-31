@@ -5,10 +5,12 @@ import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot, waitForPendingWrites } from "firebase/firestore";
 import { trackUserPresence } from "../services/presenceService";
+import { describeReadError } from "../services/dataSyncPolicy";
 
 interface AuthContextType extends AuthState {
   isProfileFromCache: boolean;
   hasPendingWrites: boolean;
+  authorizationError: string | null;
   signUp: (payload: SignUpPayload) => Promise<ApiResponse>;
   signUpReseller: (payload: ResellerSignUpPayload) => Promise<ApiResponse>;
   login: (payload: LoginPayload) => Promise<ApiResponse<{ token: string; user: User }>>;
@@ -28,6 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isProfileFromCache, setIsProfileFromCache] = useState(false);
   const [hasPendingWrites, setHasPendingWrites] = useState(false);
+  const [authorizationError, setAuthorizationError] = useState<string | null>(null);
+  const [authorizationRetry, setAuthorizationRetry] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -74,22 +78,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { includeMetadataChanges: true },
       snapshot => {
         setIsProfileFromCache(snapshot.metadata.fromCache);
-        void authService.getCurrentUser()
-          .then(currentUser => {
-            if (isMounted && auth.currentUser?.uid === user.id) {
-              setUser(keepStableUser(currentUser));
-              setToken(authService.getToken());
-            }
-          })
-          .catch(error => console.error("Live user authorization refresh failed:", error));
+        if (!isMounted || auth.currentUser?.uid !== user.id) return;
+        setAuthorizationError(null);
+        const current = snapshot.exists() ? authService.userFromProfile(auth.currentUser, snapshot.data()) : null;
+        setUser(keepStableUser(current?.status === "ACTIVE" ? current : null));
       },
-      error => console.error("User authorization listener failed:", error)
+      error => {
+        console.error("User authorization listener failed:", error);
+        if (isMounted) setAuthorizationError(describeReadError(error));
+      }
     );
     return () => {
       isMounted = false;
       unsubscribe();
     };
-  }, [user?.id]);
+  }, [user?.id, authorizationRetry]);
 
   // Restore session on initial boot
   useEffect(() => {
@@ -145,9 +148,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const handleRefreshUser = async (): Promise<void> => {
-    const current = await authService.getCurrentUser();
-    setUser(keepStableUser(current));
-    setToken(authService.getToken());
+    setAuthorizationRetry(value => value + 1);
+    // Reattach the authoritative listener; a failed extra read must not log out a valid session.
+    setAuthorizationError(null);
   };
 
   const value: AuthContextType = {
@@ -157,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token,
     isProfileFromCache,
     hasPendingWrites,
+    authorizationError,
     signUp: handleSignUp,
     signUpReseller: handleResellerSignUp,
     login: handleLogin,

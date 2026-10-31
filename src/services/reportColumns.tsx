@@ -1,3 +1,4 @@
+import { buildArticleStockRows, type ArticleStockRow } from "./stockByArticle";
 import { ReactNode } from "react";
 import { formatSignedQuantity, LedgerBlock } from "./stockLedger";
 import {
@@ -69,6 +70,20 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
         { key: "partial", label: "Ventes à paiement partiel", align: "right", value: row => row.partialCount, footer: rows => sum(rows.map(row => row.partialCount)) }
       ];
       return { columns, rows: buildResellerCreditRows(ctx.reportSales), rowKey: row => row.id };
+    }
+    case "STOCK_BY_ARTICLE": {
+      const rows = buildArticleStockRows(ctx.reportStocks, getArticle);
+      const columns: ReportColumn<ArticleStockRow>[] = [
+        { key: "code", label: "Code article", value: row => row.article.code },
+        { key: "name", label: "Article", value: row => row.article.name },
+        { key: "category", label: "Cat\u00e9gorie", value: row => getCategoryName(row.article.category_id) },
+        { key: "unit", label: "Unit\u00e9", value: row => row.article.unit },
+        { key: "stores", label: "Magasins", value: row => row.storeIds.map(getStoreName).join(", ") },
+        { key: "quantity", label: "Stock consolid\u00e9", align: "right", value: row => row.quantity },
+        { key: "reserved", label: "R\u00e9serv\u00e9", align: "right", value: row => row.reserved },
+        { key: "available", label: "Disponible consolid\u00e9", align: "right", value: row => row.available }
+      ];
+      return { columns, rows, rowKey: row => row.article.id };
     }
     case "STOCK_STATUS": {
       type Row = { stock: StoreStock; article: Article };

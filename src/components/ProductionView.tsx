@@ -1,4 +1,5 @@
 import { useState, FormEvent } from "react";
+import { hasPermission } from "../services/authService";
 import MaterialConsumptionForm from "./MaterialConsumptionForm";
 import SearchableSelect from "./SearchableSelect";
 import { 
@@ -38,6 +39,7 @@ interface ProductionViewProps {
   articles: Article[];
   stocks: StoreStock[];
   currentUser: UserProfile;
+  onValidateProduction: (prod: Production) => Promise<boolean>;
   onCreateProduction: (prod: Production) => Promise<boolean>;
   onUpdateDraftProduction: (original: Production, updated: Production) => Promise<boolean>;
   onDeleteDraftProduction: (production: Production) => Promise<void>;
@@ -56,6 +58,7 @@ export default function ProductionView({
   articles,
   stocks,
   currentUser,
+  onValidateProduction,
   onCreateProduction,
   onUpdateDraftProduction,
   onDeleteDraftProduction,
@@ -136,7 +139,7 @@ export default function ProductionView({
       .filter(line => line.article_id === articleId && line.recycled_available && line.recycling_decision === "RECYCLED")
       .reduce((sum, line) => sum + line.quantity_accepted, 0);
     const used = productions
-      .filter(production => production.id !== editingProduction?.id && production.manufacturer_store_id === manufStore?.id)
+      .filter(production => production.status === "COMPLETED" && production.id !== editingProduction?.id && production.manufacturer_store_id === manufStore?.id)
       .flatMap(production => production.consumptions)
       .filter(line => line.source === "RECYCLED" && line.article_id === articleId)
       .reduce((sum, line) => sum + line.quantity, 0);
@@ -144,7 +147,7 @@ export default function ProductionView({
     return Math.max(0, Math.min(approved - used, quarantine));
   };
   const recycledArticles = articles.filter(article => recycledAvailability(article.id) > 0);
-  const recycledConsumedTotal = productions
+  const recycledConsumedTotal = productions.filter(production => production.status === "COMPLETED")
     .flatMap(production => production.consumptions)
     .filter(line => line.source === "RECYCLED")
     .reduce((sum, line) => sum + line.quantity, 0);
@@ -237,16 +240,13 @@ export default function ProductionView({
       id: `prod-${Date.now()}`,
       production_number: prodNumber,
       manufacturer_store_id: manufStore.id,
-      status: "COMPLETED",
+      status: "DRAFT",
       consumptions: consumptionLines,
       outputs: outputLines,
       notes: batchNote || "Lot de fabrication standard",
       created_by: currentUser.uid,
       created_by_name: currentUser.displayName || currentUser.email,
-      validated_by: currentUser.uid,
-      validated_by_name: currentUser.displayName || currentUser.email,
       created_at: Date.now(),
-      validated_at: Date.now()
     };
 
     const saved = editingProduction
@@ -462,6 +462,7 @@ export default function ProductionView({
                 <span className={`font-bold text-xs px-2.5 py-0.5 rounded-full border ${p.status === "DRAFT" ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"}`}>
                   {p.status}
                 </span>
+                {p.status === "DRAFT" && hasPermission(currentUser, "production.validate") && <button type="button" className="rounded border border-emerald-300 px-2 py-1 text-xs font-bold text-emerald-800" onClick={async () => { if (window.confirm("Confirmer le contrôle des lignes et appliquer les mouvements de stock ?")) await onValidateProduction(p); }}>Contrôler et valider</button>}
                 {p.status === "DRAFT" && p.created_by === currentUser.uid && (
                   <button type="button" onClick={() => handleOpenEditProductionModal(p)} className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50">
                     <Pencil className="h-3 w-3" /> Modifier
@@ -742,7 +743,7 @@ export default function ProductionView({
                   type="submit"
                   className="px-5 py-2 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs cursor-pointer"
                 >
-                  {editingProduction ? "Enregistrer les modifications" : "Enregistrer & Valider la Production"}
+                  {editingProduction ? "Enregistrer les modifications" : "Enregistrer le brouillon"}
                 </button>
               </div>
 

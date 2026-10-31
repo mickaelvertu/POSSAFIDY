@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "review": {
+    "ready_to_apply": true,
+    "import_type": "STOCK_SNAPSHOT_CORRECTION",
+    "store_code": "POS-06",
+    "reason": "Reconstitution du stock courant à partir des quantités initiales confirmées et du grand livre fourni.",
+    "existing_movements_must_remain_unchanged": true,
+    "expected_previous_quantities": {
+      "article-resale-noni": 5,
+      "article-resale-omega-3-pm": 11,
+      "article-resale-komima": 5,
+      "article-resale-komima-cancer": 3
+    },
+    "note": "Utiliser l'import de correction de stock, pas l'import initial. Vérifier que les quantités courantes sont toujours 5, 11, 5 et 3 avant application. La correction produira quatre ajustements de +2, +3, +2 et +4 sans modifier l'historique existant."
+  },
+  "data": [
+    {
+      "store_id": "store-pos-06",
+      "store_code": "POS-06",
+      "store_name": "Antaninandro",
+      "article_id": "article-resale-noni",
+      "article_code": "NO052",
+      "article_name": "NONI",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "store-pos-06",
+      "store_code": "POS-06",
+      "store_name": "Antaninandro",
+      "article_id": "article-resale-omega-3-pm",
+      "article_code": "O3055",
+      "article_name": "OMEGA 3 PM",
+      "unit": "Piece",
+      "quantity": 14
+    },
+    {
+      "store_id": "store-pos-06",
+      "store_code": "POS-06",
+      "store_name": "Antaninandro",
+      "article_id": "article-resale-komima",
+      "article_code": "KO064",
+      "article_name": "KOMIMA",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "store-pos-06",
+      "store_code": "POS-06",
+      "store_name": "Antaninandro",
+      "article_id": "article-resale-komima-cancer",
+      "article_code": "KC056",
+      "article_name": "KOMIMA CANCER",
+      "unit": "Piece",
+      "quantity": 4
+    }
+  ]
+}

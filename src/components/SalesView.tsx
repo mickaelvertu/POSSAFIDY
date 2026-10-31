@@ -1,3 +1,5 @@
+import { useListWindow } from "../hooks/useListWindow";
+import ListWindowMore from "./ListWindowMore";
 import { useState, FormEvent } from "react";
 import { 
   Sale, 
@@ -36,6 +38,7 @@ import {
 import SaleDeliveryNote from "./SaleDeliveryNote";
 
 interface SalesViewProps {
+  focusedSaleId?: string;
   sales: Sale[];
   stores: Store[];
   articles: Article[];
@@ -53,6 +56,7 @@ interface SalesViewProps {
 }
 
 export default function SalesView({
+  focusedSaleId,
   sales,
   stores,
   articles,
@@ -407,6 +411,7 @@ export default function SalesView({
   };
 
   const filteredSales = sales.filter(s => {
+    if (focusedSaleId) return s.id === focusedSaleId;
     if (filterStatus !== "ALL" && s.status !== filterStatus) return false;
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -415,7 +420,7 @@ export default function SalesView({
       if (!matchNum && !matchCust) return false;
     }
     return true;
-  });
+  }).sort((left, right) => right.created_at - left.created_at);
 
   const filteredSaleArticles = saleArticles.filter(article => {
     const query = articleSearch.trim().toLowerCase();
@@ -429,10 +434,13 @@ export default function SalesView({
     return available > inCart;
   });
 
+  const listWindow = useListWindow(JSON.stringify([filterStatus, searchQuery, focusedSaleId]));
+
   return (
     <div className="space-y-6">
       
       {/* Header Banner */}
+      {!focusedSaleId && <>
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -512,6 +520,8 @@ export default function SalesView({
       </div>
 
       {/* Sales Table */}
+      </>}
+      {focusedSaleId && filteredSales.length === 0 && <p role="status" className="p-4 text-sm">Cette vente n’est plus disponible.</p>}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
@@ -529,7 +539,7 @@ export default function SalesView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredSales.map((sale) => {
+              {filteredSales.slice(0, listWindow.count).map((sale) => {
                 const store = stores.find(s => s.id === sale.store_id);
                 return (
                   <tr key={sale.id} onClick={() => setDetailSale(sale)} className="cursor-pointer hover:bg-slate-50">
@@ -1109,6 +1119,7 @@ export default function SalesView({
         />
       )}
 
+      <ListWindowMore count={listWindow.count} total={filteredSales.length} onMore={listWindow.showMore} />
     </div>
   );
 }

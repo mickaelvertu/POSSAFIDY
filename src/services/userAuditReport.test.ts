@@ -30,3 +30,14 @@ test('store scope excludes unrelated payroll and retains actual sales outside cu
   assert.equal(fiche.payslips.length, 0);
   assert.deepEqual(buildUserAudit(data, { userId: 'u1', storeId: 'unknown', start: '', end: '' }), []);
 });
+
+test('explicit employee assignments override stale login links in user audit', () => {
+  const counts = [
+    { ...data.counts[0], id: 'assigned-e1', charged_employee_id: 'e1', charged_to: 'old-login' },
+    { ...data.counts[0], id: 'assigned-e2', charged_employee_id: 'e2', charged_to: 'auth1' },
+  ];
+  const [one] = buildUserAudit({ ...data, counts }, { userId: 'u1', storeId: '', start: '', end: '' });
+  const [two] = buildUserAudit({ ...data, counts }, { userId: 'u2', storeId: '', start: '', end: '' });
+  assert.deepEqual(one.counts.map(count => count.id), ['assigned-e1']);
+  assert.deepEqual(two.counts.map(count => count.id), ['assigned-e2']);
+});

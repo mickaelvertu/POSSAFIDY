@@ -1,3 +1,5 @@
+import { useListWindow } from "../hooks/useListWindow";
+import ListWindowMore from "./ListWindowMore";
 import { storeLabel } from "../services/storeLabel";
 import { useState, FormEvent } from "react";
 import DeliveryNote from "./DeliveryNote";
@@ -36,6 +38,7 @@ import {
 import { canApproveTransfer, isWorkshopTransfer } from "../services/transferApproval";
 
 interface TransfersViewProps {
+  focusedTransferId?: string;
   transfers: StockTransfer[];
   stores: Store[];
   articles: Article[];
@@ -86,6 +89,7 @@ const formatQuantity = (quantity: number, unit: string) => quantity.toLocaleStri
 });
 
 export default function TransfersView({
+  focusedTransferId,
   transfers,
   stores,
   articles,
@@ -308,6 +312,7 @@ export default function TransfersView({
       }, {})
   );
   const filteredTransfers = transfers.filter(t => {
+    if (focusedTransferId) return t.id === focusedTransferId;
     if (filterStatus !== "ALL" && t.status !== filterStatus) return false;
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -317,7 +322,7 @@ export default function TransfersView({
       if (!matchNum && !matchSrc && !matchDst) return false;
     }
     return true;
-  });
+  }).sort((left, right) => right.created_at - left.created_at);
 
   const manufacturerStores = stores.filter(store => store.store_type === "MANUFACTURER" && store.is_active);
   const changeTransferKind = (kind: TransferKind) => {
@@ -541,10 +546,13 @@ export default function TransfersView({
     setInspectingTransfer(null);
   };
 
+  const listWindow = useListWindow(JSON.stringify([filterStatus, searchQuery, focusedTransferId]));
+
   return (
     <div className="space-y-6 text-slate-900">
       
       {/* Top Header & Workflow reminder banner */}
+      {!focusedTransferId && <>
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -688,9 +696,10 @@ export default function TransfersView({
       )}
 
       {/* Transfers List */}
+      </>}
       <div className="space-y-4">
         {filteredTransfers.length > 0 ? (
-          filteredTransfers.map((t) => {
+          filteredTransfers.slice(0, listWindow.count).map((t) => {
             const src = stores.find(s => s.id === t.source_store_id);
             const dst = stores.find(s => s.id === t.destination_store_id);
             const totalSent = t.lines.reduce((acc, l) => acc + l.quantity_sent, 0);
@@ -1670,6 +1679,7 @@ export default function TransfersView({
       )}
 
       {deliveryTransfer && <DeliveryNote transfer={deliveryTransfer} stores={stores} onClose={() => setDeliveryTransfer(null)} />}
+      <ListWindowMore count={listWindow.count} total={filteredTransfers.length} onMore={listWindow.showMore} />
     </div>
   );
 }

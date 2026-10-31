@@ -13,3 +13,7 @@ function canonicalize(value: unknown): unknown {
 export function saleLinesEqual(left: unknown[], right: unknown[]): boolean {
   return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
 }
+
+export function firestoreValuesEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
+}

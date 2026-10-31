@@ -144,6 +144,10 @@ export class AuthService {
       throw new Error("Profil utilisateur introuvable. Contactez un administrateur.");
     }
     const profile = profileSnapshot.data();
+    return this.userFromProfile(firebaseUser, profile);
+  }
+
+  userFromProfile(firebaseUser: FirebaseUser, profile: Record<string, any>): User {
     const now = new Date().toISOString();
     const user: User = {
       id: firebaseUser.uid,
@@ -358,11 +362,11 @@ export class AuthService {
   async listManagedUsers(): Promise<ApiResponse<{ users: User[] }>> {
     try {
       const snapshot = await getDocs(collection(db, "users"));
-      const users = await Promise.all(snapshot.docs.map(async snapshotDoc => {
+      const users = snapshot.docs.map(snapshotDoc => {
         const data = snapshotDoc.data();
         const firebaseUser = { uid: snapshotDoc.id, email: data.email || "", displayName: data.displayName || null } as FirebaseUser;
-        return this.mapFirebaseUser(firebaseUser);
-      }));
+        return this.userFromProfile(firebaseUser, data);
+      });
       return { success: true, code: "USERS_LIST", message: "Utilisateurs récupérés avec succès.", data: { users } };
     } catch (err) {
       return this.errorResponse(err) as ApiResponse<{ users: User[] }>;

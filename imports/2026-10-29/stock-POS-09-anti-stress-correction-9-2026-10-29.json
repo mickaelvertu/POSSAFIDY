@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "review": {
+    "ready_to_apply": true,
+    "import_type": "STOCK_SNAPSHOT_CORRECTION",
+    "reason": "Initial stock 4 + existing receipt 5 = target current stock 9",
+    "expected_previous_quantity": 5,
+    "note": "Use stock correction import, not initial-stock import. Existing movements remain unchanged; applying correction creates an additional adjustment movement. Verify current stock is still 5 before applying."
+  },
+  "data": [
+    {
+      "store_id": "store-pos-09",
+      "store_code": "POS-09",
+      "store_name": "Andranomena",
+      "article_id": "article-resale-anti-stress",
+      "article_code": "AS017",
+      "article_name": "ANTI STRESS",
+      "unit": "Piece",
+      "quantity": 9
+    }
+  ]
+}

@@ -1,4 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import FeedbackState from "../FeedbackState";
+import SyncFeedback from "../SyncFeedback";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { authService, DEFAULT_ARTICLE_VISIBILITY, hasPermission } from "../../services/authService";
 import { AppRoleId, AppUser, Article, AuditLog, Category, CashHandover, CashHandoverDeposit, CreditCustomer, CreditFollowUp, CreditPayment, Employee, Expense, GeneralFilters, Payslip, Purchase, ResellerNotification, ResellerOrder, Sale, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
@@ -11,9 +13,7 @@ import {
   deleteDraftTransfer,
   cancelTransfer,
   loadCatalogData,
-  loadInventoryData,
   loadStores,
-  loadProcurementData,
   approvePurchase,
   recordSupplierPayment,
   saveDraftPurchase,
@@ -27,26 +27,37 @@ import {
   recordTransferReceipt,
   updateDraftTransfer,
 } from "../../services/inventoryService";
-import { advanceSale, approveSale, cancelSale, createProduction, deleteCancelledSale, deleteDraftSale, deleteDraftProduction, loadOperationalData, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
-import { createCreditSale, loadCreditCustomerForUser, loadCreditCustomers, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
-import { createResellerOrder, loadResellerStocks, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
+import { advanceSale, approveSale, cancelSale, createProduction, deleteCancelledSale, deleteDraftSale, deleteDraftProduction, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
+import { createCreditSale, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
+import { createResellerOrder, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
-import { deleteInventoryCountDraft, loadInventoryCounts, refuseInventorySignature, rejectInventoryCount, saveInventoryCount, settleInventoryCharges, signInventoryCount, validateInventoryCount } from "../../services/inventoryCountService";
+import { deleteInventoryCountDraft, refuseInventorySignature, rejectInventoryCount, saveInventoryCount, settleInventoryCharges, signInventoryCount, validateInventoryCount } from "../../services/inventoryCountService";
 import type { InventoryCount, InventoryReasonDecision } from "../../types";
 import { linkEmployeeAccount, loadEmployees, saveEmployee } from "../../services/employeeService";
 import { loadPayslips, loadSalaryAdvances, savePayslip, saveSalaryAdvance } from "../../services/payrollService";
 import UserAuditReport from "../UserAuditReport";
 import ThemeSwitcher from "../ThemeSwitcher";
+import { where } from "firebase/firestore";
+import { authorizationKey, describeReadError } from "../../services/dataSyncPolicy";
+import { collectionQuery, scopedQueries, subscribeRows } from "../../services/liveDataService";
+import { useRecordState } from "../../hooks/useRecordState";
+import { useSessionSync } from "../../hooks/useSessionSync";
+import { useHistoryPages } from "../../hooks/useHistoryPages";
+import { useLedgerReport } from "../../hooks/useLedgerReport";
+import HistoryPaging from "../HistoryPaging";
+import { reportHistory, reportSources } from "../../services/reportReadiness";
 import NotificationBell from "../NotificationBell";
-import { buildActionNotifications } from "../../services/notificationService";
-import { deleteExpense, loadExpenses, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
-import { confirmCashHandoverReceipt, createCashHandover, loadCashHandovers, recordCashHandoverDeposit } from "../../services/cashHandoverService";
+import NotificationActionWindow from "../NotificationActionWindow";
+import { buildActionNotifications, type ActionNotification } from "../../services/notificationService";
+import { deleteExpense, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
+import { confirmCashHandoverReceipt, createCashHandover, recordCashHandoverDeposit } from "../../services/cashHandoverService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { applyStockSnapshot, importInitialStocks } from "../../services/stockImportService";
 import type { StockSyncRow } from "../../services/stockSyncValidation";
 import type { InitialStockImportRow } from "../../services/stockImportValidation";
 import { consumeRawMaterial } from "../../services/operationsService";
 import { canApproveTransfer } from "../../services/transferApproval";
+import { assertSaleValidationSize } from "../../services/saleValidationLimits";
 const UsersView = lazy(() => import("../UsersView"));
 const SalesView = lazy(() => import("../SalesView"));
 const StocksView = lazy(() => import("../StocksView"));
@@ -126,35 +137,54 @@ function containsHiddenArticleReference(value: unknown, visibleArticleIds: Set<s
 }
 
 export default function AuthenticatedSessionView() {
-  const { user, logout, isProfileFromCache, hasPendingWrites } = useAuth();
+  const { user, logout, isProfileFromCache, hasPendingWrites, authorizationError, refreshUser } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
-  const [managedUsers, setManagedUsers] = useState<AppUser[]>([]);
+  const [managedUsers, setManagedUsers] = useRecordState<AppUser>();
   const [usersError, setUsersError] = useState<string | null>(null);
+  const [auxiliaryErrors, setAuxiliaryErrors] = useState<Record<string, string>>({});
+  const [auxiliaryLoading, setAuxiliaryLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [payrollLoadedKey, setPayrollLoadedKey] = useState("");
   const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory" | "employeePresentation">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
-  const [inventoryCounts, setInventoryCounts] = useState<InventoryCount[]>([]);
+  const [notificationAction, setNotificationAction] = useState<{ item: ActionNotification; previousModule: typeof activeModule } | null>(null);
+  const closeNotificationAction = () => {
+    if (notificationAction) setActiveModule(notificationAction.previousModule);
+    setNotificationAction(null);
+  };
+  useEffect(() => {
+    if (notificationAction && notificationAction.item.module !== activeModule) setNotificationAction(null);
+  }, [activeModule, notificationAction]);
+  const [inventoryCounts, setInventoryCounts] = useRecordState<InventoryCount>();
   const [reportRequest, setReportRequest] = useState<{ type: ReportType; filters: GeneralFilters } | null>(null);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [creditCustomers, setCreditCustomers] = useState<CreditCustomer[]>([]);
-  const [resellerOrders, setResellerOrders] = useState<ResellerOrder[]>([]);
-  const [resellerNotifications, setResellerNotifications] = useState<ResellerNotification[]>([]);
-  const [productions, setProductions] = useState<Production[]>([]);
-  const [transfers, setTransfers] = useState<StockTransfer[]>([]);
-  const [stocks, setStocks] = useState<StoreStock[]>([]);
-  const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [inventoryStores, setInventoryStores] = useState<Store[]>([]);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [expensesLoadError, setExpensesLoadError] = useState<string | null>(null);
-  const [cashHandovers, setCashHandovers] = useState<CashHandover[]>([]);
-  const [cashHandoversError, setCashHandoversError] = useState<string | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [payslips, setPayslips] = useState<Payslip[]>([]);
-  const [salaryAdvances, setSalaryAdvances] = useState<SalaryAdvance[]>([]);
-  const [units, setUnits] = useState<UnitOfMeasure[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [selectedReportType, setSelectedReportType] = useState<ReportType>("STOCK_STATUS");
+  useEffect(() => {
+    if (activeModule !== "reports") {
+      setSelectedReportType("STOCK_STATUS");
+      setReportRequest(null);
+    }
+  }, [activeModule]);
+  const [sales, setSales] = useRecordState<Sale>();
+  const [creditCustomers, setCreditCustomers] = useRecordState<CreditCustomer>();
+  const [resellerOrders, setResellerOrders] = useRecordState<ResellerOrder>();
+  const [resellerNotifications, setResellerNotifications] = useRecordState<ResellerNotification>();
+  const [productions, setProductions] = useRecordState<Production>();
+  const [transfers, setTransfers] = useRecordState<StockTransfer>();
+  const [stocks, setStocks] = useRecordState<StoreStock>();
+  const [movements, setMovements] = useRecordState<StockMovement>();
+  const [inventoryStores, setInventoryStores] = useRecordState<Store>();
+  const [articles, setArticles] = useRecordState<Article>();
+  const [categories, setCategories] = useRecordState<Category>();
+  const [suppliers, setSuppliers] = useRecordState<Supplier>();
+  const [purchases, setPurchases] = useRecordState<Purchase>();
+  const [expenses, setExpenses] = useRecordState<Expense>();
+  const [cashHandovers, setCashHandovers] = useRecordState<CashHandover>();
+  const [employees, setEmployees] = useRecordState<Employee>();
+  const [inventoryEmployeesLoading, setInventoryEmployeesLoading] = useState(false);
+  const [inventoryEmployeesError, setInventoryEmployeesError] = useState<string | null>(null);
+  const [payslips, setPayslips] = useRecordState<Payslip>();
+  const [salaryAdvances, setSalaryAdvances] = useRecordState<SalaryAdvance>();
+  const [units, setUnits] = useRecordState<UnitOfMeasure>();
+  const [auditLogs, setAuditLogs] = useRecordState<AuditLog>();
   const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
 
   useEffect(() => {
@@ -170,163 +200,74 @@ export default function AuthenticatedSessionView() {
 
   const canManageUsers = Boolean(user && (
     user.role === "SUPER_ADMIN" ||
-    user.role === "ADMIN" ||
-    user.permissions.includes("users.view")
+    user.role === "ADMIN"
   ));
   const canManageStores = Boolean(user && (user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
   const canManageProcurement = Boolean(user && user.status === "ACTIVE" && (
     canManageStores || user.permissions.includes("procurement.manage")
   ));
 
+  const synchronization = useSessionSync(user, {
+    articles: setArticles, categories: setCategories, stores: setInventoryStores, stocks: setStocks,
+    transfers: setTransfers, sales: setSales, productions: setProductions, counts: setInventoryCounts,
+    suppliers: setSuppliers, purchases: setPurchases, customers: setCreditCustomers, units: setUnits,
+    expenses: setExpenses, cashHandovers: setCashHandovers,
+  }, loadedArticles => loadUnits(loadedArticles, user ? toAppUser(user) : undefined));
+  const authScope = authorizationKey(user);
+  useEffect(() => {
+    if (activeModule !== "inventory" || user?.role !== "SUPER_ADMIN") return;
+    setInventoryEmployeesLoading(true);
+    setInventoryEmployeesError(null);
+    return subscribeRows<Employee>([collectionQuery("employees")], setEmployees, error => {
+      setInventoryEmployeesLoading(false);
+      setInventoryEmployeesError(describeReadError(error));
+    }, () => setInventoryEmployeesLoading(false));
+  }, [activeModule, authScope, synchronization.retryVersion]);
+  const expensesLoadError = synchronization.errors["Dépenses"] || (synchronization.status["Dépenses"] !== "ready" ? "Les dépenses ne sont pas encore confirmées par le serveur." : null);
+  const cashHandoversError = synchronization.errors["Remises de caisse"] || (synchronization.status["Remises de caisse"] !== "ready" ? "Les remises de caisse ne sont pas encore confirmées par le serveur." : null);
+  const needsPayrollData = ["staff", "payroll", "reports", "expenses"].includes(activeModule);
+  const payrollRequestKey = `${authScope}:${synchronization.retryVersion}`;
+  useEffect(() => {
+    setEmployees([]); setPayslips([]); setSalaryAdvances([]); setPayrollLoadedKey("");
+  }, [authScope]);
   useEffect(() => {
     if (!canManageUsers) {
       setManagedUsers([]);
+      setUsersError(null);
+      setUsersLoading(false);
       return;
     }
+    let active = true;
+    setUsersLoading(true);
+    setUsersError(null);
     authService.listManagedUsers().then(response => {
+      if (!active) return;
       if (response.success && response.data) {
         setManagedUsers(response.data.users.map(toAppUser));
       } else {
         setUsersError(response.message);
       }
     }).catch(error => {
+      if (!active) return;
       setUsersError(error instanceof Error ? error.message : "Impossible de charger les utilisateurs.");
-    });
-  }, [canManageUsers]);
+    }).finally(() => { if (active) setUsersLoading(false); });
+    return () => { active = false; };
+  }, [canManageUsers, authScope, synchronization.retryVersion]);
 
+  const movementHistory = useHistoryPages<StockMovement>(authScope,
+    () => user?.status === "ACTIVE" ? scopedQueries("movements", ["store_id"], canManageStores ? undefined : user.assignedStores) : [], setMovements);
+  const auditHistory = useHistoryPages<AuditLog>(authScope,
+    () => user?.status === "ACTIVE" ? [canManageStores ? collectionQuery("auditLogs") : collectionQuery("auditLogs", where("user_id", "==", user.id))] : [], setAuditLogs);
+  const ledgerReport = useLedgerReport(reportRequest, authScope, canManageStores ? undefined : user?.assignedStores || []);
+
+  // Only the selected report's history can delay that report, never the report catalog.
   useEffect(() => {
-    let isMounted = true;
-    const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
-    // Bounded retry with backoff: a transient Firestore failure must not leave a screen empty, and must never loop forever.
-    const withRetry = async <T,>(label: string, task: () => Promise<T>, attempts = 3): Promise<T | undefined> => {
-      for (let attempt = 1; attempt <= attempts && isMounted; attempt++) {
-        try {
-          return await task();
-        } catch (error) {
-          console.error(`${label} Firestore load failed (attempt ${attempt}/${attempts}):`, error);
-          if (attempt < attempts) await wait(1000 * 2 ** (attempt - 1));
-        }
-      }
-      return undefined;
-    };
+    if (activeModule !== "reports" && !reportRequest) return;
+    const required = reportHistory(reportRequest?.type || selectedReportType);
+    if (required === "movements" && movementHistory.hasMore && !movementHistory.loading && !movementHistory.error) void movementHistory.loadAll();
+    if (required === "audit" && auditHistory.hasMore && !auditHistory.loading && !auditHistory.error) void auditHistory.loadAll();
+  }, [activeModule, selectedReportType, reportRequest, movementHistory.hasMore, movementHistory.loading, movementHistory.error, auditHistory.hasMore, auditHistory.loading, auditHistory.error]);
 
-    async function loadInventory() {
-      if (!user) return;
-      setArticles([]);
-      setStocks([]);
-      setMovements([]);
-      setTransfers([]);
-      setSales([]);
-      setProductions([]);
-      setAuditLogs([]);
-      const isReseller = user.role === "REVENDEUR";
-      const canManageCredit = Boolean(user.permissions.includes("credit.manage"));
-      let unitAuditLogs: AuditLog[] = [];
-
-      // Each block is independent: stores appear as soon as they load, even if another collection fails.
-      const storesPromise = withRetry("Stores", loadStores);
-      const visibleArticleTypes = [...new Set([
-        ...(user.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user.role as AppRoleId] ?? []),
-        ...(canManageProcurement ? ["RAW_MATERIAL" as const] : [])
-      ])];
-      const catalogPromise = withRetry("Catalog", async () => {
-        const catalog = await loadCatalogData(visibleArticleTypes);
-        const loadedUnits = canManageStores
-          ? await loadUnits(catalog.articles, toAppUser(user), entries => { unitAuditLogs = entries; })
-          : [];
-        return { catalog, loadedUnits };
-      });
-
-      await Promise.all([
-        storesPromise.then(loadedStores => {
-          if (isMounted && loadedStores) setInventoryStores(loadedStores);
-        }),
-        catalogPromise.then(result => {
-          if (!isMounted || !result) return;
-          setArticles(result.catalog.articles);
-          setCategories(result.catalog.categories);
-          setUnits(result.loadedUnits);
-        }),
-        withRetry("Inventory", () => loadInventoryData(canManageStores ? undefined : user.assignedStores)).then(async inventory => {
-          if (!isMounted || !inventory) return;
-          const catalogResult = await catalogPromise;
-          if (!isMounted || !catalogResult) return;
-          const articleIds = new Set(catalogResult.catalog.articles.map(article => article.id));
-          setMovements(inventory.movements.filter(movement => articleIds.has(movement.article_id)));
-          setTransfers(inventory.transfers.filter(transfer => transfer.lines.every(line => articleIds.has(line.article_id))));
-          if (!isReseller) {
-            setStocks(inventory.stocks.filter(stock => articleIds.has(stock.article_id)));
-            return;
-          }
-          const loadedStores = await storesPromise;
-          if (!loadedStores) return;
-          const resellerStocks = await withRetry("Reseller stocks", () => loadResellerStocks(loadedStores, catalogResult.catalog.articles));
-          if (isMounted && resellerStocks) setStocks(resellerStocks);
-        }),
-        canManageProcurement
-          ? withRetry("Procurement", () => loadProcurementData(canManageStores ? undefined : user.assignedStores)).then(procurement => {
-              if (!isMounted || !procurement) return;
-              setSuppliers(procurement.suppliers);
-              setPurchases(procurement.purchases);
-            })
-          : Promise.resolve(),
-        withRetry("Inventory counts", () => loadInventoryCounts(canManageStores ? undefined : user.assignedStores)).then(loaded => {
-          if (isMounted && loaded) setInventoryCounts(loaded);
-        }),
-        withRetry("Operations", () => loadOperationalData({
-          sales: canManageStores || Boolean(user.permissions.includes("sales.view") || canManageCredit),
-          productions: canManageStores || Boolean(user.permissions.includes("production.view")),
-          audit: true,
-          auditUserOnly: Boolean(canManageCredit && !canManageStores),
-          storeIds: canManageStores || canManageCredit ? undefined : user.assignedStores,
-          userId: user.id || ""
-        })).then(async operations => {
-          if (!operations) return;
-          await catalogPromise;
-          if (!isMounted) return;
-          setSales(operations.sales);
-          setProductions(operations.productions);
-          setAuditLogs([...unitAuditLogs, ...operations.auditLogs]);
-        }),
-        withRetry("Credit customers", async () => {
-          if (isReseller) {
-            const linkedCustomer = await loadCreditCustomerForUser(user.id);
-            return linkedCustomer ? [linkedCustomer] : [];
-          }
-          if (user.permissions.includes("credit.sales") || canManageCredit || canManageStores) return loadCreditCustomers();
-          return [] as CreditCustomer[];
-        }).then(customers => {
-          if (isMounted && customers) setCreditCustomers(customers);
-        })
-      ]);
-    }
-    void loadInventory();
-    return () => {
-      isMounted = false;
-    };
-  }, [canManageStores, canManageProcurement, user]);
-
-  useEffect(() => {
-    const canAccess = user?.status === "ACTIVE" && (
-      canManageStores ||
-      user?.permissions.some(permission => permission.startsWith("cash_handover."))
-    );
-    if (!canAccess || !user) {
-      setCashHandovers([]);
-      setCashHandoversError(null);
-      return;
-    }
-    let isMounted = true;
-    setCashHandoversError(null);
-    setCashHandovers([]);
-    loadCashHandovers(canManageStores ? undefined : user.assignedStores)
-      .then(rows => { if (isMounted) setCashHandovers(rows); })
-      .catch(error => {
-        console.error("Cash handover Firestore load failed:", error);
-        if (isMounted) setCashHandoversError(error instanceof Error ? error.message : "Erreur inconnue.");
-      });
-    return () => { isMounted = false; };
-  }, [canManageStores, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -347,45 +288,44 @@ export default function AuthenticatedSessionView() {
       unsubscribeOrders();
       unsubscribeNotifications?.();
     };
-  }, [user]);
+  }, [authScope, synchronization.retryVersion]);
 
-  useEffect(() => {
-    let isMounted = true;
-    const canViewExpenses = user?.status === "ACTIVE" && (canManageStores || user.permissions.includes("expenses.view") || user.permissions.includes("expenses.create"));
-    if (!canViewExpenses) {
-      setExpenses([]);
-      setExpensesLoadError("Accès aux dépenses nécessaire pour calculer la clôture POS.");
-      return;
-    }
-    setExpensesLoadError("Chargement des dépenses en cours.");
-    loadExpenses(user?.role === "SUPER_ADMIN" ? undefined : user?.assignedStores, user?.id)
-      .then(loadedExpenses => {
-        if (isMounted) { setExpenses(loadedExpenses); setExpensesLoadError(null); }
-      })
-      .catch(error => { console.error("Expense Firestore load failed:", error); if (isMounted) setExpensesLoadError("Impossible de charger les dépenses pour calculer la clôture POS."); });
-    return () => {
-      isMounted = false;
-    };
-  }, [canManageStores, user]);
 
   useEffect(() => {
     if (!canManageStores) {
       setEmployees([]);
+      setPayslips([]);
+      setSalaryAdvances([]);
+      setAuxiliaryErrors({});
+      setAuxiliaryLoading(false);
       return;
     }
+    if (!needsPayrollData) return;
     let isMounted = true;
-    Promise.all([loadEmployees(), loadPayslips(), loadSalaryAdvances()])
-      .then(([loadedEmployees, loadedPayslips, loadedAdvances]) => {
-        if (!isMounted) return;
-        setEmployees(loadedEmployees);
-        setPayslips(loadedPayslips);
-        setSalaryAdvances(loadedAdvances);
-      })
-      .catch(error => console.error("Employee/payroll Firestore load failed:", error));
+    let remaining = 3;
+    let failed = false;
+    setAuxiliaryLoading(true);
+    setAuxiliaryErrors({});
+    const read = <T,>(label: string, task: () => Promise<T>, receive: (value: T) => void) => {
+      void task().then(value => { if (isMounted) receive(value); }).catch(error => {
+        failed = true;
+        console.error(label + " load failed:", error);
+        if (isMounted) setAuxiliaryErrors(current => ({ ...current, [label]: "Chargement interrompu. Réessayez ou faites vérifier vos droits." }));
+      }).finally(() => {
+        remaining--;
+        if (isMounted && remaining === 0) {
+          setAuxiliaryLoading(false);
+          if (!failed) setPayrollLoadedKey(payrollRequestKey);
+        }
+      });
+    };
+    read("Personnel", loadEmployees, setEmployees);
+    read("Paie", loadPayslips, setPayslips);
+    read("Avances", loadSalaryAdvances, setSalaryAdvances);
     return () => {
       isMounted = false;
     };
-  }, [canManageStores]);
+  }, [canManageStores, authScope, synchronization.retryVersion, needsPayrollData]);
 
   const handleSaveEmployee = async (employee: Employee, isNew: boolean) => {
     const previous = employees.find(item => item.id === employee.id);
@@ -418,9 +358,13 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleSavePayslip = async (payslip: Payslip, isNew: boolean, settledAdvances: SalaryAdvance[], settledCounts: InventoryCount[] = []) => {
-    if (settledCounts.length > 0) {
-      await settleInventoryCounts(settledCounts, "PAYSLIP", `Paie ${payslip.period} - ${payslip.employee_name}`, "", payslip.id);
-    }
+    if (!currentAppUser || !canManageStores || user?.status !== "ACTIVE") throw new Error("Seul un administrateur actif peut enregistrer la paie.");
+    const settlement = {
+      settled_at: Date.now(), settled_by: currentAppUser.uid,
+      settled_by_name: currentAppUser.displayName || currentAppUser.email,
+      method: "PAYSLIP" as const, reference: `Paie ${payslip.period} - ${payslip.employee_name}`, payslip_id: payslip.id,
+    };
+    const settlementAudit = settledCounts.length ? createAuditLog(currentAppUser, "INVENTORY_CHARGE_SETTLED", "INVENTORY_COUNT", settledCounts.map(count => count.id).join(","), undefined, { ...settlement, counts: settledCounts.map(count => count.count_number), employee_id: payslip.employee_id }) : undefined;
     const previous = payslips.find(item => item.id === payslip.id);
     const auditLog = createAuditLog(
       currentAppUser!,
@@ -430,10 +374,11 @@ export default function AuthenticatedSessionView() {
       previous,
       payslip
     );
-    await savePayslip(payslip, auditLog, settledAdvances);
+    const updatedCounts = await savePayslip(payslip, auditLog, settledAdvances, settlementAudit ? { counts: settledCounts, settlement, auditLog: settlementAudit } : undefined, isNew);
+    setInventoryCounts(current => current.map(count => updatedCounts.find(updated => updated.id === count.id) || count));
     setSalaryAdvances(current => current.map(item => settledAdvances.find(settled => settled.id === item.id) || item));
     setPayslips(current => isNew ? [payslip, ...current] : current.map(item => item.id === payslip.id ? payslip : item));
-    setAuditLogs(current => [auditLog, ...current]);
+    setAuditLogs(current => [auditLog, ...(settlementAudit ? [settlementAudit] : []), ...current]);
   };
 
   const handleCreateManagedUser = async (newUser: AppUser) => {
@@ -448,8 +393,7 @@ export default function AuthenticatedSessionView() {
       status: newUser.isActive ? "ACTIVE" : "PENDING"
     });
     if (!response.success || !response.data) {
-      alert(response.message);
-      return;
+      throw new Error(response.message);
     }
     const createdUser = toAppUser(response.data.user);
     const auditLog = createAuditLog(currentAppUser!, "USER_CREATED", "USER", createdUser.id, undefined, {
@@ -472,15 +416,13 @@ export default function AuthenticatedSessionView() {
 
   const handleUpdateManagedUser = async (updatedUser: AppUser) => {
     if (updatedUser.id === user?.id) {
-      alert("Pour votre sécurité, un administrateur ne peut pas modifier son propre rôle, son statut ou ses permissions.");
-      return;
+      throw new Error("Pour votre sécurité, un administrateur ne peut pas modifier son propre rôle, son statut ou ses permissions.");
     }
     const existingUser = managedUsers.find(item => item.id === updatedUser.id);
     const activeSuperAdmins = managedUsers.filter(item => item.roleId === "SUPER_ADMIN" && item.isActive);
     if (existingUser?.roleId === "SUPER_ADMIN" && activeSuperAdmins.length <= 1 &&
       (updatedUser.roleId !== "SUPER_ADMIN" || !updatedUser.isActive)) {
-      alert("Le dernier super administrateur actif ne peut pas être désactivé ou rétrogradé.");
-      return;
+      throw new Error("Le dernier super administrateur actif ne peut pas être désactivé ou rétrogradé.");
     }
     const response = await authService.updateManagedUser(updatedUser.id, {
       firstName: updatedUser.firstName,
@@ -493,8 +435,7 @@ export default function AuthenticatedSessionView() {
       status: updatedUser.isActive ? "ACTIVE" : "DISABLED"
     });
     if (!response.success || !response.data) {
-      alert(response.message);
-      return;
+      throw new Error(response.message);
     }
     const savedUser = toAppUser(response.data.user);
     const auditLog = createAuditLog(currentAppUser!, "USER_UPDATED", "USER", savedUser.id, existingUser, {
@@ -542,7 +483,7 @@ export default function AuthenticatedSessionView() {
     document.getElementById("user-management")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const currentAppUser = user ? toAppUser(user) : null;
+  const currentAppUser = useMemo(() => user ? toAppUser(user) : null, [user]);
   const isInventoryAdmin = currentAppUser?.roleId === "SUPER_ADMIN" || currentAppUser?.roleId === "ADMIN";
   const canReviewInventory = Boolean(currentAppUser && (isInventoryAdmin || hasPermission(currentAppUser, "inventory.review")));
   const canCountInventory = Boolean(currentAppUser && (isInventoryAdmin || currentAppUser.storeIds.length > 0)
@@ -550,7 +491,7 @@ export default function AuthenticatedSessionView() {
   const inventoryScopeStores = isInventoryAdmin || !currentAppUser
     ? inventoryStores
     : inventoryStores.filter(store => currentAppUser.storeIds.includes(store.id));
-  const accessibleStores = user && user.assignedStores.length > 0 && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"
+  const accessibleStores = user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"
     ? inventoryStores.filter(store => user.assignedStores.includes(store.id))
     : inventoryStores;
   // Même règle d'accès que le module Dépenses. ADMIN et SUPER_ADMIN voient tout ;
@@ -563,27 +504,36 @@ export default function AuthenticatedSessionView() {
       : expenses.filter(expense => expense.created_by === user.id &&
           (user.assignedStores.length === 0 || (Boolean(expense.store_id) && user.assignedStores.includes(expense.store_id as string))));
   // Non-admin roles only see transfers involving one of their assigned stores.
-  const visibleArticleIds = new Set<string>(articles.map(article => article.id));
-  const visibleTransfers = currentAppUser && currentAppUser.roleId !== "SUPER_ADMIN" && currentAppUser.roleId !== "ADMIN"
+  const visibleArticleIds = useMemo(() => new Set<string>(articles.map(article => article.id)), [articles]);
+  const visibleMovements = useMemo(() => movements.filter(movement => visibleArticleIds.has(movement.article_id)), [movements, visibleArticleIds]);
+  const visibleLedgerMovements = useMemo(() => ledgerReport.rows.filter(movement => visibleArticleIds.has(movement.article_id)), [ledgerReport.rows, visibleArticleIds]);
+  const visibleStocks = useMemo(() => stocks.filter(stock => visibleArticleIds.has(stock.article_id)), [stocks, visibleArticleIds]);
+  const visibleTransfers = useMemo(() => currentAppUser && currentAppUser.roleId !== "SUPER_ADMIN" && currentAppUser.roleId !== "ADMIN"
     ? transfers.filter(transfer =>
         (currentAppUser.storeIds.includes(transfer.source_store_id) || currentAppUser.storeIds.includes(transfer.destination_store_id)) &&
         transfer.lines.every(line => visibleArticleIds.has(line.article_id))
       )
-    : transfers.filter(transfer => transfer.lines.every(line => visibleArticleIds.has(line.article_id)));
-  const visibleSales = sales.filter(sale => sale.lines.every(line =>
+    : transfers.filter(transfer => transfer.lines.every(line => visibleArticleIds.has(line.article_id))), [transfers, currentAppUser, visibleArticleIds]);
+  const visibleSales = useMemo(() => sales.filter(sale => sale.lines.every(line =>
     line.line_type === "SERVICE" || visibleArticleIds.has(line.article_id)
-  ));
-  const visibleResellerOrders = resellerOrders.filter(order =>
+  )), [sales, visibleArticleIds]);
+  const visibleResellerOrders = useMemo(() => resellerOrders.filter(order =>
     order.lines.every(line => visibleArticleIds.has(line.article_id))
-  );
-  const visibleProductions = productions.filter(production =>
+  ), [resellerOrders, visibleArticleIds]);
+  const visibleProductions = useMemo(() => productions.filter(production =>
     [...production.consumptions, ...production.outputs].every(line => visibleArticleIds.has(line.article_id))
-  );
-  const visiblePurchases = purchases.filter(purchase => purchase.lines.every(line => visibleArticleIds.has(line.article_id)));
-  const visibleAuditLogs = auditLogs.filter(entry =>
+  ), [productions, visibleArticleIds]);
+  const visiblePurchases = useMemo(() => purchases.filter(purchase => purchase.lines.every(line => visibleArticleIds.has(line.article_id))), [purchases, visibleArticleIds]);
+  const visibleAuditLogs = useMemo(() => auditLogs.filter(entry =>
     (entry.entity_type !== "ARTICLE" || visibleArticleIds.has(entry.entity_id)) &&
     !containsHiddenArticleReference([entry.old_value, entry.new_value], visibleArticleIds)
-  );
+  ), [auditLogs, visibleArticleIds]);
+  const isReportReady = (type: ReportType) => {
+    if (!reportSources(type).every(label => synchronization.status[label] === "ready")) return false;
+    const required = reportHistory(type);
+    const history = required === "movements" ? movementHistory : required === "audit" ? auditHistory : null;
+    return !history || (!history.hasMore && !history.loading && !history.error);
+  };
 
   const handleImportInitialStocks = async (rows: InitialStockImportRow[]) => {
     if (!currentAppUser || currentAppUser.roleId !== "SUPER_ADMIN") {
@@ -916,6 +866,7 @@ export default function AuthenticatedSessionView() {
       return;
     }
     try {
+      assertSaleValidationSize(sale, inventoryStores.find(store => store.id === sale.store_id));
       const result = await validateSale(sale, stocks, currentAppUser.uid, currentAppUser.displayName);
       setSales(current => current.map(item => item.id === saleId ? result.sale : item));
       setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
@@ -999,13 +950,14 @@ export default function AuthenticatedSessionView() {
     setAuditLogs(current => [result.auditLog, ...current]);
   };
 
-  const handleCreateProduction = async (production: Production) => {
+  const handleCreateProduction = async (production: Production, original?: Production) => {
     try {
-      const result = await createProduction(production, stocks);
+      if (!currentAppUser || !hasPermission(currentAppUser, original ? "production.validate" : "production.create")) throw new Error("Action non autorisée.");
+      const result = await createProduction(production, stocks, original);
       setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
         .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
       setMovements(current => [...result.movements, ...current]);
-      setProductions(current => [production, ...current]);
+      setProductions(current => [production, ...current.filter(item => item.id !== production.id)]);
       setAuditLogs(current => [result.auditLog, ...current]);
       return true;
     } catch (error) {
@@ -1745,7 +1697,7 @@ export default function AuthenticatedSessionView() {
     setInventoryCounts(current => current.filter(item => item.id !== count.id));
   };
 
-  const handleValidateInventoryCount = async (count: InventoryCount, decisions: Record<string, InventoryReasonDecision>, note: string) => {
+  const handleValidateInventoryCount = async (count: InventoryCount, decisions: Record<string, InventoryReasonDecision>, note: string, chargedEmployeeId?: string) => {
     if (!currentAppUser || !canReviewInventory || user?.status !== "ACTIVE") throw new Error("Seul un administrateur peut valider un inventaire.");
     const result = await validateInventoryCount(
       count,
@@ -1757,8 +1709,11 @@ export default function AuthenticatedSessionView() {
         status: validated.status,
         total_charged_amount: validated.total_charged_amount,
         charged_to: validated.charged_to_name,
+        charged_employee_id: validated.charged_employee_id,
+        charge_assigned_by: validated.charge_assigned_by,
         rejected_reasons: validated.lines.filter(line => line.decision === "REJECTED").map(line => line.article_name)
-      }, count.store_id)
+      }, count.store_id),
+      chargedEmployeeId
     );
     setInventoryCounts(current => current.map(item => item.id === count.id ? result.count : item));
     setStocks(current => {
@@ -1779,6 +1734,7 @@ export default function AuthenticatedSessionView() {
 
   const settleInventoryCounts = async (counts: InventoryCount[], method: "PAYSLIP" | "ADVANCE" | "OTHER", reference: string, note: string, payslipId?: string) => {
     if (!currentAppUser || !canReviewInventory || user?.status !== "ACTIVE") throw new Error("Seul un administrateur peut marquer une retenue comme déduite.");
+    if (method === "PAYSLIP" && !payslipId) throw new Error("Enregistrez la retenue depuis le module Paie pour la lier à une fiche de salaire.");
     const settlement = {
       settled_at: Date.now(),
       settled_by: currentAppUser.uid,
@@ -2361,7 +2317,9 @@ export default function AuthenticatedSessionView() {
         inventoryCounts,
         resellerOrders,
         sales: visibleSales,
-        canShipSales: hasPermission(currentAppUser, "sales.validate")
+        canShipSales: hasPermission(currentAppUser, "sales.validate"),
+        warehouseStoreIds: inventoryStores.filter(store => store.store_type === "CENTRAL_WAREHOUSE").map(store => store.id),
+        canApproveTransfer: transfer => canApproveTransfer(currentAppUser, transfer, inventoryStores)
       })
     : [];
 
@@ -2397,7 +2355,12 @@ export default function AuthenticatedSessionView() {
                   : "En ligne"}
           </div>
           <ThemeSwitcher />
-          <NotificationBell notifications={actionNotifications} onOpen={setActiveModule} />
+          <NotificationBell key={currentAppUser?.uid} userId={currentAppUser?.uid || user.id} notifications={actionNotifications} onOpen={item => {
+            const current = actionNotifications.find(notification => notification.id === item.id);
+            if (!current) return;
+            setNotificationAction({ item: current, previousModule: notificationAction?.previousModule || activeModule });
+            setActiveModule(current.module);
+          }} />
           {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) && <button type="button" onClick={() => setActiveModule("expenses")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Dépenses</button>}
           {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || ["view", "create", "receive", "deposit"].some(action => hasPermission(currentAppUser, `cash_handover.${action}`))) && <button type="button" onClick={() => setActiveModule("cashHandovers")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Remises de caisse</button>}
           <button
@@ -2424,7 +2387,18 @@ export default function AuthenticatedSessionView() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <Suspense fallback={<div className="py-16 text-center text-sm text-slate-500">Chargement?</div>}>
+        {(authorizationError || usersError || Object.keys(auxiliaryErrors).length > 0 || Object.keys(synchronization.errors).length > 0) && (
+          <div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-950/40 p-4 text-sm text-amber-100">
+            {authorizationError && <p>Droits utilisateur : {authorizationError}</p>}
+            {usersError && <p>Utilisateurs : {usersError}</p>}
+            {Object.entries(auxiliaryErrors).map(([label, message]) => <p key={label}>{label} : {message}</p>)}
+            {Object.entries(synchronization.errors).map(([label, message]) => <p key={label}>{label} : {message}</p>)}
+            <button type="button" onClick={() => { synchronization.retry(); if (authorizationError) void refreshUser(); }} className="mt-3 rounded-lg bg-amber-200 px-3 py-2 font-bold text-slate-900">Réessayer la synchronisation</button>
+          </div>
+        )}
+        <SyncFeedback online={isOnline} status={synchronization.status} />
+        <NotificationActionWindow active={!!notificationAction && activeModule === notificationAction.item.module} title={notificationAction?.item.title || "Action en attente"} onClose={closeNotificationAction}>
+        <Suspense fallback={<FeedbackState kind="loading" title="Chargement de la page" />}>
         {activeModule === "resellerPortal" && currentAppUser && (
           currentAppUser.roleId === "REVENDEUR" ||
           currentAppUser.roleId === "ADMIN" ||
@@ -2439,11 +2413,11 @@ export default function AuthenticatedSessionView() {
             <ResellerPortalView
               user={currentAppUser}
               isAdmin={currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN"}
-              orders={visibleResellerOrders}
+              orders={notificationAction?.item.module === "resellerPortal" ? visibleResellerOrders.filter(order => order.id === notificationAction.item.entityId) : visibleResellerOrders}
               notifications={resellerNotifications}
               articles={articles}
               stores={inventoryStores}
-              stocks={stocks}
+              stocks={visibleStocks}
               creditCustomers={creditCustomers}
               onCreateOrder={handleCreateResellerOrder}
               onUpdateOrder={handleUpdateResellerOrder}
@@ -2462,11 +2436,12 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <SalesView
+              focusedSaleId={notificationAction?.item.module === "sales" ? notificationAction.item.entityId : undefined}
               sales={visibleSales}
               creditCustomers={creditCustomers}
               stores={accessibleStores}
               articles={articles}
-              stocks={stocks}
+              stocks={visibleStocks}
               currentUser={currentAppUser}
               canCreateResellerSale={currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN"
                 || (currentAppUser.roleId === "RESPONSABLE_MAGASIN"
@@ -2490,12 +2465,13 @@ export default function AuthenticatedSessionView() {
             >
               ← Retour à l'accueil
             </button>
+            <HistoryPaging {...movementHistory} />
             <StocksView
               stores={accessibleStores}
               categories={categories}
               articles={articles}
-              stocks={stocks}
-              movements={movements}
+              stocks={visibleStocks}
+              movements={visibleMovements}
               currentUser={currentAppUser}
               onAdjustStock={handleAdjustStock}
               onImportInitialStocks={handleImportInitialStocks}
@@ -2513,11 +2489,17 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <InventoryControlView
+              employees={employees}
+              employeesLoading={inventoryEmployeesLoading}
+              employeesError={inventoryEmployeesError}
+              onRetryEmployees={synchronization.retry}
+              onOpenPayroll={canManageStores ? () => setActiveModule("payroll") : undefined}
+              focusedCountId={notificationAction?.item.module === "inventory" ? notificationAction.item.entityId : undefined}
               currentUser={currentAppUser}
               stores={inventoryScopeStores}
               articles={articles}
-              stocks={stocks}
-              counts={inventoryCounts}
+              stocks={visibleStocks}
+              counts={notificationAction?.item.module === "inventory" ? inventoryCounts.filter(count => count.id === notificationAction.item.entityId) : inventoryCounts}
               canCount={canCountInventory}
               canReview={canReviewInventory}
               onSaveCount={handleSaveInventoryCount}
@@ -2596,10 +2578,11 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <TransfersView
+              focusedTransferId={notificationAction?.item.module === "transfers" ? notificationAction.item.entityId : undefined}
               transfers={visibleTransfers}
               stores={inventoryStores}
               articles={articles.filter(article => article.is_active)}
-              stocks={stocks}
+              stocks={visibleStocks}
               currentUser={currentAppUser}
               canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "transfers.create")}
               canReject={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
@@ -2629,30 +2612,43 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <ReportsView
-              userAuditReport={canManageStores ? <UserAuditReport users={managedUsers} employees={employees} sales={sales} advances={salaryAdvances} payslips={payslips} counts={inventoryCounts} stores={accessibleStores} /> : undefined}
+              isReportReady={isReportReady}
+              onSelectReport={type => { setSelectedReportType(type); setReportRequest(null); }}
+              historyStatus={reportHistory(selectedReportType) === "movements" ? <HistoryPaging {...movementHistory} label="Mouvements" /> : reportHistory(selectedReportType) === "audit" ? <HistoryPaging {...auditHistory} label="Audit" /> : undefined}
+              userAuditReport={canManageStores ? (payrollLoadedKey === payrollRequestKey && !auxiliaryLoading && !usersLoading && !usersError && Object.keys(auxiliaryErrors).length === 0 ? <UserAuditReport users={managedUsers} employees={employees} sales={sales} advances={salaryAdvances} payslips={payslips} counts={inventoryCounts} stores={accessibleStores} /> : <p role="status">Chargement du personnel et de la paie...</p>) : undefined}
               stores={accessibleStores}
               categories={categories}
               articles={articles}
-              stocks={stocks}
+              stocks={visibleStocks}
               transfers={visibleTransfers}
-              movements={movements}
+              movements={visibleMovements}
               sales={visibleSales}
               productions={visibleProductions}
               auditLogs={visibleAuditLogs}
               expenses={reportExpenses}
               currentUser={currentAppUser}
-              onOpenReportViewer={(type, filters) => setReportRequest({ type, filters })}
+              onOpenReportViewer={(type, filters) => { if (isReportReady(type)) setReportRequest({ type, filters }); }}
             />
-            {reportRequest && (
+            {reportRequest?.type === "STOCK_LEDGER" && !ledgerReport.ready && (
+              <div role="status" className="rounded-xl border border-slate-600 bg-slate-800 p-4 text-sm text-slate-100">
+                <p>Grille des mouvements · {ledgerReport.rows.length} mouvements chargés pour la période sélectionnée.</p>
+                <p className="mt-2">{ledgerReport.error || "Chargement en cours…"}</p>
+                <div className="mt-3 flex gap-3">
+                  {ledgerReport.error && <button type="button" onClick={ledgerReport.retry} className="rounded-lg bg-blue-600 px-3 py-2">Réessayer</button>}
+                  <button type="button" onClick={() => setReportRequest(null)} className="rounded-lg border border-slate-500 px-3 py-2">Annuler</button>
+                </div>
+              </div>
+            )}
+            {reportRequest && isReportReady(reportRequest.type) && (reportRequest.type !== "STOCK_LEDGER" || ledgerReport.ready) && (
               <ReportViewer
                 reportType={reportRequest.type}
                 filters={reportRequest.filters}
                 stores={inventoryStores}
                 categories={categories}
                 articles={articles}
-                stocks={stocks}
+                stocks={visibleStocks}
                 transfers={visibleTransfers}
-                movements={movements}
+                movements={reportRequest.type === "STOCK_LEDGER" ? visibleLedgerMovements : visibleMovements}
                 sales={visibleSales}
                 productions={visibleProductions}
                 auditLogs={visibleAuditLogs}
@@ -2675,6 +2671,7 @@ export default function AuthenticatedSessionView() {
             >
               ← Retour à l'accueil
             </button>
+            <HistoryPaging {...auditHistory} />
             <AuditView
               auditLogs={visibleAuditLogs}
               stores={inventoryStores}
@@ -2696,9 +2693,10 @@ export default function AuthenticatedSessionView() {
               productions={visibleProductions}
               stores={accessibleStores}
               articles={articles}
-              stocks={stocks}
+              stocks={visibleStocks}
               currentUser={currentAppUser}
-              onCreateProduction={handleCreateProduction}
+              onCreateProduction={production => handleCreateProduction(production)}
+              onValidateProduction={production => handleCreateProduction({ ...production, status: "COMPLETED", validated_by: currentAppUser.uid, validated_by_name: currentAppUser.displayName || currentAppUser.email, validated_at: Date.now() }, production)}
               onUpdateDraftProduction={handleUpdateDraftProduction}
               onDeleteDraftProduction={handleDeleteDraftProduction}
               onInitiateReturn={handleInitiateProductionReturn}
@@ -2720,7 +2718,7 @@ export default function AuthenticatedSessionView() {
               purchases={visiblePurchases}
               stores={accessibleStores}
               articles={articles}
-              stocks={stocks}
+              stocks={visibleStocks}
               currentUser={currentAppUser}
               onCreateSupplier={handleCreateSupplier}
               onToggleSupplier={handleToggleSupplier}
@@ -2824,13 +2822,14 @@ export default function AuthenticatedSessionView() {
               onSaveAdvance={handleSaveAdvance}
             />
           </section>
+        ) : activeModule !== "home" ? (
+          <FeedbackState kind="denied" title="Accès refusé" description="Votre compte ne dispose pas des droits requis pour cet espace. Contactez un administrateur pour faire vérifier vos accès." />
         ) : user && (
           <RoleHomeView
             user={toAppUser(user)}
             stores={inventoryStores}
             sales={visibleSales}
             expenses={expenses}
-            auditLogs={visibleAuditLogs}
             onOpenUsers={openUserManagement}
             onOpenSales={() => setActiveModule("sales")}
             onOpenStocks={() => setActiveModule("stocks")}
@@ -2864,6 +2863,9 @@ export default function AuthenticatedSessionView() {
               <UsersView
                 currentUser={toAppUser(user)}
                 users={managedUsers}
+                loading={usersLoading}
+                loadError={usersError}
+                online={isOnline}
                 stores={inventoryStores}
                 onUpdateUser={handleUpdateManagedUser}
                 onCreateUser={handleCreateManagedUser}
@@ -2944,7 +2946,7 @@ export default function AuthenticatedSessionView() {
             <div className="pt-4 border-t border-slate-700/70 space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
                 <Shield className="w-3.5 h-3.5 text-amber-400" />
-                <span>Rôles & Permissions (Module Admin)</span>
+                <span>Rôles et accès effectifs</span>
               </div>
               <div className="p-3 bg-slate-900/70 border border-slate-700/60 rounded-xl space-y-1.5 text-[11px] text-slate-400">
                 <p>
@@ -2958,23 +2960,24 @@ export default function AuthenticatedSessionView() {
                 <p>
                   <strong className="text-slate-300">Permissions :</strong>{" "}
                   <code className="text-slate-400 bg-slate-800 px-1 py-0.5 rounded">
-                    {JSON.stringify(user.permissions)}
+                    {user.role === "SUPER_ADMIN" ? "Toutes les permissions système (SUPER_ADMIN)" : JSON.stringify(user.permissions)}
                   </code>
                 </p>
                 <p>
                   <strong className="text-slate-300">Magasins assignés :</strong>{" "}
                   <code className="text-slate-400 bg-slate-800 px-1 py-0.5 rounded">
-                    {JSON.stringify(user.assignedStores)}
+                    {user.role === "SUPER_ADMIN" || user.role === "ADMIN" ? "Tous les magasins" : JSON.stringify(user.assignedStores)}
                   </code>
                 </p>
                 <p className="text-[10px] text-slate-500 pt-1 border-t border-slate-800">
-                  Ces propriétés seront configurées lors de l'intégration du module Administration.
+                  {isProfileFromCache ? "Profil en cache : confirmation des droits par le serveur en attente." : "Droits synchronisés avec votre compte. Chaque opération reste soumise aux règles de validation."}
                 </p>
               </div>
             </div>
           </section>
         )}
       </Suspense>
+        </NotificationActionWindow>
       </main>
     </div>
   );

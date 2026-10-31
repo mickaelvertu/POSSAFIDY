@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, query, setDoc, deleteDoc, where } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
-import type { AuditLog, InventoryChargeSettlement, InventoryCount, InventoryReasonDecision, StockMovement, StoreStock } from "../types";
+import type { AuditLog, Employee, InventoryChargeSettlement, InventoryCount, InventoryReasonDecision, StockMovement, StoreStock } from "../types";
 import { applyDecisions } from "./inventoryControl";
 
 const COUNTS_COLLECTION = "inventoryCounts";
@@ -28,9 +28,12 @@ export async function loadInventoryCounts(storeIds?: string[]): Promise<Inventor
   return snapshots.flatMap(snapshot => snapshot.docs.map(item => item.data() as InventoryCount));
 }
 
-export async function loadMyInventoryCharges(userId: string): Promise<InventoryCount[]> {
-  const snapshot = await getDocs(query(collection(db, COUNTS_COLLECTION), where("charged_to", "==", userId)));
-  return snapshot.docs.map(item => item.data() as InventoryCount);
+export async function loadMyInventoryCharges(userId: string, employeeIds: string[] = []): Promise<InventoryCount[]> {
+  const snapshots = await Promise.all([
+    getDocs(query(collection(db, COUNTS_COLLECTION), where("charged_to", "==", userId))),
+    ...employeeIds.map(id => getDocs(query(collection(db, COUNTS_COLLECTION), where("charged_employee_id", "==", id)))),
+  ]);
+  return [...new Map(snapshots.flatMap(snapshot => snapshot.docs.map(item => [item.id, item.data() as InventoryCount] as const))).values()];
 }
 
 export async function saveInventoryCount(count: InventoryCount, auditLog?: AuditLog): Promise<void> {
@@ -158,11 +161,12 @@ export async function validateInventoryCount(
   reviewer: { id: string; name: string },
   note: string | undefined,
   knownStocks: StoreStock[],
-  auditLog: (validated: InventoryCount) => AuditLog
+  auditLog: (validated: InventoryCount) => AuditLog,
+  chargedEmployeeId?: string
 ): Promise<{ count: InventoryCount; stocks: StoreStock[]; movements: StockMovement[] }> {
   const { lines, totalCharged } = applyDecisions(count, decisions);
   const now = Date.now();
-  const validated: InventoryCount = {
+  let validated: InventoryCount = {
     ...count,
     lines,
     status: "VALIDATED",
@@ -174,18 +178,45 @@ export async function validateInventoryCount(
     ...(totalCharged > 0 ? { charged_to: count.manager_signed_by || count.created_by, charged_to_name: count.manager_signed_by_name || count.created_by_name } : {}),
     total_charged_amount: totalCharged
   };
+  delete validated.charged_employee_id;
+  delete validated.charge_assigned_by;
+  delete validated.charge_assigned_by_name;
+  delete validated.charge_assigned_at;
+  delete validated.charge_settlement;
   const stocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
   await runOnlineTransaction(async transaction => {
+    stocks.length = 0;
+    movements.length = 0;
     const countRef = doc(db, COUNTS_COLLECTION, count.id);
     const countSnapshot = await transaction.get(countRef);
     if (!countSnapshot.exists() || (countSnapshot.data() as InventoryCount).status !== "SUBMITTED") {
       throw new Error("Cet inventaire n'est plus en attente de contrôle.");
     }
     const live = countSnapshot.data() as InventoryCount;
+    if (live.updated_at !== count.updated_at) throw new Error("Cet inventaire a changé. Rouvrez le contrôle avant de valider.");
     if (!live.manager_signed_at && !live.signature_waived) throw new Error("Le responsable du magasin n'a pas signé ce comptage.");
     if (live.created_by === reviewer.id) throw new Error("Vous ne pouvez pas approuver un comptage que vous avez réalisé.");
+    if (chargedEmployeeId && totalCharged > 0) {
+      const [reviewerSnapshot, employeeSnapshot] = await Promise.all([
+        transaction.get(doc(db, "users", reviewer.id)),
+        transaction.get(doc(db, "employees", chargedEmployeeId)),
+      ]);
+      const actor = reviewerSnapshot.data();
+      if (actor?.role !== "SUPER_ADMIN" || actor.status !== "ACTIVE") throw new Error("Seul le SUPER_ADMIN peut choisir un autre employé pour la retenue.");
+      if (!employeeSnapshot.exists()) throw new Error("L’employé choisi n’existe plus. Sélectionnez une autre fiche du personnel.");
+      const employee = employeeSnapshot.data() as Employee;
+      validated = {
+        ...validated,
+        charged_employee_id: chargedEmployeeId,
+        charged_to: employee.user_id || chargedEmployeeId,
+        charged_to_name: `${employee.first_name} ${employee.last_name}`,
+        charge_assigned_by: reviewer.id,
+        charge_assigned_by_name: reviewer.name,
+        charge_assigned_at: now,
+      };
+    }
     const adjusted = lines.filter(line => line.variance !== 0);
     const targets = adjusted.map(line => {
       const known = knownStocks.find(stock => stock.store_id === count.store_id && stock.article_id === line.article_id);

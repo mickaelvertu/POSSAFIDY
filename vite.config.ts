@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { createHash } from 'node:crypto';
 import {defineConfig} from 'vite';
 
 function offlineServiceWorker() {
@@ -22,15 +23,44 @@ function offlineServiceWorker() {
         ...bundledFiles.map(file => `/${file}`)
       ])];
       const source = `
-const CACHE_NAME = 'gileada-shell-v1';
+const CACHE_NAME = 'gileada-shell-${createHash('sha256').update(JSON.stringify(precacheFiles)).digest('hex').slice(0, 12)}';
 const PRECACHE_URLS = ${JSON.stringify(precacheFiles)};
 
+async function cachedResponse(request) {
+  const current = await caches.open(CACHE_NAME);
+  return (await current.match(request, { ignoreVary: true })) || (await caches.match(request, { ignoreVary: true }));
+}
+
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS)));
+});
+
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    const versions = (await caches.keys()).filter(name => name.startsWith('gileada-shell-'));
+    const keep = new Set([CACHE_NAME, ...versions.filter(name => name !== CACHE_NAME).slice(-1)]);
+    await Promise.all(versions.filter(name => !keep.has(name)).map(name => caches.delete(name)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const data = event.notification.data;
+  if (data?.type !== 'action-notification') return;
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {
+    const client = clients.find(client => new URL(client.url).origin === self.location.origin);
+    if (client) {
+      await client.focus();
+      client.postMessage(data);
+    } else {
+      await self.clients.openWindow('/');
+    }
+  }));
 });
 
 self.addEventListener('fetch', event => {
@@ -40,15 +70,15 @@ self.addEventListener('fetch', event => {
 
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).catch(async () =>
-      (await caches.match(request, { ignoreVary: true })) ||
-      (await caches.match('/index.html', { ignoreVary: true })) ||
+      (await cachedResponse(request)) ||
+      (await cachedResponse('/index.html')) ||
       Response.error()
     ));
     return;
   }
 
   if (!/\\.(?:js|css|png|svg|webp|ico|woff2?|webmanifest)$/i.test(url.pathname)) return;
-  event.respondWith(caches.match(request, { ignoreVary: true }).then(cached => cached || fetch(request).then(response => {
+  event.respondWith(cachedResponse(request).then(cached => cached || fetch(request).then(response => {
     if (response.ok) {
       const copy = response.clone();
       void caches.open(CACHE_NAME).then(cache => cache.put(request, copy));

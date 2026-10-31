@@ -11,38 +11,41 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE' && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['ADMIN', 'SUPER_ADMIN']
-      );
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' &&
+        profile.get('role', '') in ['ADMIN', 'SUPER_ADMIN'];
     }
 
     function isSuperAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE' &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SUPER_ADMIN';
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' && profile.get('role', '') == 'SUPER_ADMIN';
     }
 
     function isActiveUser() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE';
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE';
+    }
+
+    function currentProfile() {
+      return isSignedIn()
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data : null;
     }
 
     function hasPermission(permission) {
-      return isAdmin() || (
-        isActiveUser() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.hasAny([permission])
-      );
+      return hasAnyPermission([permission]);
+    }
+
+    function hasAnyPermission(permissions) {
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' &&
+        (profile.get('role', '') in ['ADMIN', 'SUPER_ADMIN'] || profile.get('permissions', []).hasAny(permissions));
     }
 
     function hasStoreAccess(storeId) {
-      return isAdmin() || (
-        isActiveUser() && storeId is string &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([storeId])
-      );
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' &&
+        (profile.get('role', '') in ['ADMIN', 'SUPER_ADMIN'] ||
+          (storeId is string && profile.get('assignedStores', []).hasAny([storeId])));
     }
 
     function canStoreArticle(storeId, articleId) {
@@ -554,9 +557,7 @@ service cloud.firestore {
           request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
           canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
           canStoreArticle(request.resource.data.store_id, request.resource.data.article_id)) && (
-        hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
-        hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-        hasPermission('production.create') || hasPermission('production.validate') ||
+        hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
         (hasPermission('stock.edit') &&
           request.resource.data.movement_type == 'CONSUMPTION' &&
           request.resource.data.reference_type == 'CONSUMPTION' &&
@@ -728,10 +729,17 @@ service cloud.firestore {
     match /productions/{productionId} {
       allow read: if hasPermission('production.view') && (resource == null || hasStoreAccess(resource.data.manufacturer_store_id));
       allow create: if (hasPermission('production.create') || hasPermission('production.validate')) &&
+        request.resource.data.status == 'DRAFT' &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.consumptions is list && request.resource.data.consumptions.size() > 0 &&
         request.resource.data.outputs is list && request.resource.data.outputs.size() > 0 &&
         hasStoreAccess(request.resource.data.manufacturer_store_id);
+      allow update: if hasPermission('production.validate') &&
+        hasStoreAccess(resource.data.manufacturer_store_id) &&
+        resource.data.status == 'DRAFT' && request.resource.data.status == 'COMPLETED' &&
+        request.resource.data.validated_by == request.auth.uid &&
+        request.resource.data.validated_at is number &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'validated_by', 'validated_by_name', 'validated_at']);
       allow update: if hasPermission('production.create') &&
         resource.data.status == 'DRAFT' &&
         request.resource.data.status == 'DRAFT' &&
@@ -826,7 +834,44 @@ service cloud.firestore {
         );
       }
 
-      allow read: if isAdmin() || (isActiveUser() && (hasStoreAccess(resource.data.store_id) || resource.data.get('charged_to', null) == request.auth.uid));
+      function validEmployeeCharge(data) {
+        let employeeId = data.charged_employee_id;
+        let employee = get(/databases/$(database)/documents/employees/$(employeeId)).data;
+        let linkedUser = employee.get('user_id', '');
+        return isSuperAdmin() && data.get('total_charged_amount', 0) > 0 &&
+          data.charged_to_name == employee.first_name + ' ' + employee.last_name &&
+          data.charged_to == (linkedUser is string && linkedUser.size() > 0 ? linkedUser : employeeId) &&
+          data.charge_assigned_by == request.auth.uid && data.charge_assigned_at is number;
+      }
+
+      function validChargeAssignment() {
+        let data = request.resource.data;
+        return data.get('charged_employee_id', null) is string
+          ? validEmployeeCharge(data)
+          : (!data.keys().hasAny(['charged_employee_id', 'charge_assigned_by', 'charge_assigned_by_name', 'charge_assigned_at']) &&
+            (data.get('total_charged_amount', 0) <= 0 ||
+              (data.charged_to == resource.data.get('manager_signed_by', resource.data.created_by) &&
+               data.charged_to_name == resource.data.get('manager_signed_by_name', resource.data.created_by_name))));
+      }
+
+      function payrollEmployeeMatches(employeeId) {
+        let employee = get(/databases/$(database)/documents/employees/$(employeeId)).data;
+        let responsible = resource.data.get('charged_to', resource.data.get('manager_signed_by', resource.data.created_by));
+        return resource.data.get('charged_employee_id', null) is string
+          ? resource.data.charged_employee_id == employeeId
+          : responsible == employeeId || (employee.get('user_id', '') != '' && employee.get('user_id', '') == responsible);
+      }
+
+      function linkedPayroll(settlement) {
+        let payroll = getAfter(/databases/$(database)/documents/payroll/$(settlement.payslip_id)).data;
+        return settlement.payslip_id is string && payroll.inventory_count_ids.hasAny([countId]) &&
+          payroll.inventory_charges_deducted >= resource.data.total_charged_amount &&
+          payrollEmployeeMatches(payroll.employee_id);
+      }
+
+      allow read: if isAdmin() || (isActiveUser() && (hasStoreAccess(resource.data.store_id) || resource.data.get('charged_to', null) == request.auth.uid ||
+        (resource.data.get('charged_employee_id', null) is string &&
+          get(/databases/$(database)/documents/employees/$(resource.data.charged_employee_id)).data.get('user_id', null) == request.auth.uid)));
       allow create: if isCounter() &&
         request.resource.data.id == countId &&
         request.resource.data.created_by == request.auth.uid &&
@@ -856,11 +901,19 @@ service cloud.firestore {
         resource.data.created_by != request.auth.uid &&
         ('manager_signed_at' in resource.data || resource.data.get('signature_waived', false) == true) &&
         request.resource.data.status in ['VALIDATED', 'REJECTED'] &&
-        request.resource.data.store_id == resource.data.store_id
+        request.resource.data.store_id == resource.data.store_id &&
+        (request.resource.data.status != 'VALIDATED' ||
+          (request.resource.data.reviewed_by == request.auth.uid && request.resource.data.reviewed_at is number && validChargeAssignment()))
       ) || (
         isAdmin() && resource.data.status == 'VALIDATED' &&
         !('charge_settlement' in resource.data) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['charge_settlement', 'updated_at'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['charge_settlement', 'updated_at']) &&
+        request.resource.data.charge_settlement.settled_by == request.auth.uid &&
+        request.resource.data.charge_settlement.settled_at is number &&
+        request.resource.data.charge_settlement.reference is string &&
+        request.resource.data.charge_settlement.reference.size() > 0 &&
+        request.resource.data.charge_settlement.method in ['PAYSLIP', 'ADVANCE', 'OTHER'] &&
+        (request.resource.data.charge_settlement.method != 'PAYSLIP' || linkedPayroll(request.resource.data.charge_settlement))
       );
       allow delete: if isCounter() && resource.data.status == 'DRAFT' && resource.data.created_by == request.auth.uid;
     }
@@ -1093,9 +1146,7 @@ service cloud.firestore {
           canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
           canStoreArticle(request.resource.data.store_id, request.resource.data.article_id)) &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
-          hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
-          hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-          hasPermission('production.create') || hasPermission('production.validate') ||
+          hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
           isSuperAdmin()
         );
       allow update: if hasStoreAccess(resource.data.store_id) &&
@@ -1107,9 +1158,7 @@ service cloud.firestore {
         request.resource.data.store_id == resource.data.store_id &&
         request.resource.data.article_id == resource.data.article_id &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
-          hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
-          hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-          hasPermission('production.create') || hasPermission('production.validate') ||
+          hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
           (hasPermission('stock.edit') &&
             get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type == 'MANUFACTURER' &&
             request.resource.data.quantity < resource.data.quantity &&

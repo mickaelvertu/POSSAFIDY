@@ -1,0 +1,21 @@
+{
+  "store_code": "POS-09",
+  "article_id": "article-resale-anti-stress",
+  "article_name": "ANTI STRESS",
+  "declared_initial_quantity": 4,
+  "reported_movements": [
+    {
+      "timestamp": 1793085963642,
+      "flow": "CENTRAL_TO_POS",
+      "before": 0,
+      "quantity": 5,
+      "after": 5,
+      "reference": "TRF-20261027-082324-EC45"
+    }
+  ],
+  "reported_movement_net": 5,
+  "expected_current_quantity": 9,
+  "exported_current_quantity": 5,
+  "missing_initial_quantity": 4,
+  "conclusion": "Declared initial 4 + reported net receipts 5 = expected current 9, not 4. Export shows 5: baseline 4 appears missing, subject to completeness of supplied report. Preserve existing movements. No live write performed."
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "review": {
+    "ready_to_apply": true,
+    "scope": "Single article only, quantity explicitly requested by user",
+    "note": "Initial import requires stock record to be absent. If stock already exists, use the appropriate stock correction workflow; do not delete stock or movement history."
+  },
+  "data": [
+    {
+      "store_id": "store-pos-07",
+      "store_code": "POS-07",
+      "store_name": "Ankazomanga",
+      "article_id": "article-resale-savon-anti-rides",
+      "article_code": "SA079",
+      "article_name": "SAVON ANTI RIDES",
+      "unit": "Piece",
+      "quantity": 1
+    }
+  ]
+}

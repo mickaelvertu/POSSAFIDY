@@ -1,0 +1,49 @@
+{
+  "store_id": "store-pos-06",
+  "store_code": "POS-06",
+  "store_name": "Antaninandro",
+  "source_ledger": "rapport-stock_ledger-2026-10-29 (1).csv",
+  "existing_movements_preserved": true,
+  "articles": [
+    {
+      "article_id": "article-resale-noni",
+      "article_name": "NONI",
+      "declared_initial_quantity": 2,
+      "recorded_baseline": 0,
+      "movement_after_baseline": 5,
+      "ledger_current_quantity": 5,
+      "target_current_quantity": 7,
+      "required_adjustment": 2
+    },
+    {
+      "article_id": "article-resale-omega-3-pm",
+      "article_name": "OMEGA 3 PM",
+      "declared_initial_quantity": 14,
+      "recorded_baseline": 11,
+      "movement_after_baseline": 0,
+      "ledger_current_quantity": 11,
+      "target_current_quantity": 14,
+      "required_adjustment": 3
+    },
+    {
+      "article_id": "article-resale-komima",
+      "article_name": "KOMIMA",
+      "declared_initial_quantity": 4,
+      "recorded_baseline": 2,
+      "movement_after_baseline": 3,
+      "ledger_current_quantity": 5,
+      "target_current_quantity": 7,
+      "required_adjustment": 2
+    },
+    {
+      "article_id": "article-resale-komima-cancer",
+      "article_name": "KOMIMA CANCER",
+      "declared_initial_quantity": 4,
+      "recorded_baseline": 0,
+      "movement_after_baseline": 3,
+      "ledger_current_quantity": 3,
+      "target_current_quantity": 7,
+      "required_adjustment": 4
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { buildArticleStockRows } from "./stockByArticle";
 import {
   Article,
   AuditLog,
@@ -234,6 +235,16 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Total facturé", value: money(rows.reduce((sum, row) => sum + row.total, 0)) },
         { label: "Déjà encaissé", value: money(rows.reduce((sum, row) => sum + row.paid, 0)) },
         { label: "Crédit en cours", value: money(rows.reduce((sum, row) => sum + row.balance, 0)) }
+      ];
+    }
+    case "STOCK_BY_ARTICLE": {
+      const catalog = new Map(data.articles.map(article => [article.id, article]));
+      const rows = buildArticleStockRows(data.stocks, id => catalog.get(id));
+      return [
+        { label: "Articles", value: String(rows.length) },
+        { label: "Magasins", value: String(new Set(rows.flatMap(row => row.storeIds)).size) },
+        { label: "Articles disponibles", value: String(rows.filter(row => row.available > 0).length) },
+        { label: "Articles sans disponible", value: String(rows.filter(row => row.available === 0).length) }
       ];
     }
     case "STOCK_STATUS":

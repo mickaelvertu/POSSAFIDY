@@ -8,9 +8,10 @@
     "build": "vite build",
     "start": "tsx server.ts",
     "preview": "vite preview",
-    "test": "tsx --test src/services/transferApproval.test.ts src/services/transferReceipt.test.ts src/services/employeePresentation.test.ts src/services/stockImportValidation.test.ts src/services/stockSyncValidation.test.ts src/services/inventoryControl.test.ts src/services/offlineSupport.test.ts src/services/materialConsumption.test.ts",
+    "test": "tsx --test src/services/transferApproval.test.ts src/services/transferReceipt.test.ts src/services/employeePresentation.test.ts src/services/stockImportValidation.test.ts src/services/stockSyncValidation.test.ts src/services/inventoryControl.test.ts src/services/offlineSupport.test.ts src/services/materialConsumption.test.ts src/services/notificationService.test.ts src/services/dataSync.test.ts src/services/stockLedger.test.ts src/services/saleValidationLimits.test.ts src/services/inventoryChargeAssignment.test.ts src/services/stockByArticle.test.ts",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:rules": "node scripts/build-inventory-service-test.cjs && firebase emulators:exec --only firestore --project demo-sale-rules --config firebase.test.json \"node --test --test-concurrency=1 scripts/sale-rules.integration.cjs scripts/inventory-charges.integration.cjs build/inventory-service.integration.mjs\""
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

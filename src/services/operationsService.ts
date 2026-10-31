@@ -8,7 +8,7 @@ import {
   where
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
-import { saleLinesEqual } from "./saleComparison";
+import { saleLinesEqual, firestoreValuesEqual } from "./saleComparison";
 import { canConsumeMaterials, validateMaterialConsumption } from "./materialConsumption";
 import type { Article, Store, UserProfile } from "../types";
 import { AppRoleId, AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
@@ -561,25 +561,34 @@ export async function validateSale(
 
 export async function createProduction(
   production: Production,
-  knownStocks: StoreStock[]
+  knownStocks: StoreStock[],
+  original?: Production
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[]; auditLog: AuditLog }> {
+  if (production.status !== "DRAFT" && !(production.status === "COMPLETED" && original?.status === "DRAFT")) throw new Error("Enregistrez un brouillon avant validation.");
+  if (!production.consumptions.length || !production.outputs.length || [...production.consumptions, ...production.outputs].some(line => !line.article_id || !Number.isFinite(line.quantity) || line.quantity <= 0)) throw new Error("Quantites de production invalides.");
   const deltas = new Map<string, { normal: number; recycled: number }>();
   const addDelta = (articleId: string, key: "normal" | "recycled", value: number) => {
     const current = deltas.get(articleId) || { normal: 0, recycled: 0 };
     deltas.set(articleId, { ...current, [key]: current[key] + value });
   };
-  production.consumptions.forEach(line => addDelta(line.article_id, line.source === "RECYCLED" ? "recycled" : "normal", -line.quantity));
-  production.outputs.forEach(line => addDelta(line.article_id, "normal", line.quantity));
+  if (production.status === "COMPLETED") production.consumptions.forEach(line => addDelta(line.article_id, line.source === "RECYCLED" ? "recycled" : "normal", -line.quantity));
+  if (production.status === "COMPLETED") production.outputs.forEach(line => addDelta(line.article_id, "normal", line.quantity));
   const targets = [...deltas].map(([articleId, delta]) => ({ articleId, delta, ...stockReference(knownStocks, production.manufacturer_store_id, articleId) }));
   const timestamp = Date.now();
-  const entry = audit("PRODUCTION_COMPLETED", "PRODUCTION", production.id, production.created_by, production.created_by_name, production.manufacturer_store_id, undefined, production);
+  const entry = audit(production.status === "DRAFT" ? "PRODUCTION_DRAFT_CREATED" : "PRODUCTION_COMPLETED", "PRODUCTION", production.id, production.validated_by || production.created_by, production.validated_by_name || production.created_by_name, production.manufacturer_store_id, original, production);
   const updatedStocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
   await runOnlineTransaction(async transaction => {
     const productionRef = doc(db, PRODUCTIONS, production.id);
     const productionSnapshot = await transaction.get(productionRef);
-    if (productionSnapshot.exists()) throw new Error("Cette production existe déjà.");
+    if (original) {
+      const live = productionSnapshot.data() as Production | undefined;
+      if (!live || live.status !== "DRAFT" || !firestoreValuesEqual(live, original)) throw new Error("Le brouillon a changé. Rechargez avant validation.");
+      if (!firestoreValuesEqual(live.consumptions, production.consumptions) || !firestoreValuesEqual(live.outputs, production.outputs)) throw new Error("Les lignes doivent être enregistrées avant validation.");
+    } else if (productionSnapshot.exists()) throw new Error("Cette production existe déjà.");
+    updatedStocks.length = 0;
+    movements.length = 0;
     const snapshots = await Promise.all(targets.map(target => transaction.get(target.reference)));
     targets.forEach((target, index) => {
       const current = snapshots[index].exists() ? snapshots[index].data() as StoreStock : target.fallback;
@@ -672,8 +681,8 @@ export async function updateDraftProduction(
     if (
       current.status !== "DRAFT" ||
       current.created_by !== userId ||
-      JSON.stringify(current.consumptions) !== JSON.stringify(original.consumptions) ||
-      JSON.stringify(current.outputs) !== JSON.stringify(original.outputs) ||
+      !firestoreValuesEqual(current.consumptions, original.consumptions) ||
+      !firestoreValuesEqual(current.outputs, original.outputs) ||
       current.notes !== original.notes
     ) {
       throw new Error("La production a changé depuis son ouverture. Rechargez les données avant de la modifier.");

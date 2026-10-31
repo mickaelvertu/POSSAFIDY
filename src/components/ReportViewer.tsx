@@ -71,7 +71,7 @@ export default function ReportViewer({
   const getStoreName = (id: string) => { const s = stores.find(st => st.id === id); return s ? storeLabel(s) : id; };
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
   const getArticle = (id: string) => articles.find(a => a.id === id);
-  const filteredData = filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses }, reportType === "RESELLER_CREDIT" ? { ...filters, statuses: [], resellerPaymentStatus: filters.resellerPaymentStatus || "ALL" } : filters);
+  const filteredData = useMemo(() => filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses }, reportType === "RESELLER_CREDIT" ? { ...filters, statuses: [], resellerPaymentStatus: filters.resellerPaymentStatus || "ALL" } : filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, filters, reportType]);
   const reportStocks = filteredData.stocks;
   const reportTransfers = filteredData.transfers;
   const reportMovements = filteredData.movements;
@@ -209,6 +209,7 @@ export default function ReportViewer({
   // Title dictionary
   const REPORT_TITLES: Record<ReportType, string> = {
     RESELLER_CREDIT: "N° 17 — CRÉDITS & ENCAISSEMENTS DES REVENDEURS",
+    STOCK_BY_ARTICLE: "N\u00b0 18 \u2014 \u00c9TAT DU STOCK PAR ARTICLE CONSOLID\u00c9",
     STOCK_STATUS: "RAPPORT OFFICIEL DE L'ÉTAT DU STOCK MULTI-MAGASINS",
     STOCK_MOVEMENTS: "JOURNAL DÉTAILLÉ DES MOUVEMENTS DE STOCK (TOUS FLUX)",
     STOCK_LEDGER: "GRILLE DES MOUVEMENTS DE STOCK PAR ARTICLE (VUE EXCEL)",

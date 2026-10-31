@@ -1,3 +1,4 @@
+import FeedbackState from "./FeedbackState";
 import { storeLabel } from "../services/storeLabel";
 import { useState, useMemo } from "react";
 import { 
@@ -37,17 +38,23 @@ import {
 import DataManagementActions from "./DataManagementActions";
 
 interface UsersViewProps {
+  loading?: boolean;
+  loadError?: string | null;
+  online?: boolean;
   currentUser: AppUser;
   users: AppUser[];
   stores: Store[];
-  onUpdateUser: (updatedUser: AppUser) => void;
-  onCreateUser: (newUser: AppUser) => void;
+  onUpdateUser: (updatedUser: AppUser) => Promise<void>;
+  onCreateUser: (newUser: AppUser) => Promise<void>;
   onDeleteUser: (userId: string) => void;
   onImportData: (data: AppUser[]) => Promise<void>;
   onResetData: () => Promise<void>;
 }
 
 export default function UsersView({
+  loading = false,
+  loadError = null,
+  online = true,
   currentUser,
   users,
   stores,
@@ -69,6 +76,9 @@ export default function UsersView({
   const [isCreating, setIsCreating] = useState(false);
   const [modalTab, setModalTab] = useState<"general" | "stores" | "permissions">("general");
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Form fields for editing
   const [formFirstName, setFormFirstName] = useState("");
@@ -156,7 +166,7 @@ export default function UsersView({
   };
 
   // Quick toggle active state in list
-  const handleQuickToggleActive = (user: AppUser) => {
+  const handleQuickToggleActive = async (user: AppUser) => {
     if (!canEdit) return;
     if (user.id === currentUser.id && user.isActive) {
       alert("Vous ne pouvez pas désactiver votre propre compte actuellement connecté.");
@@ -167,11 +177,16 @@ export default function UsersView({
       isActive: !user.isActive,
       updatedAt: Date.now()
     };
-    onUpdateUser(updated);
+    try { await onUpdateUser(updated); setSaveError(null); } catch (error) { setSaveError(error instanceof Error ? error.message : "Modification impossible."); }
   };
 
   // Save Modal
-  const handleSaveModal = () => {
+  const handleSaveModal = async () => {
+    if (saving) return;
+    setSaveError(null);
+    setSaveSuccessMsg(null);
+    if (!online) { setSaveError("Une connexion Internet est nécessaire."); return; }
+    if (!canEdit && !isCreating) { setSaveError("Accès refusé : modification non autorisée."); return; }
     if (!formUsername.trim()) {
       alert("L'identifiant / nom d'utilisateur est obligatoire.");
       return;
@@ -185,6 +200,8 @@ export default function UsersView({
       return;
     }
 
+    setSaving(true);
+    try {
     if (isCreating) {
       const newUser: AppUser = {
         id: `user-${Date.now()}`,
@@ -203,7 +220,7 @@ export default function UsersView({
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
-      onCreateUser(newUser);
+      await onCreateUser(newUser);
     } else if (editingUser) {
       const updated: AppUser = {
         ...editingUser,
@@ -218,7 +235,7 @@ export default function UsersView({
         visibleArticleTypes: formVisibleArticleTypes,
         updatedAt: Date.now()
       };
-      onUpdateUser(updated);
+      await onUpdateUser(updated);
     }
 
     setSaveSuccessMsg("Compte utilisateur et permissions enregistrés avec succès !");
@@ -227,6 +244,8 @@ export default function UsersView({
       setEditingUser(null);
       setIsCreating(false);
     }, 900);
+    } catch (error) { setSaveError(error instanceof Error ? error.message : "Enregistrement impossible."); }
+    finally { setSaving(false); }
   };
 
   // Role changed in form -> ask or offer to apply default permissions
@@ -288,6 +307,7 @@ export default function UsersView({
 
   return (
     <div className="space-y-6">
+      {saveError && <FeedbackState kind={saveError.includes("Accès refusé") ? "denied" : "error"} title={saveError} />}
       {/* Top Header */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -425,7 +445,7 @@ export default function UsersView({
                   {filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                        Aucun utilisateur ne correspond aux critères de recherche.
+<FeedbackState kind={loadError ? "error" : loading ? "loading" : !online ? "offline" : "empty"} title={loadError || (loading ? "Chargement des utilisateurs" : !online ? "Liste indisponible hors connexion" : users.length ? "Aucun résultat pour ces filtres" : "Aucun utilisateur à afficher")} />
                       </td>
                     </tr>
                   ) : (
@@ -732,10 +752,11 @@ export default function UsersView({
               </button>
             </div>
 
+            {saveError && <FeedbackState kind={saveError.includes("Accès refusé") ? "denied" : "error"} title={saveError} />}
             {/* Modal Content */}
             <div className="p-6 overflow-y-auto flex-1">
               {saveSuccessMsg && (
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                <div role="status" className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   {saveSuccessMsg}
                 </div>
@@ -1111,11 +1132,13 @@ export default function UsersView({
 
               <button
                 type="button"
+                disabled={saving || !online}
+                aria-busy={saving}
                 onClick={handleSaveModal}
                 className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-sm"
               >
                 <Save className="w-4 h-4" />
-                {isCreating ? "Créer l'utilisateur" : "Enregistrer les modifications"}
+                {saving ? "Enregistrement..." : isCreating ? "Créer l'utilisateur" : "Enregistrer les modifications"}
               </button>
             </div>
           </div>

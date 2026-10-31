@@ -640,6 +640,10 @@ export interface InventoryCount {
   review_note?: string;
   charged_to?: string; // responsable auquel le manque est retenu
   charged_to_name?: string;
+  charged_employee_id?: string; // fiche employé stable, même sans compte de connexion
+  charge_assigned_by?: string;
+  charge_assigned_by_name?: string;
+  charge_assigned_at?: number;
   total_charged_amount?: number;
   charge_settlement?: InventoryChargeSettlement; // renseigné une fois la retenue déduite
 }
@@ -683,6 +687,7 @@ export interface GeneralFilters {
 // 11. Type de rapport PDF
 export type ReportType = 
   | "STOCK_STATUS"
+  | "STOCK_BY_ARTICLE"
   | "STOCK_MOVEMENTS"
   | "STOCK_LEDGER"
   | "TRANSFERS"
