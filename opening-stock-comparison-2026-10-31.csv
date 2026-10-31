@@ -1,0 +1,118 @@
+﻿"ProvidedProduct","LedgerProduct","CorrectOpening","RecordedOpening","Correction","ReportedClosing","RecalculatedClosing","Status","MinimumRunningStock"
+"ALOE MIEL","ALOE MIEL [AM002]","4","12","-8","10","2","Compared - product mapping to review","0"
+"ALOE NONI","ALOE NONI [AN001]","4","3","1","12","13","Compared - product mapping to review","4"
+"ALOE PUR","ALOE PUR [AP004]","6","7","-1","14","13","Compared - product mapping to review","4"
+"ANANAMBO","ANANAMBO [AN003]","10","4","6","9","15","Compared - product mapping to review","10"
+"ANJARASOA","ANJARASOA [AN034]","6","7","-1","11","10","Compared - product mapping to review","4"
+"ANTI STRESS GM","ANTI STRESS [AS017]","5","8","-3","8","5","Compared - product mapping to review","2"
+"AVR  PM","AVR [AV012]","18","11","7","16","23","Compared - product mapping to review","8"
+"ARGILE JAUNE","","10","","","","","No matching product in ledger",
+"ARGILE ROUGE","ARGILE ROUGE [AR005]","4","4","0","3","3","Compared - product mapping to review","3"
+"ARGILE VERTE","ARGILE VERTE [AV026]","5","5","0","2","2","Compared - product mapping to review","2"
+"ASHVAGANDA","ASHVAGANDHA [AS087]","0","","0","2","2","Compared - product mapping to review","0"
+"ALBEN CP","","0","","","","","No matching product in ledger",
+"ALBEN SP","","0","","","","","No matching product in ledger",
+"NIM 100","","0","","","","","No matching product in ledger",
+"CHLORPHENIRAMINE","","0","","","","","No matching product in ledger",
+"BAOBAB","BAOBAB [BA036]","13","7","6","2","8","Compared - product mapping to review","8"
+"BAUME ALAVONTO","Baume ALAVONTO [BA006]","13","19","-6","18","12","Compared - product mapping to review","12"
+"BAUME ANTI CELLULITE","Baume Anti cellulites [BA010]","8","5","3","8","11","Compared - product mapping to review","6"
+"BAUME ANTIVIRUS","Baume ANTI VIRUS [BA041]","9","15","-6","11","5","Compared - product mapping to review","5"
+"BAUME CHAMPION","Baume CHAMPION [BC037]","12","2","10","6","16","Compared - product mapping to review","11"
+"BAUME CYPRES","","0","","","","","No matching product in ledger",
+"BAUME KATRAFAY","","0","","","","","No matching product in ledger",
+"BAUME MÉMOIRE","Baume MEMOIRE [BM008]","2","9","-7","18","11","Compared - product mapping to review","1"
+"BAUME RADRIAKA","Baume RADRIAKA [BR025]","1","3","-2","14","12","Compared - product mapping to review","0"
+"BAUME RAMBIA","","0","","","","","No matching product in ledger",
+"BAUME RAVINTSARA","Baume RAVINTSARA [BR150]","2","3","-1","8","7","Compared - product mapping to review","2"
+"BEROBEROKA","BEROBEROKA [BE031]","11","11","0","15","15","Compared - product mapping to review","1"
+"BEURE DE KARITE","BEURRE DE KARITE [BK016]","10","13","-3","13","10","Compared - product mapping to review","10"
+"BOIS DE ROSE","BOIS DE ROSE [BR019]","4","3","1","3","4","Compared - product mapping to review","4"
+"BEROKA FAKANY","","0","","","","","No matching product in ledger",
+"CALCIUM MASY","CALCIUM MASY [CM040]","4","5","-1","6","5","Compared - product mapping to review","3"
+"CATAPLASME","","0","","","","","No matching product in ledger",
+"CIRCULATION","CIRCULATION [CI032]","6","8","-2","7","5","Compared - product mapping to review","5"
+"COROFAR GM","COROFAR GM [CG024]","6","8","-2","10","8","Compared - product mapping to review","4"
+"CREME COIFFANTE","CREME COIFFANTE [CC013]","5","0","5","9","14","Compared - product mapping to review","5"
+"DERMAG GM","DERMA-G [DG039]","4","4","0","8","8","Compared - product mapping to review","0"
+"DESMOFAR GM","DESMOFAR GM [DG011]","23","33","-10","33","23","Compared - product mapping to review","6"
+"DETOX","DETOX [DE030]","7","14","-7","17","10","Compared - product mapping to review","1"
+"EAU MICELLAIRE GM","EAU MICELLAIRE GM [EM023]","10","8","2","8","10","Compared - product mapping to review","10"
+"EAU MICELLAIRE PM","EAU MICELLAIRE PM [EM007]","7","11","-4","10","6","Compared - product mapping to review","6"
+"FANAZAVA","FANAZAVA [FA029]","7","2","5","2","7","Compared - product mapping to review","5"
+"FANDRAVAGODRO","FANDRAVAGODRO [FA014]","5","4","1","4","5","Compared - product mapping to review","5"
+"FANJATONY","FANJATONY [FA022]","3","2","1","3","4","Compared - product mapping to review","1"
+"G ARTICULATION","G-ARTICULATION [GA020]","13","4","9","8","17","Compared - product mapping to review","11"
+"GUDICHI","","0","","","","","No matching product in ledger",
+"HE RADRIAKA","HE RADRIAKA [HR089]","6","4","2","4","6","Compared - product mapping to review","6"
+"HE RAVITSARA","HE RAVINTSARA [HR046]","0","1","-1","1","0","Compared - product mapping to review","0"
+"HODIPOTSY","HODIPOTSY [HO043]","4","6","-2","6","4","Compared - product mapping to review","4"
+"HE EUCALUPT","","0","","","","","No matching product in ledger",
+"KINANA","KINANA [KI044]","3","5","-2","5","3","Compared - product mapping to review","3"
+"KOMIMA","KOMIMA [KO064]","2","4","-2","5","3","Review - negative intermediate stock","-2"
+"KOMIMA CANCER","KOMIMA CANCER [KC056]","6","2","4","6","10","Compared - product mapping to review","5"
+"LOTION INTIME","LOTION INTIME [LI047]","10","6","4","5","9","Compared - product mapping to review","9"
+"MADEGLUCYL","MADEGLUCYL [MA048]","1","4","-3","9","6","Compared - product mapping to review","1"
+"MADETOXYL","MADETOXYL [MA051]","7","5","2","3","5","Compared - product mapping to review","2"
+"MADETUSSYL","MADETUSSYL [MA045]","3","14","-11","15","4","Compared - product mapping to review","2"
+"MASY PAGYL","","0","","","","","No matching product in ledger",
+"MIEL","MIEL [MI061]","0","5","-5","5","0","Compared - product mapping to review","0"
+"MADETONYL","","0","","","","","No matching product in ledger",
+"MAGASINE","","0","","","","","No matching product in ledger",
+"NONI GM","NONI [NO052]","5","12","-7","18","11","Compared - product mapping to review","5"
+"MRG","","0","","","","","No matching product in ledger",
+"OAC","OAC [OA049]","0","0","0","4","4","Compared - product mapping to review","0"
+"ODY VATO","ODY VATO [OV054]","2","1","1","4","5","Compared - product mapping to review","2"
+"OFA","","0","","","","","No matching product in ledger",
+"OMEGA GM","OMEGA 3 GM [O3050]","6","11","-5","17","12","Compared - product mapping to review","3"
+"OMEGA PM","OMEGA 3 PM [O3055]","17","20","-3","18","15","Compared - product mapping to review","15"
+"OMEGA DIABETA","OMEGA DIABETE [OD065]","7","7","0","0","0","Compared - product mapping to review","0"
+"PROTOFAR GM","PROTOFAR GM [PG077]","14","7","7","6","13","Compared - product mapping to review","10"
+"PROTOFAR PM","PROTOFAR PM [PP081]","14","10","4","9","13","Compared - product mapping to review","13"
+"ARINA","","0","","","","","No matching product in ledger",
+"ROIS DES HERBES","ROIS DES HERBES [RH090]","0","1","-1","2","1","Compared - product mapping to review","0"
+"REVITALISANT","REVITALISANT [RE070]","7","18","-11","15","4","Compared - product mapping to review","4"
+"SAVLAH","SAVLAH [SA082]","7","18","-11","13","2","Compared - product mapping to review","2"
+"SAVON ACNE","SAVON ANTI ACNE [SA073]","8","4","4","4","8","Compared - product mapping to review","8"
+"SAVON AMINC","","0","","","","","No matching product in ledger",
+"SAVON ANTIRIDE","SAVON ANTI RIDES [SA079]","0","1","-1","1","0","Compared - product mapping to review","0"
+"SAVON MANAZAVA","SAVON MANAZAVA [SM068]","0","5","-5","5","0","Compared - product mapping to review","0"
+"SAVON REP","","0","","","","","No matching product in ledger",
+"SAVON VAHONA","SAVON VAHONA [SV066]","0","3","-3","6","3","Compared - product mapping to review","0"
+"SPRAY","SPRAY [SP102]","0","4","-4","4","0","Compared - product mapping to review","0"
+"SPIRULINE","SPIRULINE [SP076]","18","13","5","8","13","Compared - product mapping to review","9"
+"TANJAKA","TANJAKA [TA083]","10","6","4","1","5","Compared - product mapping to review","5"
+"TANJAKA PLUS","TANJAKA PLUS [TP074]","8","10","-2","18","16","Compared - product mapping to review","1"
+"THE CANELLE","THE CANELLE [THE CANELLE]","0","0","0","3","3","Compared - product mapping to review","0"
+"THE OLIVE","","0","","","","","No matching product in ledger",
+"VINAIGRE GM","VINAIGRE GM [VG075]","15","6","9","9","18","Compared - product mapping to review","13"
+"VINAIGRE PM","VINAIGRE PM [VP069]","4","3","1","12","13","Compared - product mapping to review","3"
+"VOAMBOATAVO GM","VOAMBOATAVO GM [VG084]","6","16","-10","23","13","Compared - product mapping to review","4"
+"VOAMBOATAVO PM","VOAMBOATAVO PM [VP085]","17","16","1","19","20","Compared - product mapping to review","10"
+"PARACETAMOL 500MG","","0","","","","","No matching product in ledger",
+"OPRAL 20MG","","0","","","","","No matching product in ledger",
+"AMOXICILINE 500MG","","0","","","","","No matching product in ledger",
+"CIPROFLOXACINE 500MG","","0","","","","","No matching product in ledger",
+"METRONIS 500MG","","0","","","","","No matching product in ledger",
+"PREDISOLONE 5MG","","0","","","","","No matching product in ledger",
+"VITAMINE C 500MG","","0","","","","","No matching product in ledger",
+"PARACETAMOL 1G","","0","","","","","No matching product in ledger",
+"VITAMINE C INJECTION 500MG","","0","","","","","No matching product in ledger",
+"AMPIBACT 1G INJECTION","","0","","","","","No matching product in ledger",
+"DEXA INJECTION 4MG","","0","","","","","No matching product in ledger",
+"BECILAN INJECTION 250MG","","0","","","","","No matching product in ledger",
+"COMPLEX B INJECTION","","0","","","","","No matching product in ledger",
+"DICLO INJECTION 75MG","","0","","","","","No matching product in ledger",
+"CALCIUM INJECTION 10%","","0","","","","","No matching product in ledger",
+"CHLORURE DE SODIUM 0,9%","","0","","","","","No matching product in ledger",
+"GLUCOSE 5%","","0","","","","","No matching product in ledger",
+"LASUNA","","0","","","","","No matching product in ledger",
+"PUNARNAVA","","0","","","","","No matching product in ledger",
+"KAPIKACHU","","0","","","","","No matching product in ledger",
+"CONFIDO","","0","","","","","No matching product in ledger",
+"SERINGUE 5CC","","0","","","","","No matching product in ledger",
+"SERINGUE10CC","","0","","","","","No matching product in ledger",
+"SERINGUE 20CC","","0","","","","","No matching product in ledger",
+"MICROPERFUSEUR BLEU","","0","","","","","No matching product in ledger",
+"PERFUSSEUR","","0","","","","","No matching product in ledger",
+"COTON 200G","","0","","","","","No matching product in ledger",
