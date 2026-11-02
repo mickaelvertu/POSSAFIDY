@@ -2598,6 +2598,7 @@ export default function AuthenticatedSessionView() {
               productions={visibleProductions}
               auditLogs={visibleAuditLogs}
               expenses={reportExpenses}
+              cashHandovers={user.status === "ACTIVE" && (canManageStores || user.permissions.some(permission => permission.startsWith("cash_handover."))) ? cashHandovers : undefined}
               currentUser={currentAppUser}
               onOpenReportViewer={(type, filters) => setReportRequest({ type, filters })}
             />
@@ -2615,6 +2616,7 @@ export default function AuthenticatedSessionView() {
                 productions={visibleProductions}
                 auditLogs={visibleAuditLogs}
                 expenses={reportExpenses}
+              cashHandovers={user.status === "ACTIVE" && (canManageStores || user.permissions.some(permission => permission.startsWith("cash_handover."))) ? cashHandovers : undefined}
                 currentUser={currentAppUser}
                 onClose={() => setReportRequest(null)}
               />

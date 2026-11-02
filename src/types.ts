@@ -690,7 +690,8 @@ export type ReportType =
   | "PRODUCTION"
   | "RETURNS"
   | "AUDIT_LOG"
-  | "EXPENSES";
+  | "EXPENSES"
+  | "CASH_HANDOVERS";
 
 export type EmployeeContractType = "CDI" | "CDD" | "TEMPORARY" | "INTERN" | "DAILY";
 

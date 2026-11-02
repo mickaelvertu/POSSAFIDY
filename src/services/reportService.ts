@@ -3,6 +3,7 @@ import {
   AuditLog,
   Category,
   Expense,
+  CashHandover,
   ExpenseCategory,
   GeneralFilters,
   PaymentMethod,
@@ -25,6 +26,7 @@ export interface ReportData {
   productions: Production[];
   auditLogs: AuditLog[];
   expenses?: Expense[];
+  cashHandovers?: CashHandover[];
 }
 
 export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
@@ -152,7 +154,15 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
     matchesQuery(expense.expense_number, expense.description, EXPENSE_CATEGORY_LABELS[expense.category], expense.store_name, expense.payee, expense.employee_name, expense.reference, expense.created_by_name)
   );
 
-  return { ...data, stocks, transfers, movements, sales, productions, auditLogs, expenses };
+  const cashHandovers = data.cashHandovers?.filter(handover =>
+    matchesStore(handover.store_id) && matchesStatus(handover.status) &&
+    (!filters.startDate || handover.business_date >= filters.startDate) &&
+    (!filters.endDate || handover.business_date <= filters.endDate) &&
+    matchesQuery(handover.handover_number, handover.store_name, handover.declared_by_name,
+      handover.received_by_name, handover.discrepancy_note,
+      ...handover.deposits.flatMap(deposit => [deposit.bank_name, deposit.reference]))
+  );
+  return { ...data, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers };
 }
 
 const money = (amount: number) => `${Math.round(amount).toLocaleString("fr-FR")} Ar`;
@@ -251,6 +261,15 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Actions distinctes", value: String(new Set(data.auditLogs.map(log => log.action)).size) },
         { label: "Entités concernées", value: String(new Set(data.auditLogs.map(log => log.entity_type)).size) }
       ];
+    case "CASH_HANDOVERS": {
+      const rows = data.cashHandovers || [];
+      return [
+        { label: "Montant déclaré", value: money(rows.reduce((sum, row) => sum + row.declared_amount, 0)) },
+        { label: "Montant reçu", value: money(rows.reduce((sum, row) => sum + (row.received_amount ?? 0), 0)) },
+        { label: "Déposé en banque", value: money(rows.reduce((sum, row) => sum + row.deposited_amount, 0)) },
+        { label: "Reste à déposer", value: money(rows.reduce((sum, row) => sum + (row.received_amount ?? 0) - row.deposited_amount, 0)) }
+      ];
+    }
     case "EXPENSES": {
       const expenses = data.expenses || [];
       const validated = expenses.filter(expense => expenseStatus(expense) === "VALIDATED");

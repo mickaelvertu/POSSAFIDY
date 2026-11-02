@@ -13,6 +13,7 @@ import {
   Production, 
   AuditLog, 
   Expense,
+  CashHandover,
   UserProfile,
   StockMovementType,
   MovementDirection,
@@ -44,6 +45,7 @@ interface ReportsViewProps {
   userAuditReport?: ReactNode;
   /** Fournies uniquement aux utilisateurs autorisés à consulter les dépenses. */
   expenses?: Expense[];
+  cashHandovers?: CashHandover[];
   stores: Store[];
   categories: Category[];
   articles: Article[];
@@ -60,6 +62,7 @@ interface ReportsViewProps {
 export default function ReportsView({
   userAuditReport,
   expenses,
+  cashHandovers,
   stores,
   categories,
   articles,
@@ -123,8 +126,12 @@ export default function ReportsView({
     icon: Wallet,
     color: "text-rose-600 bg-rose-50 border-rose-200"
   } : undefined;
-  const reportCount = 14 + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
-  const allReports = EXPENSES_REPORT ? [...REPORTS_CATALOG, EXPENSES_REPORT] : REPORTS_CATALOG;
+  const reportCount = (cashHandovers ? 1 : 0) + 14 + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
+  const allReports = [...REPORTS_CATALOG, ...(EXPENSES_REPORT ? [EXPENSES_REPORT] : []), ...(cashHandovers ? [{
+type: "CASH_HANDOVERS" as const, number: 17, title: "Remises de caisse",
+description: "Montants déclarés, reçus, écarts et dépôts bancaires", icon: Wallet,
+color: "text-emerald-600 bg-emerald-50 border-emerald-200"
+}] : [])];
 
   const filters = useMemo<GeneralFilters>(() => ({
     startDate: startDate || undefined,
@@ -151,8 +158,9 @@ export default function ReportsView({
     sales,
     productions,
     auditLogs,
-    expenses
-  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, filters]);
+    expenses,
+    cashHandovers
+  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers, filters]);
   const kpiData = useMemo(() => ({
     ...filteredData,
     transfers: selectedReport === "RETURNS"
@@ -164,7 +172,9 @@ export default function ReportsView({
           : filteredData.transfers
   }), [filteredData, selectedReport]);
   const kpis = useMemo(() => getReportKpis(selectedReport, kpiData, categories, filters), [selectedReport, kpiData, categories, filters]);
-  const statusOptions = selectedReport.startsWith("SALES")
+  const statusOptions = selectedReport === "CASH_HANDOVERS"
+    ? ["DECLARED", "RECEIVED", "DISCREPANCY", "PARTIALLY_DEPOSITED", "DEPOSITED"]
+    : selectedReport.startsWith("SALES")
     ? ["DRAFT", "CHECKING", "VERIFIED", "APPROVED", "VALIDATED", "CANCELLED", "REFUNDED"]
     : selectedReport === "PRODUCTION" || selectedReport === "RAW_MATERIAL_CONSUMPTION"
       ? ["DRAFT", "IN_PROGRESS", "COMPLETED", "CANCELLED"]

@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useRef, useState, FormEvent } from "react";
 import { 
   Sale, 
   SaleLine, 
@@ -71,6 +71,9 @@ export default function SalesView({
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
+  const pendingSaleRef = useRef<{ id: string; number: string } | null>(null);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
   const [deliverySale, setDeliverySale] = useState<Sale | null>(null);
@@ -118,6 +121,10 @@ export default function SalesView({
 
   const handleOpenModal = () => {
     setEditingSale(null);
+    pendingSaleRef.current = {
+      id: `sale-${crypto.randomUUID()}`,
+      number: generateRef("VTE", sales.length)
+    };
     const storeId = eligibleStores[0]?.id || stores[0]?.id || "";
     setSelectedStoreId(storeId);
     setCustomerName("Client Comptoir");
@@ -140,6 +147,7 @@ export default function SalesView({
 
   const handleOpenEditModal = (sale: Sale) => {
     if (sale.status !== "DRAFT" || sale.seller_id !== currentUser.uid) return;
+    pendingSaleRef.current = null;
     setEditingSale(sale);
     setSelectedStoreId(sale.store_id);
     setCustomerName(sale.customer_name);
@@ -293,6 +301,7 @@ export default function SalesView({
 
   const handleSubmitSale = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSavingRef.current) return;
     if (saleLines.length === 0) {
       alert("Veuillez ajouter au moins un article.");
       return;
@@ -329,80 +338,93 @@ export default function SalesView({
       return;
     }
 
-    const saleId = editingSale?.id || `sale-${Date.now()}`;
-    const saleNumber = editingSale?.sale_number || generateRef("VTE", sales.length);
-    const lines: SaleLine[] = saleLines.map((l, idx) => {
-      if (l.line_type === "SERVICE") {
+    isSavingRef.current = true;
+    setIsSaving(true);
+    try {
+      const pendingSale = pendingSaleRef.current ?? {
+        id: `sale-${crypto.randomUUID()}`,
+        number: generateRef("VTE", sales.length)
+      };
+      pendingSaleRef.current = pendingSale;
+      const saleId = editingSale?.id || pendingSale.id;
+      const saleNumber = editingSale?.sale_number || pendingSale.number;
+      const lines: SaleLine[] = saleLines.map((l, idx) => {
+        if (l.line_type === "SERVICE") {
+          return {
+            id: `saleline-${crypto.randomUUID()}-${idx}`,
+            sale_id: saleId,
+            article_id: l.article_id,
+            article_code: "PREST",
+            article_name: l.label!.trim(),
+            quantity: l.quantity,
+            unit_price: l.unit_price,
+            discount: l.discount,
+            total: Math.max(0, (l.quantity * l.unit_price) - l.discount),
+            line_type: "SERVICE",
+            price_reason: l.reason!.trim()
+          };
+        }
+        const art = articles.find(a => a.id === l.article_id);
         return {
-          id: `saleline-${Date.now()}-${idx}`,
+          id: `saleline-${crypto.randomUUID()}-${idx}`,
           sale_id: saleId,
           article_id: l.article_id,
-          article_code: "PREST",
-          article_name: l.label!.trim(),
+          article_code: art?.code || "REF",
+          article_name: art?.name || "Article",
           quantity: l.quantity,
           unit_price: l.unit_price,
           discount: l.discount,
-          total: Math.max(0, (l.quantity * l.unit_price) - l.discount),
-          line_type: "SERVICE",
-          price_reason: l.reason!.trim()
+          total: Math.max(0, (l.quantity * l.unit_price) - l.discount)
         };
-      }
-      const art = articles.find(a => a.id === l.article_id);
-      return {
-        id: `saleline-${Date.now()}-${idx}`,
-        sale_id: saleId,
-        article_id: l.article_id,
-        article_code: art?.code || "REF",
-        article_name: art?.name || "Article",
-        quantity: l.quantity,
-        unit_price: l.unit_price,
-        discount: l.discount,
-        total: Math.max(0, (l.quantity * l.unit_price) - l.discount)
+      });
+
+      const newSale: Sale = {
+        id: saleId,
+        sale_number: saleNumber,
+        store_id: selectedStoreId,
+        customer_name: customerName || "Client Comptoir",
+        customer_phone: customerPhone,
+        customer_type: customerType,
+        credit_customer_id: editingSale?.credit_customer_id || selectedCreditCustomer?.id,
+        credit_due_at: selectedCreditCustomer && creditDue > 0
+          ? Date.now() + selectedCreditCustomer.payment_term_days * 24 * 60 * 60 * 1000
+          : undefined,
+        credit_payments: editingSale?.credit_payments ?? (selectedCreditCustomer && amountPaid > 0 ? [{
+          id: `credit-payment-${crypto.randomUUID()}`,
+          amount: Math.min(amountPaid, netTotal),
+          method: paymentMethod,
+          paid_at: Date.now(),
+          recorded_by: currentUser.uid,
+          recorded_by_name: currentUser.displayName || currentUser.email
+        }] : undefined),
+        status: "DRAFT", // Enters 4-step control cycle
+        seller_id: currentUser.uid,
+        seller_name: currentUser.displayName || currentUser.email,
+        lines,
+        subtotal,
+        discount: totalDiscount,
+        tax: 0,
+        total: netTotal,
+        payment_method: paymentMethod,
+        payment_status: amountPaid >= netTotal ? "PAID" : amountPaid > 0 ? "PARTIAL" : "PENDING",
+        amount_paid: amountPaid,
+        change_returned: changeReturned,
+        notes: saleNotes,
+        device_id: "POS-WEB-CLIENT",
+        created_at: editingSale?.created_at ?? Date.now()
       };
-    });
 
-    const newSale: Sale = {
-      id: saleId,
-      sale_number: saleNumber,
-      store_id: selectedStoreId,
-      customer_name: customerName || "Client Comptoir",
-      customer_phone: customerPhone,
-      customer_type: customerType,
-      credit_customer_id: editingSale?.credit_customer_id || selectedCreditCustomer?.id,
-      credit_due_at: selectedCreditCustomer && creditDue > 0
-        ? Date.now() + selectedCreditCustomer.payment_term_days * 24 * 60 * 60 * 1000
-        : undefined,
-      credit_payments: editingSale?.credit_payments ?? (selectedCreditCustomer && amountPaid > 0 ? [{
-        id: `credit-payment-${crypto.randomUUID()}`,
-        amount: Math.min(amountPaid, netTotal),
-        method: paymentMethod,
-        paid_at: Date.now(),
-        recorded_by: currentUser.uid,
-        recorded_by_name: currentUser.displayName || currentUser.email
-      }] : undefined),
-      status: "DRAFT", // Enters 4-step control cycle
-      seller_id: currentUser.uid,
-      seller_name: currentUser.displayName || currentUser.email,
-      lines,
-      subtotal,
-      discount: totalDiscount,
-      tax: 0,
-      total: netTotal,
-      payment_method: paymentMethod,
-      payment_status: amountPaid >= netTotal ? "PAID" : amountPaid > 0 ? "PARTIAL" : "PENDING",
-      amount_paid: amountPaid,
-      change_returned: changeReturned,
-      notes: saleNotes,
-      device_id: "POS-WEB-CLIENT",
-      created_at: editingSale?.created_at ?? Date.now()
-    };
-
-    const saved = editingSale
-      ? await onUpdateSale(editingSale, newSale)
-      : await onCreateSale(newSale);
-    if (saved) {
-      setIsModalOpen(false);
-      setEditingSale(null);
+      const saved = editingSale
+        ? await onUpdateSale(editingSale, newSale)
+        : await onCreateSale(newSale);
+      if (saved) {
+        pendingSaleRef.current = null;
+        setIsModalOpen(false);
+        setEditingSale(null);
+      }
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -765,7 +787,7 @@ export default function SalesView({
                     {isResellerSale && <p className="mt-1 text-[11px] font-semibold text-amber-700">La demande restera en brouillon jusqu'à l'approbation d'un administrateur.</p>}
                   </div>
                 </div>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer">
+                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Fermer">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -999,7 +1021,7 @@ export default function SalesView({
                   ) : (
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setMobileSaleStep("CART")} className="rounded-xl border border-slate-300 px-4 py-3 font-bold text-slate-700 hover:bg-slate-50">Retour au panier</button>
-                      <button type="submit" disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService || exceedsCreditLimit} className="flex-1 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none">{editingSale ? "Enregistrer les modifications" : isResellerSale ? "Soumettre la demande (DRAFT)" : "Enregistrer la vente (DRAFT)"}</button>
+                      <button type="submit" disabled={isSaving || saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService || exceedsCreditLimit} className="flex-1 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none">{isSaving ? "Enregistrement…" : editingSale ? "Enregistrer les modifications" : isResellerSale ? "Soumettre la demande (DRAFT)" : "Enregistrer la vente (DRAFT)"}</button>
                     </div>
                   )}
                   {mobileSaleStep === "PAYMENT" && stockIssues.length > 0 && (
