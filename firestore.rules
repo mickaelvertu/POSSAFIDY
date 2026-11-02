@@ -82,6 +82,66 @@ service cloud.firestore {
         delta == after.lines[index].quantity_accepted;
     }
 
+    // A shipment shares one transfer lookup across every line of the commit.
+    function canDebitShipment(data, delta) {
+      let proof = data.get('transfer_shipment', {});
+      let id = proof.get('transfer_id', '');
+      let index = proof.get('line_index', -1);
+      let before = get(/databases/$(database)/documents/transfers/$(id)).data;
+      let after = getAfter(/databases/$(database)/documents/transfers/$(id)).data;
+      return id != '' && index is int && index >= 0 && index < before.lines.size() &&
+        before.status == 'APPROVED' && after.status == 'IN_TRANSIT' &&
+        before.lines == after.lines && before.source_store_id == data.store_id &&
+        before.lines[index].article_id == data.article_id &&
+        before.lines[index].quantity_sent > 0 && delta == -before.lines[index].quantity_sent &&
+        before.type != 'RECYCLING' && after.shipped_by == request.auth.uid &&
+        hasPermission('transfers.ship') && hasStoreAccess(before.source_store_id);
+    }
+
+    function canDebitCheckedSale(data, delta) {
+      let link = data.sale_check;
+      let check = get(/databases/$(database)/documents/saleCatalogChecks/$(link.check_id)).data;
+      let before = get(/databases/$(database)/documents/sales/$(check.sale_id)).data;
+      let after = getAfter(/databases/$(database)/documents/sales/$(check.sale_id)).data;
+      return link.article_index is int && link.article_index >= 0 && link.article_index < check.article_ids.size() &&
+        check.article_ids[link.article_index] == data.article_id && check.created_by == request.auth.uid &&
+        data.get('reference_id', check.sale_id) == check.sale_id &&
+        check.store_id == data.store_id && before.store_id == data.store_id &&
+        check.sale_created_at == before.created_at && check.sale_lines == before.lines &&
+        before.lines == after.lines &&
+        ((before.customer_type == 'REVENDEUR' && before.status == 'APPROVED') ||
+          (before.customer_type != 'REVENDEUR' && before.status == 'VERIFIED')) &&
+        after.status == 'VALIDATED' && after.validated_by == request.auth.uid && delta < 0 &&
+        hasPermission('sales.validate') && hasStoreAccess(data.store_id);
+    }
+
+    match /saleCatalogChecks/{checkId} {
+      function eligible(data, index) {
+        let ids = data.article_ids;
+        let indexes = data.line_indexes;
+        let lines = data.sale_lines;
+        return index >= ids.size() ||
+          (indexes[index] is int && indexes[index] >= 0 &&
+            lines[indexes[index]].article_id == ids[index] &&
+            get(/databases/$(database)/documents/articles/$(ids[index])).data.article_type == 'RESALE');
+      }
+      function valid(data) {
+        let sale = get(/databases/$(database)/documents/sales/$(data.sale_id)).data;
+        return hasPermission('sales.validate') && hasStoreAccess(data.store_id) &&
+          data.keys().hasOnly(['sale_id', 'store_id', 'sale_created_at', 'sale_lines', 'article_ids', 'line_indexes', 'created_by']) &&
+          data.created_by == request.auth.uid && data.article_ids is list &&
+          data.article_ids.size() > 0 && data.article_ids.size() <= 7 &&
+          data.line_indexes is list && data.line_indexes.size() == data.article_ids.size() &&
+          sale.store_id == data.store_id && sale.created_at == data.sale_created_at &&
+          sale.lines == data.sale_lines && sale.status in ['VERIFIED', 'APPROVED'] &&
+          eligible(data, 0) && eligible(data, 1) && eligible(data, 2) && eligible(data, 3) &&
+          eligible(data, 4) && eligible(data, 5) && eligible(data, 6);
+      }
+      allow create: if valid(request.resource.data);
+      // Immutable attestations cannot be forged or altered by a later stock update.
+      allow delete: if isSuperAdmin();
+    }
+
     function canViewArticleType(articleType) {
       let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isSuperAdmin() || (
@@ -483,7 +543,10 @@ service cloud.firestore {
         get(/databases/$(database)/documents/employees/$(resource.data.employee_id)).data.get('user_id', null) == request.auth.uid
       ));
       allow read: if (hasPermission('expenses.view') || hasPermission('expenses.create')) &&
-        (isSuperAdmin() || resource.data.created_by == request.auth.uid || hasExpenseStoreAccess(resource.data.get('store_id', null)));
+        (isAdmin() || resource.data.created_by == request.auth.uid || hasExpenseStoreAccess(resource.data.get('store_id', null)));
+      // Cash reconciliation requires validated expenses, never draft access.
+      allow read: if hasAnyPermission(['cash_handover.view', 'cash_handover.create', 'cash_handover.receive', 'cash_handover.deposit']) &&
+        resource.data.status == 'VALIDATED' && hasStoreAccess(resource.data.get('store_id', null));
       allow create: if hasPermission('expenses.create') &&
         hasExpenseStoreAccess(request.resource.data.get('store_id', null)) &&
         request.resource.data.id == expenseId &&
@@ -550,13 +613,28 @@ service cloud.firestore {
         (!(request.resource.data.get('movement_type', '') == 'CONSUMPTION' || request.resource.data.get('reference_type', '') == 'CONSUMPTION') ||
           (get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'MANUFACTURER' &&
            get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.is_active == true)) &&
-        ((request.resource.data.keys().hasAny(['transfer_receipt']) &&
+        ((request.resource.data.keys().hasAny(['sale_check']) &&
+          request.resource.data.movement_type == 'SALE' && request.resource.data.reference_type == 'SALE' &&
+          request.resource.data.created_by == request.auth.uid &&
+          request.resource.data.get('stock_bucket', '') != 'QUARANTINE' &&
+          request.resource.data.after_quantity >= 0 &&
+          request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
+          canDebitCheckedSale(request.resource.data, request.resource.data.quantity)) ||
+          (request.resource.data.keys().hasAny(['transfer_shipment']) &&
+          request.resource.data.reference_type == 'TRANSFER' &&
+          request.resource.data.reference_id == request.resource.data.transfer_shipment.transfer_id &&
+          request.resource.data.created_by == request.auth.uid &&
+          request.resource.data.get('stock_bucket', '') != 'QUARANTINE' &&
+          request.resource.data.after_quantity >= 0 &&
+          request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
+          canDebitShipment(request.resource.data, request.resource.data.quantity)) ||
+          (request.resource.data.keys().hasAny(['transfer_receipt']) &&
           request.resource.data.reference_type == 'TRANSFER' &&
           request.resource.data.reference_id == request.resource.data.transfer_receipt.transfer_id &&
           request.resource.data.created_by == request.auth.uid &&
           request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
           canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
-          canStoreArticle(request.resource.data.store_id, request.resource.data.article_id)) && (
+          (!request.resource.data.keys().hasAny(['sale_check']) && canStoreArticle(request.resource.data.store_id, request.resource.data.article_id))) && (
         hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
         (hasPermission('stock.edit') &&
           request.resource.data.movement_type == 'CONSUMPTION' &&
@@ -1150,11 +1228,17 @@ service cloud.firestore {
           isSuperAdmin()
         );
       allow update: if hasStoreAccess(resource.data.store_id) &&
-        ((request.resource.data.keys().hasAny(['transfer_receipt']) &&
+        ((request.resource.data.keys().hasAny(['sale_check']) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updated_at', 'sale_check', 'transfer_receipt', 'transfer_shipment']) &&
+          canDebitCheckedSale(request.resource.data, request.resource.data.quantity - resource.data.quantity)) ||
+          (request.resource.data.keys().hasAny(['transfer_shipment']) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updated_at', 'transfer_shipment', 'transfer_receipt']) &&
+          canDebitShipment(request.resource.data, request.resource.data.quantity - resource.data.quantity)) ||
+          (request.resource.data.keys().hasAny(['transfer_receipt']) &&
           request.resource.data.get('quarantine_quantity', 0) == resource.data.get('quarantine_quantity', 0) &&
           request.resource.data.reserved_quantity == resource.data.reserved_quantity &&
           canCreditPosReceipt(request.resource.data, request.resource.data.quantity - resource.data.quantity)) ||
-          canStoreArticle(resource.data.store_id, resource.data.article_id)) &&
+          ((!request.resource.data.keys().hasAny(['sale_check']) || request.resource.data.sale_check == resource.data.get('sale_check', null)) && canStoreArticle(resource.data.store_id, resource.data.article_id))) &&
         request.resource.data.store_id == resource.data.store_id &&
         request.resource.data.article_id == resource.data.article_id &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (

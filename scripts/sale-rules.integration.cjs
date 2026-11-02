@@ -3,6 +3,25 @@ const assert = require('node:assert/strict');
 const { run, commit, write, token, origin, root, project } = require('./sale-rules-fixture.cjs');
 
 test('sale validation honors roles, store scope, and rule limits atomically', async t => {
+  for (const count of [31, 50, 100]) await t.test(`POS validates ${count} distinct articles with shared catalog checks`, async () => {
+    assert.equal(await run(count, 'POS', { checked: true }), 200);
+  });
+  await t.test('assigned manager validates 100 POS products with only sale permissions', async () => {
+    assert.equal(await run(100, 'POS', { checked: true, role: 'RESPONSABLE_MAGASIN', permissions: ['sales.view', 'sales.validate'], stores: ['store'] }), 200);
+  });
+  await t.test('reseller shop validates 50 products', async () => {
+    assert.equal(await run(50, 'RESELLER', { checked: true }), 200);
+  });
+  await t.test('checked validation still denies raw material and unassigned stores', async () => {
+    assert.equal(await run(31, 'POS', { checked: true, articleType: 'RAW_MATERIAL' }), 403);
+    assert.equal(await run(31, 'POS', { checked: true, role: 'RESPONSABLE_MAGASIN', permissions: ['sales.view', 'sales.validate'], stores: ['other'] }), 403);
+  });
+  await t.test('stale catalog checks cannot debit any stock', async () => {
+    // The emulator can report INTERNAL for a large commit with many denied writes.
+    assert.ok([403, 500].includes(await run(31, 'POS', { checked: true, stale: true })));
+    const response = await fetch(`${origin}/v1/${root}/stocks/stock-article-0`, { headers: { Authorization: 'Bearer owner' } });
+    assert.equal((await response.json()).fields.quantity.integerValue, '100');
+  });
   await t.test('active super admin with only five explicit permissions validates 18 POS articles', async () => {
     assert.equal(await run(18), 200);
   });

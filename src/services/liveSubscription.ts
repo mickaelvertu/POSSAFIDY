@@ -11,6 +11,7 @@ export function subscribeSources<Q, T extends { id: string }>(
   let stopped = false;
   const stops = sources.map((source, index) => listen(source, (rows, fromCache) => {
     if (stopped) return;
+    failures.delete(index);
     shards.set(index, rows); cached.set(index, fromCache);
     receive(mergeRecords(...shards.values()));
     if (shards.size === sources.length && !failures.size) ready?.([...cached.values()].some(Boolean));

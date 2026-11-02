@@ -8,6 +8,22 @@ import { reportHistory, reportSources } from "./reportReadiness";
 
 const user: User = { id: "user", firstName: "A", lastName: "B", email: "a@example.test", status: "ACTIVE", role: "VENDEUR", permissions: ["sales.view", "stock.view"], assignedStores: ["store-b", "store-a"], visibleArticleTypes: ["RESALE"], createdAt: "", updatedAt: "" };
 
+test("expense synchronization follows explicit rights, cash needs and account status", () => {
+  for (const role of ["ADMIN", "SUPER_ADMIN"] as const) {
+    assert.equal(sessionReadAccess({ ...user, role, permissions: [] }).expensesAccess, "full");
+    assert.equal(sessionReadAccess({ ...user, role, status: "DISABLED" }).expensesAccess, "none");
+  }
+  for (const role of ["VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "CONTROLEUR", "PRODUCTION", "COMPTABLE", "STAFF", "REVENDEUR"] as const) {
+    assert.equal(sessionReadAccess({ ...user, role, permissions: [] }).expensesAccess, "none");
+    for (const permission of ["expenses.view", "expenses.create"]) assert.equal(sessionReadAccess({ ...user, role, permissions: [permission] }).expensesAccess, "full");
+    for (const permission of ["cash_handover.view", "cash_handover.create", "cash_handover.receive", "cash_handover.deposit"]) {
+      const access = sessionReadAccess({ ...user, role, permissions: [permission] });
+      assert.equal(access.expensesAccess, "validated");
+      assert.deepEqual(access.storeIds, user.assignedStores);
+    }
+  }
+});
+
 test("profile name changes and reordered rights do not reload operational data", () => {
   assert.equal(authorizationKey(user), authorizationKey({ ...user, firstName: "Changed", updatedAt: "later", permissions: [...user.permissions].reverse(), assignedStores: [...user.assignedStores].reverse() }));
   for (const changed of [{ ...user, permissions: [] }, { ...user, assignedStores: [] }, { ...user, visibleArticleTypes: [] }, { ...user, status: "DISABLED" as const }]) assert.notEqual(authorizationKey(user), authorizationKey(changed));
@@ -60,6 +76,25 @@ test("history failures keep their cursor while successful scopes advance", async
   }, () => true, page => rows.push(...page));
   assert.equal(result.failures.length, 1); assert.equal(result.hasMore, true);
   assert.deepEqual(rows, ["new"]); assert.equal(shards[0].done, true); assert.equal(shards[1].cursor, "old");
+});
+
+test("expense sources only become ready after all store and author queries recover", () => {
+  const callbacks = new Map<string, { next: (rows: { id: string }[], cached: boolean) => void; fail: (error: unknown) => void }>();
+  let rows: { id: string }[] = [];
+  const ready: boolean[] = [];
+  const stop = subscribeSources(["store", "author"], (source, next, fail) => {
+    callbacks.set(source, { next, fail });
+    return () => {};
+  }, next => { rows = next; }, () => {}, cached => ready.push(cached));
+  callbacks.get("store")!.next([{ id: "shared" }, { id: "colleague" }], false);
+  callbacks.get("author")!.fail({ code: "unavailable" });
+  assert.deepEqual(ready, []);
+  callbacks.get("author")!.next([{ id: "shared" }, { id: "own" }], true);
+  assert.deepEqual(ready, [true]);
+  assert.equal(rows.length, 3);
+  callbacks.get("author")!.next([{ id: "shared" }, { id: "own" }], false);
+  assert.deepEqual(ready, [true, false]);
+  stop();
 });
 
 test("cached history cannot mark server history complete or advance the cursor", async () => {

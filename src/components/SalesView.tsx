@@ -73,6 +73,7 @@ export default function SalesView({
   onCancelSale
 }: SalesViewProps) {
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterStoreId, setFilterStoreId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
@@ -319,7 +320,7 @@ export default function SalesView({
       currentStore?.store_type !== "CENTRAL_WAREHOUSE" ||
       saleLines.some(line => line.line_type === "SERVICE")
     )) {
-      alert("Une demande revendeur doit être créée par un responsable du dépôt central et ne contenir que des produits de revente.");
+      alert("Une demande revendeur doit être créée par un administrateur ou un responsable du dépôt central et ne contenir que des produits de revente.");
       return;
     }
     if (isResellerSale && !editingSale && !selectedCreditCustomer) {
@@ -412,6 +413,7 @@ export default function SalesView({
 
   const filteredSales = sales.filter(s => {
     if (focusedSaleId) return s.id === focusedSaleId;
+    if (filterStoreId && s.store_id !== filterStoreId) return false;
     if (filterStatus !== "ALL" && s.status !== filterStatus) return false;
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -434,7 +436,7 @@ export default function SalesView({
     return available > inCart;
   });
 
-  const listWindow = useListWindow(JSON.stringify([filterStatus, searchQuery, focusedSaleId]));
+  const listWindow = useListWindow(JSON.stringify([filterStatus, filterStoreId, searchQuery, focusedSaleId]));
 
   return (
     <div className="space-y-6">
@@ -472,20 +474,20 @@ export default function SalesView({
           </span>
           <p className="text-emerald-200/90 mt-0.5">
             • <strong>Point de Vente (POS)</strong> : Applique automatiquement le <strong>prix_normal</strong> (prix public).<br />
-            • <strong>Demande revendeur (dépôt)</strong> : brouillon créé par le responsable du dépôt, uniquement pour un revendeur déjà enregistré, au <strong>prix revendeur</strong>.<br />
+            • <strong>Demande revendeur (dépôt)</strong> : brouillon créé par un administrateur ou le responsable du dépôt, uniquement pour un revendeur déjà enregistré, au <strong>prix revendeur</strong>.<br />
             • <strong>Circuit</strong> : l'administrateur approuve, puis le responsable du dépôt expédie ; le stock ne diminue qu'à l'expédition.
           </p>
         </div>
         <div className="bg-emerald-900 px-3 py-2 rounded-xl text-center shrink-0 border border-emerald-800">
           <div className="font-mono text-base font-black text-white">
-            {sales.filter(s => s.status === "VALIDATED").reduce((acc, s) => acc + s.total, 0).toLocaleString("fr-FR")} Ar
+            {sales.filter(s => s.status === "VALIDATED" && (!filterStoreId || s.store_id === filterStoreId)).reduce((acc, s) => acc + s.total, 0).toLocaleString("fr-FR")} Ar
           </div>
           <div className="text-[10px] text-emerald-300">Chiffre d'Affaires Validé</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col xl:flex-row gap-3 items-center justify-between">
         
         {/* Status filters */}
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
@@ -504,6 +506,14 @@ export default function SalesView({
             </button>
           ))}
         </div>
+
+        <label className="w-full xl:w-64 shrink-0 text-xs font-semibold text-slate-700">
+          Magasin
+          <select value={filterStoreId} onChange={event => setFilterStoreId(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="">Tous les magasins</option>
+            {stores.map(store => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}
+          </select>
+        </label>
 
         {/* Search */}
         <div className="relative w-full sm:w-64">

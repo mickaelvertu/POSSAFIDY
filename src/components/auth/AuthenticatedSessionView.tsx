@@ -494,15 +494,11 @@ export default function AuthenticatedSessionView() {
   const accessibleStores = user && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"
     ? inventoryStores.filter(store => user.assignedStores.includes(store.id))
     : inventoryStores;
-  // Même règle d'accès que le module Dépenses. ADMIN et SUPER_ADMIN voient tout ;
-  // les autres utilisateurs ne voient que leurs propres dépenses, dans leurs magasins assignés.
+  // Reports use the same authorized rows as the expense module (stores plus own records).
   const canAccessExpenses = Boolean(currentAppUser && user?.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")));
   const reportExpenses = !canAccessExpenses || !user
     ? undefined
-    : user.role === "ADMIN" || user.role === "SUPER_ADMIN"
-      ? expenses
-      : expenses.filter(expense => expense.created_by === user.id &&
-          (user.assignedStores.length === 0 || (Boolean(expense.store_id) && user.assignedStores.includes(expense.store_id as string))));
+    : expenses;
   // Non-admin roles only see transfers involving one of their assigned stores.
   const visibleArticleIds = useMemo(() => new Set<string>(articles.map(article => article.id)), [articles]);
   const visibleMovements = useMemo(() => movements.filter(movement => visibleArticleIds.has(movement.article_id)), [movements, visibleArticleIds]);
@@ -567,13 +563,15 @@ export default function AuthenticatedSessionView() {
       if (sale.customer_type === "REVENDEUR") {
         const store = inventoryStores.find(item => item.id === sale.store_id);
         if (
-          currentAppUser.roleId !== "RESPONSABLE_MAGASIN" ||
-          !currentAppUser.storeIds.includes(sale.store_id) ||
+          (!(currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN") && (
+            currentAppUser.roleId !== "RESPONSABLE_MAGASIN" ||
+            !currentAppUser.storeIds.includes(sale.store_id) ||
+            !hasPermission(currentAppUser, "credit.sales")
+          )) ||
           store?.store_type !== "CENTRAL_WAREHOUSE" ||
-          !hasPermission(currentAppUser, "credit.sales") ||
           sale.lines.some(line => line.line_type === "SERVICE" || articles.find(article => article.id === line.article_id)?.article_type !== "RESALE")
         ) {
-          throw new Error("Seul un responsable assigné au dépôt central peut créer une demande revendeur composée de produits de revente.");
+          throw new Error("Un administrateur ou un responsable assigné au dépôt central peut créer une demande revendeur composée de produits de revente.");
         }
       }
       if (sale.customer_type === "REVENDEUR" && sale.total > sale.amount_paid && !sale.credit_customer_id) {
@@ -610,13 +608,15 @@ export default function AuthenticatedSessionView() {
       if (sale.customer_type === "REVENDEUR") {
         const store = inventoryStores.find(item => item.id === sale.store_id);
         if (
-          currentAppUser.roleId !== "RESPONSABLE_MAGASIN" ||
-          !currentAppUser.storeIds.includes(sale.store_id) ||
+          (!(currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN") && (
+            currentAppUser.roleId !== "RESPONSABLE_MAGASIN" ||
+            !currentAppUser.storeIds.includes(sale.store_id) ||
+            !hasPermission(currentAppUser, "credit.sales")
+          )) ||
           store?.store_type !== "CENTRAL_WAREHOUSE" ||
-          !hasPermission(currentAppUser, "credit.sales") ||
           sale.lines.some(line => line.line_type === "SERVICE" || articles.find(article => article.id === line.article_id)?.article_type !== "RESALE")
         ) {
-          throw new Error("Une demande revendeur doit rester créée par un responsable assigné au dépôt central et contenir des produits de revente.");
+          throw new Error("Une demande revendeur doit être créée par un administrateur ou un responsable assigné au dépôt central et contenir des produits de revente.");
         }
         if (sale.total > sale.amount_paid && !sale.credit_customer_id) {
           throw new Error("Sélectionnez le compte revendeur avant de conserver un solde à crédit.");
@@ -2172,6 +2172,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleCreateExpense = async (expense: Expense) => {
+    if (expensesLoadError) throw new Error(expensesLoadError);
     if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create"))) throw new Error("Vous ne disposez pas de la permission de créer une dépense.");
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
     if (expense.category === "SALARY_ADVANCE" && !isAdmin) throw new Error("Seul un administrateur peut enregistrer une avance sur salaire.");
@@ -2201,12 +2202,13 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleUpdateExpense = async (original: Expense, expense: Expense) => {
+    if (expensesLoadError) throw new Error(expensesLoadError);
     const isAdmin = currentAppUser?.roleId === "ADMIN" || currentAppUser?.roleId === "SUPER_ADMIN";
     const isSuperAdmin = currentAppUser?.roleId === "SUPER_ADMIN";
     if (
       user?.status !== "ACTIVE" ||
       !currentAppUser ||
-      !hasPermission(currentAppUser, "expenses.create") ||
+      !(isAdmin || hasPermission(currentAppUser, "expenses.create")) ||
       expense.created_by !== currentAppUser.uid ||
       (!isSuperAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))
     ) {
@@ -2237,6 +2239,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const handleValidateExpense = async (expense: Expense) => {
+    if (expensesLoadError) throw new Error(expensesLoadError);
     if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || (currentAppUser.roleId !== "SUPER_ADMIN" && (expense.created_by !== currentAppUser.uid || !expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))) throw new Error("Vous pouvez uniquement valider vos propres dépenses avec la permission de création.");
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
     let salaryAdvance: SalaryAdvance | undefined;
@@ -2296,6 +2299,7 @@ export default function AuthenticatedSessionView() {
     }
   };
   const handleDeleteExpense = async (expense: Expense) => {
+    if (expensesLoadError) throw new Error(expensesLoadError);
     if (currentAppUser?.roleId !== "SUPER_ADMIN") throw new Error("Suppression réservée aux super administrateurs.");
     const auditLog = createAuditLog(currentAppUser, "EXPENSE_DELETED", "EXPENSE", expense.id, expense, undefined, expense.store_id);
     await deleteExpense(expense, auditLog);
@@ -2739,6 +2743,10 @@ export default function AuthenticatedSessionView() {
               ← Retour à l'accueil
             </button>
             <ExpensesView
+              key={authScope}
+              dataReady={synchronization.status["Dépenses"] === "ready"}
+              loadError={synchronization.errors["Dépenses"] || (synchronization.status["Dépenses"] === "cached" ? "Données locales uniquement. Reconnectez-vous à Internet pour confirmer les dépenses." : null)}
+              onRetry={synchronization.retry}
               expenses={expenses}
               employees={employees}
               stores={accessibleStores}

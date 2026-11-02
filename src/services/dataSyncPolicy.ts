@@ -31,6 +31,8 @@ export function sessionReadAccess(user: User) {
   const storeIds = admin && user.status === "ACTIVE" ? undefined : user.status === "ACTIVE" ? user.assignedStores : [];
   return {
     admin, permitted, storeIds,
+    expensesAccess: permitted("expenses.view") || permitted("expenses.create") ? "full" as const
+      : ["cash_handover.view", "cash_handover.create", "cash_handover.receive", "cash_handover.deposit"].some(permitted) ? "validated" as const : "none" as const,
     salesAllowed: permitted("sales.view") || permitted("credit.manage"),
     salesStoreIds: permitted("credit.manage") ? undefined : storeIds,
   };

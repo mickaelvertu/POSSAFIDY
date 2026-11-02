@@ -24,6 +24,8 @@ export function useSessionSync(user: User | null, setters: Setters, initializeUn
   // Clear data only when authorization changes, never for an ordinary retry or name edit.
   useEffect(() => {
     Object.values(setters).forEach(setter => setter([]));
+    setErrors({});
+    setStatus({});
   }, [scope]);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function useSessionSync(user: User | null, setters: Setters, initializeUn
     const stops: (() => void)[] = [];
     const timers: number[] = [];
     setErrors({}); setStatus({});
-    const { admin, storeIds, permitted, salesAllowed, salesStoreIds } = sessionReadAccess(user);
+    const { admin, storeIds, permitted, salesAllowed, salesStoreIds, expensesAccess } = sessionReadAccess(user);
     const state = (label: string, value: string) => {
       if (active) setStatus(current => current[label] === value ? current : ({ ...current, [label]: value }));
     };
@@ -109,11 +111,15 @@ export function useSessionSync(user: User | null, setters: Setters, initializeUn
       watch<Purchase>("Achats", scopedQueries("purchases", ["store_id"], storeIds), setters.purchases);
     }
     if (admin) watch<UnitOfMeasure>("Unités", [collectionQuery("units")], setters.units);
-    if (permitted("expenses.view") || permitted("expenses.create")) {
+    if (expensesAccess === "full") {
       watch<Expense>("Dépenses", admin ? [collectionQuery("expenses")] : [
         ...scopedQueries("expenses", ["store_id"], user.assignedStores),
         collectionQuery("expenses", where("created_by", "==", user.id)),
       ], setters.expenses);
+    } else {
+      watch<Expense>("Dépenses", expensesAccess === "validated"
+        ? [...new Set(user.assignedStores)].map(storeId => collectionQuery("expenses", where("store_id", "==", storeId), where("status", "==", "VALIDATED")))
+        : [], setters.expenses);
     }
     if (admin || user.permissions.some(permission => permission.startsWith("cash_handover."))) {
       watch<CashHandover>("Remises de caisse", scopedQueries("cashHandovers", ["store_id"], storeIds), setters.cashHandovers);

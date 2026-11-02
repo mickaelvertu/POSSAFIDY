@@ -257,6 +257,15 @@ export async function saveTransferWithStockEffects(
           && currentTransfer.received_by === transfer.received_by
           && transferLinesEqual(currentTransfer.lines, transfer.lines);
     if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");
+    if (currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT") {
+      if (!transferLinesEqual(currentTransfer.lines, transfer.lines) || [...groupedMovements.values()].some(movement =>
+        movement.store_id !== currentTransfer.source_store_id ||
+        movement.reference_type !== "TRANSFER" || movement.reference_id !== currentTransfer.id ||
+        movement.quantity !== -currentTransfer.lines.find(line => line.article_id === movement.article_id)?.quantity_sent
+      ) || groupedMovements.size !== currentTransfer.lines.length) {
+        throw new Error("Les mouvements d'expédition doivent correspondre exactement aux lignes approuvées.");
+      }
+    }
     let purchaseRef: ReturnType<typeof doc> | undefined;
     let updatedPurchase: Purchase | undefined;
     if (currentTransfer.type === "SUPPLIER_TO_STORE") {
@@ -302,6 +311,12 @@ export async function saveTransferWithStockEffects(
       // A shipped, approved transfer provides one shared authorization document
       // for large POS receipts instead of one rules lookup per catalog article.
       const transferReceipt = posReceiptProof(currentTransfer, transfer, target.movement);
+      const shipmentIndex = currentTransfer.lines.findIndex(line => line.article_id === target.movement.article_id);
+      const shipment = currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT"
+        && currentTransfer.type !== "RECYCLING" && !quarantine && current
+        && target.movement.store_id === currentTransfer.source_store_id
+        && target.movement.quantity === -currentTransfer.lines[shipmentIndex]?.quantity_sent
+        ? { transfer_shipment: { transfer_id: currentTransfer.id, line_index: shipmentIndex } } : {};
       const stock: StoreStock = {
         id: current?.id || target.reference.id,
         store_id: target.movement.store_id,
@@ -312,9 +327,10 @@ export async function saveTransferWithStockEffects(
           : {}),
         reserved_quantity: current?.reserved_quantity || 0,
         ...transferReceipt,
+        ...shipment,
         updated_at: transfer.updated_at
       };
-      const movement = { ...target.movement, ...transferReceipt, before_quantity: before, after_quantity: after };
+      const movement = { ...target.movement, ...transferReceipt, ...shipment, before_quantity: before, after_quantity: after };
       persistedStocks.push(stock);
       persistedMovements.push(movement);
       transaction.set(target.reference, omitUndefined(stock));

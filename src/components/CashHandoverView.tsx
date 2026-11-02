@@ -44,6 +44,7 @@ export default function CashHandoverView({
   const [businessDate, setBusinessDate] = useState(localDate(Date.now()));
   const [reviewDate, setReviewDate] = useState(localDate(Date.now()));
   const [reviewStoreId, setReviewStoreId] = useState("");
+  const filteredHandovers = handovers.filter(handover => !reviewStoreId || handover.store_id === reviewStoreId);
   const [receivedAmount, setReceivedAmount] = useState("");
   const [discrepancyNote, setDiscrepancyNote] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
@@ -255,8 +256,8 @@ export default function CashHandoverView({
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-800"><ReceiptText className="h-4 w-4 text-emerald-700" /> Historique des remises</div>
-        {handovers.length === 0 ? (
-          <p className="p-8 text-center text-sm text-slate-500">Aucune remise de caisse pour les points de vente accessibles.</p>
+        {filteredHandovers.length === 0 ? (
+          <p className="p-8 text-center text-sm text-slate-500">Aucune remise de caisse pour les magasins sélectionnés.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-xs">
@@ -264,7 +265,7 @@ export default function CashHandoverView({
                 <th className="px-4 py-3">Remise / Point de vente</th><th className="px-4 py-3">Déclaration</th><th className="px-4 py-3">Réception</th><th className="px-4 py-3">Banque</th><th className="px-4 py-3">Statut / Actions</th>
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
-                {handovers.map(handover => {
+                {filteredHandovers.map(handover => {
                   const remaining = (handover.received_amount || 0) - handover.deposited_amount;
                   const canConfirm = canReceive && handover.status === "DECLARED" && handover.declared_by !== currentUser.uid;
                   const canAddDeposit = canDeposit && ["RECEIVED", "DISCREPANCY", "PARTIALLY_DEPOSITED"].includes(handover.status) && remaining > 0;

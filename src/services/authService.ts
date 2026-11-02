@@ -46,7 +46,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
   RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count", "employee_presentation.control", "cash_handover.view", "cash_handover.create"],
   CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count", "employee_presentation.control"],
-  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
+  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive", "reports.view"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create", "cash_handover.view", "procurement.manage"],
   GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
   STAFF: ["dashboard.view"],
@@ -159,7 +159,10 @@ export class AuthService {
       phone: profile.phone,
       status: profile.status || "PENDING",
       role: profile.role || null,
-      permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+      permissions: [...new Set([
+        ...(Array.isArray(profile.permissions) ? profile.permissions : []),
+        ...(profile.role === "PRODUCTION" ? ["reports.view"] : [])
+      ])],
       visibleArticleTypes: Array.isArray(profile.visibleArticleTypes)
         ? profile.visibleArticleTypes.filter((type): type is ArticleTypeCode => type === "RAW_MATERIAL" || type === "RESALE")
         : DEFAULT_ARTICLE_VISIBILITY[profile.role as AppRoleId] || [],

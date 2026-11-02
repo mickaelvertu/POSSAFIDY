@@ -2,6 +2,7 @@ import {
   collection,
   deleteField,
   doc,
+  getDoc,
   getDocs,
   query,
   setDoc,
@@ -10,6 +11,8 @@ import {
 import { db, runOnlineTransaction } from "../firebase";
 import { saleLinesEqual, firestoreValuesEqual } from "./saleComparison";
 import { canConsumeMaterials, validateMaterialConsumption } from "./materialConsumption";
+import { SALE_CATALOG_CHECK_SIZE, assertSaleValidationSize } from "./saleValidationLimits";
+import { assertOnlineForTransaction } from "./offlineSupport";
 import type { Article, Store, UserProfile } from "../types";
 import { AppRoleId, AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
 
@@ -500,9 +503,13 @@ export async function validateSale(
   userId: string,
   userName: string
 ): Promise<{ sale: Sale; stocks: StoreStock[]; movements: StockMovement[]; auditLog: AuditLog }> {
+  assertOnlineForTransaction();
   const quantities = new Map<string, number>();
   sale.lines.filter(line => line.line_type !== "SERVICE").forEach(line => quantities.set(line.article_id, (quantities.get(line.article_id) || 0) + line.quantity));
   const stockTargets = [...quantities].map(([articleId, quantity]) => ({ articleId, quantity, ...stockReference(knownStocks, sale.store_id, articleId) }));
+  const store = (await getDoc(doc(db, "stores", sale.store_id))).data() as Store | undefined;
+  assertSaleValidationSize(sale, store);
+  const needsChecks = store && ["POS", "RESELLER"].includes(store.store_type);
   const saleRef = doc(db, SALES, sale.id);
   const timestamp = Date.now();
   const updatedSale: Sale = { ...sale, status: "VALIDATED", validated_by: userId, validated_by_name: userName, validated_at: timestamp };
@@ -511,6 +518,20 @@ export async function validateSale(
   const updatedStocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
+  // These checks authorize catalog eligibility only; stock and sale status remain
+  // unchanged until the final atomic transaction. Failed retries cannot double-debit.
+  const checks = new Map<string, { check_id: string; article_index: number }>();
+  for (let offset = 0; needsChecks && offset < stockTargets.length; offset += SALE_CATALOG_CHECK_SIZE) {
+    const targets = stockTargets.slice(offset, offset + SALE_CATALOG_CHECK_SIZE);
+    const checkRef = doc(collection(db, "saleCatalogChecks"));
+    await setDoc(checkRef, clean({
+      sale_id: sale.id, store_id: sale.store_id, sale_created_at: sale.created_at,
+      sale_lines: sale.lines, article_ids: targets.map(target => target.articleId), created_by: userId,
+      line_indexes: targets.map(target => sale.lines.findIndex(line => line.line_type !== "SERVICE" && line.article_id === target.articleId))
+    }));
+    targets.forEach((target, article_index) => checks.set(target.articleId, { check_id: checkRef.id, article_index }));
+  }
+
   await runOnlineTransaction(async transaction => {
     const saleSnapshot = await transaction.get(saleRef);
     if (!saleSnapshot.exists() || (saleSnapshot.data() as Sale).status !== requiredStatus) {
@@ -518,9 +539,12 @@ export async function validateSale(
         ? "La demande revendeur doit être approuvée par un administrateur avant l'expédition."
         : "La vente doit être vérifiée avant validation.");
     }
+    if (!firestoreValuesEqual(saleSnapshot.data(), sale)) throw new Error("La vente a changé. Rechargez les données avant validation.");
+    updatedStocks.length = 0;
+    movements.length = 0;
     const snapshots = await Promise.all(stockTargets.map(target => transaction.get(target.reference)));
     stockTargets.forEach((target, index) => {
-      const current = snapshots[index].exists() ? snapshots[index].data() as StoreStock : target.fallback;
+      const current = snapshots[index].exists() ? snapshots[index].data() as StoreStock : undefined;
       const before = current?.quantity || 0;
       if (target.quantity <= 0 || before < target.quantity) {
         throw new Error(`Stock insuffisant pour l'article ${target.articleId}. Disponible : ${before}.`);
@@ -531,7 +555,9 @@ export async function validateSale(
         article_id: target.articleId,
         quantity: before - target.quantity,
         reserved_quantity: current?.reserved_quantity || 0,
-        updated_at: timestamp
+        ...(checks.has(target.articleId) ? { sale_check: checks.get(target.articleId)! } : {}),
+        updated_at: timestamp,
+        ...(current?.quarantine_quantity !== undefined ? { quarantine_quantity: current.quarantine_quantity } : {})
       };
       const movement: StockMovement = {
         id: `movement-${sale.id}-${target.articleId}`,
@@ -542,6 +568,7 @@ export async function validateSale(
         reference_type: "SALE",
         reference_id: sale.id,
         reference_number: sale.sale_number,
+        ...(checks.has(target.articleId) ? { sale_check: checks.get(target.articleId)! } : {}),
         before_quantity: before,
         after_quantity: stock.quantity,
         created_by: userId,

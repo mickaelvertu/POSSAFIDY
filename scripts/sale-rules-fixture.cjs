@@ -22,10 +22,24 @@ async function run(count, storeType = 'POS', options = {}) {
     ...stocks.map(stock => write(`stocks/${stock.id}`, stock)),
   ]);
   assert.equal(seeded.status, 200, JSON.stringify(seeded.body));
+  const checks = new Map();
+  if (options.checked) {
+    for (let offset = 0; offset < count; offset += 7) {
+      const indexes = Array.from({ length: Math.min(7, count - offset) }, (_, i) => offset + i);
+      const id = `check-${offset}`;
+      const checked = await commit([write(`saleCatalogChecks/${id}`, {
+        sale_id: sale.id, store_id: sale.store_id, sale_created_at: sale.created_at,
+        sale_lines: sale.lines, article_ids: indexes.map(i => sale.lines[i].article_id), line_indexes: indexes, created_by: 'super',
+      })], token);
+      if (checked.status !== 200) return checked.status;
+      indexes.forEach((i, article_index) => checks.set(sale.lines[i].article_id, { sale_check: { check_id: id, article_index } }));
+    }
+  }
+  if (options.stale) assert.equal((await commit([write('sales/sale', { ...sale, lines: sale.lines.map((line, i) => i === 0 ? { ...line, quantity: 2 } : line) })])).status, 200);
   const result = await commit([
     ...stocks.flatMap(stock => [
-      write(`stocks/${stock.id}`, { ...stock, quantity: 99, updated_at: 2 }),
-      write(`movements/movement-sale-${stock.article_id}`, { id: `movement-sale-${stock.article_id}`, store_id: 'store', article_id: stock.article_id, movement_type: 'SALE', quantity: -1, reference_type: 'SALE', reference_id: 'sale', reference_number: 'TEST-SALE', before_quantity: 100, after_quantity: 99, created_by: 'super', created_at: 2 }),
+      write(`stocks/${stock.id}`, { ...stock, ...checks.get(stock.article_id), quantity: 99, updated_at: 2 }),
+      write(`movements/movement-sale-${stock.article_id}`, { id: `movement-sale-${stock.article_id}`, ...checks.get(stock.article_id), store_id: 'store', article_id: stock.article_id, movement_type: 'SALE', quantity: -1, reference_type: 'SALE', reference_id: 'sale', reference_number: 'TEST-SALE', before_quantity: 100, after_quantity: 99, created_by: 'super', created_at: 2 }),
     ]),
     write('sales/sale', { ...sale, status: 'VALIDATED', validated_by: 'super', validated_at: 2 }),
     write('auditLogs/test', { user_id: 'super', action: 'SALE_VALIDATED', entity_type: 'SALE', entity_id: 'sale', created_at: 2 }),
