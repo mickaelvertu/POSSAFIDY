@@ -1,0 +1,26 @@
+{
+    "version":  1,
+    "exportedAt":  "2026-10-27T07:12:00.5092330Z",
+    "purpose":  "Correction du stock initial AVR de 11 a 18, en conservant les ventes : stock actuel 1 + 7 = 8.",
+    "import_mode":  "STOCK_SNAPSHOT_CORRECTION",
+    "initial_stock_reference":  "SYNC-109F1A1D",
+    "source_stock":  "stock-POS-03-2026-10-27.json",
+    "source_movements":  "rapport-stock_movements-2026-10-27.csv",
+    "application_rule":  "quantity = expected_current_quantity - previous_initial_quantity + corrected_initial_quantity",
+    "data":  [
+                 {
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "store_name":  "Rex",
+                     "article_id":  "article-resale-avr",
+                     "article_code":  "AV012",
+                     "article_name":  "AVR",
+                     "unit":  "Piece",
+                     "quantity":  8,
+                     "expected_current_quantity":  1,
+                     "previous_initial_quantity":  11,
+                     "corrected_initial_quantity":  18,
+                     "correction_delta":  7
+                 }
+             ]
+}

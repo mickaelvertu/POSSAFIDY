@@ -1,3 +1,5 @@
+import { useListWindow } from "../hooks/useListWindow";
+import ListWindowMore from "./ListWindowMore";
 import { storeLabel } from "../services/storeLabel";
 import { useState } from "react";
 import { 
@@ -115,6 +117,8 @@ export default function MovementsView({
     ];
     downloadReportCsv(`historique-mouvements-${new Date().toISOString().slice(0, 10)}.csv`, columns, filteredMovements);
   };
+
+  const listWindow = useListWindow(JSON.stringify([selectedType, selectedStoreId, selectedArticleId, searchQuery, dateFrom, dateTo]));
 
   return (
     <div className="space-y-6">
@@ -240,7 +244,7 @@ export default function MovementsView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredMovements.map((m) => {
+              {filteredMovements.slice(0, listWindow.count).map((m) => {
                 const art = getArticle(m.article_id);
                 const isPositive = m.quantity > 0;
                 return (
@@ -293,6 +297,7 @@ export default function MovementsView({
         </div>
       </div>
 
+      <ListWindowMore count={listWindow.count} total={filteredMovements.length} onMore={listWindow.showMore} />
     </div>
   );
 }

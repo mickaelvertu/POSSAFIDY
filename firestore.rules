@@ -11,38 +11,135 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE' && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['ADMIN', 'SUPER_ADMIN']
-      );
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' &&
+        profile.get('role', '') in ['ADMIN', 'SUPER_ADMIN'];
     }
 
     function isSuperAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE' &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SUPER_ADMIN';
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' && profile.get('role', '') == 'SUPER_ADMIN';
     }
 
     function isActiveUser() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'ACTIVE';
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE';
+    }
+
+    function currentProfile() {
+      return isSignedIn()
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data : null;
     }
 
     function hasPermission(permission) {
-      return isAdmin() || (
-        isActiveUser() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.hasAny([permission])
-      );
+      return hasAnyPermission([permission]);
+    }
+
+    function hasAnyPermission(permissions) {
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' &&
+        (profile.get('role', '') in ['ADMIN', 'SUPER_ADMIN'] || profile.get('permissions', []).hasAny(permissions));
     }
 
     function hasStoreAccess(storeId) {
-      return isAdmin() || (
-        isActiveUser() && storeId is string &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([storeId])
-      );
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' &&
+        (profile.get('role', '') in ['ADMIN', 'SUPER_ADMIN'] ||
+          (storeId is string && profile.get('assignedStores', []).hasAny([storeId])));
+    }
+
+    function canStoreArticle(storeId, articleId) {
+      return get(/databases/$(database)/documents/stores/$(storeId)).data.store_type in ['CENTRAL_WAREHOUSE', 'MANUFACTURER'] ||
+        get(/databases/$(database)/documents/articles/$(articleId)).data.article_type == 'RESALE';
+    }
+
+    // Large POS receipts must not read one catalog document per line: an
+    // atomic transaction has a shared document-access budget. Trust only an
+    // already approved and shipped central transfer, completed in this commit.
+    function canCreditPosReceipt(data, delta) {
+      let receipt = data.get('transfer_receipt', {});
+      let transferId = receipt.get('transfer_id', '');
+      let index = receipt.get('line_index', -1);
+      let before = get(/databases/$(database)/documents/transfers/$(transferId)).data;
+      let after = getAfter(/databases/$(database)/documents/transfers/$(transferId)).data;
+      return transferId != '' && index is int && index >= 0 &&
+        index < before.lines.size() && index < after.lines.size() &&
+        before.type == 'CENTRAL_TO_POS' && before.status == 'IN_TRANSIT' &&
+        before.approved_by is string && before.shipped_by is string &&
+        after.status in ['VALIDATED', 'DISCREPANCY'] &&
+        after.received_by == request.auth.uid && after.validated_by == request.auth.uid &&
+        hasPermission('transfers.receive') && hasStoreAccess(before.destination_store_id) &&
+        request.auth.uid != before.requested_by && request.auth.uid != before.approved_by &&
+        data.store_id == before.destination_store_id &&
+        get(/databases/$(database)/documents/stores/$(before.destination_store_id)).data.store_type == 'POS' &&
+        get(/databases/$(database)/documents/stores/$(before.source_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+        before.lines[index].article_id == data.article_id &&
+        after.lines[index].article_id == before.lines[index].article_id &&
+        after.lines[index].quantity_sent == before.lines[index].quantity_sent &&
+        after.lines[index].quantity_accepted > 0 &&
+        after.lines[index].quantity_accepted <= after.lines[index].quantity_received &&
+        after.lines[index].quantity_received <= before.lines[index].quantity_sent &&
+        delta == after.lines[index].quantity_accepted;
+    }
+
+    // A shipment shares one transfer lookup across every line of the commit.
+    function canDebitShipment(data, delta) {
+      let proof = data.get('transfer_shipment', {});
+      let id = proof.get('transfer_id', '');
+      let index = proof.get('line_index', -1);
+      let before = get(/databases/$(database)/documents/transfers/$(id)).data;
+      let after = getAfter(/databases/$(database)/documents/transfers/$(id)).data;
+      return id != '' && index is int && index >= 0 && index < before.lines.size() &&
+        before.status == 'APPROVED' && after.status == 'IN_TRANSIT' &&
+        before.lines == after.lines && before.source_store_id == data.store_id &&
+        before.lines[index].article_id == data.article_id &&
+        before.lines[index].quantity_sent > 0 && delta == -before.lines[index].quantity_sent &&
+        before.type != 'RECYCLING' && after.shipped_by == request.auth.uid &&
+        hasPermission('transfers.ship') && hasStoreAccess(before.source_store_id);
+    }
+
+    function canDebitCheckedSale(data, delta) {
+      let link = data.sale_check;
+      let check = get(/databases/$(database)/documents/saleCatalogChecks/$(link.check_id)).data;
+      let before = get(/databases/$(database)/documents/sales/$(check.sale_id)).data;
+      let after = getAfter(/databases/$(database)/documents/sales/$(check.sale_id)).data;
+      return link.article_index is int && link.article_index >= 0 && link.article_index < check.article_ids.size() &&
+        check.article_ids[link.article_index] == data.article_id && check.created_by == request.auth.uid &&
+        data.get('reference_id', check.sale_id) == check.sale_id &&
+        check.store_id == data.store_id && before.store_id == data.store_id &&
+        check.sale_created_at == before.created_at && check.sale_lines == before.lines &&
+        before.lines == after.lines &&
+        ((before.customer_type == 'REVENDEUR' && before.status == 'APPROVED') ||
+          (before.customer_type != 'REVENDEUR' && before.status == 'VERIFIED')) &&
+        after.status == 'VALIDATED' && after.validated_by == request.auth.uid && delta < 0 &&
+        hasPermission('sales.validate') && hasStoreAccess(data.store_id);
+    }
+
+    match /saleCatalogChecks/{checkId} {
+      function eligible(data, index) {
+        let ids = data.article_ids;
+        let indexes = data.line_indexes;
+        let lines = data.sale_lines;
+        return index >= ids.size() ||
+          (indexes[index] is int && indexes[index] >= 0 &&
+            lines[indexes[index]].article_id == ids[index] &&
+            get(/databases/$(database)/documents/articles/$(ids[index])).data.article_type == 'RESALE');
+      }
+      function valid(data) {
+        let sale = get(/databases/$(database)/documents/sales/$(data.sale_id)).data;
+        return hasPermission('sales.validate') && hasStoreAccess(data.store_id) &&
+          data.keys().hasOnly(['sale_id', 'store_id', 'sale_created_at', 'sale_lines', 'article_ids', 'line_indexes', 'created_by']) &&
+          data.created_by == request.auth.uid && data.article_ids is list &&
+          data.article_ids.size() > 0 && data.article_ids.size() <= 7 &&
+          data.line_indexes is list && data.line_indexes.size() == data.article_ids.size() &&
+          sale.store_id == data.store_id && sale.created_at == data.sale_created_at &&
+          sale.lines == data.sale_lines && sale.status in ['VERIFIED', 'APPROVED'] &&
+          eligible(data, 0) && eligible(data, 1) && eligible(data, 2) && eligible(data, 3) &&
+          eligible(data, 4) && eligible(data, 5) && eligible(data, 6);
+      }
+      allow create: if valid(request.resource.data);
+      // Immutable attestations cannot be forged or altered by a later stock update.
+      allow delete: if isSuperAdmin();
     }
 
     function canViewArticleType(articleType) {
@@ -293,8 +390,24 @@ service cloud.firestore {
     }
 
     match /purchases/{purchaseId} {
-      allow get: if hasPermission('procurement.manage') &&
-        (resource == null || hasStoreAccess(resource.data.store_id));
+      // Receipt transactions read the linked purchase before crediting stock.
+      // Keep this document-only access separate from procurement list/manage rights.
+      function canReadForReceipt() {
+        let transferId = resource.data.get('transfer_id', '');
+        let transfer = get(/databases/$(database)/documents/transfers/$(transferId)).data;
+        return hasPermission('transfers.receive') &&
+          hasStoreAccess(resource.data.store_id) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.store_id]) &&
+          resource.data.status == 'APPROVED' &&
+          transfer.type == 'SUPPLIER_TO_STORE' &&
+          transfer.purchase_id == purchaseId &&
+          transfer.destination_store_id == resource.data.store_id &&
+          transfer.status in ['IN_TRANSIT', 'RECEIVED'];
+      }
+
+      allow get: if (hasPermission('procurement.manage') &&
+        (resource == null || hasStoreAccess(resource.data.store_id))) ||
+        (resource != null && canReadForReceipt());
       allow list: if hasPermission('procurement.manage') && hasStoreAccess(resource.data.store_id);
       allow create: if hasPermission('procurement.manage') &&
         request.resource.data.id == purchaseId &&
@@ -424,8 +537,16 @@ service cloud.firestore {
     }
 
     match /expenses/{expenseId} {
+      // Employees may check their own advance source, including a deleted source.
+      allow get: if isActiveUser() && (resource == null || isAdmin() || (
+        resource.data.get('employee_id', null) != null &&
+        get(/databases/$(database)/documents/employees/$(resource.data.employee_id)).data.get('user_id', null) == request.auth.uid
+      ));
       allow read: if (hasPermission('expenses.view') || hasPermission('expenses.create')) &&
-        (isSuperAdmin() || resource.data.created_by == request.auth.uid || hasExpenseStoreAccess(resource.data.get('store_id', null)));
+        (isAdmin() || resource.data.created_by == request.auth.uid || hasExpenseStoreAccess(resource.data.get('store_id', null)));
+      // Cash reconciliation requires validated expenses, never draft access.
+      allow read: if hasAnyPermission(['cash_handover.view', 'cash_handover.create', 'cash_handover.receive', 'cash_handover.deposit']) &&
+        resource.data.status == 'VALIDATED' && hasStoreAccess(resource.data.get('store_id', null));
       allow create: if hasPermission('expenses.create') &&
         hasExpenseStoreAccess(request.resource.data.get('store_id', null)) &&
         request.resource.data.id == expenseId &&
@@ -488,10 +609,41 @@ service cloud.firestore {
 
     match /movements/{movementId} {
       allow read: if isActiveUser() && hasStoreAccess(resource.data.store_id);
-      allow create: if hasStoreAccess(request.resource.data.store_id) && (
-        hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
-        hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-        hasPermission('production.create') || hasPermission('production.validate')
+      allow create: if hasStoreAccess(request.resource.data.store_id) &&
+        (!(request.resource.data.get('movement_type', '') == 'CONSUMPTION' || request.resource.data.get('reference_type', '') == 'CONSUMPTION') ||
+          (get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'MANUFACTURER' &&
+           get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.is_active == true)) &&
+        ((request.resource.data.keys().hasAny(['sale_check']) &&
+          request.resource.data.movement_type == 'SALE' && request.resource.data.reference_type == 'SALE' &&
+          request.resource.data.created_by == request.auth.uid &&
+          request.resource.data.get('stock_bucket', '') != 'QUARANTINE' &&
+          request.resource.data.after_quantity >= 0 &&
+          request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
+          canDebitCheckedSale(request.resource.data, request.resource.data.quantity)) ||
+          (request.resource.data.keys().hasAny(['transfer_shipment']) &&
+          request.resource.data.reference_type == 'TRANSFER' &&
+          request.resource.data.reference_id == request.resource.data.transfer_shipment.transfer_id &&
+          request.resource.data.created_by == request.auth.uid &&
+          request.resource.data.get('stock_bucket', '') != 'QUARANTINE' &&
+          request.resource.data.after_quantity >= 0 &&
+          request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
+          canDebitShipment(request.resource.data, request.resource.data.quantity)) ||
+          (request.resource.data.keys().hasAny(['transfer_receipt']) &&
+          request.resource.data.reference_type == 'TRANSFER' &&
+          request.resource.data.reference_id == request.resource.data.transfer_receipt.transfer_id &&
+          request.resource.data.created_by == request.auth.uid &&
+          request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
+          canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
+          (!request.resource.data.keys().hasAny(['sale_check']) && canStoreArticle(request.resource.data.store_id, request.resource.data.article_id))) && (
+        hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
+        (hasPermission('stock.edit') &&
+          request.resource.data.movement_type == 'CONSUMPTION' &&
+          request.resource.data.reference_type == 'CONSUMPTION' &&
+          request.resource.data.created_by == request.auth.uid &&
+          request.resource.data.quantity is number && request.resource.data.quantity < 0 &&
+          request.resource.data.after_quantity >= 0 &&
+          request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
+          get(/databases/$(database)/documents/articles/$(request.resource.data.article_id)).data.article_type == 'RAW_MATERIAL')
       );
     }
 
@@ -655,10 +807,17 @@ service cloud.firestore {
     match /productions/{productionId} {
       allow read: if hasPermission('production.view') && (resource == null || hasStoreAccess(resource.data.manufacturer_store_id));
       allow create: if (hasPermission('production.create') || hasPermission('production.validate')) &&
+        request.resource.data.status == 'DRAFT' &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.consumptions is list && request.resource.data.consumptions.size() > 0 &&
         request.resource.data.outputs is list && request.resource.data.outputs.size() > 0 &&
         hasStoreAccess(request.resource.data.manufacturer_store_id);
+      allow update: if hasPermission('production.validate') &&
+        hasStoreAccess(resource.data.manufacturer_store_id) &&
+        resource.data.status == 'DRAFT' && request.resource.data.status == 'COMPLETED' &&
+        request.resource.data.validated_by == request.auth.uid &&
+        request.resource.data.validated_at is number &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'validated_by', 'validated_by_name', 'validated_at']);
       allow update: if hasPermission('production.create') &&
         resource.data.status == 'DRAFT' &&
         request.resource.data.status == 'DRAFT' &&
@@ -691,6 +850,59 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+
+    function canControlPresentation() {
+      return isAdmin() || (isActiveUser() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['CONTROLEUR', 'RESPONSABLE_MAGASIN'] ||
+        hasPermission('employee_presentation.control')));
+    }
+    match /employeeDirectory/{employeeId} {
+      allow read: if canControlPresentation() && hasStoreAccess(resource.data.store_id);
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['id', 'first_name', 'last_name', 'position', 'store_id', 'is_active']) && request.resource.data.id == employeeId;
+      allow delete: if isAdmin();
+    }
+    match /employeePresentationChecks/{checkId} {
+      function validFinding(f, submitted) {
+        return f.keys().hasOnly(['result', 'note', 'photo']) &&
+          f.result in ['OK', 'ISSUE', 'NA'] && f.note is string && f.note.size() <= 4000 &&
+          f.photo is string && f.photo.size() <= 2000 && (f.photo == '' || f.photo.matches('https://.*')) &&
+          (!submitted || f.result != 'ISSUE' || f.note.size() >= 5);
+      }
+      function validCheck() {
+        let d = request.resource.data;
+        let submitted = d.status != 'DRAFT';
+        return d.keys().hasOnly(['id', 'store_id', 'employee_id', 'employee_name', 'created_by', 'created_by_name', 'created_at', 'updated_at', 'status', 'findings', 'review_note', 'reviewed_by', 'reviewed_at']) &&
+          d.id == checkId && d.status in ['DRAFT', 'SUBMITTED', 'VALIDATED', 'CORRECTION'] &&
+          d.findings is list && d.findings.size() == 4 &&
+          validFinding(d.findings[0], submitted) && validFinding(d.findings[1], submitted) &&
+          validFinding(d.findings[2], submitted) && validFinding(d.findings[3], submitted) &&
+          (!submitted || d.findings[0].result != 'NA' || d.findings[1].result != 'NA' || d.findings[2].result != 'NA' || d.findings[3].result != 'NA') &&
+          d.review_note is string && d.review_note.size() <= 4000 &&
+          d.created_by_name is string && d.employee_name is string && d.created_at is number && d.updated_at is number;
+      }
+      function validEmployee() {
+        let d = request.resource.data;
+        let e = get(/databases/$(database)/documents/employees/$(d.employee_id)).data;
+        return e.is_active == true && e.get('linked_archive_id', '') == '' && e.store_id == d.store_id &&
+          d.employee_name == e.first_name + ' ' + e.last_name;
+      }
+      allow read: if canControlPresentation() && hasStoreAccess(resource.data.store_id);
+      allow create: if canControlPresentation() && validCheck() && validEmployee() &&
+        hasStoreAccess(request.resource.data.store_id) && request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.status in ['DRAFT', 'SUBMITTED'] && request.resource.data.reviewed_by == '' && request.resource.data.reviewed_at == 0 && request.resource.data.review_note == '';
+      allow update: if validCheck() && (
+        (canControlPresentation() && hasStoreAccess(resource.data.store_id) && validEmployee() &&
+          resource.data.created_by == request.auth.uid && resource.data.status in ['DRAFT', 'CORRECTION'] &&
+          request.resource.data.status in ['DRAFT', 'SUBMITTED'] && request.resource.data.reviewed_by == '' && request.resource.data.reviewed_at == 0 && request.resource.data.review_note == '' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'findings', 'updated_at', 'review_note', 'reviewed_by', 'reviewed_at'])) ||
+        (isAdmin() && resource.data.status == 'SUBMITTED' && resource.data.created_by != request.auth.uid &&
+          request.resource.data.status in ['VALIDATED', 'CORRECTION'] && request.resource.data.reviewed_by == request.auth.uid && request.resource.data.reviewed_at is number &&
+          (request.resource.data.status != 'CORRECTION' || request.resource.data.review_note.size() > 0) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updated_at', 'review_note', 'reviewed_by', 'reviewed_at']))
+      );
+      allow delete: if false;
+    }
+
     match /inventoryCounts/{countId} {
       function isCounter() {
         return isActiveUser() && (
@@ -700,7 +912,44 @@ service cloud.firestore {
         );
       }
 
-      allow read: if isAdmin() || (isActiveUser() && (hasStoreAccess(resource.data.store_id) || resource.data.get('charged_to', null) == request.auth.uid));
+      function validEmployeeCharge(data) {
+        let employeeId = data.charged_employee_id;
+        let employee = get(/databases/$(database)/documents/employees/$(employeeId)).data;
+        let linkedUser = employee.get('user_id', '');
+        return isSuperAdmin() && data.get('total_charged_amount', 0) > 0 &&
+          data.charged_to_name == employee.first_name + ' ' + employee.last_name &&
+          data.charged_to == (linkedUser is string && linkedUser.size() > 0 ? linkedUser : employeeId) &&
+          data.charge_assigned_by == request.auth.uid && data.charge_assigned_at is number;
+      }
+
+      function validChargeAssignment() {
+        let data = request.resource.data;
+        return data.get('charged_employee_id', null) is string
+          ? validEmployeeCharge(data)
+          : (!data.keys().hasAny(['charged_employee_id', 'charge_assigned_by', 'charge_assigned_by_name', 'charge_assigned_at']) &&
+            (data.get('total_charged_amount', 0) <= 0 ||
+              (data.charged_to == resource.data.get('manager_signed_by', resource.data.created_by) &&
+               data.charged_to_name == resource.data.get('manager_signed_by_name', resource.data.created_by_name))));
+      }
+
+      function payrollEmployeeMatches(employeeId) {
+        let employee = get(/databases/$(database)/documents/employees/$(employeeId)).data;
+        let responsible = resource.data.get('charged_to', resource.data.get('manager_signed_by', resource.data.created_by));
+        return resource.data.get('charged_employee_id', null) is string
+          ? resource.data.charged_employee_id == employeeId
+          : responsible == employeeId || (employee.get('user_id', '') != '' && employee.get('user_id', '') == responsible);
+      }
+
+      function linkedPayroll(settlement) {
+        let payroll = getAfter(/databases/$(database)/documents/payroll/$(settlement.payslip_id)).data;
+        return settlement.payslip_id is string && payroll.inventory_count_ids.hasAny([countId]) &&
+          payroll.inventory_charges_deducted >= resource.data.total_charged_amount &&
+          payrollEmployeeMatches(payroll.employee_id);
+      }
+
+      allow read: if isAdmin() || (isActiveUser() && (hasStoreAccess(resource.data.store_id) || resource.data.get('charged_to', null) == request.auth.uid ||
+        (resource.data.get('charged_employee_id', null) is string &&
+          get(/databases/$(database)/documents/employees/$(resource.data.charged_employee_id)).data.get('user_id', null) == request.auth.uid)));
       allow create: if isCounter() &&
         request.resource.data.id == countId &&
         request.resource.data.created_by == request.auth.uid &&
@@ -730,11 +979,19 @@ service cloud.firestore {
         resource.data.created_by != request.auth.uid &&
         ('manager_signed_at' in resource.data || resource.data.get('signature_waived', false) == true) &&
         request.resource.data.status in ['VALIDATED', 'REJECTED'] &&
-        request.resource.data.store_id == resource.data.store_id
+        request.resource.data.store_id == resource.data.store_id &&
+        (request.resource.data.status != 'VALIDATED' ||
+          (request.resource.data.reviewed_by == request.auth.uid && request.resource.data.reviewed_at is number && validChargeAssignment()))
       ) || (
         isAdmin() && resource.data.status == 'VALIDATED' &&
         !('charge_settlement' in resource.data) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['charge_settlement', 'updated_at'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['charge_settlement', 'updated_at']) &&
+        request.resource.data.charge_settlement.settled_by == request.auth.uid &&
+        request.resource.data.charge_settlement.settled_at is number &&
+        request.resource.data.charge_settlement.reference is string &&
+        request.resource.data.charge_settlement.reference.size() > 0 &&
+        request.resource.data.charge_settlement.method in ['PAYSLIP', 'ADVANCE', 'OTHER'] &&
+        (request.resource.data.charge_settlement.method != 'PAYSLIP' || linkedPayroll(request.resource.data.charge_settlement))
       );
       allow delete: if isCounter() && resource.data.status == 'DRAFT' && resource.data.created_by == request.auth.uid;
     }
@@ -961,19 +1218,36 @@ service cloud.firestore {
         )
       );
       allow create: if hasStoreAccess(request.resource.data.store_id) &&
+        ((request.resource.data.keys().hasAny(['transfer_receipt']) &&
+          request.resource.data.get('quarantine_quantity', 0) == 0 &&
+          request.resource.data.reserved_quantity == 0 &&
+          canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
+          canStoreArticle(request.resource.data.store_id, request.resource.data.article_id)) &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
-          hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
-          hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-          hasPermission('production.create') || hasPermission('production.validate') ||
+          hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
           isSuperAdmin()
         );
       allow update: if hasStoreAccess(resource.data.store_id) &&
+        ((request.resource.data.keys().hasAny(['sale_check']) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updated_at', 'sale_check', 'transfer_receipt', 'transfer_shipment']) &&
+          canDebitCheckedSale(request.resource.data, request.resource.data.quantity - resource.data.quantity)) ||
+          (request.resource.data.keys().hasAny(['transfer_shipment']) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updated_at', 'transfer_shipment', 'transfer_receipt']) &&
+          canDebitShipment(request.resource.data, request.resource.data.quantity - resource.data.quantity)) ||
+          (request.resource.data.keys().hasAny(['transfer_receipt']) &&
+          request.resource.data.get('quarantine_quantity', 0) == resource.data.get('quarantine_quantity', 0) &&
+          request.resource.data.reserved_quantity == resource.data.reserved_quantity &&
+          canCreditPosReceipt(request.resource.data, request.resource.data.quantity - resource.data.quantity)) ||
+          ((!request.resource.data.keys().hasAny(['sale_check']) || request.resource.data.sale_check == resource.data.get('sale_check', null)) && canStoreArticle(resource.data.store_id, resource.data.article_id))) &&
         request.resource.data.store_id == resource.data.store_id &&
         request.resource.data.article_id == resource.data.article_id &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
-          hasPermission('stock.adjust') || hasPermission('transfers.ship') ||
-          hasPermission('transfers.receive') || hasPermission('sales.validate') ||
-          hasPermission('production.create') || hasPermission('production.validate') ||
+          hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
+          (hasPermission('stock.edit') &&
+            get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type == 'MANUFACTURER' &&
+            request.resource.data.quantity < resource.data.quantity &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updated_at']) &&
+            get(/databases/$(database)/documents/articles/$(resource.data.article_id)).data.article_type == 'RAW_MATERIAL') ||
           isSuperAdmin()
         );
       allow delete: if isAdmin();
@@ -1040,6 +1314,17 @@ service cloud.firestore {
         request.resource.data.created_at == resource.data.created_at &&
         (
           (
+            isSuperAdmin() &&
+            resource.data.status in ['DRAFT', 'APPROVED', 'SHIPPED', 'IN_TRANSIT', 'RECEIVED', 'VALIDATED', 'DISCREPANCY'] &&
+            request.resource.data.status == 'CANCELLED' &&
+            !('purchase_id' in resource.data) &&
+            request.resource.data.cancelled_by == request.auth.uid &&
+            request.resource.data.cancelled_at is number &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'cancelled_by', 'cancelled_by_name', 'cancelled_at', 'updated_at'
+            ])
+          ) ||
+          (
           resource.data.status == 'DRAFT' &&
           request.resource.data.status == 'DRAFT' &&
           hasPermission('transfers.create') &&
@@ -1069,8 +1354,21 @@ service cloud.firestore {
           (
             resource.data.status == 'DRAFT' &&
             request.resource.data.status == 'APPROVED' &&
-            isAdmin() &&
-            resource.data.requested_by != request.auth.uid &&
+            (
+              (isAdmin() && resource.data.requested_by != request.auth.uid) ||
+              (
+                hasPermission('transfers.create') && hasPermission('transfers.ship') &&
+                isActiveUser() &&
+                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.source_store_id]) &&
+                resource.data.source_store_id != resource.data.destination_store_id &&
+                resource.data.type in ['MANUFACTURER_TO_STORE', 'STORE_TO_STORE'] &&
+                !('purchase_id' in resource.data) &&
+                get(/databases/$(database)/documents/stores/$(resource.data.source_store_id)).data.store_type == 'MANUFACTURER' &&
+                get(/databases/$(database)/documents/stores/$(resource.data.source_store_id)).data.is_active == true &&
+                get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'MANUFACTURER' &&
+                get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.is_active == true
+              )
+            ) &&
             request.resource.data.approved_by == request.auth.uid &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'status', 'approved_by', 'approved_by_name', 'approved_at', 'updated_at'

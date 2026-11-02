@@ -71,7 +71,7 @@ export const ALL_PERMISSIONS: AppPermission[] = [
   "expenses.view", "expenses.create",
   "cash_handover.view", "cash_handover.create", "cash_handover.receive", "cash_handover.deposit",
   "procurement.manage",
-  "units.manage"
+  "units.manage", "employee_presentation.control"
 ];
 
 // 1. Types de magasins
@@ -259,6 +259,8 @@ export interface StoreStock {
   quarantine_quantity?: number; // retours à recycler, jamais vendables
   reserved_quantity: number;
   updated_at: number;
+  transfer_receipt?: { transfer_id: string; line_index: number };
+  sale_check?: { check_id: string; article_index: number };
 }
 
 // 5. Transferts & Réceptions
@@ -326,6 +328,9 @@ export interface StockTransferLine {
 }
 
 export interface StockTransfer {
+  cancelled_by?: string;
+  cancelled_by_name?: string;
+  cancelled_at?: number;
   id: string;
   transfer_number: string; // ex: TRF-2026-0001
   type: TransferTypeCode;
@@ -399,6 +404,8 @@ export interface StockMovement {
   notes?: string;
   stock_bucket?: "QUARANTINE";
   created_at: number;
+  transfer_receipt?: { transfer_id: string; line_index: number };
+  sale_check?: { check_id: string; article_index: number };
 }
 
 // 7. Ventes & Lignes de vente
@@ -558,7 +565,7 @@ export interface ProductionConsumptionLine {
 
 export interface ProductionOutputLine {
   id: string;
-  article_id: string; // Produit fini
+  article_id: string; // Matière première fabriquée ou produit fini
   article_code: string;
   article_name: string;
   unit: string;
@@ -635,6 +642,10 @@ export interface InventoryCount {
   review_note?: string;
   charged_to?: string; // responsable auquel le manque est retenu
   charged_to_name?: string;
+  charged_employee_id?: string; // fiche employé stable, même sans compte de connexion
+  charge_assigned_by?: string;
+  charge_assigned_by_name?: string;
+  charge_assigned_at?: number;
   total_charged_amount?: number;
   charge_settlement?: InventoryChargeSettlement; // renseigné une fois la retenue déduite
 }
@@ -671,12 +682,14 @@ export interface GeneralFilters {
   articleId?: string;
   articleIds?: string[]; // multi-sélection d'articles précis
   customerName?: string;
+  resellerPaymentStatus?: "ALL" | PaymentStatus;
   sellerId?: string;
 }
 
 // 11. Type de rapport PDF
 export type ReportType = 
   | "STOCK_STATUS"
+  | "STOCK_BY_ARTICLE"
   | "STOCK_MOVEMENTS"
   | "STOCK_LEDGER"
   | "TRANSFERS"
@@ -690,12 +703,14 @@ export type ReportType =
   | "PRODUCTION"
   | "RETURNS"
   | "AUDIT_LOG"
+  | "RESELLER_CREDIT"
   | "EXPENSES"
   | "CASH_HANDOVERS";
 
 export type EmployeeContractType = "CDI" | "CDD" | "TEMPORARY" | "INTERN" | "DAILY";
 
 export interface Employee {
+  linked_archive_id?: string;
   id: string;
   code?: string;
   first_name: string;

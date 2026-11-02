@@ -1,0 +1,62 @@
+{
+    "version":  1,
+    "review":  {
+                   "ready_to_apply":  true
+               },
+    "data":  [
+                 {
+                     "id":  "stock-store-pos-14-article-resale-fandravagodro",
+                     "store_id":  "store-pos-14",
+                     "store_code":  "POS-14",
+                     "article_id":  "article-resale-fandravagodro",
+                     "article_code":  "FA014",
+                     "article_name":  "FANDRAVAGODRO",
+                     "quantity":  3
+                 },
+                 {
+                     "id":  "stock-store-pos-03-ART-180",
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "article_id":  "ART-180",
+                     "article_code":  "LH",
+                     "article_name":  "LH TEST D\u0027OVULATION",
+                     "quantity":  5
+                 },
+                 {
+                     "id":  "stock-store-pos-03-article-resale-fievre-typho",
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "article_id":  "article-resale-fievre-typho",
+                     "article_code":  "FT117",
+                     "article_name":  "FIEVRE TYPHO",
+                     "quantity":  5
+                 },
+                 {
+                     "id":  "stock-store-pos-03-article-resale-glycemie",
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "article_id":  "article-resale-glycemie",
+                     "article_code":  "GL109",
+                     "article_name":  "GLYCEMIE",
+                     "quantity":  2
+                 },
+                 {
+                     "id":  "stock-store-pos-03-article-resale-palu",
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "article_id":  "article-resale-palu",
+                     "article_code":  "PA113",
+                     "article_name":  "PALU",
+                     "quantity":  6
+                 },
+                 {
+                     "id":  "stock-store-pos-03-article-resale-toxo",
+                     "store_id":  "store-pos-03",
+                     "store_code":  "POS-03",
+                     "article_id":  "article-resale-toxo",
+                     "article_code":  "TO104",
+                     "article_name":  "TOXO",
+                     "quantity":  4
+                 }
+             ]
+}

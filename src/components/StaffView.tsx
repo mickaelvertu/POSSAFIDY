@@ -1,9 +1,12 @@
 import { storeLabel } from "../services/storeLabel";
 import { FormEvent, useMemo, useState } from "react";
 import { Banknote, Eye, Pencil, Plus, Search, UserCheck, UserX, Users, X } from "lucide-react";
-import { Employee, EmployeeContractType, Expense, SalaryAdvance, Store } from "../types";
+import { AppUser, Employee, EmployeeContractType, Expense, SalaryAdvance, Store } from "../types";
 
 interface StaffViewProps {
+  users: AppUser[];
+  onLinkAccount: (employee: Employee, userId: string) => Promise<void>;
+  onOpenUsers: () => void;
   employees: Employee[];
   expenses: Expense[];
   advances: SalaryAdvance[];
@@ -45,7 +48,12 @@ const emptyForm = (): FormState => ({
   hireDate: dateInputValue(Date.now()), contractType: "CDI", salary: "", notes: ""
 });
 
-export default function StaffView({ employees, expenses, advances, stores, onOpenPayroll, onSaveEmployee }: StaffViewProps) {
+export default function StaffView({ users, onLinkAccount, onOpenUsers, employees, expenses, advances, stores, onOpenPayroll, onSaveEmployee }: StaffViewProps) {
+  const [linkEmployeeId, setLinkEmployeeId] = useState("");
+  const [linkUserId, setLinkUserId] = useState("");
+  const [confirmLink, setConfirmLink] = useState(false);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkMessage, setLinkMessage] = useState("");
   const [editing, setEditing] = useState<Employee | null>(null);
   const [profileEmployeeId, setProfileEmployeeId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -55,6 +63,44 @@ export default function StaffView({ employees, expenses, advances, stores, onOpe
   const [showInactive, setShowInactive] = useState(false);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [transferMessage, setTransferMessage] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  const exportStaff = () => {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(employees, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "personnel.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importStaff = async (file: File) => {
+    setImporting(true);
+    let count = 0;
+    try {
+      const rows: unknown = JSON.parse(await file.text());
+      if (!Array.isArray(rows) || !rows.length) throw new Error("Fichier vide ou invalide.");
+      const ids = new Set<string>();
+      const validated: Employee[] = rows.map((row, index) => {
+        if (!row || typeof row !== "object" || ![row.id, row.first_name, row.last_name, row.position].every(value => typeof value === "string" && value.trim()) || ids.has(row.id)) throw new Error(`Ligne ${index + 1} : identité invalide ou en double.`);
+        ids.add(row.id);
+        if (typeof row.is_active !== "boolean" || !Number.isFinite(row.created_at) || (row.salary !== undefined && (typeof row.salary !== "number" || !Number.isFinite(row.salary) || row.salary < 0)) || (row.hire_date !== undefined && !Number.isFinite(row.hire_date))) throw new Error(`Ligne ${index + 1} : salaire ou date invalide.`);
+        if (row.contract_type !== undefined && !CONTRACTS.some(contract => contract.value === row.contract_type)) throw new Error(`Ligne ${index + 1} : contrat invalide.`);
+        for (const key of ["code", "phone", "email", "notes", "store_id"]) if (row[key] !== undefined && typeof row[key] !== "string") throw new Error(`Ligne ${index + 1} : champ ${key} invalide.`);
+        if (row.store_id && !stores.some(store => store.id === row.store_id)) throw new Error(`Ligne ${index + 1} : magasin inconnu.`);
+        const existing = employees.find(employee => employee.id === row.id);
+        return { ...existing, id: row.id, first_name: row.first_name.trim(), last_name: row.last_name.trim(), position: row.position.trim(), code: row.code, phone: row.phone, email: row.email, notes: row.notes, store_id: row.store_id, salary: row.salary, hire_date: row.hire_date, contract_type: row.contract_type, is_active: existing?.application_status === "PENDING" ? existing.is_active : row.is_active, created_at: existing?.created_at ?? row.created_at, updated_at: Date.now() };
+      });
+      for (const row of validated) {
+        await onSaveEmployee(row, !employees.some(employee => employee.id === row.id));
+        count++;
+      }
+      setTransferMessage(`${count} fiche(s) importée(s).`);
+    } catch (error) {
+      setTransferMessage(`${count} fiche(s) importée(s). ${error instanceof Error ? error.message : "Import impossible."}`);
+    } finally { setImporting(false); }
+  };
 
   const storeName = (id?: string) => stores.find(store => store.id === id)?.name || "Non affecté";
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm(current => ({ ...current, [key]: value }));
@@ -62,6 +108,7 @@ export default function StaffView({ employees, expenses, advances, stores, onOpe
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
     return employees.filter(employee =>
+      (!employee.linked_archive_id || showInactive) &&
       (showInactive || employee.is_active || employee.application_status === "PENDING") &&
       (!storeFilter || employee.store_id === storeFilter) &&
       (!term || `${employee.first_name} ${employee.last_name} ${employee.position} ${employee.code} ${employee.phone || ""}`.toLowerCase().includes(term))
@@ -139,6 +186,7 @@ export default function StaffView({ employees, expenses, advances, stores, onOpe
     }
     const now = Date.now();
     const employee: Employee = {
+      ...editing,
       id: editing?.id || `emp-${crypto.randomUUID()}`,
       code: editing?.code || `EMP-${String(employees.length + 1).padStart(4, "0")}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
       first_name: form.firstName.trim(),
@@ -159,6 +207,7 @@ export default function StaffView({ employees, expenses, advances, stores, onOpe
   };
 
   const toggleActive = (employee: Employee) => {
+    if (employee.linked_archive_id) { setTransferMessage("Fiche archivée : utilisez la fiche principale pour cet employé."); return; }
     void persist({
       ...employee,
       is_active: !employee.is_active,
@@ -182,6 +231,37 @@ export default function StaffView({ employees, expenses, advances, stores, onOpe
         </button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 text-sm text-white">
+        <button type="button" onClick={exportStaff} className="rounded-lg bg-slate-800 px-4 py-2">Exporter JSON</button>
+        <label className="rounded-lg bg-slate-800 px-4 py-2">{importing ? "Import en cours…" : "Importer JSON"}<input type="file" accept=".json,application/json" disabled={importing || isSaving} className="ml-3 max-w-48" onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void importStaff(file); }} /></label>
+        <span className="text-slate-400">Import du fichier exporté : les fiches existantes sont mises à jour par identifiant.</span>
+      </div>
+      {transferMessage && <p role="status" className="text-sm text-white">{transferMessage}</p>}
+      <section className="space-y-3 rounded-xl bg-white p-4">
+        <h3 className="font-semibold text-slate-900">Lier un employé à un compte de connexion</h3>
+        <p className="text-sm text-slate-600">Sélectionnez la fiche à conserver et le compte. Les autres fiches liées à ce compte seront archivées et désactivées. Leur historique restera accessible au compte, sans transfert ni suppression. Le rôle, les magasins et la validation se gèrent dans Utilisateurs.</p>
+        <div className="flex flex-wrap gap-2">
+          <select aria-label="Employé à lier" className={inputClass + " sm:w-auto"} value={linkEmployeeId} disabled={linkBusy} onChange={event => { setLinkEmployeeId(event.target.value); setConfirmLink(false); }}>
+            <option value="">Choisir un employé</option>
+            {employees.filter(employee => !employee.user_id && !employee.linked_archive_id).map(employee => <option key={employee.id} value={employee.id}>{employee.last_name} {employee.first_name}</option>)}
+          </select>
+          <select aria-label="Compte de connexion" className={inputClass + " sm:w-auto"} value={linkUserId} disabled={linkBusy} onChange={event => { setLinkUserId(event.target.value); setConfirmLink(false); }}>
+            <option value="">Choisir un compte</option>
+            {users.map(user => <option key={user.uid} value={user.uid}>{user.firstName} {user.lastName} - {user.email} ({user.accountStatus || (user.isActive ? "ACTIVE" : "DISABLED")})</option>)}
+          </select>
+          <button type="button" disabled={linkBusy || !linkEmployeeId || !linkUserId || !confirmLink} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={async () => {
+            const employee = employees.find(item => item.id === linkEmployeeId);
+            if (!employee) return;
+            setLinkBusy(true); setLinkMessage("");
+            try { await onLinkAccount(employee, linkUserId); setLinkMessage("Compte lié. Vérifiez sa validation, son rôle et ses magasins dans Utilisateurs."); setLinkEmployeeId(""); setLinkUserId(""); setConfirmLink(false); }
+            catch (error) { setLinkMessage(error instanceof Error ? error.message : "Association impossible."); }
+            finally { setLinkBusy(false); }
+          }}>{linkBusy ? "Association..." : "Lier au compte"}</button>
+          <button type="button" onClick={onOpenUsers} className="rounded-lg border px-4 py-2 text-sm text-slate-900">Gérer les utilisateurs</button>
+        </div>
+        <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={confirmLink} disabled={linkBusy} onChange={event => setConfirmLink(event.target.checked)} />Je confirme que ce compte et la fiche sélectionnée concernent la même personne et autorise l’archivage des anciennes fiches liées.</label>
+        {linkMessage && <p role="status" className="text-sm text-slate-700">{linkMessage}</p>}
+      </section>
       <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-white p-4 shadow-sm"><dt className="text-xs text-slate-500">Employés actifs</dt><dd className="mt-1 text-2xl font-black text-slate-900">{active.length}</dd></div>
         <div className="rounded-xl bg-white p-4 shadow-sm"><dt className="text-xs text-slate-500">Inactifs</dt><dd className="mt-1 text-2xl font-black text-slate-900">{employees.length - active.length}</dd></div>

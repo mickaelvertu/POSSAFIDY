@@ -252,7 +252,7 @@ export function buildChargesReport(counts: InventoryCount[], filter: ChargesFilt
 
   counts
     .filter(count => count.status === "VALIDATED" && (count.total_charged_amount || 0) > 0)
-    .filter(count => !filter.managerId || (count.charged_to || count.created_by) === filter.managerId)
+    .filter(count => !filter.managerId || (count.charged_employee_id || count.charged_to || count.manager_signed_by || count.created_by) === filter.managerId)
     .filter(count => !filter.storeId || count.store_id === filter.storeId)
     .filter(count => !filter.settlement || filter.settlement === "ALL" || (filter.settlement === "SETTLED") === Boolean(count.charge_settlement))
     .filter(count => {
@@ -260,7 +260,7 @@ export function buildChargesReport(counts: InventoryCount[], filter: ChargesFilt
       return (start === undefined || date >= start) && (end === undefined || date <= end);
     })
     .forEach(count => {
-      const chargedId = count.charged_to || count.created_by;
+      const chargedId = count.charged_employee_id || count.charged_to || count.manager_signed_by || count.created_by;
       const group = byManager.get(chargedId) || { manager_id: chargedId, manager_name: count.charged_to_name || count.created_by_name, total: 0, pending_total: 0, settled_total: 0, pending_count_ids: [], counts: 0, details: [] };
       group.counts += 1;
             const settled = Boolean(count.charge_settlement);

@@ -1,0 +1,536 @@
+{
+  "version": 1,
+  "exportedAt": "2026-10-02T05:12:46.944Z",
+  "data": [
+    {
+      "id": "FOU-001",
+      "name": "TSARASOA",
+      "phone": "328010213",
+      "email": "",
+      "address": "AMBILOBE",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-002",
+      "name": "FABY",
+      "phone": "348546653",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-003",
+      "name": "MR ZO",
+      "phone": "341032038",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-004",
+      "name": "NAVALONA",
+      "phone": "389000461",
+      "email": "",
+      "address": "AMBOSITRA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-005",
+      "name": "HERY",
+      "phone": "340598255",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-006",
+      "name": "JIMMY",
+      "phone": "343275976",
+      "email": "",
+      "address": "",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-007",
+      "name": "NARCISSE",
+      "phone": "347041454",
+      "email": "",
+      "address": "",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-008",
+      "name": "NAINA",
+      "phone": "345631025",
+      "email": "",
+      "address": "",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-009",
+      "name": "PAUL",
+      "phone": "343524842",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-010",
+      "name": "MARCEL",
+      "phone": "384474667",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-011",
+      "name": "DAFY",
+      "phone": "384189770",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-012",
+      "name": "LOVA",
+      "phone": "345766715",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-013",
+      "name": "LOVA",
+      "phone": "345766715",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-014",
+      "name": "LOVA",
+      "phone": "345766715",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-015",
+      "name": "THEOPHYLE",
+      "phone": "346660539",
+      "email": "",
+      "address": "TULEAR",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-016",
+      "name": "NAVALONA",
+      "phone": "389000461",
+      "email": "",
+      "address": "AMBOSITRA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-017",
+      "name": "MIRANA",
+      "phone": "336445970",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-018",
+      "name": "FREDERICO",
+      "phone": "340155437",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-019",
+      "name": "MARCEL",
+      "phone": "384474667",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-020",
+      "name": "PAUL",
+      "phone": "343524842",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-021",
+      "name": "SAHOLY",
+      "phone": "344780492",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-022",
+      "name": "SANDRA",
+      "phone": "381252928",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-023",
+      "name": "JEANNE",
+      "phone": "341067295",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-024",
+      "name": "JUSTIN",
+      "phone": "343515385",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-025",
+      "name": "HARY",
+      "phone": "344259652",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-026",
+      "name": "M.ZO",
+      "phone": "340324889",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-027",
+      "name": "FENOSOA",
+      "phone": "387016511",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-028",
+      "name": "FALIANJA",
+      "phone": "349855290",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-029",
+      "name": "NIAINA",
+      "phone": "384579186",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-030",
+      "name": "HARY",
+      "phone": "344259652",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-031",
+      "name": "LOVA",
+      "phone": "345766715",
+      "email": "",
+      "address": "",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-032",
+      "name": "NAIVO",
+      "phone": "341501834",
+      "email": "",
+      "address": "ARIVONIMAMO",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-033",
+      "name": "DANIEL",
+      "phone": "349101331",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-034",
+      "name": "BENJA",
+      "phone": "340337888",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-035",
+      "name": "ANNIE",
+      "phone": "346450549",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-036",
+      "name": "LAHATRA",
+      "phone": "344268606",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-037",
+      "name": "HERIZO",
+      "phone": "386154065",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-038",
+      "name": "GASTON",
+      "phone": "346120978",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-039",
+      "name": "MANA",
+      "phone": "342561500",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-040",
+      "name": "MAMAN SHININE",
+      "phone": "340411849",
+      "email": "",
+      "address": "TAMATAVE",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-041",
+      "name": "PLASTIMA",
+      "phone": "342046210",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-042",
+      "name": "SFOI",
+      "phone": "207646397",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-043",
+      "name": "PACKIT.MG",
+      "phone": "384677373",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-044",
+      "name": "ANGELLA",
+      "phone": "348155219",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-045",
+      "name": "DEZY",
+      "phone": "340363103",
+      "email": "",
+      "address": "Ambilobe",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-046",
+      "name": "ANDRIANINA",
+      "phone": "346493980",
+      "email": "",
+      "address": "ARIVONIMAMO",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-047",
+      "name": "ABDOUL",
+      "phone": "345600019",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-048",
+      "name": "RADO",
+      "phone": "348432660",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-049",
+      "name": "NAJMI",
+      "phone": "340786520",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-050",
+      "name": "TSIKY MEDICAL",
+      "phone": "341449932",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-051",
+      "name": "SARAH",
+      "phone": "387783381",
+      "email": "",
+      "address": "387783381",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-052",
+      "name": "ANALAKELY",
+      "phone": "",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    },
+    {
+      "id": "FOU-053",
+      "name": "TSENA ANOSIBE",
+      "phone": "",
+      "email": "",
+      "address": "TANA",
+      "is_active": true,
+      "created_at": 1790744310702,
+      "updated_at": 1790744310702
+    }
+  ]
+}

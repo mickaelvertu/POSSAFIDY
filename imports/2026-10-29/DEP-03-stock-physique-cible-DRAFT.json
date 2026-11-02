@@ -1,0 +1,430 @@
+{
+  "version": 1,
+  "review": {
+    "ready_to_apply": false,
+    "store_code": "DEP-03",
+    "reason": "All article matches confirmed. Not ready to apply: initial-import service refuses existing stocks; ALOE MIEL yields baseline -1 if all reported movements affect the same stock bucket. Reconcile stock buckets and existing baseline before import.",
+    "source_snapshot_exported_at": "2026-10-29T13:36:14.921Z",
+    "existing_movements_must_remain_unchanged": true,
+    "apply_only_after_fresh_stock_and_bucket_reconciliation": true,
+    "unlisted_articles_policy": "Not counted: left unchanged, not assumed zero",
+    "unresolved": [],
+    "confirmed_aliases": {
+      "BAUME AVR": "Baume ANTI VIRUS",
+      "BOSTE MEMOIRE": "Baume MEMOIRE"
+    }
+  },
+  "quantity_semantics": "TARGET_CURRENT_STOCK_NOT_INITIAL_BASELINE",
+  "data": [
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-aloe-pur",
+      "article_code": "AP004",
+      "article_name": "ALOE PUR",
+      "unit": "Piece",
+      "quantity": 23
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-aloe-noni",
+      "article_code": "AN001",
+      "article_name": "ALOE NONI",
+      "unit": "Piece",
+      "quantity": 18
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-anjarasoa",
+      "article_code": "AN034",
+      "article_name": "ANJARASOA",
+      "unit": "Piece",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-detox",
+      "article_code": "DE030",
+      "article_name": "DETOX",
+      "unit": "Piece",
+      "quantity": 12
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-beroberoka",
+      "article_code": "BE031",
+      "article_name": "BEROBEROKA",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-circulation",
+      "article_code": "CI032",
+      "article_name": "CIRCULATION",
+      "unit": "Piece",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-desmofar-gm",
+      "article_code": "DG011",
+      "article_name": "DESMOFAR GM",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-aloe-miel",
+      "article_code": "AM002",
+      "article_name": "ALOE MIEL",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-noni",
+      "article_code": "NO052",
+      "article_name": "NONI",
+      "unit": "Piece",
+      "quantity": 14
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-tanjaka",
+      "article_code": "TA083",
+      "article_name": "TANJAKA",
+      "unit": "Piece",
+      "quantity": 8
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-tanjaka-plus",
+      "article_code": "TP074",
+      "article_name": "TANJAKA PLUS",
+      "unit": "Piece",
+      "quantity": 50
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-lotion-intime",
+      "article_code": "LI047",
+      "article_name": "LOTION INTIME",
+      "unit": "Piece",
+      "quantity": 21
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-eau-micellaire-gm",
+      "article_code": "EM023",
+      "article_name": "EAU MICELLAIRE GM",
+      "unit": "Piece",
+      "quantity": 19
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-corofar-gm",
+      "article_code": "CG024",
+      "article_name": "COROFAR GM",
+      "unit": "Piece",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-vinaigre-gm",
+      "article_code": "VG075",
+      "article_name": "VINAIGRE GM",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-revitalisant",
+      "article_code": "RE070",
+      "article_name": "REVITALISANT",
+      "unit": "Piece",
+      "quantity": 19
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-eau-micellaire-pm",
+      "article_code": "EM007",
+      "article_name": "EAU MICELLAIRE PM",
+      "unit": "Piece",
+      "quantity": 5
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-vinaigre-pm",
+      "article_code": "VP069",
+      "article_name": "VINAIGRE PM",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-argile-verte",
+      "article_code": "AV026",
+      "article_name": "ARGILE VERTE",
+      "unit": "Piece",
+      "quantity": 3
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-argile-rouge",
+      "article_code": "AR005",
+      "article_name": "ARGILE ROUGE",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-kinana",
+      "article_code": "KI044",
+      "article_name": "KINANA",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-omega-3-gm",
+      "article_code": "O3050",
+      "article_name": "OMEGA 3 GM",
+      "unit": "Piece",
+      "quantity": 12
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-omega-3-pm",
+      "article_code": "O3055",
+      "article_name": "OMEGA 3 PM",
+      "unit": "Piece",
+      "quantity": 11
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-omega-diabete",
+      "article_code": "OD065",
+      "article_name": "OMEGA DIABETE",
+      "unit": "Piece",
+      "quantity": 5
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-voamboatavo-gm",
+      "article_code": "VG084",
+      "article_name": "VOAMBOATAVO GM",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-voamboatavo-pm",
+      "article_code": "VP085",
+      "article_name": "VOAMBOATAVO PM",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-protofar-gm",
+      "article_code": "PG077",
+      "article_name": "PROTOFAR GM",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-ananambo",
+      "article_code": "AN003",
+      "article_name": "ANANAMBO",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-baobab",
+      "article_code": "BA036",
+      "article_name": "BAOBAB",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-spiruline",
+      "article_code": "SP076",
+      "article_name": "SPIRULINE",
+      "unit": "Piece",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-savon-anti-acne",
+      "article_code": "SA073",
+      "article_name": "SAVON ANTI ACNE",
+      "unit": "Piece",
+      "quantity": 22
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-savon-anti-rides",
+      "article_code": "SA079",
+      "article_name": "SAVON ANTI RIDES",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-savon-vahona",
+      "article_code": "SV066",
+      "article_name": "SAVON VAHONA",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-savon-manazava",
+      "article_code": "SM068",
+      "article_name": "SAVON MANAZAVA",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-derma-g",
+      "article_code": "DG039",
+      "article_name": "DERMA-G",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-beurre-de-karite",
+      "article_code": "BK016",
+      "article_name": "BEURRE DE KARITE",
+      "unit": "Piece",
+      "quantity": 5
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-baume-radriaka",
+      "article_code": "BR025",
+      "article_name": "Baume RADRIAKA",
+      "unit": "Piece",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-baume-memoire",
+      "article_code": "BM008",
+      "article_name": "Baume MEMOIRE",
+      "unit": "Piece",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-creme-coiffante",
+      "article_code": "CC013",
+      "article_name": "CREME COIFFANTE",
+      "unit": "Piece",
+      "quantity": 8
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-baume-anti-cellulites",
+      "article_code": "BA010",
+      "article_name": "Baume Anti cellulites",
+      "unit": "Piece",
+      "quantity": 14
+    },
+    {
+      "store_id": "MAG-044",
+      "store_code": "DEP-03",
+      "store_name": "Depot RETOUR RECYCLAGE",
+      "article_id": "article-resale-baume-anti-virus",
+      "article_code": "BA041",
+      "article_name": "Baume ANTI VIRUS",
+      "unit": "Piece",
+      "quantity": 3
+    }
+  ]
+}

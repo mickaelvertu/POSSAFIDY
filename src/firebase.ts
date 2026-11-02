@@ -27,9 +27,23 @@ try {
 export const db = firestore;
 export const database = db;
 
-export function runOnlineTransaction<T>(updateFunction: (transaction: Transaction) => Promise<T>): Promise<T> {
+let activeTransactions = 0;
+export const getActiveTransactionCount = () => activeTransactions;
+
+function notifyTransactions() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("app-transactions-changed"));
+}
+
+export async function runOnlineTransaction<T>(updateFunction: (transaction: Transaction) => Promise<T>): Promise<T> {
   assertOnlineForTransaction();
-  return runTransaction(db, updateFunction);
+  activeTransactions++;
+  notifyTransactions();
+  try {
+    return await runTransaction(db, updateFunction);
+  } finally {
+    activeTransactions--;
+    notifyTransactions();
+  }
 }
 
 const isLocalDevelopment = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);

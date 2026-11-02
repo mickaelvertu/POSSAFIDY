@@ -1,4 +1,5 @@
 import { Article, Store, StoreStock } from "../types";
+import { canStoreRawMaterials } from "./materialConsumption";
 
 export const MAX_SYNC_ROWS = 5000;
 
@@ -23,9 +24,7 @@ export const STOCK_EXPORT_HEADERS = [
 type RawRecord = Record<string, unknown>;
 
 export function articlesAllowedInStore(store: Store, articles: Article[]): Article[] {
-  return store.store_type === "POS" || store.store_type === "RESELLER"
-    ? articles.filter(article => article.article_type === "RESALE")
-    : articles;
+  return canStoreRawMaterials(store) ? articles : articles.filter(article => article.article_type === "RESALE");
 }
 
 export function buildStockExportRecords(stores: Store[], articles: Article[], stocks: StoreStock[]) {
@@ -140,11 +139,11 @@ export function validateStockSync(
       return;
     }
     if (!article || !article.is_active) { errors.push(`Ligne ${line} : article absent ou inactif.`); return; }
-    if (quantity === null || quantity < 0) { errors.push(`Ligne ${line} : quantité invalide (nombre ≥ 0 requis).`); return; }
-    if ((store.store_type === "POS" || store.store_type === "RESELLER") && article.article_type !== "RESALE") {
-      errors.push(`Ligne ${line} : un magasin ${store.store_type} ne peut pas contenir de matière première.`);
+    if (article.article_type === "RAW_MATERIAL" && !canStoreRawMaterials(store)) {
+      errors.push(`Ligne ${line} : les matières premières sont réservées au dépôt et à la production.`);
       return;
     }
+    if (quantity === null || quantity < 0) { errors.push(`Ligne ${line} : quantité invalide (nombre ≥ 0 requis).`); return; }
     const pair = `${store.id}\u0000${article.id}`;
     if (seen.has(pair)) { errors.push(`Ligne ${line} : doublon ${store.code} / ${article.code}.`); return; }
     seen.add(pair);

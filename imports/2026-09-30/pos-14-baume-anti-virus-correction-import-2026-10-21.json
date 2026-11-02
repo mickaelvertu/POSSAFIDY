@@ -1,0 +1,20 @@
+{
+    "version":  1,
+    "purpose":  "Add 12 Baume ANTI VIRUS to POS-14",
+    "source_stock_exports":  [
+                                 "C:\\Users\\Administrator\\Downloads\\stock-POS-14-2026-10-21.json"
+                             ],
+    "data":  [
+                 {
+                     "store_id":  "store-pos-14",
+                     "store_code":  "POS-14",
+                     "store_name":  "Moramanga",
+                     "article_id":  "article-resale-baume-anti-virus",
+                     "article_code":  "BA041",
+                     "article_name":  "Baume ANTI VIRUS",
+                     "unit":  "Piece",
+                     "expected_current_quantity":  0,
+                     "quantity":  12
+                 }
+             ]
+}

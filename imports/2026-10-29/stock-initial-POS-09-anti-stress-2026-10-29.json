@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "review": {
+    "ready_to_apply": true,
+    "scope": "Single article only; initial quantity 4 confirmed by user",
+    "note": "Historical baseline 4. Supplied movement report shows receipt +5 (TRF-20261027-082324-EC45), so expected current quantity is 9. Do not replace current quantity with 4. Existing-stock initial import is refused; preserve existing movements."
+  },
+  "data": [
+    {
+      "store_id": "store-pos-09",
+      "store_code": "POS-09",
+      "store_name": "Andranomena",
+      "article_id": "article-resale-anti-stress",
+      "article_code": "AS017",
+      "article_name": "ANTI STRESS",
+      "unit": "Piece",
+      "quantity": 4
+    }
+  ]
+}

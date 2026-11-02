@@ -19,7 +19,7 @@ import {
   MovementDirection,
   ArticleTypeCode
 } from "../types";
-import { filterReportData, getReportKpis } from "../services/reportService";
+import { filterReportData, getReportKpis, RESELLER_PAYMENT_LABELS } from "../services/reportService";
 import { 
   FileText, 
   Printer, 
@@ -42,6 +42,9 @@ import {
 } from "lucide-react";
 
 interface ReportsViewProps {
+  isReportReady?: (type: ReportType) => boolean;
+  onSelectReport?: (type: ReportType) => void;
+  historyStatus?: ReactNode;
   userAuditReport?: ReactNode;
   /** Fournies uniquement aux utilisateurs autorisés à consulter les dépenses. */
   expenses?: Expense[];
@@ -60,6 +63,9 @@ interface ReportsViewProps {
 }
 
 export default function ReportsView({
+  isReportReady,
+  onSelectReport,
+  historyStatus,
   userAuditReport,
   expenses,
   cashHandovers,
@@ -77,6 +83,7 @@ export default function ReportsView({
 }: ReportsViewProps) {
   const [selectedReport, setSelectedReport] = useState<ReportType>("STOCK_STATUS");
   const [showUserAudit, setShowUserAudit] = useState(false);
+  const ready = isReportReady?.(selectedReport) ?? true;
 
   // Comprehensive mandatory filters (Section 12)
   const [startDate, setStartDate] = useState<string>("");
@@ -91,6 +98,7 @@ export default function ReportsView({
   const [minQty, setMinQty] = useState<number | undefined>(undefined);
   const [maxQty, setMaxQty] = useState<number | undefined>(undefined);
   const [customerName, setCustomerName] = useState<string>("");
+  const [resellerPaymentStatus, setResellerPaymentStatus] = useState<NonNullable<GeneralFilters["resellerPaymentStatus"]>>("ALL");
   const [articleIds, setArticleIds] = useState<string[]>([]);
   const [articleQuery, setArticleQuery] = useState<string>("");
 
@@ -102,6 +110,7 @@ export default function ReportsView({
     icon: any;
     color: string;
   }> = [
+    { type: "STOCK_BY_ARTICLE", number: 18, title: "\u00c9tat du stock par article", description: "Quantit\u00e9s disponibles consolid\u00e9es par article, filtrables par magasin", icon: Boxes, color: "text-blue-600 bg-blue-50 border-blue-200" },
     { type: "STOCK_STATUS", number: 1, title: "État du stock", description: "Quantités disponibles par magasin, catégorie et valorisation", icon: Boxes, color: "text-blue-600 bg-blue-50 border-blue-200" },
     { type: "STOCK_MOVEMENTS", number: 2, title: "Mouvements de stock", description: "Traçabilité des 14 types de flux avec stocks avant/après", icon: SlidersHorizontal, color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
     { type: "TRANSFERS", number: 3, title: "Transferts", description: "Registre des expéditions entre dépôt central et points de vente", icon: ArrowRightLeft, color: "text-amber-600 bg-amber-50 border-amber-200" },
@@ -126,28 +135,34 @@ export default function ReportsView({
     icon: Wallet,
     color: "text-rose-600 bg-rose-50 border-rose-200"
   } : undefined;
-  const reportCount = (cashHandovers ? 1 : 0) + 14 + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
-  const allReports = [...REPORTS_CATALOG, ...(EXPENSES_REPORT ? [EXPENSES_REPORT] : []), ...(cashHandovers ? [{
-type: "CASH_HANDOVERS" as const, number: 17, title: "Remises de caisse",
+  const resellerReport: (typeof REPORTS_CATALOG)[number] = {
+    type: "RESELLER_CREDIT", number: 17, title: "Crédits & encaissements revendeurs",
+    description: "Par revendeur : total facturé, montants encaissés et crédit en cours. Filtre des paiements partiels.",
+    icon: Wallet, color: "text-amber-600 bg-amber-50 border-amber-200"
+  };
+  const reportCount = REPORTS_CATALOG.length + 1 + (cashHandovers ? 1 : 0) + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
+  const allReports = [...REPORTS_CATALOG, ...(EXPENSES_REPORT ? [EXPENSES_REPORT] : []), resellerReport, ...(cashHandovers ? [{
+type: "CASH_HANDOVERS" as const, number: 19, title: "Remises de caisse",
 description: "Montants déclarés, reçus, écarts et dépôts bancaires", icon: Wallet,
 color: "text-emerald-600 bg-emerald-50 border-emerald-200"
 }] : [])];
 
   const filters = useMemo<GeneralFilters>(() => ({
-    startDate: startDate || undefined,
-    endDate: endDate || undefined,
+    startDate: selectedReport === "STOCK_BY_ARTICLE" ? undefined : startDate || undefined,
+    endDate: selectedReport === "STOCK_BY_ARTICLE" ? undefined : endDate || undefined,
     storeIds: selectedStoreIds,
-    statuses: selectedStatuses,
+    statuses: selectedReport === "RESELLER_CREDIT" ? [] : selectedStatuses,
+    resellerPaymentStatus: selectedReport === "RESELLER_CREDIT" ? resellerPaymentStatus : undefined,
     movementTypes: selectedMovementTypes,
     movementDirection,
     categoryIds: selectedCategoryIds,
     articleType,
     searchRef: searchRef || undefined,
-    minQty,
-    maxQty,
+    minQty: selectedReport === "STOCK_BY_ARTICLE" ? undefined : minQty,
+    maxQty: selectedReport === "STOCK_BY_ARTICLE" ? undefined : maxQty,
     customerName: customerName || undefined,
     articleIds: selectedReport === "STOCK_LEDGER" && articleIds.length ? articleIds : undefined
-  }), [selectedReport, articleIds, startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
+  }), [selectedReport, resellerPaymentStatus, articleIds, startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
 
   const filteredData = useMemo(() => filterReportData({
     articles,
@@ -213,6 +228,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
   };
 
   const handleLaunchReport = () => {
+    if (!ready) return;
     onOpenReportViewer(selectedReport, filters);
   };
 
@@ -224,7 +240,15 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
               type="button"
               key={rep.type}
               aria-pressed={isSelected}
-              onClick={() => { setSelectedReport(rep.type); setShowUserAudit(false); }}
+              onClick={() => {
+                setSelectedReport(rep.type); onSelectReport?.(rep.type); setShowUserAudit(false);
+                if (rep.type === "STOCK_LEDGER" && !startDate && !endDate) {
+                  const now = new Date();
+                  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+                  setStartDate(`${month}-01`);
+                  setEndDate(`${month}-${String(now.getDate()).padStart(2, "0")}`);
+                }
+              }}
               className={`group flex min-h-44 w-full flex-col justify-between rounded-2xl border p-4 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#071312] ${
                 isSelected 
                   ? "border-emerald-300/70 bg-[#eaf8f1] shadow-lg shadow-emerald-950/20 ring-1 ring-emerald-300/30" 
@@ -256,6 +280,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           );
   };
 
+
   if (showUserAudit && userAuditReport) return <div className="space-y-4"><button type="button" className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 print:hidden" onClick={() => setShowUserAudit(false)}>← Tous les rapports</button>{userAuditReport}</div>;
 
   return (
@@ -279,6 +304,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           <button
             type="button"
             onClick={handleLaunchReport}
+            disabled={!ready}
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-emerald-950 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c2621]"
           >
             <Printer className="h-4 w-4" />
@@ -293,8 +319,13 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
         </div>
       </header>
 
+      {selectedReport === "STOCK_BY_ARTICLE" && <p className="text-sm text-slate-200">N° 18 : stock actuel consolidé par article dans les magasins sélectionnés. Disponible = stock moins réservations, calculé par magasin. La quarantaine est exclue. Les filtres de date et de quantité ne s’appliquent pas.</p>}
+      {historyStatus}
+
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs du rapport filtré">
-        {kpis.map(kpi => (
+        {!ready && <p role="status" className="text-sm text-slate-200">Les données de ce rapport sont en cours de préparation. Vous pouvez choisir un autre rapport.</p>}
+        {selectedReport === "STOCK_LEDGER" && <p className="text-sm text-slate-200">Générez la grille pour charger les mouvements des magasins et de la période choisis. Effacez les dates pour inclure tout l’historique.</p>}
+        {ready && selectedReport !== "STOCK_LEDGER" && kpis.map(kpi => (
           <div key={kpi.label} className="rounded-2xl border border-white/70 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{kpi.label}</p>
             <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{kpi.value}</p>
@@ -344,6 +375,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           </button>
         )}
         {EXPENSES_REPORT && renderReportCard(EXPENSES_REPORT)}
+        {renderReportCard(resellerReport)}
         </div>
       </section>
 
@@ -374,6 +406,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
               setMinQty(undefined);
               setMaxQty(undefined);
               setCustomerName("");
+              setResellerPaymentStatus("ALL");
               setArticleIds([]);
               setArticleQuery("");
             }}
@@ -386,7 +419,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
         {/* Row 1: Date Range, Article Type, Search Ref */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           
-          {(statusOptions.length > 0 || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
+          {(statusOptions.length > 0 || selectedReport === "RESELLER_CREDIT" || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
             <label className="block font-bold text-slate-700 mb-1">Date Début :</label>
             <input
               type="date"
@@ -400,6 +433,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             <label className="block font-bold text-slate-700 mb-1">Date Fin :</label>
             <input
               type="date"
+              disabled={selectedReport === "STOCK_BY_ARTICLE"}
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
@@ -480,6 +514,15 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             )}
           </div>
         )}
+        {selectedReport === "RESELLER_CREDIT" && (
+          <div className="space-y-2 text-xs">
+            <label htmlFor="reseller-payment-status" className="block font-bold text-slate-700">État du paiement :</label>
+            <select id="reseller-payment-status" value={resellerPaymentStatus} onChange={e => setResellerPaymentStatus(e.target.value as NonNullable<GeneralFilters["resellerPaymentStatus"]>)} className="w-full sm:w-72 bg-slate-50 border border-slate-300 rounded-lg p-2">
+              {Object.entries(RESELLER_PAYMENT_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <p className="text-slate-500">Ventes validées uniquement. La période porte sur la date de vente ; les montants encaissés et les soldes sont ceux à ce jour. Le filtre de paiement sélectionne les ventes avant regroupement par revendeur.</p>
+          </div>
+        )}
         {/* Row 2: Multi-selection Stores */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-2">
@@ -551,6 +594,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             <label className="block font-bold text-slate-700 mb-1">Quantité Min :</label>
             <input
               type="number"
+              disabled={selectedReport === "STOCK_BY_ARTICLE"}
               value={minQty !== undefined ? minQty : ""}
               onChange={(e) => setMinQty(e.target.value ? Number(e.target.value) : undefined)}
               placeholder="Min..."
@@ -562,6 +606,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             <label className="block font-bold text-slate-700 mb-1">Quantité Max :</label>
             <input
               type="number"
+              disabled={selectedReport === "STOCK_BY_ARTICLE"}
               value={maxQty !== undefined ? maxQty : ""}
               onChange={(e) => setMaxQty(e.target.value ? Number(e.target.value) : undefined)}
               placeholder="Max..."
@@ -608,6 +653,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           <button
             type="button"
             onClick={handleLaunchReport}
+            disabled={!ready}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-2 cursor-pointer"
           >
             <Printer className="h-4 w-4" />

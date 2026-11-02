@@ -50,7 +50,7 @@ export async function recordCreditPayment(
     if (!saleSnapshot.exists() || !customerSnapshot.exists()) throw new Error("Vente ou compte revendeur introuvable.");
     const current = saleSnapshot.data() as Sale;
     const customer = customerSnapshot.data() as CreditCustomer;
-    if (current.status !== "VALIDATED" || current.payment_status === "PAID" || payment.amount <= 0 || payment.amount > current.total - current.amount_paid) {
+    if (current.status !== "VALIDATED" || current.payment_status === "PAID" || !Number.isFinite(payment.amount) || payment.amount <= 0 || payment.amount > current.total - current.amount_paid) {
       throw new Error("Le montant du règlement dépasse le solde restant ou la vente est déjà soldée.");
     }
     if (customer.outstanding_balance < payment.amount) throw new Error("Le solde crédit du revendeur est incohérent. Contactez un administrateur.");

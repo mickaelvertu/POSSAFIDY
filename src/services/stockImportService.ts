@@ -9,6 +9,9 @@ const MOVEMENTS_COLLECTION = "movements";
 const AUDIT_LOGS_COLLECTION = "auditLogs";
 const IMPORTS_COLLECTION = "inventoryMetadata";
 const CHUNK_SIZE = 150;
+// POS rules read each article when authorizing stock and movement writes.
+// Keep snapshot transactions below Firestore's shared rules access budget.
+const SNAPSHOT_CHUNK_SIZE = 5;
 const MAX_IMPORT_ROWS = 5000;
 
 async function hashRows(rows: InitialStockImportRow[]): Promise<string> {
@@ -39,8 +42,8 @@ export async function applyStockSnapshot(
   const movements: StockMovement[] = [];
   const auditLogs: AuditLog[] = [];
 
-  for (let start = 0; start < rows.length; start += CHUNK_SIZE) {
-    const chunk = rows.slice(start, start + CHUNK_SIZE);
+  for (let start = 0; start < rows.length; start += SNAPSHOT_CHUNK_SIZE) {
+    const chunk = rows.slice(start, start + SNAPSHOT_CHUNK_SIZE);
     const timestamp = Date.now();
     const result = await runOnlineTransaction(async transaction => {
       const refs = chunk.map(row => doc(db, STOCKS_COLLECTION, row.id));

@@ -25,7 +25,7 @@ export function buildUserAudit(data: UserAuditData, filters: UserAuditFilters) {
     const payrollIds = new Set(employees.filter(employee => inStore(employee.store_id)).map(employee => employee.id));
     const advances = data.advances.filter(advance => payrollIds.has(advance.employee_id) && inPeriod(advance.advance_date));
     const payslips = data.payslips.filter(slip => payrollIds.has(slip.employee_id) && inPeriod(new Date(`${slip.period}-01T00:00:00`).getTime()));
-    const counts = data.counts.filter(count => count.charged_to && (identities.has(count.charged_to) || employeeIds.has(count.charged_to)) && count.status === 'VALIDATED' && inStore(count.store_id) && inPeriod(count.reviewed_at ?? count.updated_at));
+    const counts = data.counts.filter(count => (count.charged_employee_id ? employeeIds.has(count.charged_employee_id) : count.charged_to && (identities.has(count.charged_to) || employeeIds.has(count.charged_to))) && count.status === 'VALIDATED' && inStore(count.store_id) && inPeriod(count.reviewed_at ?? count.updated_at));
     const revenue = sales.filter(sale => sale.status === 'VALIDATED').reduce((sum, sale) => sum + sale.total, 0);
     return { user, employees, storeIds, sales, advances, payslips, counts, revenue };
   }).filter(fiche => !filters.storeId || fiche.storeIds.includes(filters.storeId) || fiche.sales.length > 0 || fiche.counts.length > 0);

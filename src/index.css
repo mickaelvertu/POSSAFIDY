@@ -38,6 +38,14 @@
   }
   .printable-document thead { display: table-header-group; }
   .printable-document tr, .printable-document img { break-inside: avoid; }
+  .sale-print-document {
+    border: 0 !important;
+    padding-top: 0 !important;
+  }
+  .sale-print-document + .sale-print-document {
+    break-before: page;
+    page-break-before: always;
+  }
 
   html:has(.thermal-receipt), body:has(.thermal-receipt) {
     height: auto !important;

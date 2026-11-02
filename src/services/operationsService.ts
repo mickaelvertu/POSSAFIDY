@@ -2,12 +2,18 @@ import {
   collection,
   deleteField,
   doc,
+  getDoc,
   getDocs,
   query,
   setDoc,
   where
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
+import { saleLinesEqual, firestoreValuesEqual } from "./saleComparison";
+import { canConsumeMaterials, validateMaterialConsumption } from "./materialConsumption";
+import { SALE_CATALOG_CHECK_SIZE, assertSaleValidationSize } from "./saleValidationLimits";
+import { assertOnlineForTransaction } from "./offlineSupport";
+import type { Article, Store, UserProfile } from "../types";
 import { AppRoleId, AuditLog, CreditCustomer, Production, Sale, StockMovement, StoreStock } from "../types";
 
 const SALES = "sales";
@@ -15,6 +21,36 @@ const PRODUCTIONS = "productions";
 const STOCKS = "stocks";
 const MOVEMENTS = "movements";
 const AUDIT_LOGS = "auditLogs";
+
+export async function consumeRawMaterial(
+  user: UserProfile, store: Store, article: Article, quantity: number, reason: string, knownStocks: StoreStock[]
+): Promise<{ stock: StoreStock; movement: StockMovement; auditLog: AuditLog }> {
+  if (!canConsumeMaterials(user, store)) throw new Error("La consommation de matières premières est réservée aux sites de fabrication (MANUFACTURER).");
+  const storeId = store.id;
+  const target = stockReference(knownStocks, storeId, article.id);
+  const id = `consumption-${crypto.randomUUID()}`;
+  return runOnlineTransaction(async transaction => {
+    const snapshot = await transaction.get(target.reference);
+    if (!snapshot.exists()) throw new Error("Stock introuvable dans ce magasin.");
+    const current = snapshot.data() as StoreStock;
+    if (current.store_id !== storeId || current.article_id !== article.id) throw new Error("Stock incompatible avec la consommation.");
+    validateMaterialConsumption(article, quantity, current.quantity, reason);
+    const timestamp = Date.now();
+    const stock = { ...current, quantity: current.quantity - quantity, updated_at: timestamp };
+    const movement: StockMovement = {
+      id, store_id: storeId, article_id: article.id, movement_type: "CONSUMPTION",
+      quantity: -quantity, reference_type: "CONSUMPTION", reference_id: id, reference_number: id,
+      before_quantity: current.quantity, after_quantity: stock.quantity,
+      created_by: user.uid, created_by_name: user.displayName || user.email,
+      notes: reason.trim(), created_at: timestamp
+    };
+    const entry = audit("RAW_MATERIAL_CONSUMED", "STOCK", current.id, user.uid, movement.created_by_name, storeId, current, stock);
+    transaction.update(target.reference, { quantity: stock.quantity, updated_at: timestamp });
+    transaction.set(doc(db, MOVEMENTS, id), movement);
+    transaction.set(doc(db, AUDIT_LOGS, entry.id), entry);
+    return { stock, movement, auditLog: entry };
+  });
+}
 
 function clean<T>(value: T): T {
   if (Array.isArray(value)) return value.map(clean) as T;
@@ -140,7 +176,7 @@ export async function updateDraftSale(
       currentSale.customer_name !== originalSale.customer_name ||
       currentSale.customer_phone !== originalSale.customer_phone ||
       currentSale.notes !== originalSale.notes ||
-      JSON.stringify(currentSale.lines) !== JSON.stringify(originalSale.lines)
+      !saleLinesEqual(currentSale.lines, originalSale.lines)
     ) {
       throw new Error("La vente a changé depuis son ouverture. Rechargez les données avant de la modifier.");
     }
@@ -467,9 +503,13 @@ export async function validateSale(
   userId: string,
   userName: string
 ): Promise<{ sale: Sale; stocks: StoreStock[]; movements: StockMovement[]; auditLog: AuditLog }> {
+  assertOnlineForTransaction();
   const quantities = new Map<string, number>();
   sale.lines.filter(line => line.line_type !== "SERVICE").forEach(line => quantities.set(line.article_id, (quantities.get(line.article_id) || 0) + line.quantity));
   const stockTargets = [...quantities].map(([articleId, quantity]) => ({ articleId, quantity, ...stockReference(knownStocks, sale.store_id, articleId) }));
+  const store = (await getDoc(doc(db, "stores", sale.store_id))).data() as Store | undefined;
+  assertSaleValidationSize(sale, store);
+  const needsChecks = store && ["POS", "RESELLER"].includes(store.store_type);
   const saleRef = doc(db, SALES, sale.id);
   const timestamp = Date.now();
   const updatedSale: Sale = { ...sale, status: "VALIDATED", validated_by: userId, validated_by_name: userName, validated_at: timestamp };
@@ -478,6 +518,20 @@ export async function validateSale(
   const updatedStocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
+  // These checks authorize catalog eligibility only; stock and sale status remain
+  // unchanged until the final atomic transaction. Failed retries cannot double-debit.
+  const checks = new Map<string, { check_id: string; article_index: number }>();
+  for (let offset = 0; needsChecks && offset < stockTargets.length; offset += SALE_CATALOG_CHECK_SIZE) {
+    const targets = stockTargets.slice(offset, offset + SALE_CATALOG_CHECK_SIZE);
+    const checkRef = doc(collection(db, "saleCatalogChecks"));
+    await setDoc(checkRef, clean({
+      sale_id: sale.id, store_id: sale.store_id, sale_created_at: sale.created_at,
+      sale_lines: sale.lines, article_ids: targets.map(target => target.articleId), created_by: userId,
+      line_indexes: targets.map(target => sale.lines.findIndex(line => line.line_type !== "SERVICE" && line.article_id === target.articleId))
+    }));
+    targets.forEach((target, article_index) => checks.set(target.articleId, { check_id: checkRef.id, article_index }));
+  }
+
   await runOnlineTransaction(async transaction => {
     const saleSnapshot = await transaction.get(saleRef);
     if (!saleSnapshot.exists() || (saleSnapshot.data() as Sale).status !== requiredStatus) {
@@ -485,9 +539,12 @@ export async function validateSale(
         ? "La demande revendeur doit être approuvée par un administrateur avant l'expédition."
         : "La vente doit être vérifiée avant validation.");
     }
+    if (!firestoreValuesEqual(saleSnapshot.data(), sale)) throw new Error("La vente a changé. Rechargez les données avant validation.");
+    updatedStocks.length = 0;
+    movements.length = 0;
     const snapshots = await Promise.all(stockTargets.map(target => transaction.get(target.reference)));
     stockTargets.forEach((target, index) => {
-      const current = snapshots[index].exists() ? snapshots[index].data() as StoreStock : target.fallback;
+      const current = snapshots[index].exists() ? snapshots[index].data() as StoreStock : undefined;
       const before = current?.quantity || 0;
       if (target.quantity <= 0 || before < target.quantity) {
         throw new Error(`Stock insuffisant pour l'article ${target.articleId}. Disponible : ${before}.`);
@@ -498,7 +555,9 @@ export async function validateSale(
         article_id: target.articleId,
         quantity: before - target.quantity,
         reserved_quantity: current?.reserved_quantity || 0,
-        updated_at: timestamp
+        ...(checks.has(target.articleId) ? { sale_check: checks.get(target.articleId)! } : {}),
+        updated_at: timestamp,
+        ...(current?.quarantine_quantity !== undefined ? { quarantine_quantity: current.quarantine_quantity } : {})
       };
       const movement: StockMovement = {
         id: `movement-${sale.id}-${target.articleId}`,
@@ -509,6 +568,7 @@ export async function validateSale(
         reference_type: "SALE",
         reference_id: sale.id,
         reference_number: sale.sale_number,
+        ...(checks.has(target.articleId) ? { sale_check: checks.get(target.articleId)! } : {}),
         before_quantity: before,
         after_quantity: stock.quantity,
         created_by: userId,
@@ -528,25 +588,34 @@ export async function validateSale(
 
 export async function createProduction(
   production: Production,
-  knownStocks: StoreStock[]
+  knownStocks: StoreStock[],
+  original?: Production
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[]; auditLog: AuditLog }> {
+  if (production.status !== "DRAFT" && !(production.status === "COMPLETED" && original?.status === "DRAFT")) throw new Error("Enregistrez un brouillon avant validation.");
+  if (!production.consumptions.length || !production.outputs.length || [...production.consumptions, ...production.outputs].some(line => !line.article_id || !Number.isFinite(line.quantity) || line.quantity <= 0)) throw new Error("Quantites de production invalides.");
   const deltas = new Map<string, { normal: number; recycled: number }>();
   const addDelta = (articleId: string, key: "normal" | "recycled", value: number) => {
     const current = deltas.get(articleId) || { normal: 0, recycled: 0 };
     deltas.set(articleId, { ...current, [key]: current[key] + value });
   };
-  production.consumptions.forEach(line => addDelta(line.article_id, line.source === "RECYCLED" ? "recycled" : "normal", -line.quantity));
-  production.outputs.forEach(line => addDelta(line.article_id, "normal", line.quantity));
+  if (production.status === "COMPLETED") production.consumptions.forEach(line => addDelta(line.article_id, line.source === "RECYCLED" ? "recycled" : "normal", -line.quantity));
+  if (production.status === "COMPLETED") production.outputs.forEach(line => addDelta(line.article_id, "normal", line.quantity));
   const targets = [...deltas].map(([articleId, delta]) => ({ articleId, delta, ...stockReference(knownStocks, production.manufacturer_store_id, articleId) }));
   const timestamp = Date.now();
-  const entry = audit("PRODUCTION_COMPLETED", "PRODUCTION", production.id, production.created_by, production.created_by_name, production.manufacturer_store_id, undefined, production);
+  const entry = audit(production.status === "DRAFT" ? "PRODUCTION_DRAFT_CREATED" : "PRODUCTION_COMPLETED", "PRODUCTION", production.id, production.validated_by || production.created_by, production.validated_by_name || production.created_by_name, production.manufacturer_store_id, original, production);
   const updatedStocks: StoreStock[] = [];
   const movements: StockMovement[] = [];
 
   await runOnlineTransaction(async transaction => {
     const productionRef = doc(db, PRODUCTIONS, production.id);
     const productionSnapshot = await transaction.get(productionRef);
-    if (productionSnapshot.exists()) throw new Error("Cette production existe déjà.");
+    if (original) {
+      const live = productionSnapshot.data() as Production | undefined;
+      if (!live || live.status !== "DRAFT" || !firestoreValuesEqual(live, original)) throw new Error("Le brouillon a changé. Rechargez avant validation.");
+      if (!firestoreValuesEqual(live.consumptions, production.consumptions) || !firestoreValuesEqual(live.outputs, production.outputs)) throw new Error("Les lignes doivent être enregistrées avant validation.");
+    } else if (productionSnapshot.exists()) throw new Error("Cette production existe déjà.");
+    updatedStocks.length = 0;
+    movements.length = 0;
     const snapshots = await Promise.all(targets.map(target => transaction.get(target.reference)));
     targets.forEach((target, index) => {
       const current = snapshots[index].exists() ? snapshots[index].data() as StoreStock : target.fallback;
@@ -639,8 +708,8 @@ export async function updateDraftProduction(
     if (
       current.status !== "DRAFT" ||
       current.created_by !== userId ||
-      JSON.stringify(current.consumptions) !== JSON.stringify(original.consumptions) ||
-      JSON.stringify(current.outputs) !== JSON.stringify(original.outputs) ||
+      !firestoreValuesEqual(current.consumptions, original.consumptions) ||
+      !firestoreValuesEqual(current.outputs, original.outputs) ||
       current.notes !== original.notes
     ) {
       throw new Error("La production a changé depuis son ouverture. Rechargez les données avant de la modifier.");

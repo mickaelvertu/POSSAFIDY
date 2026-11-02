@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { Check, Pencil, Printer, ReceiptText } from "lucide-react";
 import { Employee, InventoryCount, PaymentMethod, Payslip, SalaryAdvance } from "../types";
 import SalaryAdvancesPanel from "./SalaryAdvancesPanel";
+import { pendingInventoryCharges } from "../services/inventoryChargeAssignment";
 
 interface PayrollViewProps {
   employees: Employee[];
@@ -38,7 +39,7 @@ const periodLabel = (period: string) => {
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
 
 export default function PayrollView({ employees, payslips, advances, inventoryCounts = [], currentUserId, onSavePayslip, onSaveAdvance }: PayrollViewProps) {
-  const activeEmployees = useMemo(() => employees.filter(employee => employee.is_active), [employees]);
+  const activeEmployees = useMemo(() => employees.filter(employee => employee.is_active || pendingInventoryCharges(inventoryCounts, employee).length > 0), [employees, inventoryCounts]);
   const [editing, setEditing] = useState<Payslip | null>(null);
   const [employeeId, setEmployeeId] = useState("");
   const [period, setPeriod] = useState(currentPeriod);
@@ -59,11 +60,15 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
     ? []
     : advances.filter(advance => advance.employee_id === employeeId && advance.status === "OUTSTANDING");
   const outstandingTotal = outstandingAdvances.reduce((total, advance) => total + advance.amount, 0);
+  const formAdvances = (editing
+    ? advances.filter(advance => advance.employee_id === employeeId && editing.advance_ids?.includes(advance.id))
+    : outstandingAdvances).slice().sort((left, right) => right.advance_date - left.advance_date);
+  const missingAdvanceCount = editing ? (editing.advance_ids || []).filter(id => !formAdvances.some(advance => advance.id === id)).length : 0;
   const advancesAmount = editing ? editing.advances_deducted || 0 : deductAdvances ? outstandingTotal : 0;
   const [deductInventory, setDeductInventory] = useState(true);
-  const pendingInventory = editing || !selectedEmployee?.user_id
+  const pendingInventory = editing || !selectedEmployee
     ? []
-    : inventoryCounts.filter(count => count.status === "VALIDATED" && !count.charge_settlement && (count.total_charged_amount || 0) > 0 && count.created_by === selectedEmployee.user_id);
+    : pendingInventoryCharges(inventoryCounts, selectedEmployee);
   const pendingInventoryTotal = pendingInventory.reduce((total, count) => total + (count.total_charged_amount || 0), 0);
   const inventoryAmount = editing ? editing.inventory_charges_deducted || 0 : deductInventory ? pendingInventoryTotal : 0;
 
@@ -78,6 +83,7 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
     setPaymentDate(dateValue(Date.now()));
     setPaymentMethod("CASH");
     setDeductAdvances(true);
+    setDeductInventory(true);
     setFormError("");
   };
 
@@ -189,10 +195,10 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <label className="space-y-1 text-xs font-semibold text-slate-600">Employé *
             <select className={inputClass} value={employeeId} onChange={event => handleEmployeeChange(event.target.value)} required disabled={Boolean(editing)}>
-              <option value="">Sélectionner un employé actif</option>
+              <option value="">Sélectionner un employé</option>
               {(editing && selectedEmployee && !activeEmployees.some(employee => employee.id === editing.employee_id)
                 ? [...activeEmployees, selectedEmployee]
-                : activeEmployees).map(employee => <option key={employee.id} value={employee.id}>{employee.first_name} {employee.last_name}</option>)}
+                : activeEmployees).map(employee => <option key={employee.id} value={employee.id}>{employee.first_name} {employee.last_name}{!employee.is_active ? " (inactif · retenue en attente)" : ""}</option>)}
             </select>
           </label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Mois de paie *
@@ -231,6 +237,35 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
           </label>
         )}
         {editing && advancesAmount > 0 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Avances déjà déduites : <strong>{money(advancesAmount)}</strong></p>}
+        {employeeId && (
+          <section aria-label="Détail des avances de la paie" className="overflow-hidden rounded-lg border border-amber-200">
+            <div className="bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+              {editing ? "Avances associées à cette fiche" : "Avances en cours de cet employé"} ({formAdvances.length})
+            </div>
+            {formAdvances.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-600"><tr>
+                    <th className="px-3 py-2">Date</th><th className="px-3 py-2">Motif</th><th className="px-3 py-2">Paiement</th><th className="px-3 py-2">Référence</th><th className="px-3 py-2">Statut</th><th className="px-3 py-2 text-right">Montant</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {formAdvances.map(advance => <tr key={advance.id}>
+                      <td className="whitespace-nowrap px-3 py-2">{new Date(advance.advance_date).toLocaleDateString("fr-FR")}</td>
+                      <td className="px-3 py-2">{advance.reason || "Non renseigné"}</td>
+                      <td className="px-3 py-2">{METHODS.find(method => method.value === advance.payment_method)?.label || advance.payment_method}</td>
+                      <td className="max-w-56 break-words px-3 py-2">{advance.expense_id ? `Dépense : ${advance.expense_id}` : advance.id}</td>
+                      <td className="px-3 py-2">{advance.status === "DEDUCTED" ? "Déjà déduite" : "En cours"}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">{money(advance.amount)}</td>
+                    </tr>)}
+                  </tbody>
+                  <tfoot className="bg-slate-50 font-semibold"><tr><td colSpan={5} className="px-3 py-2">Total des avances affichées</td><td className="whitespace-nowrap px-3 py-2 text-right">{money(formAdvances.reduce((total, advance) => total + advance.amount, 0))}</td></tr></tfoot>
+                </table>
+              </div>
+            ) : <p className="p-3 text-sm text-slate-500">{editing ? "Aucun détail d’avance disponible pour cette fiche." : "Aucune avance en cours pour cet employé."}</p>}
+            {!editing && formAdvances.length > 0 && <p className="px-3 py-2 text-xs text-slate-600">{deductAdvances ? "Ces avances seront déduites à l’enregistrement de la fiche." : "Déduction désactivée : ces avances ne seront pas déduites."}</p>}
+            {missingAdvanceCount > 0 && <p className="px-3 py-2 text-xs text-amber-800">{missingAdvanceCount} avance(s) historique(s) indisponible(s), notamment si la dépense source a été supprimée. Le montant enregistré sur la fiche reste inchangé.</p>}
+          </section>
+        )}
         {!editing && pendingInventoryTotal > 0 && (
           <label className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-900">
             <input type="checkbox" checked={deductInventory} onChange={event => setDeductInventory(event.target.checked)} />

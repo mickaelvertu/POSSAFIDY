@@ -100,7 +100,8 @@ test("rejects raw materials at point-of-sale stores", () => {
     { store_id: "store-pos-01", article_id: "raw-01", quantity: 1 }
   ]), stores, [rawMaterial], []);
 
-  assert.match(result.errors.join(" "), /ne peut pas recevoir de matière première/);
+  assert.equal(result.errors.length, 1);
+  assert.equal(result.rows.length, 0);
 });
 
 test("audit entries identify the actor and omit undefined snapshots", () => {

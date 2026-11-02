@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "exportedAt": "2026-10-24T09:01:21.669Z",
+  "data": [
+    {
+      "created_at": 1790749584791,
+      "name": "Kg",
+      "updated_at": 1790749584791,
+      "id": "unit-kg",
+      "is_active": true
+    },
+    {
+      "created_at": 1790804916544,
+      "is_active": true,
+      "updated_at": 1790804916544,
+      "name": "Kilo",
+      "id": "unit-kilo"
+    },
+    {
+      "is_active": true,
+      "updated_at": 1790749584791,
+      "created_at": 1790749584791,
+      "name": "Litre",
+      "id": "unit-litre"
+    },
+    {
+      "created_at": 1790804916544,
+      "is_active": true,
+      "name": "Piece",
+      "updated_at": 1790804916544,
+      "id": "unit-piece"
+    },
+    {
+      "created_at": 1791861346941,
+      "id": "unit-pot-50ml",
+      "updated_at": 1791861346941,
+      "name": "Pot 50ml",
+      "is_active": true
+    },
+    {
+      "id": "unit-sachet-100g",
+      "created_at": 1791861346941,
+      "updated_at": 1791861346941,
+      "is_active": true,
+      "name": "Sachet 100g"
+    },
+    {
+      "is_active": true,
+      "name": "Unité",
+      "created_at": 1790749584791,
+      "updated_at": 1790749584791,
+      "id": "unit-unite"
+    },
+    {
+      "id": "unit-gramme",
+      "name": "Gramme",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    },
+    {
+      "id": "unit-gony",
+      "name": "GONY",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    },
+    {
+      "id": "unit-kpk",
+      "name": "KPK",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    },
+    {
+      "id": "unit-pack",
+      "name": "PACK",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    },
+    {
+      "id": "unit-millilitre",
+      "name": "Millilitre",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    },
+    {
+      "id": "unit-feuille",
+      "name": "FEUILLE",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    },
+    {
+      "id": "unit-boty",
+      "name": "BOTY",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    },
+    {
+      "id": "unit-fatorana",
+      "name": "FATORANA",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    },
+    {
+      "id": "unit-bouteille",
+      "name": "BOUTEILLE",
+      "is_active": true,
+      "created_at": 1792832481669,
+      "updated_at": 1792832481669
+    }
+  ]
+}

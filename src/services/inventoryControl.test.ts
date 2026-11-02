@@ -73,3 +73,16 @@ test("summary totals shortage and surplus values", () => {
   assert.equal(summary.shortageValue, 3000);
   assert.equal(summary.surplusValue, 3000);
 });
+
+test("assigned employee IDs keep payroll charges separate even with a shared login", () => {
+  const line = { ...buildCountLine(article, 2, 1, "manquant"), charged_amount: 1000 };
+  const base = { status: "VALIDATED", created_by: "counter", created_by_name: "Counter", store_id: "store", store_name: "Shop", total_charged_amount: 1000, reviewed_at: 1, updated_at: 1, lines: [line], charged_to: "shared-login" };
+  const counts = [
+    { ...base, id: "one", count_number: "I1", charged_employee_id: "employee-a", charged_to_name: "Aina" },
+    { ...base, id: "two", count_number: "I2", charged_employee_id: "employee-b", charged_to_name: "Bako" },
+  ] as InventoryCount[];
+  const report = buildChargesReport(counts);
+  assert.equal(report.managers.length, 2);
+  assert.deepEqual(report.managers.map(group => group.manager_id).sort(), ["employee-a", "employee-b"]);
+  assert.equal(buildChargesReport(counts, { managerId: "employee-b" }).total, 1000);
+});

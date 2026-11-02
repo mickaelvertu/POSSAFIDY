@@ -44,9 +44,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   ADMIN: ALL_PERMISSIONS.filter(permission => permission !== "users.delete"),
   VENDEUR: ["dashboard.view", "products.view", "stock.view", "sales.view", "sales.create", "sales.edit", "credit.sales", "transfers.view", "transfers.create"],
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
-  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count", "cash_handover.view", "cash_handover.create"],
-  CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count"],
-  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate"],
+  RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship",   "transfers.receive", "reports.view", "inventory.count", "employee_presentation.control", "cash_handover.view", "cash_handover.create"],
+  CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count", "employee_presentation.control"],
+  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive", "reports.view"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create", "cash_handover.view", "procurement.manage"],
   GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
   STAFF: ["dashboard.view"],
@@ -86,6 +86,7 @@ const permissionDefinition = (code: string) => ({
 export const PERMISSION_GROUPS = [
   { id: "dashboard", label: "Tableau de bord", description: "Accès aux indicateurs", permissions: ["dashboard.view"] },
   { id: "catalog", label: "Produits et stocks", description: "Catalogue et inventaire", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("products.") || permission.startsWith("stock.")) },
+  { id: "employee_presentation", label: "Contrôle des employés", description: "Présentation sur le lieu de travail", permissions: ["employee_presentation.control"] },
   { id: "inventory", label: "Contrôle d'inventaire", description: "Comptage et validation des écarts", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("inventory.")) },
   { id: "units", label: "Unités de mesure", description: "Gérer les unités des articles", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("units.")) },
   { id: "sales", label: "Ventes", description: "Cycle de vente", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("sales.")) },
@@ -143,6 +144,10 @@ export class AuthService {
       throw new Error("Profil utilisateur introuvable. Contactez un administrateur.");
     }
     const profile = profileSnapshot.data();
+    return this.userFromProfile(firebaseUser, profile);
+  }
+
+  userFromProfile(firebaseUser: FirebaseUser, profile: Record<string, any>): User {
     const now = new Date().toISOString();
     const user: User = {
       id: firebaseUser.uid,
@@ -154,7 +159,10 @@ export class AuthService {
       phone: profile.phone,
       status: profile.status || "PENDING",
       role: profile.role || null,
-      permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+      permissions: [...new Set([
+        ...(Array.isArray(profile.permissions) ? profile.permissions : []),
+        ...(profile.role === "PRODUCTION" ? ["reports.view"] : [])
+      ])],
       visibleArticleTypes: Array.isArray(profile.visibleArticleTypes)
         ? profile.visibleArticleTypes.filter((type): type is ArticleTypeCode => type === "RAW_MATERIAL" || type === "RESALE")
         : DEFAULT_ARTICLE_VISIBILITY[profile.role as AppRoleId] || [],
@@ -357,11 +365,11 @@ export class AuthService {
   async listManagedUsers(): Promise<ApiResponse<{ users: User[] }>> {
     try {
       const snapshot = await getDocs(collection(db, "users"));
-      const users = await Promise.all(snapshot.docs.map(async snapshotDoc => {
+      const users = snapshot.docs.map(snapshotDoc => {
         const data = snapshotDoc.data();
         const firebaseUser = { uid: snapshotDoc.id, email: data.email || "", displayName: data.displayName || null } as FirebaseUser;
-        return this.mapFirebaseUser(firebaseUser);
-      }));
+        return this.userFromProfile(firebaseUser, data);
+      });
       return { success: true, code: "USERS_LIST", message: "Utilisateurs récupérés avec succès.", data: { users } };
     } catch (err) {
       return this.errorResponse(err) as ApiResponse<{ users: User[] }>;

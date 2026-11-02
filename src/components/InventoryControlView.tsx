@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, ClipboardCheck, Lightbulb, Save, Send, ShieldAlert, Trash2, XCircle } from "lucide-react";
-import type { AppUser, Article, InventoryCount, InventoryCountLine, InventoryCountStatus, InventoryReasonDecision, Store, StoreStock } from "../types";
+import type { AppUser, Article, Employee, InventoryCount, InventoryCountLine, InventoryCountStatus, InventoryReasonDecision, Store, StoreStock } from "../types";
 import { generateRef } from "../services/stockService";
 import {
   anomalyLines,
@@ -20,6 +20,12 @@ import {
 } from "../services/inventoryControl";
 
 interface InventoryControlViewProps {
+  focusedCountId?: string;
+  employees?: Employee[];
+  employeesLoading?: boolean;
+  employeesError?: string | null;
+  onRetryEmployees?: () => void;
+  onOpenPayroll?: () => void;
   currentUser: AppUser;
   stores: Store[];
   articles: Article[];
@@ -29,7 +35,7 @@ interface InventoryControlViewProps {
   canReview: boolean;
   onSaveCount: (count: InventoryCount, submit: boolean) => Promise<void>;
   onDeleteDraft: (count: InventoryCount) => Promise<void>;
-  onValidateCount: (count: InventoryCount, decisions: Record<string, InventoryReasonDecision>, note: string) => Promise<void>;
+  onValidateCount: (count: InventoryCount, decisions: Record<string, InventoryReasonDecision>, note: string, chargedEmployeeId?: string) => Promise<void>;
   onRejectCount: (count: InventoryCount, note: string) => Promise<void>;
   onSignCount: (count: InventoryCount) => Promise<void>;
   onRefuseSignature: (count: InventoryCount, note: string) => Promise<void>;
@@ -75,10 +81,13 @@ function Suggestions({ items, title }: { items: InventorySuggestion[]; title: st
 }
 
 export default function InventoryControlView({
+  employees = [], employeesLoading = false, employeesError, onRetryEmployees, onOpenPayroll,
+  focusedCountId,
   currentUser, stores, articles, stocks, counts, canCount, canReview,
   onSaveCount, onDeleteDraft, onValidateCount, onRejectCount, onSettleCharges, onSignCount, onRefuseSignature, loadStoreManagers
 }: InventoryControlViewProps) {
-  const [tab, setTab] = useState<"count" | "review" | "charges">(canCount ? "count" : "review");
+  const focusedCount = counts.find(count => count.id === focusedCountId);
+  const [tab, setTab] = useState<"count" | "review" | "charges">(focusedCount ? focusedCount.status === "AWAITING_SIGNATURE" ? "count" : "review" : canCount ? "count" : "review");
   const activeStores = useMemo(() => stores.filter(store => store.is_active), [stores]);
   const [storeId, setStoreId] = useState(activeStores[0]?.id || "");
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -93,13 +102,17 @@ export default function InventoryControlView({
   const [refusing, setRefusing] = useState<string | null>(null);
   const [refuseNote, setRefuseNote] = useState("");
   const [error, setError] = useState("");
-  const [reviewId, setReviewId] = useState<string | null>(null);
+  const [reviewId, setReviewId] = useState<string | null>(focusedCount?.status === "SUBMITTED" ? focusedCount.id : null);
   const [decisions, setDecisions] = useState<Record<string, InventoryReasonDecision>>({});
   const [reviewNote, setReviewNote] = useState("");
+  const [chargedEmployeeId, setChargedEmployeeId] = useState("");
+  const chargeEmployee = employees.find(employee => employee.id === chargedEmployeeId);
+  const chargeEmployeeName = chargeEmployee ? `${chargeEmployee.first_name} ${chargeEmployee.last_name}` : undefined;
+  const chargeEmployees = useMemo(() => [...employees].sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`, "fr")), [employees]);
   const [reviewSearch, setReviewSearch] = useState("");
   const [chargeFilter, setChargeFilter] = useState<{ startDate: string; endDate: string; managerId: string; storeId: string; settlement: "ALL" | "PENDING" | "SETTLED" }>({ startDate: "", endDate: "", managerId: "", storeId: "", settlement: "PENDING" });
   const [settling, setSettling] = useState<string | null>(null);
-  const [settleMethod, setSettleMethod] = useState<"PAYSLIP" | "ADVANCE" | "OTHER">("PAYSLIP");
+  const [settleMethod, setSettleMethod] = useState<"PAYSLIP" | "ADVANCE" | "OTHER">("OTHER");
   const [settleReference, setSettleReference] = useState("");
   const [settleNote, setSettleNote] = useState("");
   const [settleError, setSettleError] = useState("");
@@ -121,7 +134,7 @@ export default function InventoryControlView({
   };
   const [openManagers, setOpenManagers] = useState<Record<string, boolean>>({});
   const chargeManagers = useMemo(
-    () => [...new Map(counts.filter(count => (count.total_charged_amount || 0) > 0).map(count => [count.charged_to || count.created_by, count.charged_to_name || count.created_by_name])).entries()],
+    () => [...new Map(counts.filter(count => (count.total_charged_amount || 0) > 0).map(count => [count.charged_employee_id || count.charged_to || count.manager_signed_by || count.created_by, count.charged_to_name || count.created_by_name])).entries()],
     [counts]
   );
   const chargesReport = useMemo(() => buildChargesReport(counts, chargeFilter), [counts, chargeFilter]);
@@ -286,6 +299,7 @@ export default function InventoryControlView({
   const reviewHints = reviewCount ? suggestForReview(reviewCount, counts) : new Map<string, InventorySuggestion[]>();
 
   const openReview = (count: InventoryCount) => {
+    setChargedEmployeeId("");
     setReviewId(count.id);
     setDecisions({});
     setReviewNote("");
@@ -298,7 +312,7 @@ export default function InventoryControlView({
     setBusy(true);
     setError("");
     try {
-      if (action === "validate") await onValidateCount(reviewCount, decisions, reviewNote);
+      if (action === "validate") await onValidateCount(reviewCount, decisions, reviewNote, chargedEmployeeId || undefined);
       else await onRejectCount(reviewCount, reviewNote.trim());
       setReviewId(null);
     } catch (reviewError) {
@@ -485,6 +499,7 @@ export default function InventoryControlView({
 
       {tab === "charges" && canReview && (
         <div className="space-y-4">
+          {onOpenPayroll && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900"><p>Les retenues sont déduites lors de l’enregistrement de la fiche de paie de l’employé désigné.</p><button type="button" onClick={onOpenPayroll} className="rounded-lg bg-blue-600 px-3 py-2 font-bold text-white">Ouvrir la paie</button></div>}
           <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs           sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
             <label className="text-xs font-semibold text-slate-600">Du
               <input type="date" value={chargeFilter.startDate} onChange={event => setChargeFilter(current => ({ ...current, startDate: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
@@ -537,7 +552,7 @@ export default function InventoryControlView({
                       <div className="grid gap-2 sm:grid-cols-4 sm:items-end">
                         <label className="font-semibold text-slate-600">Déduit via
                           <select value={settleMethod} onChange={event => setSettleMethod(event.target.value as "PAYSLIP" | "ADVANCE" | "OTHER")} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2">
-                            <option value="PAYSLIP">Fiche de paie</option>
+                            {onOpenPayroll && <option value="PAYSLIP" disabled>Fiche de paie — utiliser le module Paie</option>}
                             <option value="ADVANCE">Avance sur salaire</option>
                             <option value="OTHER">Autre</option>
                           </select>
@@ -685,8 +700,20 @@ export default function InventoryControlView({
                 </div>
                 {reviewCount.notes && <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-700">Remarque : {reviewCount.notes}</p>}
                 <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
-                  Motif jugé exact : le stock est ajusté sans conséquence. Motif jugé inexact : le stock est ajusté, mais le manque est retenu au nom de <strong>{reviewCount.manager_signed_by_name || reviewCount.created_by_name}</strong>.
+                  Motif jugé exact : le stock est ajusté sans conséquence. Motif jugé inexact : le stock est ajusté et le manque est imputé à <strong>{chargeEmployeeName || reviewCount.manager_signed_by_name || reviewCount.created_by_name}</strong> pour une retenue en paie.
                 </p>
+                {currentUser.roleId === "SUPER_ADMIN" && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+                    <label className="block font-bold" htmlFor="inventory-charged-employee">Employé responsable des manquants de cet inventaire</label>
+                    <select id="inventory-charged-employee" value={chargedEmployeeId} disabled={busy || employeesLoading || !!employeesError} onChange={event => setChargedEmployeeId(event.target.value)} className="mt-2 w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900">
+                      <option value="">Responsable signataire / auteur : {reviewCount.manager_signed_by_name || reviewCount.created_by_name}</option>
+                      {chargeEmployees.map(employee => <option key={employee.id} value={employee.id}>{employee.first_name} {employee.last_name}{employee.code ? ` · ${employee.code}` : ""}{employee.position ? ` · ${employee.position}` : ""}{!employee.is_active ? " (inactif)" : ""}</option>)}
+                    </select>
+                    <p className="mt-2">Le total des manquants dont le motif est refusé sera proposé en retenue sur la paie de cet employé. Les fiches sans compte de connexion peuvent aussi être sélectionnées.</p>
+                    {employeesLoading && <p role="status" className="mt-2">Chargement du personnel…</p>}
+                    {employeesError && <p role="alert" className="mt-2 text-rose-700">{employeesError} <button type="button" onClick={onRetryEmployees} className="font-bold underline">Réessayer</button></p>}
+                  </div>
+                )}
                 {reviewCount.signature_waived ? (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
                     Aucune signature : aucun responsable de magasin n'était inscrit. Le comptage de <strong>{reviewCount.created_by_name}</strong> n'a pas été attesté, contrôlez-le avec attention.
@@ -717,7 +744,7 @@ export default function InventoryControlView({
                             </div>
                           </div>
                           <p className="mt-2 rounded-lg bg-slate-50 p-2 italic text-slate-700">« {line.reason || "Aucun motif"} »</p>
-                          {decision === "REJECTED" && line.variance < 0 && <p className="mt-2 flex items-center gap-1 font-semibold text-rose-700"><ShieldAlert className="h-4 w-4" />Retenue : {money(Math.abs(line.variance_value))} au nom de {reviewCount.manager_signed_by_name || reviewCount.created_by_name}</p>}
+                          {decision === "REJECTED" && line.variance < 0 && <p className="mt-2 flex items-center gap-1 font-semibold text-rose-700"><ShieldAlert className="h-4 w-4" />Retenue : {money(Math.abs(line.variance_value))} au nom de {chargeEmployeeName || reviewCount.manager_signed_by_name || reviewCount.created_by_name}</p>}
                           {decision === "REJECTED" && line.variance > 0 && <p className="mt-2 text-slate-500">Excédent : aucune retenue, le stock sera simplement aligné.</p>}
                           {lineHints.length > 0 && <div className="mt-2"><Suggestions items={lineHints} title="Suggestions de contrôle" /></div>}
                         </div>
@@ -732,7 +759,7 @@ export default function InventoryControlView({
                   <p className="text-xs text-slate-600">Total retenu : <strong className="text-rose-700">{money(reviewPreview.totalCharged)}</strong></p>
                   <div className="flex gap-2">
                     <button type="button" disabled={busy || reviewCount.created_by === currentUser.uid} onClick={() => void runReview("reject")} className="rounded-xl border border-rose-300 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50">Rejeter le comptage</button>
-                    <button type="button" disabled={busy || reviewCount.created_by === currentUser.uid} onClick={() => void runReview("validate")} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Valider et ajuster le stock</button>
+                    <button type="button" disabled={busy || reviewCount.created_by === currentUser.uid || (reviewPreview.totalCharged > 0 && !!chargedEmployeeId && (!chargeEmployee || employeesLoading || !!employeesError))} onClick={() => void runReview("validate")} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Valider et ajuster le stock</button>
                   </div>
                 </div>
               </div>

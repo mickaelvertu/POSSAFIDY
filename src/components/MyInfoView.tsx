@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { Employee, InventoryCount, Payslip, SalaryAdvance, UserProfile } from "../types";
 import { loadMyEmployees } from "../services/employeeService";
 import { loadMyPayslips, loadMySalaryAdvances } from "../services/payrollService";
@@ -10,6 +11,9 @@ const day = (timestamp: number) => new Date(timestamp).toLocaleDateString("fr-FR
 type Tab = "advances" | "payslips" | "charges";
 
 export default function MyInfoView({ user }: { user: UserProfile }) {
+  const contentId = useId();
+  const [visibleForUser, setVisibleForUser] = useState<string | null>(null);
+  const isExpanded = visibleForUser === user.uid;
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
@@ -27,7 +31,7 @@ export default function MyInfoView({ user }: { user: UserProfile }) {
         const [myAdvances, myPayslips, myCharges] = await Promise.all([
           loadMySalaryAdvances(ids),
           loadMyPayslips(ids),
-          loadMyInventoryCharges(user.uid)
+          loadMyInventoryCharges(user.uid, ids)
         ]);
         if (!mounted) return;
         setEmployees(myEmployees);
@@ -44,9 +48,6 @@ export default function MyInfoView({ user }: { user: UserProfile }) {
     return () => { mounted = false; };
   }, [user.uid]);
 
-  if (loading) return <p className="text-xs text-slate-500">Chargement de vos informations…</p>;
-  if (error) return <p className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{error}</p>;
-
   const pendingAdvances = advances.filter(advance => advance.status === "OUTSTANDING").reduce((sum, advance) => sum + advance.amount, 0);
   const pendingCharges = charges.filter(count => !count.charge_settlement).reduce((sum, count) => sum + (count.total_charged_amount || 0), 0);
   const lastPayslip = payslips[0];
@@ -59,8 +60,22 @@ export default function MyInfoView({ user }: { user: UserProfile }) {
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:col-span-2">
-      <h2 className="text-lg font-bold text-slate-900">Mes informations</h2>
-      {employees.length === 0 ? (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-slate-900">Mes informations</h2>
+        <button
+          type="button"
+          aria-expanded={isExpanded}
+          aria-controls={contentId}
+          aria-label={isExpanded ? "Masquer mes informations" : "Afficher mes informations"}
+          onClick={() => setVisibleForUser(isExpanded ? null : user.uid)}
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+        >
+          {isExpanded ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
+          {isExpanded ? "Masquer" : "Afficher"}
+        </button>
+      </div>
+      <div id={contentId} hidden={!isExpanded}>
+      {loading ? <p className="mt-3 text-xs text-slate-500">Chargement de vos informations…</p> : error ? <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{error}</p> : employees.length === 0 ? (
         <p className="mt-3 text-xs text-slate-500">Aucune fiche employé n'est liée à votre compte. Contactez un administrateur.</p>
       ) : (
         <>
@@ -119,6 +134,7 @@ export default function MyInfoView({ user }: { user: UserProfile }) {
           </div>
         </>
       )}
+      </div>
     </section>
   );
 }

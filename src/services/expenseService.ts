@@ -1,5 +1,5 @@
-import { collection, doc, getDocs, query, setDoc, where, writeBatch } from "firebase/firestore";
-import { db, runOnlineTransaction } from "../firebase";
+import { collection, doc, getDoc, getDocs, query, setDoc, where, writeBatch } from "firebase/firestore";
+import { auth, db, runOnlineTransaction } from "../firebase";
 import { AuditLog, Expense, SalaryAdvance } from "../types";
 
 const EXPENSES_COLLECTION = "expenses";
@@ -149,6 +149,10 @@ export async function updateDraftExpense(
 }
 
 export async function deleteExpense(expense: Expense, auditLog: AuditLog): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Connexion requise.");
+  const profile = await getDoc(doc(db, "users", user.uid));
+  if (profile.data()?.role !== "SUPER_ADMIN") throw new Error("Suppression réservée au SUPER_ADMIN.");
   const batch = writeBatch(db);
   batch.delete(doc(db, EXPENSES_COLLECTION, expense.id));
   batch.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));

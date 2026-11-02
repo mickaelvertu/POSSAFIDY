@@ -1,3 +1,4 @@
+import { buildArticleStockRows, type ArticleStockRow } from "./stockByArticle";
 import { ReactNode } from "react";
 import { formatSignedQuantity, LedgerBlock } from "./stockLedger";
 import {
@@ -13,7 +14,7 @@ import {
   StockTransferLine,
   StoreStock
 } from "../types";
-import { EXPENSE_CATEGORY_LABELS, expenseStatus, PAYMENT_METHOD_LABELS } from "./reportService";
+import { buildResellerCreditRows, ResellerCreditRow, EXPENSE_CATEGORY_LABELS, expenseStatus, PAYMENT_METHOD_LABELS } from "./reportService";
 
 export interface ReportColumn<T = any> {
   key: string;
@@ -59,6 +60,33 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
   const { getStoreName, getCategoryName, getArticle } = ctx;
 
   switch (reportType) {
+    case "RESELLER_CREDIT": {
+      const columns: ReportColumn<ResellerCreditRow>[] = [
+        { key: "name", label: "Revendeur", value: row => row.name },
+        { key: "phone", label: "Téléphone", value: row => row.phone },
+        { key: "stores", label: "Magasins", value: row => row.storeIds.map(getStoreName).join(", ") },
+        { key: "count", label: "Ventes", align: "right", value: row => row.count, footer: rows => sum(rows.map(row => row.count)) },
+        { key: "total", label: "Total facturé", align: "right", value: row => row.total, render: row => money(row.total), footer: rows => money(sum(rows.map(row => row.total))) },
+        { key: "paid", label: "Déjà encaissé", align: "right", value: row => row.paid, render: row => money(row.paid), footer: rows => money(sum(rows.map(row => row.paid))) },
+        { key: "balance", label: "Crédit en cours", align: "right", value: row => row.balance, render: row => money(row.balance), footer: rows => money(sum(rows.map(row => row.balance))) },
+        { key: "partial", label: "Ventes à paiement partiel", align: "right", value: row => row.partialCount, footer: rows => sum(rows.map(row => row.partialCount)) }
+      ];
+      return { columns, rows: buildResellerCreditRows(ctx.reportSales), rowKey: row => row.id };
+    }
+    case "STOCK_BY_ARTICLE": {
+      const rows = buildArticleStockRows(ctx.reportStocks, getArticle);
+      const columns: ReportColumn<ArticleStockRow>[] = [
+        { key: "code", label: "Code article", value: row => row.article.code },
+        { key: "name", label: "Article", value: row => row.article.name },
+        { key: "category", label: "Cat\u00e9gorie", value: row => getCategoryName(row.article.category_id) },
+        { key: "unit", label: "Unit\u00e9", value: row => row.article.unit },
+        { key: "stores", label: "Magasins", value: row => row.storeIds.map(getStoreName).join(", ") },
+        { key: "quantity", label: "Stock consolid\u00e9", align: "right", value: row => row.quantity },
+        { key: "reserved", label: "R\u00e9serv\u00e9", align: "right", value: row => row.reserved },
+        { key: "available", label: "Disponible consolid\u00e9", align: "right", value: row => row.available }
+      ];
+      return { columns, rows, rowKey: row => row.article.id };
+    }
     case "STOCK_STATUS": {
       type Row = { stock: StoreStock; article: Article };
       const rows: Row[] = ctx.reportStocks

@@ -3,6 +3,7 @@ import AuthPortal from "./components/auth/AuthPortal";
 import AuthenticatedSessionView from "./components/auth/AuthenticatedSessionView";
 import { ThemeProvider } from "./context/ThemeContext";
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
+import AppUpdateNotice from "./components/AppUpdateNotice";
 
 function AuthApp() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -37,7 +38,10 @@ export default function App() {
     <AppErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <AuthApp />
+          <AppUpdateNotice />
+          <AppErrorBoundary>
+            <AuthApp />
+          </AppErrorBoundary>
         </AuthProvider>
       </ThemeProvider>
     </AppErrorBoundary>

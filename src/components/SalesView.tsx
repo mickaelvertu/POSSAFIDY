@@ -1,3 +1,5 @@
+import { useListWindow } from "../hooks/useListWindow";
+import ListWindowMore from "./ListWindowMore";
 import { useRef, useState, FormEvent } from "react";
 import { 
   Sale, 
@@ -36,6 +38,7 @@ import {
 import SaleDeliveryNote from "./SaleDeliveryNote";
 
 interface SalesViewProps {
+  focusedSaleId?: string;
   sales: Sale[];
   stores: Store[];
   articles: Article[];
@@ -53,6 +56,7 @@ interface SalesViewProps {
 }
 
 export default function SalesView({
+  focusedSaleId,
   sales,
   stores,
   articles,
@@ -69,6 +73,7 @@ export default function SalesView({
   onCancelSale
 }: SalesViewProps) {
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterStoreId, setFilterStoreId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -324,7 +329,7 @@ export default function SalesView({
       currentStore?.store_type !== "CENTRAL_WAREHOUSE" ||
       saleLines.some(line => line.line_type === "SERVICE")
     )) {
-      alert("Une demande revendeur doit être créée par un responsable du dépôt central et ne contenir que des produits de revente.");
+      alert("Une demande revendeur doit être créée par un administrateur ou un responsable du dépôt central et ne contenir que des produits de revente.");
       return;
     }
     if (isResellerSale && !editingSale && !selectedCreditCustomer) {
@@ -429,6 +434,8 @@ export default function SalesView({
   };
 
   const filteredSales = sales.filter(s => {
+    if (focusedSaleId) return s.id === focusedSaleId;
+    if (filterStoreId && s.store_id !== filterStoreId) return false;
     if (filterStatus !== "ALL" && s.status !== filterStatus) return false;
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -437,7 +444,7 @@ export default function SalesView({
       if (!matchNum && !matchCust) return false;
     }
     return true;
-  });
+  }).sort((left, right) => right.created_at - left.created_at);
 
   const filteredSaleArticles = saleArticles.filter(article => {
     const query = articleSearch.trim().toLowerCase();
@@ -451,10 +458,13 @@ export default function SalesView({
     return available > inCart;
   });
 
+  const listWindow = useListWindow(JSON.stringify([filterStatus, filterStoreId, searchQuery, focusedSaleId]));
+
   return (
     <div className="space-y-6">
       
       {/* Header Banner */}
+      {!focusedSaleId && <>
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -486,20 +496,20 @@ export default function SalesView({
           </span>
           <p className="text-emerald-200/90 mt-0.5">
             • <strong>Point de Vente (POS)</strong> : Applique automatiquement le <strong>prix_normal</strong> (prix public).<br />
-            • <strong>Demande revendeur (dépôt)</strong> : brouillon créé par le responsable du dépôt, uniquement pour un revendeur déjà enregistré, au <strong>prix revendeur</strong>.<br />
+            • <strong>Demande revendeur (dépôt)</strong> : brouillon créé par un administrateur ou le responsable du dépôt, uniquement pour un revendeur déjà enregistré, au <strong>prix revendeur</strong>.<br />
             • <strong>Circuit</strong> : l'administrateur approuve, puis le responsable du dépôt expédie ; le stock ne diminue qu'à l'expédition.
           </p>
         </div>
         <div className="bg-emerald-900 px-3 py-2 rounded-xl text-center shrink-0 border border-emerald-800">
           <div className="font-mono text-base font-black text-white">
-            {sales.filter(s => s.status === "VALIDATED").reduce((acc, s) => acc + s.total, 0).toLocaleString("fr-FR")} Ar
+            {sales.filter(s => s.status === "VALIDATED" && (!filterStoreId || s.store_id === filterStoreId)).reduce((acc, s) => acc + s.total, 0).toLocaleString("fr-FR")} Ar
           </div>
           <div className="text-[10px] text-emerald-300">Chiffre d'Affaires Validé</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col xl:flex-row gap-3 items-center justify-between">
         
         {/* Status filters */}
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
@@ -519,6 +529,14 @@ export default function SalesView({
           ))}
         </div>
 
+        <label className="w-full xl:w-64 shrink-0 text-xs font-semibold text-slate-700">
+          Magasin
+          <select value={filterStoreId} onChange={event => setFilterStoreId(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="">Tous les magasins</option>
+            {stores.map(store => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}
+          </select>
+        </label>
+
         {/* Search */}
         <div className="relative w-full sm:w-64">
           <Search className="h-4 w-4 text-slate-400 absolute left-3 top-2.5" />
@@ -534,6 +552,8 @@ export default function SalesView({
       </div>
 
       {/* Sales Table */}
+      </>}
+      {focusedSaleId && filteredSales.length === 0 && <p role="status" className="p-4 text-sm">Cette vente n’est plus disponible.</p>}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
@@ -551,7 +571,7 @@ export default function SalesView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredSales.map((sale) => {
+              {filteredSales.slice(0, listWindow.count).map((sale) => {
                 const store = stores.find(s => s.id === sale.store_id);
                 return (
                   <tr key={sale.id} onClick={() => setDetailSale(sale)} className="cursor-pointer hover:bg-slate-50">
@@ -709,16 +729,15 @@ export default function SalesView({
                           <Printer className="h-3.5 w-3.5" />
                         </button>
 
-                        {sale.customer_type === "REVENDEUR" && (
-                          <button
-                            type="button"
-                            onClick={() => setDeliverySale(sale)}
-                            title="Bon de livraison"
-                            className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-200 cursor-pointer"
-                          >
-                            <Truck className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setDeliverySale(sale)}
+                          title="Imprimer la facture et/ou le bon de livraison"
+                          className="inline-flex items-center gap-1 rounded p-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-200 hover:text-slate-800 cursor-pointer"
+                        >
+                          <FileCheck className="h-3.5 w-3.5" />
+                          Facture / BL
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1107,8 +1126,7 @@ export default function SalesView({
                 <Printer className="h-3.5 w-3.5" />
                 Imprimer le Reçu
               </button>
-              {receiptSale.customer_type === "REVENDEUR" && (
-                <button
+              <button
                   type="button"
                   onClick={() => {
                     setDeliverySale(receiptSale);
@@ -1117,9 +1135,8 @@ export default function SalesView({
                   className="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Truck className="h-3.5 w-3.5" />
-                  Bon de livraison
-                </button>
-              )}
+                  Facture / Livraison
+              </button>
             </div>
 
           </div>
@@ -1134,6 +1151,7 @@ export default function SalesView({
         />
       )}
 
+      <ListWindowMore count={listWindow.count} total={filteredSales.length} onMore={listWindow.showMore} />
     </div>
   );
 }

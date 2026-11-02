@@ -1,5 +1,18 @@
 # Préparation du lancement GILEADA
 
+## Synchronisation et mises à jour
+
+- Les droits effectifs d'un `SUPER_ADMIN` actif sont hérités de son rôle, même si la liste des permissions explicites ne contient que la gestion des utilisateurs et si les magasins attribués sont vides. Le profil affiche cet accès effectif.
+- Les fonctions de règles lisent le profil une fois par contrôle et regroupent les permissions de stock afin de rester dans le budget d'évaluation lors des validations multi-articles. En POS/revendeur, une vente est limitée à 18 articles distincts pour respecter les 20 lectures de règles d'un commit atomique ; un message explicite remplace le refus générique au-delà de cette limite. Les entrepôts ne nécessitent pas la même lecture de catalogue par article.
+- Régression des règles : avec Java et Firebase CLI disponibles, lancer `npm run test:rules`. Le scénario utilise uniquement l'émulateur local `127.0.0.1:8189` et le projet fictif `demo-sale-rules`.
+
+- Les stocks, ventes, transferts, inventaires et achats se synchronisent en temps réel dans la portée autorisée. Une erreur de lecture reste isolée à sa source et affiche une commande pour réessayer ; les refus d'accès ne sont pas relancés comme des pannes réseau.
+- Les changements de nom ne rechargent pas les données. Les changements de droits ou de magasins détachent les anciens abonnements et réinitialisent leur portée.
+- Les journaux d'audit et mouvements se chargent par pages de 50 documents par portée, avec un délai maximal de lecture et un compteur de progression. Le catalogue des rapports reste accessible ; seuls les rapports de mouvements ou d'audit attendent leur historique complet avant calcul ou export. Les autres rapports ne dépendent pas de ces historiques. Les index nécessaires sont définis dans `firestore.indexes.json`.
+- Le bouton et la bannière de mise à jour sont masqués. L'utilisateur recharge avec le bouton du navigateur ; ce rechargement permet l'activation du service worker en attente.
+- La grille des mouvements utilise une lecture dédiée, par pages de 500, limitée aux magasins et dates choisis. La période initiale est le mois en cours, modifiable ou effaçable pour tout l'historique. L'affichage est progressif ; les exports et l'impression conservent toutes les lignes de la période.
+- Vérification terrain à effectuer avec deux appareils : créer puis approuver une vente ou un transfert, changer les magasins et droits d'un compte, interrompre puis rétablir la connexion, charger une deuxième page d'historique et installer une mise à jour avec un formulaire ouvert.
+
 ## État technique
 
 - Les ventes et productions sont persistées dans Firestore.

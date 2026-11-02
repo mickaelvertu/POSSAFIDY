@@ -1,3 +1,5 @@
+import { useListWindow } from "../hooks/useListWindow";
+import ListWindowMore from "./ListWindowMore";
 import { storeLabel } from "../services/storeLabel";
 import { useState, FormEvent } from "react";
 import DeliveryNote from "./DeliveryNote";
@@ -33,7 +35,10 @@ import {
   Pencil
 } from "lucide-react";
 
+import { canApproveTransfer, isWorkshopTransfer } from "../services/transferApproval";
+
 interface TransfersViewProps {
+  focusedTransferId?: string;
   transfers: StockTransfer[];
   stores: Store[];
   articles: Article[];
@@ -41,6 +46,7 @@ interface TransfersViewProps {
   currentUser: UserProfile;
   onCreateTransfer: (transfer: StockTransfer) => Promise<boolean>;
   onUpdateTransfer: (originalTransfer: StockTransfer, transfer: StockTransfer) => Promise<boolean>;
+  onCancelTransfer: (transfer: StockTransfer) => Promise<void>;
   onDeleteTransfer: (transfer: StockTransfer) => Promise<void>;
   onApproveTransfer: (transferId: string) => void;
   onRejectTransfer: (transferId: string, rejectionNote: string) => Promise<boolean>;
@@ -54,7 +60,6 @@ interface TransfersViewProps {
   onReceiveDirectDeposit: (transferId: string) => void;
   onResolveDiscrepancy: (transferId: string, resolutionNote: string) => void;
   canCreate: boolean;
-  canApprove: boolean;
   canReject: boolean;
   canShip: boolean;
   canReceive: boolean;
@@ -84,6 +89,7 @@ const formatQuantity = (quantity: number, unit: string) => quantity.toLocaleStri
 });
 
 export default function TransfersView({
+  focusedTransferId,
   transfers,
   stores,
   articles,
@@ -91,6 +97,7 @@ export default function TransfersView({
   currentUser,
   onCreateTransfer,
   onUpdateTransfer,
+  onCancelTransfer,
   onDeleteTransfer,
   onApproveTransfer,
   onRejectTransfer,
@@ -100,7 +107,6 @@ export default function TransfersView({
   onReceiveDirectDeposit,
   onResolveDiscrepancy,
   canCreate,
-  canApprove,
   canReject,
   canShip,
   canReceive,
@@ -144,10 +150,12 @@ export default function TransfersView({
     : activeStores.filter(store => currentUser.storeIds.includes(store.id));
   const getTransferArticles = (destinationStoreId: string) => {
     if (transferKind !== "STANDARD") return articles.filter(article => article.article_type === "RESALE");
+    const source = stores.find(store => store.id === sourceStoreId);
     const destination = stores.find(store => store.id === destinationStoreId);
-    return destination?.store_type === "POS" || destination?.store_type === "RESELLER"
-      ? articles.filter(article => article.article_type === "RESALE")
-      : articles;
+    const rawMaterialsAllowed = source && destination
+      && ["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(source.store_type)
+      && ["CENTRAL_WAREHOUSE", "MANUFACTURER"].includes(destination.store_type);
+    return rawMaterialsAllowed ? articles : articles.filter(article => article.article_type === "RESALE");
   };
   const getDispatchableStock = (storeId: string, articleId: string, excludeTransferId?: string) => {
     if (transferKind === "DIRECT_DEPOSIT") return getArticleStock(stocks, storeId, articleId) + 1e9;
@@ -304,6 +312,7 @@ export default function TransfersView({
       }, {})
   );
   const filteredTransfers = transfers.filter(t => {
+    if (focusedTransferId) return t.id === focusedTransferId;
     if (filterStatus !== "ALL" && t.status !== filterStatus) return false;
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -313,7 +322,7 @@ export default function TransfersView({
       if (!matchNum && !matchSrc && !matchDst) return false;
     }
     return true;
-  });
+  }).sort((left, right) => right.created_at - left.created_at);
 
   const manufacturerStores = stores.filter(store => store.store_type === "MANUFACTURER" && store.is_active);
   const changeTransferKind = (kind: TransferKind) => {
@@ -424,13 +433,6 @@ export default function TransfersView({
       return;
     }
     const transferArticles = getTransferArticles(destStoreId);
-    if (destinationStore?.store_type === "POS" || destinationStore?.store_type === "RESELLER") {
-      const rawMaterialLine = transferLines.find(line => articles.find(article => article.id === line.article_id)?.article_type === "RAW_MATERIAL");
-      if (rawMaterialLine) {
-        alert("Les matières premières ne peuvent pas être transférées vers un point de vente ou un magasin revendeur.");
-        return;
-      }
-    }
     if (transferLines.some(line => !transferArticles.some(article => article.id === line.article_id))) {
       alert("L'article sélectionné n'est pas autorisé pour ce magasin destinataire.");
       return;
@@ -544,10 +546,13 @@ export default function TransfersView({
     setInspectingTransfer(null);
   };
 
+  const listWindow = useListWindow(JSON.stringify([filterStatus, searchQuery, focusedTransferId]));
+
   return (
     <div className="space-y-6 text-slate-900">
       
       {/* Top Header & Workflow reminder banner */}
+      {!focusedTransferId && <>
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -621,6 +626,7 @@ export default function TransfersView({
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
           {[
             ["ALL", "Tous"],
+            ["CANCELLED", "Annulés"],
             ["DRAFT", "En attente"],
             ["APPROVED", "Approuvés"],
             ["REJECTED", "Refusés"],
@@ -690,9 +696,10 @@ export default function TransfersView({
       )}
 
       {/* Transfers List */}
+      </>}
       <div className="space-y-4">
         {filteredTransfers.length > 0 ? (
-          filteredTransfers.map((t) => {
+          filteredTransfers.slice(0, listWindow.count).map((t) => {
             const src = stores.find(s => s.id === t.source_store_id);
             const dst = stores.find(s => s.id === t.destination_store_id);
             const totalSent = t.lines.reduce((acc, l) => acc + l.quantity_sent, 0);
@@ -705,6 +712,7 @@ export default function TransfersView({
               && (t.status !== "RECEIVED" || currentUser.uid !== t.received_by);
             const isCentralDestination = dst?.store_type === "CENTRAL_WAREHOUSE";
             const isSupplierDelivery = t.type === "SUPPLIER_TO_STORE";
+            const workshopTransfer = isWorkshopTransfer(t, stores);
             const isSourceOperator = currentUser.roleId === "ADMIN"
               || currentUser.roleId === "SUPER_ADMIN"
               || (!isSupplierDelivery && currentUser.storeIds.includes(t.source_store_id));
@@ -730,6 +738,7 @@ export default function TransfersView({
                       Type: {isSupplierDelivery ? "Achat fournisseur" : ({ STORE_RETURN: "Retour magasin", RECYCLING: "Recyclage" }[t.type as string] || t.type)}
                     </span>
                     {isSupplierDelivery && t.purchase_number && <span className="text-xs font-medium text-teal-700">Achat {t.purchase_number}</span>}
+                    {workshopTransfer && <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Approbation par l’atelier source</span>}
                     {isCentralDestination && (
                       <span className="text-[10px] font-bold uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full" title="Entrée au dépôt central : réception saisie par une personne, confirmée par une autre">
                         Contrôle à 2
@@ -915,15 +924,23 @@ export default function TransfersView({
                         Supprimer
                       </button>
                     )}
+                    {currentUser.roleId === "SUPER_ADMIN" && !["CANCELLED", "REJECTED"].includes(t.status) && (
+                      <button type="button" className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50"
+                        onClick={() => {
+                          if (window.confirm(`Annuler ${t.transfer_number} et inverser ses mouvements de stock ? L'historique sera conservé.`)) void onCancelTransfer(t);
+                        }}>
+                        Annuler le transfert
+                      </button>
+                    )}
                     {/* Step 1 -> 2: Approve DRAFT */}
-                    {t.status === "DRAFT" && canApprove && currentUser.uid !== t.requested_by && (
+                    {canApproveTransfer(currentUser, t, stores) && (
                       <button
                         type="button"
                         onClick={() => onApproveTransfer(t.id)}
                         className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <ShieldCheck className="h-3.5 w-3.5" />
-                        Approuver le Transfert
+                        {workshopTransfer ? "Approuver depuis l’atelier source" : "Approuver le Transfert"}
                       </button>
                     )}
                     {t.status === "DRAFT" && canReject && currentUser.uid !== t.requested_by && (
@@ -1662,6 +1679,7 @@ export default function TransfersView({
       )}
 
       {deliveryTransfer && <DeliveryNote transfer={deliveryTransfer} stores={stores} onClose={() => setDeliveryTransfer(null)} />}
+      <ListWindowMore count={listWindow.count} total={filteredTransfers.length} onMore={listWindow.showMore} />
     </div>
   );
 }

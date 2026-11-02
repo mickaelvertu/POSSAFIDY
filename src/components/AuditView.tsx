@@ -1,3 +1,5 @@
+import { useListWindow } from "../hooks/useListWindow";
+import ListWindowMore from "./ListWindowMore";
 import { storeLabel } from "../services/storeLabel";
 import { useEffect, useMemo, useState } from "react";
 import { AuditLog, AppUser, Store } from "../types";
@@ -280,6 +282,8 @@ export default function AuditView({
     setEndDate("");
   };
 
+  const listWindow = useListWindow(JSON.stringify([searchQuery, selectedEntity, selectedUser, selectedStore, selectedAction, connectionFilter, startDate, endDate]));
+
   return (
     <div className="space-y-5">
       <header className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
@@ -397,7 +401,7 @@ export default function AuditView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredLogs.map(log => (
+              {filteredLogs.slice(0, listWindow.count).map(log => (
                 <tr key={log.id} className="hover:bg-slate-50">
                   <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] text-slate-500">
                     {new Date(log.created_at).toLocaleString("fr-FR")}
@@ -439,6 +443,7 @@ export default function AuditView({
           </table>
         </div>
       </div>
+      <ListWindowMore count={listWindow.count} total={filteredLogs.length} onMore={listWindow.showMore} />
     </div>
   );
 }

@@ -93,7 +93,7 @@ export default function StocksView({
 
   const canStoreRawMaterials = (storeId: string) => {
     const store = stores.find(item => item.id === storeId);
-    return store?.store_type !== "POS" && store?.store_type !== "RESELLER";
+    return store?.store_type === "CENTRAL_WAREHOUSE" || store?.store_type === "MANUFACTURER";
   };
 
   const isAdmin = currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN";
@@ -277,6 +277,7 @@ export default function StocksView({
           </p>
         </div>
       </div>
+
 
       {isSuperAdmin && (
         <section className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50 p-5" aria-labelledby="stock-sync-title">

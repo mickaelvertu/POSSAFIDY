@@ -31,6 +31,8 @@ export interface LedgerLookups {
   getStore: (id: string) => Store | undefined;
   transfers: StockTransfer[];
   sales: Sale[];
+  transferById?: ReadonlyMap<string, StockTransfer>;
+  saleById?: ReadonlyMap<string, Sale>;
 }
 
 export function describeMovementCause(movement: StockMovement, lookups: LedgerLookups): string {
@@ -41,14 +43,14 @@ export function describeMovementCause(movement: StockMovement, lookups: LedgerLo
   };
   switch (movement.reference_type) {
     case "TRANSFER": {
-      const transfer = lookups.transfers.find(item => item.id === movement.reference_id);
+      const transfer = lookups.transferById ? lookups.transferById.get(movement.reference_id) : lookups.transfers.find(item => item.id === movement.reference_id);
       if (!transfer) return isEntry ? "Transfert reçu" : "Transfert envoyé";
       return isEntry
         ? "Transfert reçu de " + storeLabel(transfer.source_store_id)
         : "Transfert envoyé à " + storeLabel(transfer.destination_store_id);
     }
     case "SALE": {
-      const customer = lookups.sales.find(item => item.id === movement.reference_id)?.customer_name;
+      const customer = (lookups.saleById ? lookups.saleById.get(movement.reference_id) : lookups.sales.find(item => item.id === movement.reference_id))?.customer_name;
       const label = isEntry ? "Annulation de vente" : "Vente";
       return customer ? label + " · " + customer : label;
     }
@@ -75,6 +77,11 @@ export function buildStockLedger(
   lookups: LedgerLookups,
   direction: MovementDirection = "ALL"
 ): LedgerBlock[] {
+  const indexedLookups: LedgerLookups = {
+    ...lookups,
+    transferById: new Map(lookups.transfers.map(transfer => [transfer.id, transfer])),
+    saleById: new Map(lookups.sales.map(sale => [sale.id, sale])),
+  };
   const groups = new Map<string, StockMovement[]>();
   [...movements]
     .sort((a, b) => a.created_at - b.created_at || a.id.localeCompare(b.id))
@@ -106,7 +113,7 @@ export function buildStockLedger(
         id: movement.id,
         date: movement.created_at,
         change: movement.quantity,
-        cause: describeMovementCause(movement, lookups),
+        cause: describeMovementCause(movement, indexedLookups),
         reference: movement.reference_number,
         operator: movement.created_by_name,
         balanceAfter: movement.after_quantity
