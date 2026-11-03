@@ -734,6 +734,7 @@ export interface SalaryAdvance {
   employee_id: string;
   employee_name: string;
   amount: number;
+  amount_deducted?: number;
   advance_date: number;
   payment_method: PaymentMethod;
   reason?: string;
@@ -757,6 +758,7 @@ export interface Payslip {
   deductions: number;
   advances_deducted?: number;
   advance_ids?: string[];
+  advance_deductions?: Array<{ advance_id: string; amount: number; balance_before: number; balance_after: number }>;
   inventory_charges_deducted?: number;
   inventory_count_ids?: string[];
   net_salary: number;

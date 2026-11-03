@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
 import { transferLinesEqual } from "./transferComparison";
+import { canPurchaseArticle } from "./purchaseEligibility";
 import { posReceiptProof } from "./transferReceipt";
 import { cancellationEffects } from "./transferCancellation";
 import type { AppUser } from "../types";
@@ -448,8 +449,8 @@ export async function saveDraftPurchase(purchase: Purchase, auditLog: AuditLog):
   if (!supplierSnapshot.exists() || supplierSnapshot.data().is_active !== true) {
     throw new Error("Le fournisseur sélectionné n'existe pas ou n'est plus actif.");
   }
-  if (articleSnapshots.some(snapshot => !snapshot.exists() || snapshot.data().article_type !== "RAW_MATERIAL" || snapshot.data().is_active !== true)) {
-    throw new Error("Un achat fournisseur ne peut contenir que des matières premières actives.");
+  if (articleSnapshots.some(snapshot => !snapshot.exists() || !canPurchaseArticle(storeSnapshot.data() as Store, snapshot.data() as Article))) {
+    throw new Error("Articles inactifs ou incompatibles : revente au dépôt, matières premières au dépôt ou fabricant.");
   }
   await runOnlineTransaction(async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
@@ -496,8 +497,8 @@ export async function approvePurchase(
   ) {
     throw new Error("Le magasin destinataire n'est plus un dépôt autorisé pour ces matières premières.");
   }
-  if (articleSnapshots.some(snapshot => !snapshot.exists() || snapshot.data().article_type !== "RAW_MATERIAL")) {
-    throw new Error("Un achat fournisseur ne peut contenir que des matières premières.");
+  if (articleSnapshots.some(snapshot => !snapshot.exists() || !canPurchaseArticle(storeSnapshot.data() as Store, snapshot.data() as Article))) {
+    throw new Error("Articles inactifs ou incompatibles : revente au dépôt, matières premières au dépôt ou fabricant.");
   }
   if (transfer.lines.some(line =>
     !purchase.lines.some(purchaseLine =>

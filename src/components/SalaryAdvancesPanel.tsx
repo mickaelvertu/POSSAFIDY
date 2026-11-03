@@ -1,3 +1,4 @@
+import { advanceBalance } from "../services/advanceDeduction";
 import { FormEvent, useMemo, useState } from "react";
 import { HandCoins } from "lucide-react";
 import { Employee, PaymentMethod, SalaryAdvance } from "../types";
@@ -38,7 +39,7 @@ export default function SalaryAdvancesPanel({ employees, advances, currentUserId
 
   const outstandingFor = (id: string) => advances
     .filter(advance => advance.employee_id === id && advance.status === "OUTSTANDING")
-    .reduce((total, advance) => total + advance.amount, 0);
+    .reduce((total, advance) => total + advanceBalance(advance), 0);
 
   const balances = activeEmployees
     .map(employee => ({ employee, balance: outstandingFor(employee.id) }))
@@ -147,7 +148,7 @@ export default function SalaryAdvancesPanel({ employees, advances, currentUserId
             {visible.map(advance => <tr key={advance.id}>
               <td className="px-3 py-2 font-semibold">{advance.employee_name}</td>
               <td className="px-3 py-2">{new Date(advance.advance_date).toLocaleDateString("fr-FR")}</td>
-              <td className="px-3 py-2 text-right">{money(advance.amount)}</td>
+              <td className="px-3 py-2 text-right">{money(advance.amount)}<div className="text-xs text-slate-500">Solde : {money(advanceBalance(advance))}</div></td>
               <td className="px-3 py-2 text-slate-500">{advance.reason || "—"}</td>
               <td className="px-3 py-2"><span className={`rounded-full px-2 py-1 font-semibold ${advance.status === "DEDUCTED" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{advance.status === "DEDUCTED" ? "Déduite" : "À déduire"}</span></td>
             </tr>)}

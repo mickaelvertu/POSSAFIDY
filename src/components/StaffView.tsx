@@ -1,3 +1,4 @@
+import { advanceBalance } from "../services/advanceDeduction";
 import { storeLabel } from "../services/storeLabel";
 import { FormEvent, useMemo, useState } from "react";
 import { Banknote, Eye, Pencil, Plus, Search, UserCheck, UserX, Users, X } from "lucide-react";
@@ -127,7 +128,7 @@ export default function StaffView({ users, onLinkAccount, onOpenUsers, employees
     .reduce((total, expense) => total + expense.amount, 0);
   const outstandingAdvanceTotal = profileAdvances
     .filter(advance => advance.status === "OUTSTANDING")
-    .reduce((total, advance) => total + advance.amount, 0);
+    .reduce((total, advance) => total + advanceBalance(advance), 0);
 
   const openCreate = () => {
     setEditing(null);
@@ -301,7 +302,7 @@ export default function StaffView({ users, onLinkAccount, onOpenUsers, employees
                 {profileAdvances.map(advance => (
                   <li key={advance.id} className="flex items-center justify-between gap-3 py-2 text-xs">
                     <span className="min-w-0"><span className="block truncate font-semibold text-slate-800">{advance.reason || "Avance sur salaire"}</span><span className="text-slate-500">{new Date(advance.advance_date).toLocaleDateString("fr-FR")} · {advance.status === "OUTSTANDING" ? "À déduire" : "Déduite"}{advance.expense_id ? " · enregistrée dans les dépenses" : ""}</span></span>
-                    <span className="shrink-0 font-semibold text-slate-900">{money(advance.amount)}</span>
+                    <span className="shrink-0 font-semibold text-slate-900">{money(advance.amount)}<small className="block">Solde : {money(advanceBalance(advance))}</small></span>
                   </li>
                 ))}
               </ul>

@@ -146,7 +146,7 @@ service cloud.firestore {
       let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return isSuperAdmin() || (
         isActiveUser() && (
-          (hasPermission('procurement.manage') && articleType == 'RAW_MATERIAL') ||
+          (hasPermission('procurement.manage') && articleType in ['RAW_MATERIAL', 'RESALE']) ||
           ('visibleArticleTypes' in profile && profile.visibleArticleTypes.hasAny([articleType])) ||
           (!('visibleArticleTypes' in profile) && (
             profile.role in ['ADMIN', 'MAGASINIER', 'RESPONSABLE_MAGASIN', 'PRODUCTION'] ||

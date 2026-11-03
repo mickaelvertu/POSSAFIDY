@@ -3,6 +3,7 @@ import { Check, Pencil, Printer, ReceiptText } from "lucide-react";
 import { Employee, InventoryCount, PaymentMethod, Payslip, SalaryAdvance } from "../types";
 import SalaryAdvancesPanel from "./SalaryAdvancesPanel";
 import { pendingInventoryCharges } from "../services/inventoryChargeAssignment";
+import { advanceBalance, deductAdvance } from "../services/advanceDeduction";
 
 interface PayrollViewProps {
   employees: Employee[];
@@ -54,17 +55,19 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
   const [printing, setPrinting] = useState<Payslip | null>(null);
 
   const [deductAdvances, setDeductAdvances] = useState(true);
+  const [advanceAmounts, setAdvanceAmounts] = useState<Record<string, string>>({});
 
   const selectedEmployee = employees.find(employee => employee.id === employeeId);
   const outstandingAdvances = editing
     ? []
     : advances.filter(advance => advance.employee_id === employeeId && advance.status === "OUTSTANDING");
-  const outstandingTotal = outstandingAdvances.reduce((total, advance) => total + advance.amount, 0);
+  const outstandingTotal = outstandingAdvances.reduce((total, advance) => total + advanceBalance(advance), 0);
+  const deductionFor = (advance: SalaryAdvance) => deductAdvances ? Number(advanceAmounts[advance.id] ?? advanceBalance(advance)) : 0;
   const formAdvances = (editing
     ? advances.filter(advance => advance.employee_id === employeeId && editing.advance_ids?.includes(advance.id))
     : outstandingAdvances).slice().sort((left, right) => right.advance_date - left.advance_date);
   const missingAdvanceCount = editing ? (editing.advance_ids || []).filter(id => !formAdvances.some(advance => advance.id === id)).length : 0;
-  const advancesAmount = editing ? editing.advances_deducted || 0 : deductAdvances ? outstandingTotal : 0;
+  const advancesAmount = editing ? editing.advances_deducted || 0 : outstandingAdvances.reduce((total, advance) => total + deductionFor(advance), 0);
   const [deductInventory, setDeductInventory] = useState(true);
   const pendingInventory = editing || !selectedEmployee
     ? []
@@ -83,6 +86,7 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
     setPaymentDate(dateValue(Date.now()));
     setPaymentMethod("CASH");
     setDeductAdvances(true);
+    setAdvanceAmounts({});
     setDeductInventory(true);
     setFormError("");
   };
@@ -103,6 +107,7 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
 
   const handleEmployeeChange = (id: string) => {
     setEmployeeId(id);
+    setAdvanceAmounts({});
     const employee = activeEmployees.find(item => item.id === id);
     if (employee && !editing) setBaseSalary(String(employee.salary || 0));
   };
@@ -112,6 +117,10 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
     const salary = Number(baseSalary);
     const bonusAmount = Number(bonuses);
     const deductionAmount = Number(deductions);
+    if (!editing && outstandingAdvances.some(advance => !Number.isFinite(deductionFor(advance)) || deductionFor(advance) < 0 || deductionFor(advance) > advanceBalance(advance))) {
+      setFormError("Chaque déduction doit être comprise entre zéro et le solde restant de l’avance.");
+      return;
+    }
     if (!selectedEmployee || !/^\d{4}-(0[1-9]|1[0-2])$/.test(period)) {
       setFormError("Sélectionnez un employé actif et une période valide.");
       return;
@@ -146,7 +155,10 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
       bonuses: bonusAmount,
       deductions: deductionAmount,
       advances_deducted: advancesAmount,
-      advance_ids: editing ? editing.advance_ids : deductAdvances ? outstandingAdvances.map(advance => advance.id) : [],
+      advance_ids: editing ? editing.advance_ids : outstandingAdvances.filter(advance => deductionFor(advance) > 0).map(advance => advance.id),
+      advance_deductions: editing ? editing.advance_deductions : outstandingAdvances.filter(advance => deductionFor(advance) > 0).map(advance => ({
+        advance_id: advance.id, amount: deductionFor(advance), balance_before: advanceBalance(advance), balance_after: advanceBalance(advance) - deductionFor(advance)
+      })),
       net_salary: salary + bonusAmount - deductionAmount - advancesAmount - inventoryAmount,
       inventory_charges_deducted: editing ? editing.inventory_charges_deducted : inventoryAmount || undefined,
       inventory_count_ids: editing ? editing.inventory_count_ids : inventoryAmount > 0 ? pendingInventory.map(count => count.id) : undefined,
@@ -161,7 +173,7 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
     setFormError("");
     try {
       const settled = !editing && deductAdvances
-        ? outstandingAdvances.map(advance => ({ ...advance, status: "DEDUCTED" as const, payslip_id: id, updated_at: timestamp }))
+        ? outstandingAdvances.filter(advance => deductionFor(advance) > 0).map(advance => deductAdvance(advance, deductionFor(advance), id, timestamp))
         : [];
       await onSavePayslip(payslip, !editing, settled, !editing && deductInventory ? pendingInventory : []);
       resetForm();
@@ -246,7 +258,7 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-left text-xs">
                   <thead className="bg-slate-50 text-slate-600"><tr>
-                    <th className="px-3 py-2">Date</th><th className="px-3 py-2">Motif</th><th className="px-3 py-2">Paiement</th><th className="px-3 py-2">Référence</th><th className="px-3 py-2">Statut</th><th className="px-3 py-2 text-right">Montant</th>
+                    <th className="px-3 py-2">Date</th><th className="px-3 py-2">Motif</th><th className="px-3 py-2">Paiement</th><th className="px-3 py-2">Référence</th><th className="px-3 py-2 text-right">Montant initial</th><th className="px-3 py-2 text-right">Solde avant paie</th><th className="px-3 py-2 text-right">À déduire (Ar)</th><th className="px-3 py-2 text-right">Solde après paie</th>
                   </tr></thead>
                   <tbody className="divide-y divide-slate-100">
                     {formAdvances.map(advance => <tr key={advance.id}>
@@ -254,15 +266,19 @@ export default function PayrollView({ employees, payslips, advances, inventoryCo
                       <td className="px-3 py-2">{advance.reason || "Non renseigné"}</td>
                       <td className="px-3 py-2">{METHODS.find(method => method.value === advance.payment_method)?.label || advance.payment_method}</td>
                       <td className="max-w-56 break-words px-3 py-2">{advance.expense_id ? `Dépense : ${advance.expense_id}` : advance.id}</td>
-                      <td className="px-3 py-2">{advance.status === "DEDUCTED" ? "Déjà déduite" : "En cours"}</td>
                       <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">{money(advance.amount)}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right">{money(editing ? editing.advance_deductions?.find(line => line.advance_id === advance.id)?.balance_before ?? advance.amount : advanceBalance(advance))}</td>
+                      <td className="px-3 py-2 text-right">{editing
+                        ? money(editing.advance_deductions?.find(line => line.advance_id === advance.id)?.amount ?? advance.amount)
+                        : <input aria-label={`Montant à déduire pour l’avance ${advance.id}`} type="number" min="0" max={advanceBalance(advance)} step="any" disabled={!deductAdvances} className={`${inputClass} min-w-28 text-right`} value={advanceAmounts[advance.id] ?? advanceBalance(advance)} onChange={event => setAdvanceAmounts(current => ({ ...current, [advance.id]: event.target.value }))} />}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right">{money(editing ? editing.advance_deductions?.find(line => line.advance_id === advance.id)?.balance_after ?? 0 : advanceBalance(advance) - deductionFor(advance))}</td>
                     </tr>)}
                   </tbody>
-                  <tfoot className="bg-slate-50 font-semibold"><tr><td colSpan={5} className="px-3 py-2">Total des avances affichées</td><td className="whitespace-nowrap px-3 py-2 text-right">{money(formAdvances.reduce((total, advance) => total + advance.amount, 0))}</td></tr></tfoot>
+                  <tfoot className="bg-slate-50 font-semibold"><tr><td colSpan={6} className="px-3 py-2">Total déduit sur cette paie</td><td className="whitespace-nowrap px-3 py-2 text-right">{money(advancesAmount)}</td><td /></tr></tfoot>
                 </table>
               </div>
             ) : <p className="p-3 text-sm text-slate-500">{editing ? "Aucun détail d’avance disponible pour cette fiche." : "Aucune avance en cours pour cet employé."}</p>}
-            {!editing && formAdvances.length > 0 && <p className="px-3 py-2 text-xs text-slate-600">{deductAdvances ? "Ces avances seront déduites à l’enregistrement de la fiche." : "Déduction désactivée : ces avances ne seront pas déduites."}</p>}
+            {!editing && formAdvances.length > 0 && <p className="px-3 py-2 text-xs text-slate-600">{deductAdvances ? "Saisissez le montant à déduire pour chaque avance (0 pour la reporter). Le solde reste disponible pour les paies suivantes." : "Déduction désactivée : ces avances ne seront pas déduites."}</p>}
             {missingAdvanceCount > 0 && <p className="px-3 py-2 text-xs text-amber-800">{missingAdvanceCount} avance(s) historique(s) indisponible(s), notamment si la dépense source a été supprimée. Le montant enregistré sur la fiche reste inchangé.</p>}
           </section>
         )}

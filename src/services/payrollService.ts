@@ -4,6 +4,7 @@ import { AuditLog, Employee, InventoryCount, InventoryChargeSettlement, Payslip,
 import { excludeDeletedExpenseAdvances } from "./salaryAdvanceValidation";
 import { assertInventoryPayrollCharges } from "./inventoryChargeAssignment";
 import { firestoreValuesEqual } from "./saleComparison";
+import { validateAdvanceDeductions } from "./advanceDeduction";
 
 const PAYROLL_COLLECTION = "payroll";
 const ADVANCES_COLLECTION = "salaryAdvances";
@@ -62,6 +63,11 @@ export async function savePayslip(
     if (existing.exists()) {
       const previous = existing.data() as Payslip;
       if (previous.employee_id !== payslip.employee_id) throw new Error("L’employé d’une fiche de paie enregistrée ne peut pas être changé.");
+      if (settledAdvances.length || (previous.advances_deducted || 0) !== (payslip.advances_deducted || 0) ||
+        !firestoreValuesEqual(previous.advance_ids || [], payslip.advance_ids || []) ||
+        !firestoreValuesEqual(previous.advance_deductions || [], payslip.advance_deductions || [])) {
+        throw new Error("Les déductions d’avances déjà enregistrées ne peuvent pas être modifiées.");
+      }
       if ((previous.inventory_charges_deducted || 0) !== (payslip.inventory_charges_deducted || 0) ||
         !firestoreValuesEqual(previous.inventory_count_ids || [], payslip.inventory_count_ids || [])) {
         throw new Error("Les retenues d’inventaire déjà enregistrées ne peuvent pas être modifiées sur la fiche de paie.");
@@ -69,12 +75,15 @@ export async function savePayslip(
     }
     const expectedNet = payslip.base_salary + payslip.bonuses - payslip.deductions - (payslip.advances_deducted || 0) - (payslip.inventory_charges_deducted || 0);
     if (!Number.isFinite(expectedNet) || expectedNet < 0 || Math.abs(expectedNet - payslip.net_salary) > 0.001) throw new Error("Le salaire net ne correspond pas aux retenues et aux avances.");
+    const liveAdvances: SalaryAdvance[] = [];
     for (const advance of settledAdvances) {
       const current = await transaction.get(doc(db, ADVANCES_COLLECTION, advance.id));
       if (!current.exists() || current.data().status !== "OUTSTANDING") throw new Error("Une avance a changé. Rechargez la paie.");
+      liveAdvances.push(current.data() as SalaryAdvance);
       const sourceId = current.data().expense_id;
       if (sourceId && !(await transaction.get(doc(db, "expenses", sourceId))).exists()) throw new Error("La dépense liée à une avance a été supprimée. Rechargez la paie.");
     }
+    if (!existing.exists()) validateAdvanceDeductions(payslip, liveAdvances, settledAdvances);
     if (!existing.exists() || inventory?.counts.length) {
       const employeeSnapshot = await transaction.get(doc(db, "employees", payslip.employee_id));
       if (!employeeSnapshot.exists()) throw new Error("La fiche employé n’existe plus.");
@@ -92,7 +101,9 @@ export async function savePayslip(
       if (inventory) updatedCounts = liveCounts.map(count => ({ ...count, charge_settlement: inventory.settlement, updated_at: inventory.settlement.settled_at }));
     }
     transaction.set(payslipRef, omitUndefined(payslip));
-    settledAdvances.forEach(advance => transaction.set(doc(db, ADVANCES_COLLECTION, advance.id), omitUndefined(advance)));
+    settledAdvances.forEach(advance => transaction.update(doc(db, ADVANCES_COLLECTION, advance.id), omitUndefined({
+      amount_deducted: advance.amount_deducted, status: advance.status, payslip_id: advance.payslip_id, updated_at: advance.updated_at
+    })));
     updatedCounts.forEach(count => transaction.update(doc(db, "inventoryCounts", count.id), omitUndefined({ charge_settlement: count.charge_settlement, updated_at: count.updated_at })));
     if (inventory && updatedCounts.length) transaction.set(doc(db, "auditLogs", inventory.auditLog.id), omitUndefined(inventory.auditLog));
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));

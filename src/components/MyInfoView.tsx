@@ -1,3 +1,4 @@
+import { advanceBalance } from "../services/advanceDeduction";
 import { useEffect, useId, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Employee, InventoryCount, Payslip, SalaryAdvance, UserProfile } from "../types";
@@ -48,7 +49,7 @@ export default function MyInfoView({ user }: { user: UserProfile }) {
     return () => { mounted = false; };
   }, [user.uid]);
 
-  const pendingAdvances = advances.filter(advance => advance.status === "OUTSTANDING").reduce((sum, advance) => sum + advance.amount, 0);
+  const pendingAdvances = advances.filter(advance => advance.status === "OUTSTANDING").reduce((sum, advance) => sum + advanceBalance(advance), 0);
   const pendingCharges = charges.filter(count => !count.charge_settlement).reduce((sum, count) => sum + (count.total_charged_amount || 0), 0);
   const lastPayslip = payslips[0];
 
@@ -96,7 +97,7 @@ export default function MyInfoView({ user }: { user: UserProfile }) {
                 <tbody>{advances.map(advance => (
                   <tr key={advance.id} className="border-b border-slate-100">
                     <td className="py-1.5">{day(advance.advance_date)}</td><td>{advance.reason || "—"}</td>
-                    <td className="text-right font-mono">{money(advance.amount)}</td>
+                    <td className="text-right font-mono">{money(advance.amount)}<div>Solde : {money(advanceBalance(advance))}</div></td>
                     <td className="text-right">{advance.status === "DEDUCTED" ? "Déduite" : "En cours"}</td>
                   </tr>
                 ))}</tbody>

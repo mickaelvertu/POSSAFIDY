@@ -70,7 +70,7 @@ export function useSessionSync(user: User | null, setters: Setters, initializeUn
     };
     const articleTypes = [...new Set([
       ...(user.visibleArticleTypes ?? DEFAULT_ARTICLE_VISIBILITY[user.role as AppRoleId] ?? []),
-      ...(permitted("procurement.manage") ? ["RAW_MATERIAL" as const] : []),
+      ...(permitted("procurement.manage") ? ["RAW_MATERIAL" as const, "RESALE" as const] : []),
     ])];
     let resellerStores: Store[] | undefined;
     let resellerArticles: Article[] | undefined;
