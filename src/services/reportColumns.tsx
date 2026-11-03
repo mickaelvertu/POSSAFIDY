@@ -5,6 +5,7 @@ import {
   Article,
   AuditLog,
   Expense,
+  CashHandover,
   Production,
   ReportType,
   Sale,
@@ -45,6 +46,7 @@ export interface ReportColumnsContext {
   reportProductions: Production[];
   reportAuditLogs: AuditLog[];
   reportExpenses: Expense[];
+  reportCashHandovers?: CashHandover[];
   salesByCustomer: { name: string; count: number; total: number }[];
   salesByArticle: { id: string; name: string; code: string; quantity: number; total: number }[];
   salesByCategory: { id: string; quantity: number; total: number; articleIds: Set<string> }[];
@@ -288,6 +290,33 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
         { key: "status", label: "Statut", value: p => p.status, render: p => <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">{p.status}</span> }
       ];
       return { columns, rows, rowKey: p => p.id };
+    }
+
+    case "CASH_HANDOVERS": {
+      const labels: Record<CashHandover["status"], string> = {
+        DECLARED: "À réceptionner", RECEIVED: "Reçue", DISCREPANCY: "Écart à vérifier",
+        PARTIALLY_DEPOSITED: "Dépôt partiel", DEPOSITED: "Déposée à la banque"
+      };
+      const amountColumn = (key: string, label: string, value: (row: CashHandover) => number): ReportColumn<CashHandover> => ({
+        key, label, align: "right", value, render: row => money(value(row)),
+        footer: rows => money(sum(rows.map(value)))
+      });
+      const columns: ReportColumn<CashHandover>[] = [
+        { key: "number", label: "N° remise", value: row => row.handover_number },
+        { key: "date", label: "Journée", value: row => row.business_date },
+        { key: "store", label: "Magasin", value: row => getStoreName(row.store_id) },
+        amountColumn("declared", "Déclaré", row => row.declared_amount),
+        { ...amountColumn("received", "Reçu", row => row.received_amount ?? 0), render: row => row.received_amount === undefined ? "En attente" : money(row.received_amount) },
+        { ...amountColumn("difference", "Écart reçu − déclaré", row => row.received_amount === undefined ? 0 : row.received_amount - row.declared_amount), render: row => row.received_amount === undefined ? "En attente" : money(row.received_amount - row.declared_amount) },
+        amountColumn("deposited", "Déposé en banque", row => row.deposited_amount),
+        amountColumn("remaining", "Reste à déposer", row => (row.received_amount ?? 0) - row.deposited_amount),
+        { key: "status", label: "Statut", value: row => labels[row.status] },
+        { key: "declarer", label: "Déclaré par", value: row => row.declared_by_name },
+        { key: "receiver", label: "Reçu par", value: row => row.received_by_name || "En attente" },
+        { key: "note", label: "Motif de l'écart", value: row => row.discrepancy_note || "" },
+        { key: "deposits", label: "Dépôts / Bordereaux", value: row => row.deposits.map(deposit => `${new Date(deposit.deposited_at).toLocaleDateString("fr-FR")} · ${deposit.bank_name} · ${deposit.reference} · ${money(deposit.amount)} · ${deposit.deposited_by_name}`).join(" ; ") }
+      ];
+      return { columns, rows: ctx.reportCashHandovers || [], rowKey: row => row.id };
     }
 
     case "EXPENSES": {

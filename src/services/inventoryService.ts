@@ -10,6 +10,7 @@ import {
   writeBatch
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
+import { transferLineDataEqual } from "./transferLineEquality";
 import { transferLinesEqual } from "./transferComparison";
 import { canPurchaseArticle } from "./purchaseEligibility";
 import { posReceiptProof } from "./transferReceipt";
@@ -256,7 +257,7 @@ export async function saveTransferWithStockEffects(
           && Boolean(currentTransfer.received_by)
           && currentTransfer.received_by !== transfer.validated_by
           && currentTransfer.received_by === transfer.received_by
-          && transferLinesEqual(currentTransfer.lines, transfer.lines);
+          && transferLineDataEqual(currentTransfer.lines, transfer.lines);
     if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");
     if (currentTransfer.status === "APPROVED" && transfer.status === "IN_TRANSIT") {
       if (!transferLinesEqual(currentTransfer.lines, transfer.lines) || [...groupedMovements.values()].some(movement =>

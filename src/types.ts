@@ -704,7 +704,8 @@ export type ReportType =
   | "RETURNS"
   | "AUDIT_LOG"
   | "RESELLER_CREDIT"
-  | "EXPENSES";
+  | "EXPENSES"
+  | "CASH_HANDOVERS";
 
 export type EmployeeContractType = "CDI" | "CDD" | "TEMPORARY" | "INTERN" | "DAILY";
 

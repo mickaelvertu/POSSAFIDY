@@ -12,6 +12,7 @@ import {
   Production, 
   AuditLog, 
   Expense,
+  CashHandover,
   GeneralFilters 
 } from "../types";
 import { filterReportData, RESELLER_PAYMENT_LABELS } from "../services/reportService";
@@ -43,6 +44,7 @@ interface ReportViewerProps {
   productions: Production[];
   auditLogs: AuditLog[];
   expenses?: Expense[];
+  cashHandovers?: CashHandover[];
   currentUser: { email: string; displayName: string };
   onClose: () => void;
 }
@@ -60,6 +62,7 @@ export default function ReportViewer({
   productions,
   auditLogs,
   expenses,
+  cashHandovers,
   currentUser,
   onClose,
 }: ReportViewerProps) {
@@ -71,7 +74,7 @@ export default function ReportViewer({
   const getStoreName = (id: string) => { const s = stores.find(st => st.id === id); return s ? storeLabel(s) : id; };
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
   const getArticle = (id: string) => articles.find(a => a.id === id);
-  const filteredData = useMemo(() => filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses }, reportType === "RESELLER_CREDIT" ? { ...filters, statuses: [], resellerPaymentStatus: filters.resellerPaymentStatus || "ALL" } : filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, filters, reportType]);
+  const filteredData = useMemo(() => filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers }, reportType === "RESELLER_CREDIT" ? { ...filters, statuses: [], resellerPaymentStatus: filters.resellerPaymentStatus || "ALL" } : filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers, filters, reportType]);
   const reportStocks = filteredData.stocks;
   const reportTransfers = filteredData.transfers;
   const reportMovements = filteredData.movements;
@@ -136,11 +139,12 @@ export default function ReportViewer({
     reportProductions,
     reportAuditLogs,
     reportExpenses,
+    reportCashHandovers: filteredData.cashHandovers,
     salesByCustomer,
     salesByArticle,
     salesByCategory,
     filteredSalesLines
-  }), [reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
+  }), [reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, filteredData.cashHandovers, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
 
   const hiddenKeys = useMemo(() => new Set(hiddenKeysByReport[reportType] || []), [hiddenKeysByReport, reportType]);
 
@@ -224,6 +228,7 @@ export default function ReportViewer({
     PRODUCTION: "REGISTRE DE FABRICATION & PRODUITS FINIS LABORATOIRE",
     RETURNS: "REGISTRE DES RETOURS VERS LE DÉPÔT CENTRAL",
     AUDIT_LOG: "JOURNAL D'AUDIT ET DE TRAÇABILITÉ DES OPÉRATIONS",
+    CASH_HANDOVERS: "RAPPORT DES REMISES DE CAISSE",
     EXPENSES: "REGISTRE DES DÉPENSES & FRAIS D'EXPLOITATION"
   };
 

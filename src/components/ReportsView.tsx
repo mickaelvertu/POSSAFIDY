@@ -13,6 +13,7 @@ import {
   Production, 
   AuditLog, 
   Expense,
+  CashHandover,
   UserProfile,
   StockMovementType,
   MovementDirection,
@@ -47,6 +48,7 @@ interface ReportsViewProps {
   userAuditReport?: ReactNode;
   /** Fournies uniquement aux utilisateurs autorisés à consulter les dépenses. */
   expenses?: Expense[];
+  cashHandovers?: CashHandover[];
   stores: Store[];
   categories: Category[];
   articles: Article[];
@@ -66,6 +68,7 @@ export default function ReportsView({
   historyStatus,
   userAuditReport,
   expenses,
+  cashHandovers,
   stores,
   categories,
   articles,
@@ -137,8 +140,12 @@ export default function ReportsView({
     description: "Par revendeur : total facturé, montants encaissés et crédit en cours. Filtre des paiements partiels.",
     icon: Wallet, color: "text-amber-600 bg-amber-50 border-amber-200"
   };
-  const reportCount = REPORTS_CATALOG.length + 1 + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
-  const allReports = [...REPORTS_CATALOG, ...(EXPENSES_REPORT ? [EXPENSES_REPORT] : []), resellerReport];
+  const reportCount = REPORTS_CATALOG.length + 1 + (cashHandovers ? 1 : 0) + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
+  const allReports = [...REPORTS_CATALOG, ...(EXPENSES_REPORT ? [EXPENSES_REPORT] : []), resellerReport, ...(cashHandovers ? [{
+type: "CASH_HANDOVERS" as const, number: 19, title: "Remises de caisse",
+description: "Montants déclarés, reçus, écarts et dépôts bancaires", icon: Wallet,
+color: "text-emerald-600 bg-emerald-50 border-emerald-200"
+}] : [])];
 
   const filters = useMemo<GeneralFilters>(() => ({
     startDate: selectedReport === "STOCK_BY_ARTICLE" ? undefined : startDate || undefined,
@@ -166,8 +173,9 @@ export default function ReportsView({
     sales,
     productions,
     auditLogs,
-    expenses
-  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, filters]);
+    expenses,
+    cashHandovers
+  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers, filters]);
   const kpiData = useMemo(() => ({
     ...filteredData,
     transfers: selectedReport === "RETURNS"
@@ -179,7 +187,9 @@ export default function ReportsView({
           : filteredData.transfers
   }), [filteredData, selectedReport]);
   const kpis = useMemo(() => getReportKpis(selectedReport, kpiData, categories, filters), [selectedReport, kpiData, categories, filters]);
-  const statusOptions = selectedReport.startsWith("SALES")
+  const statusOptions = selectedReport === "CASH_HANDOVERS"
+    ? ["DECLARED", "RECEIVED", "DISCREPANCY", "PARTIALLY_DEPOSITED", "DEPOSITED"]
+    : selectedReport.startsWith("SALES")
     ? ["DRAFT", "CHECKING", "VERIFIED", "APPROVED", "VALIDATED", "CANCELLED", "REFUNDED"]
     : selectedReport === "PRODUCTION" || selectedReport === "RAW_MATERIAL_CONSUMPTION"
       ? ["DRAFT", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
