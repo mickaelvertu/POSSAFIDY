@@ -1,6 +1,7 @@
 import { collection, doc, getDocs, onSnapshot, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
 import { prepareResellerReceipt } from "./resellerReceiptService";
+import { assertPaymentClock } from "./paymentAccess";
 import { Article, CreditCustomer, ResellerNotification, ResellerOrder, Sale, StockMovement, Store, StoreStock } from "../types";
 
 const ORDERS = "resellerOrders";
@@ -102,6 +103,7 @@ export async function recordResellerCashPayment(
   reviewerId: string,
   reviewerName: string
 ): Promise<{ order: ResellerOrder; sale: Sale; notification: ResellerNotification }> {
+  await assertPaymentClock();
   const orderRef = doc(db, ORDERS, order.id);
   const saleRef = doc(db, "sales", order.sale_id || `sale-${order.id}`);
   const timestamp = Date.now();

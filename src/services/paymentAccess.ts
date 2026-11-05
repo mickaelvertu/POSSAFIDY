@@ -37,3 +37,8 @@ export async function paymentClockHint(): Promise<string> {
     window.clearTimeout(timeout);
   }
 }
+
+export async function assertPaymentClock(): Promise<void> {
+  const hint = await paymentClockHint();
+  if (hint) throw new Error(hint.trim());
+}

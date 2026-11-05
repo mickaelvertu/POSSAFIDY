@@ -2,7 +2,7 @@ import { collection, doc, getDocs, query, where, writeBatch } from "firebase/fir
 import { auth, db, runOnlineTransaction } from "../firebase";
 import { AuditLog, CreditCustomer, CreditFollowUp, CreditPayment, Sale } from "../types";
 import { prepareResellerReceipt } from "./resellerReceiptService";
-import { withPaymentAccess } from "./paymentAccess";
+import { assertPaymentClock, withPaymentAccess } from "./paymentAccess";
 
 const CUSTOMERS = "creditCustomers";
 const SALES = "sales";
@@ -41,6 +41,7 @@ export async function recordCreditPayment(
   payment: CreditPayment,
   auditLog: AuditLog
 ): Promise<Sale> {
+  await assertPaymentClock();
   const saleRef = doc(db, SALES, sale.id);
   const customerRef = doc(db, CUSTOMERS, sale.credit_customer_id || "");
   let updatedSale: Sale | undefined;
@@ -110,6 +111,7 @@ export async function createCreditSale(
   sale: Sale,
   auditLog: AuditLog
 ): Promise<Sale> {
+  if (sale.customer_type === "REVENDEUR" && sale.amount_paid > 0) await assertPaymentClock();
   if (!Number.isFinite(sale.total) || !Number.isFinite(sale.amount_paid) || sale.amount_paid < 0) {
     throw new Error("Les montants de la vente sont invalides.");
   }

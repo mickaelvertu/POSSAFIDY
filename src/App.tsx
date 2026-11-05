@@ -4,6 +4,7 @@ import AuthenticatedSessionView from "./components/auth/AuthenticatedSessionView
 import { ThemeProvider } from "./context/ThemeContext";
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
 import AppUpdateNotice from "./components/AppUpdateNotice";
+import DeviceClockNotice from "./components/DeviceClockNotice";
 
 function AuthApp() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <AppUpdateNotice />
+          <DeviceClockNotice />
           <AppErrorBoundary>
             <AuthApp />
           </AppErrorBoundary>

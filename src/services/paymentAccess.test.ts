@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { PaymentAccessError, paymentClockHint, withPaymentAccess } from "./paymentAccess";
+import { assertPaymentClock, PaymentAccessError, paymentClockHint, withPaymentAccess } from "./paymentAccess";
 
 test("permission diagnostics preserve the failing read instead of naming the outer transaction", async () => {
   await assert.rejects(withPaymentAccess("transaction", () => withPaymentAccess("lecture de la facture", async () => {
@@ -21,10 +21,13 @@ test("clock diagnostics distinguish actual clock drift from cached response date
   });
   globalThis.fetch = async () => new Response(null, { headers: { Date: new Date(Date.now() - 90000).toUTCString(), Age: "90" } });
   assert.equal(await paymentClockHint(), "");
+  await assert.doesNotReject(assertPaymentClock);
   globalThis.fetch = async () => new Response(null, { headers: { Date: new Date(Date.now() - 180000).toUTCString() } });
   assert.match(await paymentClockHint(), /horloge/);
+  await assert.rejects(assertPaymentClock, /horloge/);
   globalThis.fetch = async () => new Response(null, { headers: { Date: new Date(Date.now() + 420000).toUTCString() } });
   assert.match(await paymentClockHint(), /horloge/);
   globalThis.fetch = async () => { throw new Error("offline"); };
   assert.equal(await paymentClockHint(), "");
+  await assert.doesNotReject(assertPaymentClock);
 });
