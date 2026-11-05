@@ -5,7 +5,7 @@ import type { AppUser, TreasuryFund, TreasuryMovement } from "../types";
 import { moveTreasuryFunds, receiveTreasuryFunds } from "../services/treasuryService";
 
 const money = (amount: number) => `${amount.toLocaleString("fr-FR")} Ar`;
-const sources = { POS: "Remise POS", BANK: "Retrait bancaire", OTHER: "Autre source", OPENING: "Solde initial vérifié" };
+const sources = { POS: "Remise POS / DEP", BANK: "Retrait bancaire", OTHER: "Autre source", OPENING: "Solde initial vérifié" };
 const kinds = { RECEIPT: "Réception", TRANSFER: "Transfert", PURCHASE: "Paiement d'achat", EXPENSE: "Paiement de dépense", EXPENSE_REFUND: "Annulation de dépense / remboursement", DEPOSIT: "Dépôt bancaire" };
 const input = "w-full rounded border border-slate-300 bg-white p-2 text-sm text-slate-900";
 
@@ -49,7 +49,7 @@ export default function TreasuryView({ user, funds, movements, ready, error }: {
   funds.forEach(fund => balances.set(fund.owner_id, { name: fund.owner_name, amount: (balances.get(fund.owner_id)?.amount ?? 0) + fund.balance }));
   return <div className="space-y-5 rounded-xl bg-white p-5 text-slate-900">
     <h2 className="text-xl font-bold">Trésorerie des administrateurs</h2>
-    <p className="text-sm text-slate-600">Les nouvelles remises POS réceptionnées par un administrateur alimentent ses fonds. Pour les anciennes remises encore détenues, utilisez « Reprendre dans la trésorerie » depuis les remises de caisse. Le solde initial vérifié doit exclure ces remises et les fonds déjà enregistrés.</p>
+    <p className="text-sm text-slate-600">Les nouvelles remises POS / DEP réceptionnées par un administrateur alimentent ses fonds. Pour les anciennes remises encore détenues, utilisez « Reprendre dans la trésorerie » depuis les remises de caisse. Le solde initial vérifié doit exclure ces remises et les fonds déjà enregistrés.</p>
     {(error || !ready) && <p role="alert" className="text-amber-800">{error || "Chargement de la trésorerie depuis le serveur…"}</p>}
     <div className="flex flex-wrap gap-3">{[...balances].map(([id, balance]) => <div key={id} className="rounded-lg bg-emerald-50 p-3"><p>{balance.name}</p><strong>{money(balance.amount)}</strong>{id === user.uid && <span className="ml-2 text-xs">Votre compte</span>}</div>)}</div>
     <form onSubmit={submit} className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">

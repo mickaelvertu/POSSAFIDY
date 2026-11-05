@@ -69,7 +69,7 @@ export const DEFAULT_ARTICLE_VISIBILITY: Record<AppRoleId, ArticleTypeCode[]> = 
 
 const CASH_HANDOVER_PERMISSION_LABELS: Record<string, string> = {
   "cash_handover.view": "Voir les remises de caisse",
-  "cash_handover.create": "Déclarer une clôture POS",
+  "cash_handover.create": "Déclarer une remise de caisse",
   "cash_handover.receive": "Confirmer la réception de caisse",
   "cash_handover.deposit": "Enregistrer un dépôt bancaire"
 };
@@ -95,7 +95,7 @@ export const PERMISSION_GROUPS = [
   { id: "production", label: "Production", description: "Ordres de production", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("production.")) },
   { id: "reporting", label: "Rapports et audit", description: "Analyse et traçabilité", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("reports.") || permission.startsWith("audit.")) },
   { id: "expenses", label: "Dépenses", description: "Saisie et suivi des frais", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("expenses.")) },
-  { id: "cash_handover", label: "Remises de caisse", description: "Déclarations POS, réception et dépôts bancaires", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("cash_handover.")) },
+  { id: "cash_handover", label: "Remises de caisse", description: "Déclarations POS et DEP, réception et dépôts bancaires", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("cash_handover.")) },
   { id: "procurement", label: "Achats & fournisseurs", description: "Saisir, approuver et régler les achats fournisseurs", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("procurement.")) },
   { id: "users", label: "Utilisateurs", description: "Administration des accès", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("users.")) }
 ].map(group => ({ ...group, permissions: group.permissions.map(permissionDefinition) }));

@@ -58,3 +58,20 @@ test("store overview includes credit and noncash sales, but only paid expenses",
     salesAmount: 6000, expensesAmount: 500, netAmount: 5500
   });
 });
+
+test("later credit settlements belong to their receipt date and preserve the original closing", () => {
+  const yesterday = today - 86400000;
+  const credit = { ...sale, created_at: yesterday, amount_paid: 900, change_returned: 0, credit_payments: [
+    { id: 'cash', amount: 300, method: 'CASH', paid_at: today },
+    { id: 'mobile', amount: 200, method: 'MVOLA', paid_at: today },
+  ] } as Sale;
+  assert.equal(calculateCashClosing([credit], [], 'pos', cashBusinessDate(yesterday)).salesAmount, 400);
+  assert.equal(calculateCashClosing([credit], [], 'pos', cashBusinessDate(today)).salesAmount, 300);
+});
+
+test("direct admin treasury receipts are excluded from store cash handover", () => {
+  const credit = { ...sale, created_at: today - 86400000, amount_paid: 400, change_returned: 0,
+    credit_payments: [{ id: 'admin', amount: 400, method: 'CASH', paid_at: today, cash_destination: 'TREASURY' }] } as Sale;
+  assert.equal(calculateCashClosing([credit], [], 'pos', cashBusinessDate(today)).netAmount, 0);
+  assert.equal(calculateCashClosing([credit], [], 'pos', cashBusinessDate(today - 86400000)).netAmount, 0);
+});

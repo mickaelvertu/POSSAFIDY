@@ -976,6 +976,7 @@ export default function SalesView({
                       <select value={customerType} disabled={Boolean(editingSale)} onChange={(e) => {
                         const type = e.target.value as "PARTICULIER" | "REVENDEUR" | "ENTREPRISE";
                         setCustomerType(type);
+                        if (type === "REVENDEUR") setAmountPaid(0);
                         if (type !== "REVENDEUR") setCreditCustomerId("");
                         setSaleLines(lines => lines.map(line => {
                           if (line.line_type === "SERVICE") return line;
@@ -1021,6 +1022,7 @@ export default function SalesView({
                       <input type="number" min="0" value={amountPaid} disabled={Boolean(editingSale)} onChange={(e) => setAmountPaid(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-right font-mono text-base font-black text-slate-900 disabled:bg-slate-100" />
                     </label>
                   </div>
+                  {!editingSale && currentStore?.store_type === "CENTRAL_WAREHOUSE" && amountPaid > 0 && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">Encaisseur : {currentUser.displayName}. Le montant reçu est enregistré à votre nom, même si la vente attend encore sa validation.</p>}
                   {customerType === "REVENDEUR" && (
                     <div className={`mt-3 rounded-xl border p-3 text-xs ${exceedsCreditLimit ? "border-rose-200 bg-rose-50 text-rose-800" : "border-teal-200 bg-teal-50 text-teal-900"}`}>
                       {!selectedCreditCustomer
@@ -1034,9 +1036,9 @@ export default function SalesView({
 
                 <div className="shrink-0 border-t border-slate-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-5">
                   {mobileSaleStep === "PRODUCTS" ? (
-                    <button type="button" onClick={() => { if (!editingSale) setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0} className="hidden w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:flex"><span>Suivant · Résumer l'achat</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
+                    <button type="button" onClick={() => { if (!editingSale && !isResellerSale) setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0} className="hidden w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:flex"><span>Suivant · Résumer l'achat</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
                   ) : mobileSaleStep === "CART" ? (
-                    <button type="button" onClick={() => { if (!editingSale) setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService} className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:hidden"><span>Continuer vers le paiement</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
+                    <button type="button" onClick={() => { if (!editingSale && !isResellerSale) setAmountPaid(netTotal); setMobileSaleStep("PAYMENT"); }} disabled={saleLines.length === 0 || stockIssues.length > 0 || hasInvalidService} className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:hidden"><span>Continuer vers le paiement</span><span className="font-mono">{netTotal.toLocaleString("fr-FR")} Ar</span></button>
                   ) : (
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setMobileSaleStep("CART")} className="rounded-xl border border-slate-300 px-4 py-3 font-bold text-slate-700 hover:bg-slate-50">Retour au panier</button>

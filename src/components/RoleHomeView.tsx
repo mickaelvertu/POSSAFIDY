@@ -92,7 +92,7 @@ const accessCards = [
   { permission: "catalog.manage", title: "Articles & catégories", description: "Gérer les articles et leur classification", icon: PackageCheck, accent: "indigo" },
   { permission: "procurement.manage", title: "Achats & fournisseurs", description: "Réceptionner les achats et suivre les échéances", icon: Truck, accent: "emerald" },
   { permission: "expenses.view", title: "Dépenses & frais", description: "Suivre les loyers, factures et autres charges", icon: HandCoins, accent: "amber" },
-  { permission: "cash_handover.view", title: "Remises de caisse", description: "Déclarer les clôtures POS, confirmer les réceptions et suivre les dépôts bancaires", icon: Landmark, accent: "teal" },
+  { permission: "cash_handover.view", title: "Remises de caisse", description: "Déclarer les remises POS et DEP, confirmer les réceptions et suivre les dépôts bancaires", icon: Landmark, accent: "teal" },
   { permission: "units.manage", title: "Unités de mesure", description: "Administrer les unités du catalogue", icon: Ruler, accent: "emerald" },
   { permission: "staff.manage", title: "Personnel", description: "Gérer les employés, affectations et contrats", icon: UserRound, accent: "violet" }
 ];
@@ -137,7 +137,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
     if (card.permission === "cash_handover.view") return isAdmin || ["view", "create", "receive", "deposit"].some(action => hasPermission(user, `cash_handover.${action}`));
     if (card.permission === "transfers.view" && isAdmin) return true;
     if (card.permission === "reports.view" && isAdmin) return true;
-    if (card.permission === "credit.manage" && isAdmin) return true;
+    if (card.permission === "credit.manage" && (isAdmin || (user.roleId === "RESPONSABLE_MAGASIN" && stores.some(store => user.storeIds.includes(store.id) && store.store_type === "CENTRAL_WAREHOUSE")))) return true;
     if (card.adminOnly) return isAdmin;
     if (card.permission === "audit.view" && !isAdmin) return false;
     return hasPermission(user, card.permission);

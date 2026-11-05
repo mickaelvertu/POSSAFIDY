@@ -48,6 +48,130 @@ service cloud.firestore {
           (storeId is string && profile.get('assignedStores', []).hasAny([storeId])));
     }
 
+    function canCollectReseller(storeId) {
+      return hasPermission('credit.manage') || (isActiveUser() &&
+        currentProfile().get('role', '') == 'RESPONSABLE_MAGASIN' && hasStoreAccess(storeId) &&
+        get(/databases/$(database)/documents/stores/$(storeId)).data.store_type == 'CENTRAL_WAREHOUSE');
+    }
+    function resellerCollectorName() {
+      let profile = currentProfile();
+      let first = profile.get('firstName', '');
+      let last = profile.get('lastName', '');
+      return profile.get('displayName', '') != '' ? profile.displayName :
+        (first != '' && last != '' ? first + ' ' + last :
+          (first != '' ? first : (last != '' ? last : profile.get('name', request.auth.uid))));
+    }
+    function resellerDebtReduced(sale, amount, paidAt) {
+      let customerId = sale.get('credit_customer_id', '');
+      return customerId == '' || (
+        getAfter(/databases/$(database)/documents/creditCustomers/$(customerId)).data.outstanding_balance ==
+          get(/databases/$(database)/documents/creditCustomers/$(customerId)).data.outstanding_balance - amount &&
+        getAfter(/databases/$(database)/documents/creditCustomers/$(customerId)).data.updated_at == paidAt &&
+        getAfter(/databases/$(database)/documents/creditCustomers/$(customerId)).data.last_payment_sale_id == sale.id);
+    }
+    function validResellerPayment(before, after) {
+      let history = before.get('credit_payments', []);
+      let previous = history == null ? [] : history;
+      let payments = after.credit_payments;
+      let payment = payments[payments.size() - 1];
+      let receipt = getAfter(/databases/$(database)/documents/resellerReceipts/$(payment.id)).data;
+      return before.customer_type == 'REVENDEUR' && before.status == 'VALIDATED' && after.status == 'VALIDATED' &&
+        payments.size() == previous.size() + 1 && payments.removeAll([payment]) == previous &&
+        payment.amount is int && payment.amount > 0 &&
+        after.amount_paid == before.amount_paid + payment.amount &&
+        payment.collected_by == request.auth.uid && payment.recorded_by == request.auth.uid &&
+        payment.paid_at is number && payment.collected_by_name is string &&
+        !exists(/databases/$(database)/documents/resellerReceipts/$(payment.id)) &&
+        receipt.sale_id == before.id && receipt.amount == payment.amount && receipt.method == payment.method &&
+        receipt.collected_by == payment.collected_by && receipt.paid_at == payment.paid_at &&
+        receipt.collected_by_name == payment.collected_by_name && receipt.destination == payment.cash_destination &&
+        resellerDebtReduced(before, payment.amount, payment.paid_at);
+    }
+    function validInitialResellerPayment(sale) {
+      let payment = sale.credit_payments[0];
+      let receipt = getAfter(/databases/$(database)/documents/resellerReceipts/$(payment.id)).data;
+      return sale.customer_type == 'REVENDEUR' && sale.seller_id == request.auth.uid &&
+        sale.credit_payments.size() == 1 && payment.id == 'initial-' + sale.id &&
+        payment.amount == (sale.amount_paid > sale.total ? sale.total : sale.amount_paid) && payment.amount > 0 &&
+        payment.method == sale.payment_method && payment.paid_at == sale.created_at &&
+        payment.collected_by == request.auth.uid && payment.recorded_by == request.auth.uid &&
+        receipt.sale_id == sale.id && receipt.amount == payment.amount && receipt.paid_at == payment.paid_at &&
+        receipt.method == payment.method && receipt.collected_by_name == payment.collected_by_name &&
+        receipt.destination == payment.cash_destination;
+    }
+    function claimedResellerReceipt(h, index) {
+      let receipt = index >= h.receipt_ids.size() ? null :
+        getAfter(/databases/$(database)/documents/resellerReceipts/$(h.receipt_ids[index])).data;
+      return index >= h.receipt_ids.size() || (receipt.handover_id == h.id && receipt.collected_by == h.declared_by &&
+        receipt.store_id == h.store_id && receipt.business_date == h.business_date &&
+        receipt.method == 'CASH' && receipt.destination == 'HANDOVER');
+    }
+    function resellerReceiptAmount(h, index) {
+      return index >= h.receipt_ids.size() ? 0 :
+        getAfter(/databases/$(database)/documents/resellerReceipts/$(h.receipt_ids[index])).data.amount;
+    }
+    function validDepHandover(h) {
+      return h.get('payment_method', 'CASH') == 'CASH' && h.receipt_ids is list && h.receipt_ids.size() > 0 && h.receipt_ids.size() <= 5 &&
+        h.receipt_ids.toSet().size() == h.receipt_ids.size() &&
+        claimedResellerReceipt(h, 0) && claimedResellerReceipt(h, 1) && claimedResellerReceipt(h, 2) &&
+        claimedResellerReceipt(h, 3) && claimedResellerReceipt(h, 4) &&
+        h.declared_amount == resellerReceiptAmount(h, 0) + resellerReceiptAmount(h, 1) + resellerReceiptAmount(h, 2) +
+          resellerReceiptAmount(h, 3) + resellerReceiptAmount(h, 4) &&
+        h.expected_cash_sales == h.declared_amount && h.cash_sale_count == h.receipt_ids.size();
+    }
+
+    match /resellerReceipts/{receiptId} {
+      allow get: if resource == null && isActiveUser() && (hasPermission('credit.manage') ||
+        currentProfile().get('role', '') == 'RESPONSABLE_MAGASIN');
+      allow read: if (hasPermission('credit.manage') || hasAnyPermission(['cash_handover.view', 'cash_handover.create',
+        'cash_handover.receive', 'cash_handover.deposit']) || canCollectReseller(resource.data.store_id)) && hasStoreAccess(resource.data.store_id);
+      allow create: if canCollectReseller(request.resource.data.store_id) && hasStoreAccess(request.resource.data.store_id) &&
+        (request.resource.data.method != 'CASH' ||
+          get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type != 'CENTRAL_WAREHOUSE' ||
+          isAdmin() || currentProfile().get('role', '') == 'RESPONSABLE_MAGASIN') &&
+        request.resource.data.keys().hasOnly(['id', 'sale_id', 'store_id', 'amount', 'method', 'paid_at', 'business_date',
+          'collected_by', 'collected_by_name', 'recorded_by', 'recorded_by_name', 'destination', 'handover_id']) &&
+        request.resource.data.id == receiptId && request.resource.data.collected_by == request.auth.uid &&
+        request.resource.data.recorded_by == request.auth.uid && request.resource.data.collected_by_name is string &&
+        request.resource.data.collected_by_name == resellerCollectorName() &&
+        request.resource.data.recorded_by_name == request.resource.data.collected_by_name &&
+        request.resource.data.recorded_by_name is string && request.resource.data.business_date is string &&
+        request.resource.data.amount is int && request.resource.data.amount > 0 && request.resource.data.amount <= 9007199254740991 &&
+        request.resource.data.method in ['CASH', 'MVOLA', 'AIRTEL_MONEY', 'ORANGE_MONEY', 'BANK_TRANSFER', 'CHECK', 'OTHER'] &&
+        request.resource.data.paid_at is int && request.resource.data.paid_at >= request.time.toMillis() - 300000 &&
+        request.resource.data.paid_at <= request.time.toMillis() + 60000 &&
+        request.resource.data.business_date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        int(request.resource.data.business_date.split('-')[0]) == timestamp.value(request.resource.data.paid_at + 10800000).year() &&
+        int(request.resource.data.business_date.split('-')[1]) == timestamp.value(request.resource.data.paid_at + 10800000).month() &&
+        int(request.resource.data.business_date.split('-')[2]) == timestamp.value(request.resource.data.paid_at + 10800000).day() &&
+        request.resource.data.handover_id == '' &&
+        request.resource.data.destination == (isAdmin() && request.resource.data.method == 'CASH' ? 'TREASURY' : 'HANDOVER') &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)).data.store_id == request.resource.data.store_id &&
+        ((exists(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)) && validResellerPayment(
+          get(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)).data,
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)).data)) ||
+         (!exists(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)) &&
+          validInitialResellerPayment(getAfter(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)).data))) &&
+        (request.resource.data.destination != 'TREASURY' || (
+          !exists(/databases/$(database)/documents/treasuryFunds/$('reseller-' + receiptId)) &&
+          getAfter(/databases/$(database)/documents/treasuryFunds/$('reseller-' + receiptId)).data.owner_id == request.auth.uid &&
+          getAfter(/databases/$(database)/documents/treasuryFunds/$('reseller-' + receiptId)).data.balance == request.resource.data.amount));
+      function validClaim() {
+        let before = resource.data;
+        let after = request.resource.data;
+        let h = getAfter(/databases/$(database)/documents/cashHandovers/$(after.handover_id)).data;
+        return isActiveUser() && before.collected_by == request.auth.uid &&
+          before.destination == 'HANDOVER' && before.method == 'CASH' && before.handover_id == '' &&
+          after.diff(before).affectedKeys().hasOnly(['handover_id']) &&
+          after.handover_id is string && after.handover_id != '' &&
+          !exists(/databases/$(database)/documents/cashHandovers/$(after.handover_id)) &&
+          h.declared_by == request.auth.uid && h.store_id == before.store_id &&
+          h.business_date == before.business_date && receiptId in h.receipt_ids;
+      }
+      allow update: if validClaim();
+      allow delete: if false;
+    }
+
     function canStoreArticle(storeId, articleId) {
       return get(/databases/$(database)/documents/stores/$(storeId)).data.store_type in ['CENTRAL_WAREHOUSE', 'MANUFACTURER'] ||
         get(/databases/$(database)/documents/articles/$(articleId)).data.article_type == 'RESALE';
@@ -295,6 +419,7 @@ service cloud.firestore {
     }
 
     match /cashHandovers/{handoverId} {
+      allow get: if resource == null && hasPermission('cash_handover.create');
       allow read: if (
         hasPermission('cash_handover.view') ||
         hasPermission('cash_handover.create') ||
@@ -304,7 +429,10 @@ service cloud.firestore {
       allow create: if hasPermission('cash_handover.create') &&
         hasStoreAccess(request.resource.data.store_id) &&
         exists(/databases/$(database)/documents/stores/$(request.resource.data.store_id)) &&
-        get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'POS' &&
+        (get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'POS' ||
+          (get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
+            currentProfile().get('role', '') in ['RESPONSABLE_MAGASIN', 'ADMIN', 'SUPER_ADMIN'] &&
+            validDepHandover(request.resource.data))) &&
         request.resource.data.id == handoverId &&
         request.resource.data.handover_number is string &&
         request.resource.data.business_date is string &&
@@ -331,7 +459,7 @@ service cloud.firestore {
           'deposited_amount', 'deposits'
         ]) &&
         request.resource.data.keys().hasOnly([
-          'id', 'handover_number', 'store_id', 'store_name', 'business_date',
+          'receipt_ids', 'id', 'handover_number', 'store_id', 'store_name', 'business_date',
           'expected_cash_sales', 'cash_sale_count', 'declared_amount',
           'declared_by', 'declared_by_name', 'declared_at', 'status',
           'deposited_amount', 'deposits', 'payment_method', 'reference_note'
@@ -707,7 +835,7 @@ service cloud.firestore {
     }
 
     function hasExpenseStoreAccess(storeId) {
-      return isSuperAdmin() || (isAdmin() && (storeId == null || storeId == '')) || (isActiveUser() && storeId is string &&
+      return isAdmin() || (isActiveUser() && storeId is string &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([storeId]));
     }
 
@@ -904,6 +1032,9 @@ service cloud.firestore {
         request.resource.data.amount_paid is number &&
         request.resource.data.amount_paid >= 0 &&
         hasStoreAccess(request.resource.data.store_id) &&
+        (get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type != 'CENTRAL_WAREHOUSE' ||
+          (request.resource.data.amount_paid == 0 && request.resource.data.get('credit_payments', []).size() == 0) ||
+          validInitialResellerPayment(request.resource.data)) &&
         (
           request.resource.data.customer_type != 'REVENDEUR' ||
           (
@@ -953,6 +1084,7 @@ service cloud.firestore {
         request.resource.data.get('credit_customer_id', null) == resource.data.get('credit_customer_id', null) &&
         request.resource.data.amount_paid == resource.data.amount_paid &&
         request.resource.data.payment_method == resource.data.payment_method &&
+        request.resource.data.get('credit_payments', []) == resource.data.get('credit_payments', []) &&
         request.resource.data.lines is list &&
         request.resource.data.lines.size() > 0 &&
         request.resource.data.total is number &&
@@ -986,6 +1118,7 @@ service cloud.firestore {
         request.resource.data.total == resource.data.total &&
         request.resource.data.amount_paid == resource.data.amount_paid &&
         request.resource.data.payment_method == resource.data.payment_method &&
+        request.resource.data.get('credit_payments', []) == resource.data.get('credit_payments', []) &&
         (
           (resource.data.status == 'DRAFT' && request.resource.data.status == 'CHECKING') ||
           (resource.data.status == 'DRAFT' && request.resource.data.status == 'CANCELLED' && isSuperAdmin()) ||
@@ -1014,24 +1147,21 @@ service cloud.firestore {
         ) &&
         (request.resource.data.status != 'VALIDATED' || request.resource.data.validated_by == request.auth.uid)
       ) || (
-        hasPermission('credit.manage') &&
-        request.resource.data.id == resource.data.id &&
-        request.resource.data.store_id == resource.data.store_id &&
-        request.resource.data.seller_id == resource.data.seller_id &&
-        request.resource.data.created_at == resource.data.created_at &&
-        request.resource.data.credit_customer_id == resource.data.credit_customer_id &&
-        request.resource.data.total == resource.data.total &&
-        request.resource.data.lines == resource.data.lines &&
+        canCollectReseller(resource.data.store_id) &&
+        // Each branch restricts all changed fields. Reading optional legacy
+        // seller metadata here would reject an otherwise valid payment.
         (
           (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'amount_paid', 'payment_status', 'credit_payments'
             ]) &&
+            validResellerPayment(resource.data, request.resource.data) &&
             request.resource.data.amount_paid > resource.data.amount_paid &&
             request.resource.data.amount_paid <= resource.data.total &&
             request.resource.data.payment_status == (request.resource.data.amount_paid == resource.data.total ? 'PAID' : 'PARTIAL')
           ) ||
           (
+            hasPermission('credit.manage') &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credit_followups']) &&
             request.resource.data.credit_followups.size() == resource.data.get('credit_followups', []).size() + 1
           )
@@ -1044,7 +1174,8 @@ service cloud.firestore {
         request.resource.data.status == resource.data.status &&
         request.resource.data.amount_paid == resource.data.total &&
         request.resource.data.payment_status == 'PAID' &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amount_paid', 'payment_status'])
+        validResellerPayment(resource.data, request.resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amount_paid', 'payment_status', 'credit_payments'])
       );
       allow delete: if isSuperAdmin() &&
         resource.data.status in ['DRAFT', 'CANCELLED'];
@@ -1243,6 +1374,17 @@ service cloud.firestore {
     }
 
     match /creditCustomers/{customerId} {
+      allow update: if isActiveUser() && currentProfile().get('role', '') == 'RESPONSABLE_MAGASIN' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'updated_at', 'last_payment_sale_id']) &&
+        request.resource.data.last_payment_sale_id is string &&
+        canCollectReseller(get(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data.store_id) &&
+        get(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data.credit_customer_id == customerId &&
+        validResellerPayment(get(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data,
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data) &&
+        request.resource.data.outstanding_balance >= 0 &&
+        resource.data.outstanding_balance - request.resource.data.outstanding_balance ==
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data.amount_paid -
+          get(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data.amount_paid;
       allow read: if hasPermission('credit.sales') || hasPermission('credit.manage') ||
         (isActiveUser() && resource.data.linked_user_id == request.auth.uid);
       allow create: if hasPermission('credit.manage') &&

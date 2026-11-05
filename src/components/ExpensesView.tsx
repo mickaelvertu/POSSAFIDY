@@ -63,7 +63,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   const [amount, setAmount] = useState("");
   const [expenseDate, setExpenseDate] = useState(dateInputValue(Date.now()));
   const [storeId, setStoreId] = useState(() => {
-    const defaultStore = stores.find(store => store.is_active && (currentUser.roleId === "SUPER_ADMIN" || currentUser.storeIds.includes(store.id)));
+    const defaultStore = stores.find(store => store.is_active && (["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId) || currentUser.storeIds.includes(store.id)));
     return defaultStore?.id ?? "";
   });
   const [payee, setPayee] = useState("");
@@ -112,10 +112,10 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   const canValidate = canCreate;
   const canDelete = currentUser.roleId === "SUPER_ADMIN";
   const canUseGlobalExpense = isAdmin;
-  const selectableStores = stores.filter(store => store.is_active && (currentUser.roleId === "SUPER_ADMIN" || currentUser.storeIds.includes(store.id)));
+  const selectableStores = stores.filter(store => store.is_active && (["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId) || currentUser.storeIds.includes(store.id)));
   const canEditExpense = (expense: Expense) => canCreate && expense.status === "DRAFT"
     && expense.created_by === currentUser.uid
-    && (canDelete || Boolean(expense.store_id && currentUser.storeIds.includes(expense.store_id)))
+    && (isAdmin || Boolean(expense.store_id && currentUser.storeIds.includes(expense.store_id)))
     && (expense.category !== "SALARY_ADVANCE" || canCreateSalaryAdvance);
   const isSalaryAdvance = category === "SALARY_ADVANCE";
   const selectedEmployee = employees.find(employee => employee.id === employeeId);
@@ -218,7 +218,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
       setFormError("Indiquez le motif de l'avance sur salaire.");
       return;
     }
-    if ((!selectedStore && !canUseGlobalExpense) || (selectedStore && currentUser.roleId !== "SUPER_ADMIN" && !currentUser.storeIds.includes(selectedStore.id))) {
+    if ((!selectedStore && !canUseGlobalExpense) || (selectedStore && !isAdmin && !currentUser.storeIds.includes(selectedStore.id))) {
       setFormError("Sélectionnez un magasin qui est attribué à votre compte.");
       return;
     }
@@ -447,7 +447,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
               <label className="space-y-1 text-xs font-semibold text-slate-700">Montant (Ar)<input required type="number" min="1" step="any" value={amount} onChange={event => setAmount(event.target.value)} placeholder="0" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Motif / description{isSalaryAdvance ? " *" : " (facultatif)"}<input required={isSalaryAdvance} value={description} onChange={event => setDescription(event.target.value)} placeholder={isSalaryAdvance ? "Ex. avance pour frais médicaux" : "Facultatif"} className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Date<input required type="date" value={expenseDate} onChange={event => setExpenseDate(event.target.value)} className={inputClass} /></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense ? <option value="">Tous magasins / siège</option> : <option value="">Sélectionner un magasin</option>}{stores.filter(store => store.is_active && (currentUser.roleId === "SUPER_ADMIN" || currentUser.storeIds.includes(store.id))).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense ? <option value="">Tous magasins / siège</option> : <option value="">Sélectionner un magasin</option>}{stores.filter(store => store.is_active && (["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId) || currentUser.storeIds.includes(store.id))).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
               {isSalaryAdvance ? (
                 <label className="space-y-1 text-xs font-semibold text-slate-700">Employé bénéficiaire
                   <input required list="expense-employee-options" value={employeeQuery} onFocus={event => event.target.select()} onChange={event => {

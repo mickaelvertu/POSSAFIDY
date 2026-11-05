@@ -1,6 +1,8 @@
 import { collection, doc, getDocs, query, where, writeBatch } from "firebase/firestore";
-import { db, runOnlineTransaction } from "../firebase";
+import { auth, db, runOnlineTransaction } from "../firebase";
 import { AuditLog, CreditCustomer, CreditFollowUp, CreditPayment, Sale } from "../types";
+import { prepareResellerReceipt } from "./resellerReceiptService";
+import { withPaymentAccess } from "./paymentAccess";
 
 const CUSTOMERS = "creditCustomers";
 const SALES = "sales";
@@ -42,35 +44,39 @@ export async function recordCreditPayment(
   const saleRef = doc(db, SALES, sale.id);
   const customerRef = doc(db, CUSTOMERS, sale.credit_customer_id || "");
   let updatedSale: Sale | undefined;
-  await runOnlineTransaction(async transaction => {
+  await withPaymentAccess("validation du règlement, de la dette et des fonds de l'encaisseur", () => runOnlineTransaction(async transaction => {
     const [saleSnapshot, customerSnapshot] = await Promise.all([
-      transaction.get(saleRef),
-      transaction.get(customerRef)
+      withPaymentAccess("lecture de la facture", () => transaction.get(saleRef)),
+      withPaymentAccess("lecture du compte revendeur", () => transaction.get(customerRef))
     ]);
     if (!saleSnapshot.exists() || !customerSnapshot.exists()) throw new Error("Vente ou compte revendeur introuvable.");
     const current = saleSnapshot.data() as Sale;
+    if (current.credit_customer_id !== sale.credit_customer_id) throw new Error("Le compte revendeur de cette vente a changé. Rechargez les données.");
     const customer = customerSnapshot.data() as CreditCustomer;
     if (current.status !== "VALIDATED" || current.payment_status === "PAID" || !Number.isFinite(payment.amount) || payment.amount <= 0 || payment.amount > current.total - current.amount_paid) {
       throw new Error("Le montant du règlement dépasse le solde restant ou la vente est déjà soldée.");
     }
     if (customer.outstanding_balance < payment.amount) throw new Error("Le solde crédit du revendeur est incohérent. Contactez un administrateur.");
+    const receipt = await prepareResellerReceipt(transaction, current, payment);
     const amountPaid = current.amount_paid + payment.amount;
     const timestamp = payment.paid_at;
     updatedSale = clean({
       ...current,
       amount_paid: amountPaid,
       payment_status: amountPaid >= current.total ? "PAID" : "PARTIAL",
-      credit_payments: [...(current.credit_payments || []), payment]
+      credit_payments: [...(current.credit_payments || []), { ...payment, recorded_by: receipt.receipt.recorded_by, recorded_by_name: receipt.receipt.recorded_by_name, cash_destination: receipt.receipt.destination, collected_by_name: receipt.receipt.collected_by_name }]
     });
     const updatedCustomer = {
       ...customer,
+      last_payment_sale_id: current.id,
       outstanding_balance: Math.max(0, customer.outstanding_balance - payment.amount),
       updated_at: timestamp
     };
     transaction.set(saleRef, updatedSale);
     transaction.set(customerRef, clean(updatedCustomer));
     transaction.set(doc(db, AUDIT_LOGS, auditLog.id), clean(auditLog));
-  });
+    receipt.apply();
+  }));
   if (!updatedSale) throw new Error("Le règlement n'a pas été enregistré.");
   return updatedSale;
 }
@@ -103,7 +109,7 @@ export async function recordCreditFollowUp(
 export async function createCreditSale(
   sale: Sale,
   auditLog: AuditLog
-): Promise<void> {
+): Promise<Sale> {
   if (!Number.isFinite(sale.total) || !Number.isFinite(sale.amount_paid) || sale.amount_paid < 0) {
     throw new Error("Les montants de la vente sont invalides.");
   }
@@ -116,10 +122,24 @@ export async function createCreditSale(
     batch.set(saleRef, clean(sale));
     batch.set(doc(db, AUDIT_LOGS, auditLog.id), clean(auditLog));
     await batch.commit();
-    return;
+    return sale;
   }
   await runOnlineTransaction(async transaction => {
     if ((await transaction.get(saleRef)).exists()) throw new Error("Cette vente existe déjà.");
+    let initialReceipt: Awaited<ReturnType<typeof prepareResellerReceipt>> | undefined;
+    if (sale.amount_paid > 0 && sale.customer_type === "REVENDEUR") {
+      const store = await transaction.get(doc(db, "stores", sale.store_id));
+      if (store.data()?.store_type === "CENTRAL_WAREHOUSE") {
+        const payment: CreditPayment = {
+          id: `initial-${sale.id}`, amount: Math.min(sale.total, sale.amount_paid), method: sale.payment_method,
+          paid_at: sale.created_at, collected_by: auth.currentUser!.uid, collected_by_name: sale.seller_name,
+          recorded_by: auth.currentUser!.uid, recorded_by_name: sale.seller_name
+        };
+        initialReceipt = await prepareResellerReceipt(transaction, sale, payment);
+        sale = { ...sale, credit_payments: [{ ...payment, recorded_by_name: initialReceipt.receipt.recorded_by_name, collected_by_name: initialReceipt.receipt.collected_by_name,
+          cash_destination: initialReceipt.receipt.destination }] };
+      }
+    }
     if (sale.credit_customer_id && sale.payment_status !== "PAID") {
       const customerRef = doc(db, CUSTOMERS, sale.credit_customer_id);
       const customerSnapshot = await transaction.get(customerRef);
@@ -139,5 +159,7 @@ export async function createCreditSale(
     }
     transaction.set(saleRef, clean(sale));
     transaction.set(doc(db, AUDIT_LOGS, auditLog.id), clean(auditLog));
+    initialReceipt?.apply();
   });
+  return sale;
 }

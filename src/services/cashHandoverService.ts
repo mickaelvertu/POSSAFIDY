@@ -2,7 +2,7 @@ import { collection, doc, getDocs, query, where } from "firebase/firestore";
 import { treasuryReceipt, prepareFundDebit } from "./treasuryService";
 import { handoverAvailable } from "./treasuryCalculation";
 import { db, runOnlineTransaction } from "../firebase";
-import { AuditLog, CashHandover, CashHandoverDeposit } from "../types";
+import { AuditLog, CashHandover, CashHandoverDeposit, ResellerReceipt } from "../types";
 
 const COLLECTION = "cashHandovers";
 
@@ -48,10 +48,26 @@ export async function createCashHandover(handover: CashHandover, auditLog: Audit
 
   await runOnlineTransaction(async transaction => {
     const ref = doc(db, COLLECTION, handover.id);
+    const store = await transaction.get(doc(db, "stores", handover.store_id));
+    const isDep = store.data()?.store_type === "CENTRAL_WAREHOUSE";
+    const ids = handover.receipt_ids || [];
+    if (isDep && (!ids.length || ids.length > 5 || new Set(ids).size !== ids.length)) {
+      throw new Error("Sélectionnez entre 1 et 5 encaissements distincts à remettre.");
+    }
+    const snapshots = isDep ? await Promise.all(ids.map(id => transaction.get(doc(db, "resellerReceipts", id)))) : [];
+    if (isDep) {
+      const receipts = snapshots.map(snapshot => snapshot.data() as ResellerReceipt | undefined);
+      if (receipts.some(receipt => !receipt || receipt.collected_by !== handover.declared_by || receipt.store_id !== handover.store_id ||
+        receipt.business_date !== handover.business_date || receipt.handover_id || receipt.destination !== "HANDOVER" || receipt.method !== "CASH") ||
+        receipts.reduce((sum, receipt) => sum + (receipt?.amount || 0), 0) !== handover.declared_amount) {
+        throw new Error("Les encaissements ont changé ou ne vous appartiennent pas. Rechargez avant de déclarer.");
+      }
+    }
     if ((await transaction.get(ref)).exists()) {
       throw new Error("Une remise est déjà déclarée pour ce point de vente et cette journée.");
     }
     transaction.set(ref, omitUndefined(handover));
+    for (const snapshot of snapshots) transaction.update(snapshot.ref, { handover_id: handover.id });
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   });
 }

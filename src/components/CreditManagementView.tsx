@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { AppUser, CreditCustomer, CreditFollowUp, CreditPayment, PaymentMethod, Sale, UserProfile } from "../types";
 import { Banknote, CalendarClock, CircleAlert, HandCoins, Plus, Search, Users } from "lucide-react";
 
@@ -7,6 +7,7 @@ interface CreditManagementViewProps {
   sales: Sale[];
   currentUser: UserProfile;
   resellerUsers: AppUser[];
+  collectionStoreIds: string[];
   onSaveCustomer: (customer: CreditCustomer) => Promise<boolean>;
   onRecordPayment: (sale: Sale, payment: CreditPayment) => Promise<boolean>;
   onRecordFollowUp: (sale: Sale, followUp: CreditFollowUp) => Promise<boolean>;
@@ -38,6 +39,7 @@ export default function CreditManagementView({
   sales,
   currentUser,
   resellerUsers,
+  collectionStoreIds,
   onSaveCustomer,
   onRecordPayment,
   onRecordFollowUp
@@ -50,8 +52,11 @@ export default function CreditManagementView({
   const [amount, setAmount] = useState(0);
   const [method, setMethod] = useState<PaymentMethod>("CASH");
   const [reference, setReference] = useState("");
+  const paymentInFlight = useRef(false);
+  const paymentId = useRef("");
   const [followUpNote, setFollowUpNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const canManage = ["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId) || currentUser.permissions.includes("credit.manage");
 
   const money = (value: number) => `${value.toLocaleString("fr-FR")} Ar`;
   const resellerKey = (sale: Sale) => sale.credit_customer_id
@@ -93,6 +98,8 @@ export default function CreditManagementView({
   const paymentBalance = livePaymentSale ? Math.max(0, livePaymentSale.total - livePaymentSale.amount_paid) : 0;
   const validPayment = Boolean(livePaymentSale?.status === "VALIDATED" && Number.isFinite(amount) && amount > 0 && amount <= paymentBalance);
   const openPayment = (sale: Sale, partial = false) => {
+    if (paymentInFlight.current) return;
+    paymentId.current = `credit-payment-${crypto.randomUUID()}`;
     setPaymentSale(sale);
     setAmount(partial ? 0 : Math.max(0, sale.total - sale.amount_paid));
     setMethod("CASH");
@@ -121,20 +128,24 @@ export default function CreditManagementView({
 
   const submitPayment = async (event: FormEvent) => {
     event.preventDefault();
-    if (!livePaymentSale || saving || !validPayment) return;
+    if (!livePaymentSale || paymentInFlight.current || saving || !validPayment) return;
+    paymentInFlight.current = true;
     setSaving(true);
     let saved = false;
     try {
       saved = await onRecordPayment(livePaymentSale, {
-        id: `credit-payment-${crypto.randomUUID()}`,
+        id: paymentId.current,
         amount,
         method,
+        collected_by: currentUser.uid,
+        collected_by_name: currentUser.displayName,
         reference: reference.trim() || undefined,
         paid_at: Date.now(),
         recorded_by: currentUser.uid,
         recorded_by_name: currentUser.displayName || currentUser.email
       });
     } finally {
+      paymentInFlight.current = false;
       setSaving(false);
     }
     if (saved) {
@@ -172,9 +183,9 @@ export default function CreditManagementView({
           </div>
           <p className="mt-1 text-sm text-slate-500">Gérez les plafonds, suivez les échéances et consignez les relances effectuées.</p>
         </div>
-        <button type="button" onClick={() => openEditor()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-800">
+        {canManage && <button type="button" onClick={() => openEditor()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-800">
           <Plus className="h-4 w-4" /> Ajouter un revendeur
-        </button>
+        </button>}
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -211,7 +222,7 @@ export default function CreditManagementView({
                 const balance = Math.max(0, sale.total - sale.amount_paid);
                 const isOverdue = sale.status === "VALIDATED" && (sale.credit_due_at || 0) < Date.now();
                 const lastFollowUp = sale.credit_followups?.at(-1);
-                const canAct = sale.status === "VALIDATED";
+                const canAct = sale.status === "VALIDATED" && (canManage || (currentUser.roleId === "RESPONSABLE_MAGASIN" && currentUser.storeIds.includes(sale.store_id) && collectionStoreIds.includes(sale.store_id)));
                 return (
                   <tr key={sale.id} className={`h-16 ${isOverdue ? "bg-rose-50/60" : ""}`}>
                     <td className="px-4 py-3"><strong className="block">{customer?.name || sale.customer_name}</strong><span className="text-xs text-slate-500">{sale.sale_number} · {sale.status === "VALIDATED" ? "Livrée" : "Vente en cours"}</span></td>
@@ -236,7 +247,7 @@ export default function CreditManagementView({
                     <td className="px-4 py-3"><div className="flex gap-2">
                       {canAct && <button type="button" onClick={() => openPayment(sale, true)} className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-800">Encaissement partiel</button>}
                       {canAct && <button type="button" onClick={() => openPayment(sale)} className="rounded-lg border border-teal-300 px-3 py-1.5 text-xs font-bold text-teal-800 hover:bg-teal-50">Solder</button>}
-                      {canAct && <button type="button" onClick={() => { setFollowUpSale(sale); setFollowUpNote(""); }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">Consigner relance</button>}
+                      {canAct && canManage && <button type="button" onClick={() => { setFollowUpSale(sale); setFollowUpNote(""); }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">Consigner relance</button>}
                     </div></td>
                   </tr>
                 );
@@ -262,7 +273,7 @@ export default function CreditManagementView({
                 return <tr key={sale.id} className="h-16">
                   <td className="px-4 py-3"><strong className="block">{customer?.name || sale.customer_name}</strong><span className="text-xs text-slate-500">{sale.sale_number}</span></td>
                   <td className="px-4 py-3 text-xs text-slate-600">{new Date(lastPayment?.paid_at || sale.validated_at || sale.created_at).toLocaleString("fr-FR")}<span className="mt-1 block">{lastPayment ? `${money(lastPayment.amount)} · ${paymentMethods.find(item => item.value === lastPayment.method)?.label || lastPayment.method}` : "Encaissement à la vente"}</span></td>
-                  <td className="px-4 py-3 text-right font-mono">{money(sale.total)}</td>
+                  <td className="px-4 py-3 text-right font-mono">{money(sale.total)}<details className="mt-2 text-left font-sans"><summary>Historique des encaissements</summary>{(sale.credit_payments || []).map(payment => <p key={payment.id} className="mt-2">{new Date(payment.paid_at).toLocaleString("fr-FR")} : {money(payment.amount)} {payment.method}<br />Encaisseur : {payment.collected_by_name || "Non identifié (ancien paiement)"} {payment.collected_by ? '(' + payment.collected_by + ')' : ''}<br />Saisi par : {payment.recorded_by_name}</p>)}{(!sale.credit_payments?.length || sale.amount_paid - (sale.change_returned || 0) > (sale.credit_payments || []).reduce((sum, payment) => sum + payment.amount, 0)) && <p className="mt-2 text-amber-800">Un montant initial sans encaisseur identifié reste à rapprocher.</p>}</details></td>
                   <td className="px-4 py-3 text-right font-mono font-bold text-teal-700">{money(sale.amount_paid)}</td>
                   <td className="px-4 py-3 text-right font-mono">{money(balance)}</td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${balance > 0 ? "bg-amber-50 text-amber-800" : "bg-teal-50 text-teal-800"}`}>{balance > 0 ? "Paiement partiel" : "Soldée"}</span></td>
@@ -283,7 +294,7 @@ export default function CreditManagementView({
               <article key={customer.id} className="rounded-xl border border-slate-200 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div><h4 className="font-bold">{customer.name}</h4><p className="text-xs text-slate-500">{customer.phone || "Pas de téléphone"} · {customer.payment_term_days} jours</p></div>
-                  <button type="button" onClick={() => openEditor(customer)} className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold hover:bg-slate-50">Gérer</button>
+                  {canManage && <button type="button" onClick={() => openEditor(customer)} className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold hover:bg-slate-50">Gérer</button>}
                 </div>
                 <div className="mt-3 flex justify-between text-xs"><span className="text-slate-500">Plafond</span><strong>{money(customer.credit_limit)}</strong></div>
                 <div className="mt-1 flex justify-between text-xs"><span className="text-slate-500">Encours / disponible</span><strong>{money(customer.outstanding_balance)} / {money(available)}</strong></div>
@@ -321,6 +332,8 @@ export default function CreditManagementView({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <form onSubmit={submitPayment} className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 text-slate-900 shadow-2xl">
             <h3 className="font-bold">Encaissement partiel ou total</h3><p className="text-sm text-slate-600">{paymentSale.sale_number} · Solde {money(paymentBalance)}</p>
+            <p className="text-sm font-semibold">Encaisseur : {currentUser.displayName}</p>
+            <p className="text-xs text-slate-600">Les espèces reçues par un administrateur alimentent ses fonds. Celles reçues par un responsable restent à remettre. Aucun paiement ne peut être attribué à un autre utilisateur.</p>
             <label className="block text-xs font-bold">Montant à encaisser (Ar)<input required min={1} max={paymentBalance} type="number" value={amount || ""} onChange={event => setAmount(Number(event.target.value))} placeholder="Saisir le montant reçu" className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-sm" /></label>
             <button type="button" disabled={saving || paymentBalance <= 0} onClick={() => setAmount(paymentBalance)} className="text-xs font-semibold text-teal-700 disabled:opacity-50">Régler tout le solde : {money(paymentBalance)}</button>
             <p aria-live="polite" className="rounded-lg bg-teal-50 p-3 text-sm text-teal-900">{validPayment ? `Après encaissement : ${money(paymentBalance - amount)} restant · ${amount < paymentBalance ? "Paiement partiel" : "Facture soldée"}` : "Saisissez un montant supérieur à zéro, sans dépasser le solde restant."}</p>

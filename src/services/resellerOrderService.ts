@@ -1,5 +1,6 @@
 import { collection, doc, getDocs, onSnapshot, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
+import { prepareResellerReceipt } from "./resellerReceiptService";
 import { Article, CreditCustomer, ResellerNotification, ResellerOrder, Sale, StockMovement, Store, StoreStock } from "../types";
 
 const ORDERS = "resellerOrders";
@@ -117,7 +118,12 @@ export async function recordResellerCashPayment(
       currentSale.payment_status === "PAID" || currentSale.status !== "VALIDATED") {
       throw new Error("Cette commande comptant est déjà réglée ou n'est pas encore approuvée.");
     }
-    const updatedSale: Sale = { ...currentSale, amount_paid: currentSale.total, payment_status: "PAID" };
+    const payment = { id: `cash-${currentSale.id}`, amount: currentSale.total - currentSale.amount_paid,
+      method: "CASH" as const, paid_at: timestamp, collected_by: reviewerId, collected_by_name: reviewerName,
+      recorded_by: reviewerId, recorded_by_name: reviewerName };
+    const receipt = await prepareResellerReceipt(transaction, currentSale, payment);
+    const updatedSale: Sale = { ...currentSale, amount_paid: currentSale.total, payment_status: "PAID",
+      credit_payments: [...(currentSale.credit_payments || []), { ...payment, recorded_by_name: receipt.receipt.recorded_by_name, collected_by_name: receipt.receipt.collected_by_name, cash_destination: receipt.receipt.destination }] };
     const updatedOrder: ResellerOrder = {
       ...currentOrder,
       cash_paid_at: timestamp,
@@ -137,6 +143,7 @@ export async function recordResellerCashPayment(
     };
     transaction.set(orderRef, withoutUndefined(updatedOrder));
     transaction.set(saleRef, withoutUndefined(updatedSale));
+    receipt.apply();
     transaction.set(doc(db, NOTIFICATIONS, notification.id), notification);
     result = { order: updatedOrder, sale: updatedSale, notification };
   });

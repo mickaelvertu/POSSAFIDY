@@ -242,6 +242,7 @@ export interface CashHandoverDeposit {
 }
 
 export interface CashHandover {
+  receipt_ids?: string[];
   treasury_fund_id?: string;
   allocated_amount?: number;
   payment_method?: "CASH" | "MVOLA" | "OTHER";
@@ -563,6 +564,7 @@ export interface ResellerNotification {
 }
 
 export interface CreditCustomer {
+  last_payment_sale_id?: string;
   id: string;
   linked_user_id?: string;
   name: string;
@@ -578,6 +580,9 @@ export interface CreditCustomer {
 }
 
 export interface CreditPayment {
+  cash_destination?: "TREASURY" | "HANDOVER";
+  collected_by?: string;
+  collected_by_name?: string;
   id: string;
   amount: number;
   method: PaymentMethod;
@@ -585,6 +590,22 @@ export interface CreditPayment {
   paid_at: number;
   recorded_by: string;
   recorded_by_name: string;
+}
+
+export interface ResellerReceipt {
+  id: string;
+  sale_id: string;
+  store_id: string;
+  amount: number;
+  method: PaymentMethod;
+  paid_at: number;
+  business_date: string;
+  collected_by: string;
+  collected_by_name: string;
+  recorded_by: string;
+  recorded_by_name: string;
+  destination: "TREASURY" | "HANDOVER";
+  handover_id: string;
 }
 
 export interface CreditFollowUp {

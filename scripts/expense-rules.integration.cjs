@@ -41,7 +41,13 @@ test('expense queries match roles, stores, authors and cash reconciliation', asy
       const validation = await commit([write('expenses/new-global', { ...globalExpense, status: 'VALIDATED', validated_by: 'super', validated_at: 2 })], token);
       assert.equal(validation.status, 200, JSON.stringify(validation.body));
     }
-    if (role === 'ADMIN') assert.equal((await commit([write('expenses/unassigned', expense('unassigned', 'outside', 'super', 'DRAFT'))], token)).status, 403);
+    const unassigned = { ...expense('unassigned', 'outside', 'super', 'DRAFT'), payment_status: 'PENDING' };
+    assert.equal((await commit([write('expenses/unassigned', unassigned)], token)).status, allowed ? 200 : 403);
+    if (allowed) {
+      const edited = { ...unassigned, amount: 2000 };
+      assert.equal((await commit([write('expenses/unassigned', edited)], token)).status, 200);
+      assert.equal((await commit([write('expenses/unassigned', { ...edited, status: 'VALIDATED', validated_by: 'super', validated_at: 2 })], token)).status, 200);
+    }
   });
   await t.test('disabled admin cannot create a general expense', async () => {
     await seed('ADMIN', [], [], 'DISABLED');

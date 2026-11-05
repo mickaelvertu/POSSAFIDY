@@ -1,7 +1,9 @@
 import { storeLabel } from "../services/storeLabel";
-import { FormEvent, ReactNode, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { Banknote, Building2, CheckCircle2, ClipboardCheck, Landmark, Plus, ReceiptText } from "lucide-react";
-import { AppUser, CashHandover, CashHandoverDeposit, Expense, Sale, Store } from "../types";
+import { AppUser, CashHandover, CashHandoverDeposit, Expense, ResellerReceipt, Sale, Store } from "../types";
+import { scopedQueries, subscribeRows } from "../services/liveDataService";
+import { pendingResellerReceipts, resellerReceiptTotal } from "../services/resellerReceiptCalculation";
 import { calculateCashClosing, calculateStoreDailyTotals } from "../services/cashClosingCalculation";
 
 interface CashHandoverViewProps {
@@ -35,18 +37,31 @@ const statusLabels: Record<CashHandover["status"], string> = {
 };
 
 export default function CashHandoverView({
-  handovers, loadError, sales, expenses, stores, currentUser, canCreate, canReceive, canDeposit,
+  handovers, loadError: upstreamLoadError, sales, expenses, stores, currentUser, canCreate, canReceive, canDeposit,
   onCreate, onConfirmReceipt, onRecordDeposit, onAdoptHandover
 }: CashHandoverViewProps) {
+  const [receipts, setReceipts] = useState<ResellerReceipt[]>([]);
+  const [receiptError, setReceiptError] = useState<string | null>("Chargement des encaissements en cours.");
+  const receiptScope = JSON.stringify(stores.map(store => store.id).sort());
+  useEffect(() => {
+    setReceipts([]);
+    setReceiptError("Chargement des encaissements en cours.");
+    return subscribeRows<ResellerReceipt>(scopedQueries("resellerReceipts", ["store_id"], JSON.parse(receiptScope)),
+      setReceipts, error => setReceiptError(String(error)), cached => setReceiptError(cached ? "Les encaissements doivent être confirmés par le serveur." : null));
+  }, [receiptScope, currentUser.uid]);
+  const loadError = upstreamLoadError || receiptError;
   const getStoreLabel = (id: string, name: string) => {
     const store = stores.find(item => item.id === id);
     return store ? storeLabel({ ...store, code: store.code || store.id }) : name + " (" + id + ")";
   };
-  const posStores = stores.filter(store => store.store_type === "POS" && store.is_active);
+  const declarationStores = stores.filter(store => store.is_active &&
+    (currentUser.roleId === "ADMIN" || currentUser.roleId === "SUPER_ADMIN" || currentUser.storeIds.includes(store.id)) &&
+    (store.store_type === "POS" || (store.store_type === "CENTRAL_WAREHOUSE" &&
+      ["RESPONSABLE_MAGASIN", "ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId))));
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [receiptHandover, setReceiptHandover] = useState<CashHandover | null>(null);
   const [depositHandover, setDepositHandover] = useState<CashHandover | null>(null);
-  const [storeId, setStoreId] = useState(posStores.length === 1 ? posStores[0].id : "");
+  const [storeId, setStoreId] = useState(declarationStores.length === 1 ? declarationStores[0].id : "");
   const [businessDate, setBusinessDate] = useState(localDate(Date.now()));
   const [paymentMethod, setPaymentMethod] = useState<NonNullable<CashHandover["payment_method"]>>("CASH");
   const [referenceNote, setReferenceNote] = useState("");
@@ -61,15 +76,31 @@ export default function CashHandoverView({
   const [formError, setFormError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const closing = useMemo(() => calculateCashClosing(sales, expenses, storeId, businessDate), [sales, expenses, storeId, businessDate]);
+  const closingFor = (id: string, day: string) => {
+    if (stores.find(store => store.id === id)?.store_type !== "CENTRAL_WAREHOUSE") return calculateCashClosing(sales, expenses, id, day);
+    const pending = pendingResellerReceipts(receipts, id, day, currentUser.uid);
+    const amount = resellerReceiptTotal(pending);
+    return { salesAmount: amount, netAmount: amount, expensesAmount: 0, saleCount: pending.length };
+  };
+  const formReceipts = pendingResellerReceipts(receipts, storeId, businessDate, currentUser.uid).slice(0, 5);
+  const isDepForm = stores.find(store => store.id === storeId)?.store_type === "CENTRAL_WAREHOUSE";
+  const closing = isDepForm
+    ? { salesAmount: resellerReceiptTotal(formReceipts), expensesAmount: 0, netAmount: resellerReceiptTotal(formReceipts), saleCount: formReceipts.length }
+    : closingFor(storeId, businessDate);
   const expectedCash = closing.salesAmount;
   const declaredAmount = closing.netAmount;
-  const dailyRows = useMemo(() => stores.filter(store => !reviewStoreId || store.id === reviewStoreId).map(store => ({
-    store,
-    totals: calculateStoreDailyTotals(sales, expenses, store.id, reviewDate),
-    cash: calculateCashClosing(sales, expenses, store.id, reviewDate),
-    handover: handovers.find(item => item.store_id === store.id && item.business_date === reviewDate)
-  })), [stores, sales, expenses, handovers, reviewDate, reviewStoreId]);
+  const dailyRows = useMemo(() => stores.filter(store => !reviewStoreId || store.id === reviewStoreId).map(store => {
+    const dailyHandovers = handovers.filter(item => item.store_id === store.id && item.business_date === reviewDate &&
+      (store.store_type !== "CENTRAL_WAREHOUSE" || item.declared_by === currentUser.uid));
+    return {
+      store,
+      totals: calculateStoreDailyTotals(sales, expenses, store.id, reviewDate),
+      cash: closingFor(store.id, reviewDate),
+      handover: dailyHandovers[0],
+      receivedTotal: dailyHandovers.some(item => item.received_by)
+        ? dailyHandovers.reduce((sum, item) => sum + (item.received_amount || 0), 0) : null
+    };
+  }), [stores, sales, expenses, handovers, reviewDate, reviewStoreId, receipts, currentUser.uid]);
 
   const resetCreateForm = () => {
     setPaymentMethod("CASH");
@@ -82,10 +113,10 @@ export default function CashHandoverView({
     event.preventDefault();
     if (loadError) { setFormError(loadError); return; }
     if (declaredAmount < 0) { setFormError("Les dépenses dépassent les ventes espèces du jour. Vérifiez la caisse avant de déclarer la clôture."); return; }
-    const store = posStores.find(item => item.id === storeId);
+    const store = declarationStores.find(item => item.id === storeId);
     const amount = Number(declaredAmount);
     if (!store || !businessDate || !Number.isInteger(amount) || amount < 0) {
-      setFormError("Choisissez un point de vente, une date et saisissez un montant valide.");
+      setFormError("Choisissez un magasin, une date et saisissez un montant valide.");
       return;
     }
     if (businessDate > localDate(Date.now())) {
@@ -93,12 +124,15 @@ export default function CashHandoverView({
       return;
     }
     if (!currentUser.storeIds.includes(store.id) && currentUser.roleId !== "ADMIN" && currentUser.roleId !== "SUPER_ADMIN") {
-      setFormError("Ce point de vente n'est pas attribué à votre compte.");
+      setFormError("Ce magasin n'est pas attribué à votre compte.");
       return;
     }
-    const handoverId = `cash-handover-${encodeURIComponent(store.id)}-${businessDate}`;
+    const isDep = store.store_type === "CENTRAL_WAREHOUSE";
+    const receiptIds = pendingResellerReceipts(receipts, storeId, businessDate, currentUser.uid).slice(0, 5).map(receipt => receipt.id);
+    if (isDep && !receiptIds.length) { setFormError("Aucun encaissement espèces identifié à remettre pour votre compte à cette date."); return; }
+    const handoverId = `cash-handover-${encodeURIComponent(store.id)}-${businessDate}${isDep ? `-${crypto.randomUUID()}` : ""}`;
     if (handovers.some(item => item.id === handoverId)) {
-      setFormError("Une déclaration existe déjà pour ce point de vente et cette journée.");
+      setFormError("Une déclaration existe déjà pour ce magasin et cette journée.");
       return;
     }
     const timestamp = Date.now();
@@ -120,6 +154,13 @@ export default function CashHandoverView({
       deposited_amount: 0,
       deposits: []
     };
+    if (isDep) {
+      handover.payment_method = "CASH";
+      handover.receipt_ids = receiptIds;
+      handover.declared_amount = resellerReceiptTotal(receipts.filter(receipt => receiptIds.includes(receipt.id)));
+      handover.expected_cash_sales = handover.declared_amount;
+      handover.cash_sale_count = receiptIds.length;
+    }
     setBusy(true);
     setFormError("");
     try {
@@ -223,17 +264,25 @@ export default function CashHandoverView({
       <header className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-black text-slate-900">Remises de caisse</h1>
-          <p className="mt-1 text-sm text-slate-600">Déclaration POS, confirmation de réception et suivi des dépôts bancaires.</p>
+          <p className="mt-1 text-sm text-slate-600">Déclaration POS et DEP, confirmation de réception et suivi des dépôts bancaires.</p>
         </div>
-        {canCreate && <button type="button" onClick={() => { setFormError(""); setIsCreateOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white"><Plus className="h-4 w-4" /> Déclarer une clôture POS</button>}
+        {canCreate && <button type="button" onClick={() => { setFormError(""); setIsCreateOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white"><Plus className="h-4 w-4" /> Déclarer une remise de caisse</button>}
       </header>
 
       <aside className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
         <p className="font-bold">Séparation des responsabilités</p>
-        <p className="mt-1">Le responsable POS déclare. Une autre personne confirme le montant encaissé. Le dépôt est ensuite enregistré avec sa banque et son bordereau. Les achats et dépenses restent saisis dans leurs modules habituels avec leurs justificatifs.</p>
+        <p className="mt-1">Le responsable du magasin ou un administrateur déclare. Une autre personne confirme le montant encaissé. Le dépôt est ensuite enregistré avec sa banque et son bordereau. Les achats et dépenses restent saisis dans leurs modules habituels avec leurs justificatifs.</p>
       </aside>
 
       {loadError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">Impossible de charger les remises de caisse : {loadError}</p>}
+      <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">DEP : les sommes à remettre sont vos encaissements espèces identifiés, à la date réelle du paiement, encore détenus par vous. Les anciens paiements sans encaisseur identifié restent à rapprocher ; ils ne sont pas attribués automatiquement. Les dépenses du magasin restent suivies séparément.</p>
+      <section className="rounded-xl bg-white p-4 shadow-sm">
+        <h2 className="font-bold">Encaissements revendeurs identifiés</h2>
+        <p className="text-xs text-slate-600">Journée sélectionnée : {reviewDate}. La personne ayant reçu l'argent reste visible après la remise.</p>
+        <div className="max-h-80 overflow-auto"><table className="w-full text-left text-xs"><thead><tr>{["Date", "Magasin", "Encaisseur", "Saisi par", "Montant / mode", "Destination"].map(label => <th key={label} className="p-2">{label}</th>)}</tr></thead><tbody>
+          {receipts.filter(receipt => receipt.business_date === reviewDate && (!reviewStoreId || receipt.store_id === reviewStoreId)).map(receipt => <tr key={receipt.id} className="border-t"><td className="p-2">{new Date(receipt.paid_at).toLocaleString("fr-FR")}</td><td className="p-2">{getStoreLabel(receipt.store_id, receipt.store_id)}</td><td className="p-2">{receipt.collected_by_name}</td><td className="p-2">{receipt.recorded_by_name}</td><td className="p-2">{money(receipt.amount)} · {receipt.method}</td><td className="p-2">{receipt.destination === "TREASURY" ? "Fonds de l'administrateur" : receipt.handover_id ? "Incluse dans une remise" : receipt.method === "CASH" ? "À remettre par l'encaisseur" : "Paiement hors espèces"}</td></tr>)}
+        </tbody></table></div>
+      </section>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="space-y-3 border-b border-slate-100 p-4">
@@ -247,20 +296,20 @@ export default function CashHandoverView({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[950px] text-left text-xs">
             <thead className="bg-slate-50 text-slate-600"><tr>{["Magasin", "Ventes", "Dépenses payées", "Ventes − dépenses", "Net espèces à remettre", "Montant reçu", "Statut / Actions"].map(label => <th key={label} className="px-4 py-3">{label}</th>)}</tr></thead>
-            <tbody className="divide-y divide-slate-100">{dailyRows.map(({ store, totals, cash, handover }) => <tr key={store.id}>
+            <tbody className="divide-y divide-slate-100">{dailyRows.map(({ store, totals, cash, handover, receivedTotal }) => <tr key={store.id}>
               <td className="px-4 py-3 font-bold text-slate-900">{getStoreLabel(store.id, store.name)}</td>
               <td className="px-4 py-3">{money(totals.salesAmount)}</td>
               <td className="px-4 py-3">{money(totals.expensesAmount)}</td>
               <td className="px-4 py-3 font-bold">{money(totals.netAmount)}</td>
-              <td className="px-4 py-3">{money(cash.netAmount)}{handover && handover.declared_amount !== cash.netAmount && <p className="mt-1 text-rose-700">Déclaré : {money(handover.declared_amount)} · données modifiées après déclaration</p>}</td>
-              <td className="px-4 py-3">{handover?.received_by ? money(handover.received_amount ?? 0) : "En attente"}</td>
+              <td className="px-4 py-3">{money(cash.netAmount)}{handover && !handover.receipt_ids && handover.declared_amount !== cash.netAmount && <p className="mt-1 text-rose-700">Déclaré : {money(handover.declared_amount)} · données modifiées après déclaration</p>}</td>
+              <td className="px-4 py-3">{receivedTotal !== null ? money(receivedTotal) : "En attente"}</td>
               <td className="space-y-2 px-4 py-3">
                 <p>{handover ? statusLabels[handover.status] : "Non déclaré"}</p>
-                {!handover && canCreate && store.store_type === "POS" && store.is_active && <button type="button" disabled={!!loadError || !reviewDate || cash.netAmount < 0} onClick={() => { setStoreId(store.id); setBusinessDate(reviewDate); setFormError(""); setIsCreateOpen(true); }} className="font-semibold text-emerald-700 disabled:opacity-40">Déclarer la remise</button>}
+                {(!handover || (store.store_type === "CENTRAL_WAREHOUSE" && cash.netAmount > 0)) && canCreate && declarationStores.some(item => item.id === store.id) && <button type="button" disabled={!!loadError || !reviewDate || cash.netAmount < 0} onClick={() => { setStoreId(store.id); setBusinessDate(reviewDate); setFormError(""); setIsCreateOpen(true); }} className="font-semibold text-emerald-700 disabled:opacity-40">Déclarer la remise</button>}
                 {handover && canReceive && handover.status === "DECLARED" && handover.declared_by !== currentUser.uid && <button type="button" disabled={!!loadError} onClick={() => openReceipt(handover)} className="flex items-center gap-1 font-semibold text-blue-700 disabled:opacity-40"><ClipboardCheck className="h-4 w-4" /> Confirmer réception</button>}
               </td>
             </tr>)}</tbody>
-            <tfoot className="border-t bg-slate-50 font-bold"><tr><td className="px-4 py-3">Total</td>{[dailyRows.reduce((sum, row) => sum + row.totals.salesAmount, 0), dailyRows.reduce((sum, row) => sum + row.totals.expensesAmount, 0), dailyRows.reduce((sum, row) => sum + row.totals.netAmount, 0), dailyRows.reduce((sum, row) => sum + row.cash.netAmount, 0), dailyRows.reduce((sum, row) => sum + (row.handover?.received_amount ?? 0), 0)].map((amount, index) => <td key={index} className="px-4 py-3">{money(amount)}</td>)}<td /></tr></tfoot>
+            <tfoot className="border-t bg-slate-50 font-bold"><tr><td className="px-4 py-3">Total</td>{[dailyRows.reduce((sum, row) => sum + row.totals.salesAmount, 0), dailyRows.reduce((sum, row) => sum + row.totals.expensesAmount, 0), dailyRows.reduce((sum, row) => sum + row.totals.netAmount, 0), dailyRows.reduce((sum, row) => sum + row.cash.netAmount, 0), dailyRows.reduce((sum, row) => sum + (row.receivedTotal ?? 0), 0)].map((amount, index) => <td key={index} className="px-4 py-3">{money(amount)}</td>)}<td /></tr></tfoot>
           </table>
           {dailyRows.length === 0 && <p className="p-6 text-center text-sm text-slate-500">Aucun magasin accessible.</p>}
         </div>
@@ -274,7 +323,7 @@ export default function CashHandoverView({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-xs">
               <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr>
-                <th className="px-4 py-3">Remise / Point de vente</th><th className="px-4 py-3">Déclaration</th><th className="px-4 py-3">Réception</th><th className="px-4 py-3">Banque</th><th className="px-4 py-3">Statut / Actions</th>
+                <th className="px-4 py-3">Remise / Magasin</th><th className="px-4 py-3">Déclaration</th><th className="px-4 py-3">Réception</th><th className="px-4 py-3">Banque</th><th className="px-4 py-3">Statut / Actions</th>
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredHandovers.map(handover => {
@@ -305,13 +354,14 @@ export default function CashHandoverView({
         )}
       </div>
 
-      {isCreateOpen && modal("Déclarer la clôture POS", "Envoyer la déclaration", handleCreate, <>
-      <label className="block space-y-1 text-xs font-semibold text-slate-700">Point de vente<select required value={storeId} onChange={event => { setStoreId(event.target.value); }} className={inputClass}><option value="">Choisir un point de vente</option>{posStores.map(store => <option key={store.id} value={store.id}>{getStoreLabel(store.id, store.name)}</option>)}</select></label>
+      {isCreateOpen && modal("Déclarer la remise de caisse", "Envoyer la déclaration", handleCreate, <>
+      <label className="block space-y-1 text-xs font-semibold text-slate-700">Magasin<select required value={storeId} onChange={event => { setStoreId(event.target.value); }} className={inputClass}><option value="">Choisir un magasin</option>{declarationStores.map(store => <option key={store.id} value={store.id}>{getStoreLabel(store.id, store.name)}</option>)}</select></label>
       <label className="block space-y-1 text-xs font-semibold text-slate-700">Date de clôture<input required type="date" max={localDate(Date.now())} value={businessDate} onChange={event => { setBusinessDate(event.target.value); }} className={inputClass} /></label>
-        <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Ventes espèces validées enregistrées : <strong className="text-slate-900">{money(expectedCash)}</strong></div>
+        {isDepForm && <p className="rounded-lg bg-blue-50 p-3 text-xs">Encaisseur et détenteur : {currentUser.displayName}. Cette remise contient {formReceipts.length} encaissement(s), au maximum cinq. Si d'autres sommes restent à remettre, elles seront proposées dans une remise suivante. Les dépenses ne sont pas déduites automatiquement de ces règlements identifiés.</p>}
+        <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">{isDepForm ? "Encaissements identifiés dans cette remise :" : "Ventes espèces validées enregistrées :"} <strong className="text-slate-900">{money(expectedCash)}</strong></div>
         <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Dépenses espèces payées du jour : <strong>{money(closing.expensesAmount)}</strong></div>
-        <label className="block space-y-1 text-xs font-semibold text-slate-700">Montant déclaré : ventes − dépenses (Ar)<input required type="number" min="0" step="1" value={declaredAmount} readOnly className={inputClass} /></label>
-        <label className="block space-y-1 text-xs font-semibold text-slate-700">Mode de remise<select required value={paymentMethod} onChange={event => setPaymentMethod(event.target.value as NonNullable<CashHandover["payment_method"]>)} className={inputClass}><option value="CASH">Espèces</option><option value="MVOLA">MVola</option><option value="OTHER">Autre mode de paiement</option></select></label>
+        <label className="block space-y-1 text-xs font-semibold text-slate-700">{isDepForm ? "Montant des encaissements à remettre (Ar)" : "Montant déclaré : ventes − dépenses (Ar)"}<input required type="number" min="0" step="1" value={declaredAmount} readOnly className={inputClass} /></label>
+        <label className="block space-y-1 text-xs font-semibold text-slate-700">Mode de remise<select required disabled={isDepForm} value={isDepForm ? "CASH" : paymentMethod} onChange={event => setPaymentMethod(event.target.value as NonNullable<CashHandover["payment_method"]>)} className={inputClass}><option value="CASH">Espèces</option><option value="MVOLA">MVola</option><option value="OTHER">Autre mode de paiement</option></select></label>
         <label className="block space-y-1 text-xs font-semibold text-slate-700">Note / Référence<textarea value={referenceNote} onChange={event => setReferenceNote(event.target.value)} rows={3} placeholder="Référence de transaction ou précision sur le mode de remise" className={inputClass} /></label>
       </>)}
 

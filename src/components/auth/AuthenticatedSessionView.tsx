@@ -32,6 +32,7 @@ import {
 } from "../../services/inventoryService";
 import { advanceSale, approveSale, cancelSale, createProduction, deleteCancelledSale, deleteDraftSale, deleteDraftProduction, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
 import { createCreditSale, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
+import { PaymentAccessError, paymentClockHint } from "../../services/paymentAccess";
 import { createResellerOrder, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
 import { deleteInventoryCountDraft, refuseInventorySignature, rejectInventoryCount, saveInventoryCount, settleInventoryCharges, signInventoryCount, validateInventoryCount } from "../../services/inventoryCountService";
@@ -588,7 +589,7 @@ export default function AuthenticatedSessionView() {
         throw new Error("Vous n'êtes pas autorisé à enregistrer une vente à crédit.");
       }
       const entry = createAuditLog(currentAppUser, "SALE_CREATED", "SALE", sale.id, undefined, sale, sale.store_id);
-      await createCreditSale(sale, entry);
+      sale = await createCreditSale(sale, entry);
       setSales(current => [sale, ...current]);
       setAuditLogs(current => [entry, ...current]);
       if (sale.credit_customer_id && sale.total > sale.amount_paid) {
@@ -785,7 +786,7 @@ export default function AuthenticatedSessionView() {
     if (!currentAppUser || (
       currentAppUser.roleId !== "ADMIN" &&
       currentAppUser.roleId !== "SUPER_ADMIN" &&
-      !hasPermission(currentAppUser, "credit.manage")
+      !hasPermission(currentAppUser, "credit.manage") && !(currentAppUser.roleId === "RESPONSABLE_MAGASIN" && currentAppUser.storeIds.includes(sale.store_id) && inventoryStores.some(store => store.id === sale.store_id && store.store_type === "CENTRAL_WAREHOUSE"))
     )) {
       alert("Seul le gestionnaire de crédit ou un administrateur peut enregistrer un règlement.");
       return false;
@@ -803,7 +804,8 @@ export default function AuthenticatedSessionView() {
       setAuditLogs(current => [auditLog, ...current]);
       return true;
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Impossible d'enregistrer le paiement du revendeur.");
+      const hint = error instanceof PaymentAccessError ? await paymentClockHint() : "";
+      alert((error instanceof Error ? error.message : "Impossible d'enregistrer le paiement du revendeur.") + hint);
       return false;
     }
   };
@@ -2195,8 +2197,7 @@ export default function AuthenticatedSessionView() {
     } else {
       expense = { ...expense, employee_id: undefined, employee_name: undefined, salary_advance_id: undefined };
     }
-    const isSuperAdmin = currentAppUser.roleId === "SUPER_ADMIN";
-    if (!isSuperAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id))) {
+    if (!isAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id))) {
       throw new Error("Vous ne pouvez enregistrer une dépense que pour un magasin attribué à votre compte.");
     }
     expense = { ...expense, status: "DRAFT", created_by: currentAppUser!.uid, validated_by: undefined, validated_at: undefined };
@@ -2209,13 +2210,12 @@ export default function AuthenticatedSessionView() {
   const handleUpdateExpense = async (original: Expense, expense: Expense) => {
     if (expensesLoadError) throw new Error(expensesLoadError);
     const isAdmin = currentAppUser?.roleId === "ADMIN" || currentAppUser?.roleId === "SUPER_ADMIN";
-    const isSuperAdmin = currentAppUser?.roleId === "SUPER_ADMIN";
     if (
       user?.status !== "ACTIVE" ||
       !currentAppUser ||
       !(isAdmin || hasPermission(currentAppUser, "expenses.create")) ||
       expense.created_by !== currentAppUser.uid ||
-      (!isSuperAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))
+      (!isAdmin && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))
     ) {
       throw new Error("Vous pouvez uniquement modifier vos propres brouillons dans un magasin attribué à votre compte.");
     }
@@ -2245,7 +2245,7 @@ export default function AuthenticatedSessionView() {
 
   const handleValidateExpense = async (expense: Expense, fundId?: string) => {
     if (expensesLoadError) throw new Error(expensesLoadError);
-    if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || (currentAppUser.roleId !== "SUPER_ADMIN" && (expense.created_by !== currentAppUser.uid || !expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))) throw new Error("Vous pouvez uniquement valider vos propres dépenses avec la permission de création.");
+    if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || ((currentAppUser.roleId !== "SUPER_ADMIN" && expense.created_by !== currentAppUser.uid) || (!["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id))))) throw new Error("Vous pouvez uniquement valider vos propres dépenses avec la permission de création.");
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
     let salaryAdvance: SalaryAdvance | undefined;
     let salaryAdvanceAuditLog: AuditLog | undefined;
@@ -2820,6 +2820,7 @@ export default function AuthenticatedSessionView() {
             />
           </section>
         ) : activeModule === "credit" && currentAppUser && (
+          currentAppUser.roleId === "RESPONSABLE_MAGASIN" ||
           currentAppUser.roleId === "ADMIN" ||
           currentAppUser.roleId === "SUPER_ADMIN" ||
           hasPermission(currentAppUser, "credit.manage")
@@ -2836,6 +2837,7 @@ export default function AuthenticatedSessionView() {
               customers={creditCustomers}
               sales={visibleSales}
               currentUser={currentAppUser}
+              collectionStoreIds={inventoryStores.filter(store => store.store_type === "CENTRAL_WAREHOUSE").map(store => store.id)}
               resellerUsers={managedUsers.filter(managedUser => managedUser.roleId === "REVENDEUR")}
               onSaveCustomer={handleSaveCreditCustomer}
               onRecordPayment={handleRecordCreditPayment}
