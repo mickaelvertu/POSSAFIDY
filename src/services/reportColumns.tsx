@@ -1,3 +1,5 @@
+import type { SalesStoreRow } from "./salesStoreMatrix";
+import type { Store } from "../types";
 import { buildArticleStockRows, type ArticleStockRow } from "./stockByArticle";
 import { ReactNode } from "react";
 import { formatSignedQuantity, LedgerBlock } from "./stockLedger";
@@ -35,6 +37,7 @@ export interface ReportTableConfig<T = any> {
 }
 
 export interface ReportColumnsContext {
+  salesStoreMatrix?: { stores: Store[]; rows: SalesStoreRow[] };
   getStoreName: (id: string) => string;
   getCategoryName: (id: string) => string;
   getArticle: (id: string) => Article | undefined;
@@ -60,6 +63,22 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
   const { getStoreName, getCategoryName, getArticle } = ctx;
 
   switch (reportType) {
+    case "SALES_BY_STORE_ARTICLE": {
+      const matrix = ctx.salesStoreMatrix || { stores: [], rows: [] };
+      const columns: ReportColumn<SalesStoreRow>[] = [
+        { key: "code", label: "Code article", value: row => row.article.code },
+        { key: "article", label: "Produits", value: row => row.article.name },
+        { key: "unit", label: "Unité", value: row => row.article.unit },
+        ...matrix.stores.map(store => ({
+          key: "store:" + store.id, label: getStoreName(store.id), align: "right" as const,
+          value: (row: SalesStoreRow) => row.quantities[store.id] || 0,
+          footer: (rows: SalesStoreRow[]) => sum(rows.map(row => row.quantities[store.id] || 0))
+        })),
+        { key: "total", label: "S/TOTAL PDV", align: "right", value: row => row.total,
+          footer: rows => sum(rows.map(row => row.total)) }
+      ];
+      return { columns, rows: matrix.rows, rowKey: row => row.article.id };
+    }
     case "RESELLER_CREDIT": {
       const columns: ReportColumn<ResellerCreditRow>[] = [
         { key: "name", label: "Revendeur", value: row => row.name },
@@ -245,14 +264,26 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
 
     case "RAW_MATERIAL_CONSUMPTION": {
       type Row = { production: Production; line: Production["consumptions"][number] };
-      const rows: Row[] = ctx.reportProductions.flatMap(production => production.consumptions.map(line => ({ production, line })));
+      const directProductions = ctx.reportMovements
+        .filter(m => m.movement_type === "CONSUMPTION" && m.reference_type === "CONSUMPTION" && m.quantity < 0)
+        .map(m => {
+          const article = getArticle(m.article_id);
+          return {
+            id: m.id, production_number: m.reference_number, created_at: m.created_at,
+            manufacturer_store_id: m.store_id, created_by_name: m.created_by_name,
+            notes: m.notes,
+            consumptions: [{ id: m.id, article_id: m.article_id, article_code: article?.code || "", article_name: article?.name || m.article_id, quantity: Math.abs(m.quantity), unit: article?.unit || "" }]
+          } as Production;
+        });
+      const rows: Row[] = [...ctx.reportProductions.filter(p => p.status === "COMPLETED"), ...directProductions].flatMap(production => production.consumptions.map(line => ({ production, line })));
       const columns: ReportColumn<Row>[] = [
-        { key: "number", label: "Ordre", value: r => r.production.production_number },
+        { key: "number", label: "Référence", value: r => r.production.production_number },
         { key: "date", label: "Date", value: r => r.production.created_at, render: r => new Date(r.production.created_at).toLocaleDateString("fr-FR") },
         { key: "store", label: "Atelier", value: r => getStoreName(r.production.manufacturer_store_id) },
         { key: "article", label: "Matière première", value: r => `${r.line.article_code} ${r.line.article_name}` },
-        { key: "quantity", label: "Quantité consommée", align: "right", value: r => r.line.quantity, render: r => `${r.line.quantity} ${r.line.unit}`, footer: rows => sum(rows.map(r => r.line.quantity)) },
-        { key: "operator", label: "Opérateur", value: r => r.production.created_by_name }
+        { key: "quantity", label: "Quantité consommée", align: "right", value: r => r.line.quantity, render: r => `${r.line.quantity} ${r.line.unit}`, footer: rows => [...rows.reduce((totals, r) => totals.set(r.line.unit, (totals.get(r.line.unit) || 0) + r.line.quantity), new Map<string, number>())].map(([unit, quantity]) => `${quantity} ${unit}`).join(" · ") },
+        { key: "operator", label: "Opérateur", value: r => r.production.created_by_name },
+        { key: "notes", label: "Motif / Notes", value: r => r.production.notes || "" }
       ];
       return { columns, rows, rowKey: r => r.line.id };
     }
@@ -303,13 +334,16 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
       });
       const columns: ReportColumn<CashHandover>[] = [
         { key: "number", label: "N° remise", value: row => row.handover_number },
+        { key: "payment_method", label: "Mode de remise", value: row => row.payment_method === "MVOLA" ? "MVola" : row.payment_method === "OTHER" ? "Autre mode de paiement" : "Espèces" },
+        { key: "reference_note", label: "Note / Référence", value: row => row.reference_note || "" },
         { key: "date", label: "Journée", value: row => row.business_date },
         { key: "store", label: "Magasin", value: row => getStoreName(row.store_id) },
         amountColumn("declared", "Déclaré", row => row.declared_amount),
         { ...amountColumn("received", "Reçu", row => row.received_amount ?? 0), render: row => row.received_amount === undefined ? "En attente" : money(row.received_amount) },
         { ...amountColumn("difference", "Écart reçu − déclaré", row => row.received_amount === undefined ? 0 : row.received_amount - row.declared_amount), render: row => row.received_amount === undefined ? "En attente" : money(row.received_amount - row.declared_amount) },
         amountColumn("deposited", "Déposé en banque", row => row.deposited_amount),
-        amountColumn("remaining", "Reste à déposer", row => (row.received_amount ?? 0) - row.deposited_amount),
+        amountColumn("allocated", "Utilisé / transféré", row => row.allocated_amount ?? 0),
+        amountColumn("remaining", "Reste à déposer", row => (row.received_amount ?? 0) - row.deposited_amount - (row.allocated_amount ?? 0)),
         { key: "status", label: "Statut", value: row => labels[row.status] },
         { key: "declarer", label: "Déclaré par", value: row => row.declared_by_name },
         { key: "receiver", label: "Reçu par", value: row => row.received_by_name || "En attente" },
@@ -332,7 +366,12 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
         { key: "paymentStatus", label: "Paiement", value: e => e.payment_status === "PAID" ? "Payé" : "En attente" },
         { key: "reference", label: "Référence", value: e => e.reference || "-" },
         { key: "author", label: "Saisi par", value: e => e.created_by_name },
-        { key: "status", label: "Statut", value: e => expenseStatus(e) === "DRAFT" ? "Brouillon" : "Validée" },
+        { key: "payer", label: "Payée par", value: e => e.paid_by_name || "Non renseigné" },
+        { key: "fund", label: "Fonds utilisé", value: e => e.funding_source === "STORE" ? `Fonds du magasin · ${e.paid_by_name || e.store_name || ""}` : e.treasury_fund_id || "Non renseigné" },
+        { key: "paidAt", label: "Date du règlement", value: e => e.paid_at ? new Date(e.paid_at).toLocaleString("fr-FR") : "" },
+        { key: "status", label: "Statut", value: e => expenseStatus(e) === "CANCELLED" ? "Annulée" : expenseStatus(e) === "DRAFT" ? "Brouillon" : "Validée" },
+        { key: "cancelledBy", label: "Annulée par", value: e => e.cancelled_by_name || "" },
+        { key: "cancellationReason", label: "Motif d'annulation", value: e => e.cancellation_reason || "" },
         { key: "amount", label: "Montant", align: "right", value: e => e.amount, render: e => money(e.amount), footer: list => money(sum(list.filter(e => expenseStatus(e) === "VALIDATED").map(e => e.amount))) }
       ];
       return { columns, rows, rowKey: e => e.id };

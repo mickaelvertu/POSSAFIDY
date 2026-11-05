@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { buildSalesStoreMatrix } from "../services/salesStoreMatrix";
 import { storeLabel } from "../services/storeLabel";
 import { 
   ReportType, 
@@ -87,6 +88,8 @@ export default function ReportViewer({
       )
     : [], [reportType, articles, stores, stocks, transfers, movements, sales, productions, auditLogs, filters]);
   const reportSales = filteredData.sales;
+  const salesStoreMatrix = useMemo(() => reportType === "SALES_BY_STORE_ARTICLE"
+    ? buildSalesStoreMatrix(filteredData, filters) : undefined, [reportType, filteredData, filters]);
   const reportProductions = filteredData.productions;
   const reportAuditLogs = filteredData.auditLogs;
   const reportExpenses = filteredData.expenses || [];
@@ -128,6 +131,7 @@ export default function ReportViewer({
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
 
   const tableConfig = useMemo(() => getReportTableConfig(reportType, {
+    salesStoreMatrix,
     getStoreName,
     getCategoryName,
     getArticle,
@@ -144,7 +148,7 @@ export default function ReportViewer({
     salesByArticle,
     salesByCategory,
     filteredSalesLines
-  }), [reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, filteredData.cashHandovers, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
+  }), [salesStoreMatrix, reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, filteredData.cashHandovers, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
 
   const hiddenKeys = useMemo(() => new Set(hiddenKeysByReport[reportType] || []), [hiddenKeysByReport, reportType]);
 
@@ -163,8 +167,14 @@ export default function ReportViewer({
   };
 
   const handleExport = () => {
+    const exportRows = salesStoreMatrix ? [...tableConfig.rows, {
+      article: { code: "", name: "TOTAL PDV", unit: "" },
+      quantities: Object.fromEntries(salesStoreMatrix.stores.map(store => [store.id,
+        salesStoreMatrix.rows.reduce((sum, row) => sum + (row.quantities[store.id] || 0), 0)])),
+      total: salesStoreMatrix.total
+    }] : tableConfig.rows;
     const visibleColumns = tableConfig.columns.filter(col => !hiddenKeys.has(col.key));
-    downloadReportCsv(`rapport-${reportType.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, visibleColumns, tableConfig.rows);
+    downloadReportCsv(`rapport-${reportType.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, visibleColumns, exportRows);
   };
 
   // Active filters summary
@@ -212,6 +222,7 @@ export default function ReportViewer({
 
   // Title dictionary
   const REPORT_TITLES: Record<ReportType, string> = {
+    SALES_BY_STORE_ARTICLE: "N° 20 — QUANTITÉS VENDUES PAR ARTICLE ET POINT DE VENTE",
     RESELLER_CREDIT: "N° 17 — CRÉDITS & ENCAISSEMENTS DES REVENDEURS",
     STOCK_BY_ARTICLE: "N\u00b0 18 \u2014 \u00c9TAT DU STOCK PAR ARTICLE CONSOLID\u00c9",
     STOCK_STATUS: "RAPPORT OFFICIEL DE L'ÉTAT DU STOCK MULTI-MAGASINS",
@@ -363,18 +374,22 @@ export default function ReportViewer({
             </div>
           </div>
 
+          {reportType === "SALES_BY_STORE_ARTICLE" && <>
+            <style>{"@media print { @page { size: A3 landscape; } }"}</style>
+            <p className="mb-3 text-xs text-slate-600">Quantités des ventes validées pendant la période sélectionnée. Les articles sans vente restent affichés à zéro. Les quantités se lisent dans l’unité de chaque article.</p>
+          </>}
           {/* REPORT CONTENT (colonnes modulables, triables & exportables) */}
           {reportType === "STOCK_LEDGER" ? (
-            <StockLedgerGrid blocks={reportLedger} />
+            <StockLedgerGrid blocks={reportLedger} startDate={filters.startDate} endDate={filters.endDate} />
           ) : (
-            <ReportDataTable
+            <div className="overflow-x-auto print:overflow-visible"><ReportDataTable
               columns={tableConfig.columns}
               rows={tableConfig.rows}
               rowKey={tableConfig.rowKey}
               hiddenKeys={hiddenKeys}
               sort={sort}
               onSort={handleSort}
-            />
+            /></div>
           )}
 
           {/* Footer & Signature Section */}

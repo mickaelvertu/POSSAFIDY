@@ -110,6 +110,7 @@ export default function ReportsView({
     icon: any;
     color: string;
   }> = [
+    { type: "SALES_BY_STORE_ARTICLE", number: 20, title: "Ventes par article et magasin", description: "Quantités vendues validées : articles en lignes, magasins en colonnes et sous-totaux", icon: Boxes, color: "text-teal-600 bg-teal-50 border-teal-200" },
     { type: "STOCK_BY_ARTICLE", number: 18, title: "\u00c9tat du stock par article", description: "Quantit\u00e9s disponibles consolid\u00e9es par article, filtrables par magasin", icon: Boxes, color: "text-blue-600 bg-blue-50 border-blue-200" },
     { type: "STOCK_STATUS", number: 1, title: "État du stock", description: "Quantités disponibles par magasin, catégorie et valorisation", icon: Boxes, color: "text-blue-600 bg-blue-50 border-blue-200" },
     { type: "STOCK_MOVEMENTS", number: 2, title: "Mouvements de stock", description: "Traçabilité des 14 types de flux avec stocks avant/après", icon: SlidersHorizontal, color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
@@ -151,7 +152,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
     startDate: selectedReport === "STOCK_BY_ARTICLE" ? undefined : startDate || undefined,
     endDate: selectedReport === "STOCK_BY_ARTICLE" ? undefined : endDate || undefined,
     storeIds: selectedStoreIds,
-    statuses: selectedReport === "RESELLER_CREDIT" ? [] : selectedStatuses,
+    statuses: selectedReport === "SALES_BY_STORE_ARTICLE" ? ["VALIDATED"] : selectedReport === "RESELLER_CREDIT" ? [] : selectedStatuses,
     resellerPaymentStatus: selectedReport === "RESELLER_CREDIT" ? resellerPaymentStatus : undefined,
     movementTypes: selectedMovementTypes,
     movementDirection,
@@ -161,7 +162,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
     minQty: selectedReport === "STOCK_BY_ARTICLE" ? undefined : minQty,
     maxQty: selectedReport === "STOCK_BY_ARTICLE" ? undefined : maxQty,
     customerName: customerName || undefined,
-    articleIds: selectedReport === "STOCK_LEDGER" && articleIds.length ? articleIds : undefined
+    articleIds: ["STOCK_LEDGER", "SALES_BY_STORE_ARTICLE"].includes(selectedReport) && articleIds.length ? articleIds : undefined
   }), [selectedReport, resellerPaymentStatus, articleIds, startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
 
   const filteredData = useMemo(() => filterReportData({
@@ -187,7 +188,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           : filteredData.transfers
   }), [filteredData, selectedReport]);
   const kpis = useMemo(() => getReportKpis(selectedReport, kpiData, categories, filters), [selectedReport, kpiData, categories, filters]);
-  const statusOptions = selectedReport === "CASH_HANDOVERS"
+  const statusOptions = selectedReport === "SALES_BY_STORE_ARTICLE" ? [] : selectedReport === "CASH_HANDOVERS"
     ? ["DECLARED", "RECEIVED", "DISCREPANCY", "PARTIALLY_DEPOSITED", "DEPOSITED"]
     : selectedReport.startsWith("SALES")
     ? ["DRAFT", "CHECKING", "VERIFIED", "APPROVED", "VALIDATED", "CANCELLED", "REFUNDED"]
@@ -198,7 +199,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
         : selectedReport === "AUDIT_LOG"
           ? [...new Set(auditLogs.map(log => log.action))]
           : selectedReport === "EXPENSES"
-            ? ["DRAFT", "VALIDATED"]
+            ? ["DRAFT", "VALIDATED", "CANCELLED"]
             : [];
   const movementTypeOptions = [...new Set(movements.map(movement => movement.movement_type))];
 
@@ -324,7 +325,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs du rapport filtré">
         {!ready && <p role="status" className="text-sm text-slate-200">Les données de ce rapport sont en cours de préparation. Vous pouvez choisir un autre rapport.</p>}
-        {selectedReport === "STOCK_LEDGER" && <p className="text-sm text-slate-200">Générez la grille pour charger les mouvements des magasins et de la période choisis. Effacez les dates pour inclure tout l’historique.</p>}
+        {selectedReport === "STOCK_LEDGER" && <p className="text-sm text-slate-200">Générez la grille pour charger tous les mouvements depuis le serveur, du début à la fin de la période choisie, pour les magasins sélectionnés. La grille s’ouvre une fois le chargement complet. Effacez les dates pour inclure tout l’historique.</p>}
         {ready && selectedReport !== "STOCK_LEDGER" && kpis.map(kpi => (
           <div key={kpi.label} className="rounded-2xl border border-white/70 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{kpi.label}</p>
@@ -419,8 +420,8 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
         {/* Row 1: Date Range, Article Type, Search Ref */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           
-          {(statusOptions.length > 0 || selectedReport === "RESELLER_CREDIT" || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
-            <label className="block font-bold text-slate-700 mb-1">Date Début :</label>
+          {(statusOptions.length > 0 || selectedReport === "SALES_BY_STORE_ARTICLE" || selectedReport === "RESELLER_CREDIT" || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
+            <label className="block font-bold text-slate-700 mb-1">Date de début :</label>
             <input
               type="date"
               value={startDate}
@@ -430,7 +431,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           </div>}
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Date Fin :</label>
+            <label className="block font-bold text-slate-700 mb-1">Date de fin :</label>
             <input
               type="date"
               disabled={selectedReport === "STOCK_BY_ARTICLE"}
@@ -466,7 +467,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
 
         </div>
 
-        {selectedReport === "STOCK_LEDGER" && (
+        {["STOCK_LEDGER", "SALES_BY_STORE_ARTICLE"].includes(selectedReport) && (
           <div className="text-xs">
             <label className="block font-bold text-slate-700 mb-1" htmlFor="ledger-article">Articles précis (Multi-sélection) :</label>
             <input

@@ -1,3 +1,4 @@
+import { buildSalesStoreMatrix } from "./salesStoreMatrix";
 import { buildArticleStockRows } from "./stockByArticle";
 import {
   Article,
@@ -53,7 +54,7 @@ export const PAYMENT_METHOD_LABELS: Partial<Record<PaymentMethod, string>> = {
 };
 
 // Les dépenses sans statut (anciennes données) sont considérées validées, comme dans le module Dépenses.
-export const expenseStatus = (expense: Expense): "DRAFT" | "VALIDATED" => expense.status === "DRAFT" ? "DRAFT" : "VALIDATED";
+export const expenseStatus = (expense: Expense): "DRAFT" | "VALIDATED" | "CANCELLED" => expense.status || "VALIDATED";
 
 export interface ReportKpi {
   label: string;
@@ -201,7 +202,8 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
     (!filters.startDate || handover.business_date >= filters.startDate) &&
     (!filters.endDate || handover.business_date <= filters.endDate) &&
     matchesQuery(handover.handover_number, handover.store_name, handover.declared_by_name,
-      handover.received_by_name, handover.discrepancy_note,
+      handover.received_by_name, handover.discrepancy_note, handover.reference_note,
+      handover.payment_method === "MVOLA" ? "MVola" : handover.payment_method === "OTHER" ? "Autre mode de paiement" : "Espèces",
       ...handover.deposits.flatMap(deposit => [deposit.bank_name, deposit.reference]))
   );
   return { ...data, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers };
@@ -238,6 +240,15 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
   const allSalesLines = data.sales.flatMap(sale => sale.lines);
 
   switch (reportType) {
+    case "SALES_BY_STORE_ARTICLE": {
+      const matrix = buildSalesStoreMatrix(data, filters);
+      return [
+        { label: "Articles", value: String(matrix.rows.length) },
+        { label: "Magasins", value: String(matrix.stores.length) },
+        { label: "Quantités vendues", value: matrix.total.toLocaleString("fr-FR") },
+        { label: "Statut des ventes", value: "Validées uniquement" }
+      ];
+    }
     case "RESELLER_CREDIT": {
       const rows = buildResellerCreditRows(data.sales);
       return [
@@ -301,13 +312,16 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Panier moyen", value: money(data.sales.length ? revenue / data.sales.length : 0) },
         { label: "Articles vendus", value: String(soldUnits) }
       ];
-    case "RAW_MATERIAL_CONSUMPTION":
+    case "RAW_MATERIAL_CONSUMPTION": {
+      const completed = data.productions.filter(p => p.status === "COMPLETED");
+      const direct = data.movements.filter(m => m.movement_type === "CONSUMPTION" && m.reference_type === "CONSUMPTION" && m.quantity < 0);
       return [
-        { label: "Ordres de production", value: String(data.productions.length) },
-        { label: "Lignes consommées", value: String(data.productions.reduce((sum, production) => sum + production.consumptions.length, 0)) },
-        { label: "Productions terminées", value: String(completedProduction) },
-        { label: "Ateliers concernés", value: String(new Set(data.productions.map(production => production.manufacturer_store_id)).size) }
+        { label: "Consommations directes", value: String(direct.length) },
+        { label: "Lignes consommées", value: String(direct.length + completed.reduce((sum, production) => sum + production.consumptions.length, 0)) },
+        { label: "Productions terminées", value: String(completed.length) },
+        { label: "Ateliers concernés", value: String(new Set([...completed.map(p => p.manufacturer_store_id), ...direct.map(m => m.store_id)]).size) }
       ];
+    }
     case "PRODUCTION":
       return [
         { label: "Ordres de production", value: String(data.productions.length) },
@@ -328,7 +342,8 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Montant déclaré", value: money(rows.reduce((sum, row) => sum + row.declared_amount, 0)) },
         { label: "Montant reçu", value: money(rows.reduce((sum, row) => sum + (row.received_amount ?? 0), 0)) },
         { label: "Déposé en banque", value: money(rows.reduce((sum, row) => sum + row.deposited_amount, 0)) },
-        { label: "Reste à déposer", value: money(rows.reduce((sum, row) => sum + (row.received_amount ?? 0) - row.deposited_amount, 0)) }
+        { label: "Utilisé / transféré", value: money(rows.reduce((sum, row) => sum + (row.allocated_amount ?? 0), 0)) },
+        { label: "Reste à déposer", value: money(rows.reduce((sum, row) => sum + (row.received_amount ?? 0) - row.deposited_amount - (row.allocated_amount ?? 0), 0)) }
       ];
     }
     case "EXPENSES": {
@@ -338,7 +353,8 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Dépenses", value: String(expenses.length) },
         { label: "Total validé", value: money(validated.reduce((sum, expense) => sum + expense.amount, 0)) },
         { label: "En attente de paiement", value: money(validated.filter(expense => expense.payment_status === "PENDING").reduce((sum, expense) => sum + expense.amount, 0)) },
-        { label: "Brouillons", value: String(expenses.length - validated.length) }
+        { label: "Brouillons", value: String(expenses.filter(expense => expenseStatus(expense) === "DRAFT").length) },
+        { label: "Annulées", value: String(expenses.filter(expense => expenseStatus(expense) === "CANCELLED").length) }
       ];
     }
     default:

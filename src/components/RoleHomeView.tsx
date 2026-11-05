@@ -226,7 +226,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                 .filter(sale => sale.store_id === store.id && sale.status === "VALIDATED" && isToday(sale.created_at))
                 .reduce((total, sale) => total + sale.total, 0);
               const dailyExpenses = expenses
-                .filter(expense => expense.status !== "DRAFT" && expense.store_id === store.id && isToday(expense.expense_date))
+                .filter(expense => expense.status !== "DRAFT" && expense.status !== "CANCELLED" && expense.store_id === store.id && isToday(expense.expense_date))
                 .reduce((total, expense) => total + expense.amount, 0);
               return (
                 <article
@@ -277,7 +277,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                 .filter(sale => sale.store_id === store.id && sale.status === "VALIDATED" && isToday(sale.created_at))
                 .reduce((total, sale) => total + sale.total, 0);
               const dailyExpenses = expenses
-                .filter(expense => expense.status !== "DRAFT" && expense.store_id === store.id && isToday(expense.expense_date))
+                .filter(expense => expense.status !== "DRAFT" && expense.status !== "CANCELLED" && expense.store_id === store.id && isToday(expense.expense_date))
                 .reduce((total, expense) => total + expense.amount, 0);
               return (
                 <article
@@ -375,7 +375,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
 
       {selectedStore && (() => {
         const storeSales = sales.filter(sale => sale.store_id === selectedStore.id && sale.status === "VALIDATED" && isToday(sale.created_at));
-        const storeExpenses = expenses.filter(expense => expense.status !== "DRAFT" && expense.store_id === selectedStore.id && isToday(expense.expense_date));
+        const storeExpenses = expenses.filter(expense => expense.status !== "DRAFT" && expense.status !== "CANCELLED" && expense.store_id === selectedStore.id && isToday(expense.expense_date));
         const dailySales = storeSales.reduce((total, sale) => total + sale.total, 0);
         const dailyExpenses = storeExpenses.reduce((total, expense) => total + expense.amount, 0);
         const latestSales = [...storeSales].sort((left, right) => right.created_at - left.created_at);

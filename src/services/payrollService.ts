@@ -12,7 +12,10 @@ const ADVANCES_COLLECTION = "salaryAdvances";
 // Standalone advances have no source expense; linked advances require a live source.
 async function withoutDeletedExpenses(advances: SalaryAdvance[]): Promise<SalaryAdvance[]> {
   const ids = [...new Set(advances.flatMap(advance => advance.expense_id ? [advance.expense_id] : []))];
-  const sources = new Map(await Promise.all(ids.map(async id => [id, (await getDoc(doc(db, "expenses", id))).exists()] as const)));
+  const sources = new Map(await Promise.all(ids.map(async id => {
+    const source = await getDoc(doc(db, "expenses", id));
+    return [id, source.exists() && source.data().status !== "CANCELLED"] as const;
+  })));
   return excludeDeletedExpenseAdvances(advances, new Set([...sources].filter(([, exists]) => exists).map(([id]) => id)));
 }
 
@@ -81,7 +84,10 @@ export async function savePayslip(
       if (!current.exists() || current.data().status !== "OUTSTANDING") throw new Error("Une avance a changé. Rechargez la paie.");
       liveAdvances.push(current.data() as SalaryAdvance);
       const sourceId = current.data().expense_id;
-      if (sourceId && !(await transaction.get(doc(db, "expenses", sourceId))).exists()) throw new Error("La dépense liée à une avance a été supprimée. Rechargez la paie.");
+      if (sourceId) {
+        const source = await transaction.get(doc(db, "expenses", sourceId));
+        if (!source.exists() || source.data().status === "CANCELLED") throw new Error("La dépense liée à une avance a été supprimée ou annulée. Rechargez la paie.");
+      }
     }
     if (!existing.exists()) validateAdvanceDeductions(payslip, liveAdvances, settledAdvances);
     if (!existing.exists() || inventory?.counts.length) {

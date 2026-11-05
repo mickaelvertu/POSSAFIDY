@@ -1,4 +1,6 @@
 import { collection, doc, getDocs, query, where } from "firebase/firestore";
+import { treasuryReceipt, prepareFundDebit } from "./treasuryService";
+import { handoverAvailable } from "./treasuryCalculation";
 import { db, runOnlineTransaction } from "../firebase";
 import { AuditLog, CashHandover, CashHandoverDeposit } from "../types";
 
@@ -38,6 +40,8 @@ export async function createCashHandover(handover: CashHandover, auditLog: Audit
     handover.expected_cash_sales < 0 ||
     handover.deposited_amount !== 0 ||
     handover.deposits.length !== 0
+    || (handover.payment_method !== undefined && !["CASH", "MVOLA", "OTHER"].includes(handover.payment_method))
+    || (handover.reference_note !== undefined && typeof handover.reference_note !== "string")
   ) {
     throw new Error("Vérifiez la date et les montants de la déclaration.");
   }
@@ -77,6 +81,9 @@ export async function confirmCashHandoverReceipt(
     if (current.declared_by !== handover.declared_by) {
       throw new Error("La déclaration a changé. Rechargez la liste avant de confirmer la réception.");
     }
+    const profile = await transaction.get(doc(db, "users", userId));
+    const trackFunds = receivedAmount > 0 && ["ADMIN", "SUPER_ADMIN"].includes(profile.data()?.role);
+    const fundId = `pos-${current.id}`;
     const receivedAt = Date.now();
     const updated: CashHandover = {
       ...current,
@@ -84,6 +91,7 @@ export async function confirmCashHandoverReceipt(
       received_amount: receivedAmount,
       received_by: userId,
       received_by_name: userName,
+      ...(trackFunds ? { treasury_fund_id: fundId, allocated_amount: 0 } : {}),
       received_at: receivedAt,
       discrepancy_note: receivedAmount === current.declared_amount ? undefined : discrepancyNote.trim()
     };
@@ -93,8 +101,10 @@ export async function confirmCashHandoverReceipt(
       received_by: userId,
       received_by_name: userName,
       received_at: receivedAt,
-      discrepancy_note: updated.discrepancy_note
+      discrepancy_note: updated.discrepancy_note,
+      ...(trackFunds ? { treasury_fund_id: fundId, allocated_amount: 0 } : {})
     }));
+    if (trackFunds) treasuryReceipt(transaction, { id: fundId, owner_id: userId, owner_name: userName, source: "POS", source_reference: current.handover_number, handover_id: current.id, initial_amount: receivedAmount, balance: receivedAmount, created_at: receivedAt, last_movement_id: `receipt-${fundId}` });
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined({
       ...auditLog,
       old_value: current,
@@ -128,10 +138,13 @@ export async function recordCashHandoverDeposit(
       throw new Error("La remise doit d'abord être réceptionnée avant son dépôt bancaire.");
     }
     if (deposit.deposited_by !== userId) throw new Error("L'utilisateur du dépôt ne correspond pas à la session active.");
-    const remaining = (current.received_amount || 0) - current.deposited_amount;
+    const remaining = handoverAvailable(current);
     if (deposit.amount > remaining) {
       throw new Error(`Le dépôt dépasse le montant encore disponible (${remaining.toLocaleString("fr-FR")} Ar).`);
     }
+    const movementId = `deposit-${auditLog.id}`;
+    const debit = current.treasury_fund_id ? await prepareFundDebit(transaction, current.treasury_fund_id, userId, deposit.amount) : null;
+    if (debit) debit.apply({ id: movementId, kind: "DEPOSIT", fund_id: current.treasury_fund_id!, destination_fund_id: "", from_user: userId, to_user: "", amount: deposit.amount, reference: `${deposit.bank_name} / ${deposit.reference}`, purchase_id: "", created_by: userId, created_at: deposit.deposited_at });
     const deposits = [...current.deposits, deposit];
     const depositedAmount = current.deposited_amount + deposit.amount;
     const updated: CashHandover = {
@@ -143,7 +156,8 @@ export async function recordCashHandoverDeposit(
     transaction.update(ref, {
       deposits: omitUndefined(deposits),
       deposited_amount: depositedAmount,
-      status: updated.status
+      status: updated.status,
+      ...(debit ? { treasury_movement_id: movementId } : {})
     });
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined({
       ...auditLog,

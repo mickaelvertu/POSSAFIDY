@@ -152,7 +152,36 @@ export interface PurchaseLine {
   total: number;
 }
 
+export interface TreasuryFund {
+  id: string;
+  owner_id: string;
+  owner_name: string;
+  source: "POS" | "BANK" | "OTHER" | "OPENING";
+  source_reference: string;
+  handover_id: string;
+  initial_amount: number;
+  balance: number;
+  created_at: number;
+  last_movement_id: string;
+}
+
+export interface TreasuryMovement {
+  id: string;
+  kind: "RECEIPT" | "TRANSFER" | "PURCHASE" | "EXPENSE" | "EXPENSE_REFUND" | "DEPOSIT";
+  fund_id: string;
+  destination_fund_id: string;
+  from_user: string;
+  to_user: string;
+  amount: number;
+  reference: string;
+  purchase_id: string;
+  expense_id?: string;
+  created_by: string;
+  created_at: number;
+}
+
 export interface SupplierPayment {
+  treasury_fund_id?: string;
   id: string;
   amount: number;
   paid_at: number;
@@ -165,7 +194,19 @@ export interface SupplierPayment {
 export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "FOOD" | "SALARY_ADVANCE" | "OTHER";
 
 export interface Expense {
-  status?: "DRAFT" | "VALIDATED";
+  funding_source?: "STORE" | "ADMIN_FUND";
+  payment_recorded_by?: string;
+  cancelled_by?: string;
+  cancelled_by_name?: string;
+  cancelled_at?: number;
+  cancellation_reason?: string;
+  treasury_reversal_id?: string;
+  treasury_fund_id?: string;
+  treasury_movement_id?: string;
+  paid_by?: string;
+  paid_by_name?: string;
+  paid_at?: number;
+  status?: "DRAFT" | "VALIDATED" | "CANCELLED";
   validated_by?: string;
   validated_at?: number;
   id: string;
@@ -201,6 +242,10 @@ export interface CashHandoverDeposit {
 }
 
 export interface CashHandover {
+  treasury_fund_id?: string;
+  allocated_amount?: number;
+  payment_method?: "CASH" | "MVOLA" | "OTHER";
+  reference_note?: string;
   id: string;
   handover_number: string;
   store_id: string;
@@ -697,6 +742,7 @@ export type ReportType =
   | "DISCREPANCIES"
   | "SALES"
   | "SALES_BY_CUSTOMER"
+  | "SALES_BY_STORE_ARTICLE"
   | "SALES_BY_ARTICLE"
   | "SALES_BY_CATEGORY"
   | "RAW_MATERIAL_CONSUMPTION"

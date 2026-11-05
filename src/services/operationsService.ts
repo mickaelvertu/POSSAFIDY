@@ -9,6 +9,7 @@ import {
   where
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
+import { productionStockDeltas } from "./productionStockDeltas";
 import { saleLinesEqual, firestoreValuesEqual } from "./saleComparison";
 import { canConsumeMaterials, validateMaterialConsumption } from "./materialConsumption";
 import { SALE_CATALOG_CHECK_SIZE, assertSaleValidationSize } from "./saleValidationLimits";
@@ -593,14 +594,10 @@ export async function createProduction(
 ): Promise<{ stocks: StoreStock[]; movements: StockMovement[]; auditLog: AuditLog }> {
   if (production.status !== "DRAFT" && !(production.status === "COMPLETED" && original?.status === "DRAFT")) throw new Error("Enregistrez un brouillon avant validation.");
   if (!production.consumptions.length || !production.outputs.length || [...production.consumptions, ...production.outputs].some(line => !line.article_id || !Number.isFinite(line.quantity) || line.quantity <= 0)) throw new Error("Quantites de production invalides.");
-  const deltas = new Map<string, { normal: number; recycled: number }>();
-  const addDelta = (articleId: string, key: "normal" | "recycled", value: number) => {
-    const current = deltas.get(articleId) || { normal: 0, recycled: 0 };
-    deltas.set(articleId, { ...current, [key]: current[key] + value });
-  };
-  if (production.status === "COMPLETED") production.consumptions.forEach(line => addDelta(line.article_id, line.source === "RECYCLED" ? "recycled" : "normal", -line.quantity));
-  if (production.status === "COMPLETED") production.outputs.forEach(line => addDelta(line.article_id, "normal", line.quantity));
-  const targets = [...deltas].map(([articleId, delta]) => ({ articleId, delta, ...stockReference(knownStocks, production.manufacturer_store_id, articleId) }));
+  const targets = productionStockDeltas(production).map(delta => ({
+    articleId: delta.articleId, storeId: delta.storeId, delta,
+    ...stockReference(knownStocks, delta.storeId, delta.articleId)
+  }));
   const timestamp = Date.now();
   const entry = audit(production.status === "DRAFT" ? "PRODUCTION_DRAFT_CREATED" : "PRODUCTION_COMPLETED", "PRODUCTION", production.id, production.validated_by || production.created_by, production.validated_by_name || production.created_by_name, production.manufacturer_store_id, original, production);
   const updatedStocks: StoreStock[] = [];
@@ -629,7 +626,7 @@ export async function createProduction(
       }
       const stock: StoreStock = {
         id: current?.id || target.reference.id,
-        store_id: production.manufacturer_store_id,
+        store_id: target.storeId,
         article_id: target.articleId,
         quantity: before + target.delta.normal,
         ...(current?.quarantine_quantity !== undefined || target.delta.recycled !== 0 ? { quarantine_quantity: quarantineBefore + target.delta.recycled } : {}),
@@ -637,7 +634,7 @@ export async function createProduction(
         updated_at: timestamp
       };
       const baseMovement = {
-        store_id: production.manufacturer_store_id,
+        store_id: target.storeId,
         article_id: target.articleId,
         reference_type: "PRODUCTION" as const,
         reference_id: production.id,
@@ -651,7 +648,7 @@ export async function createProduction(
       if (target.delta.normal !== 0) {
         const movement: StockMovement = {
           ...baseMovement,
-          id: `movement-${production.id}-${target.articleId}`,
+          id: `movement-${production.id}-${target.storeId}-${target.articleId}`,
           movement_type: target.delta.normal < 0 ? "CONSUMPTION" : "PRODUCTION",
           quantity: target.delta.normal,
           before_quantity: before,
@@ -663,7 +660,7 @@ export async function createProduction(
       if (target.delta.recycled !== 0) {
         const movement: StockMovement = {
           ...baseMovement,
-          id: `movement-${production.id}-${target.articleId}-recycled`,
+          id: `movement-${production.id}-${target.storeId}-${target.articleId}-recycled`,
           stock_bucket: "QUARANTINE",
           movement_type: "CONSUMPTION",
           quantity: target.delta.recycled,

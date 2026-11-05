@@ -10,6 +10,7 @@ import {
   writeBatch
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
+import { prepareFundDebit } from "./treasuryService";
 import { transferLineDataEqual } from "./transferLineEquality";
 import { transferLinesEqual } from "./transferComparison";
 import { canPurchaseArticle } from "./purchaseEligibility";
@@ -542,6 +543,8 @@ export async function recordSupplierPayment(purchase: Purchase, payment: Supplie
     if (current.payments.some(item => item.id === payment.id)) throw new Error("Ce paiement existe déjà.");
     const amountPaid = current.amount_paid + payment.amount;
     if (amountPaid > current.total) throw new Error("Le paiement dépasse le solde de la facture.");
+    const debit = payment.treasury_fund_id ? await prepareFundDebit(transaction, payment.treasury_fund_id, payment.paid_by!, payment.amount) : null;
+    if (debit) debit.apply({ id: payment.id, kind: "PURCHASE", fund_id: payment.treasury_fund_id!, destination_fund_id: "", from_user: payment.paid_by!, to_user: "", amount: payment.amount, reference: purchase.purchase_number, purchase_id: purchase.id, created_by: payment.paid_by!, created_at: payment.paid_at });
     updatedPurchase = {
       ...current,
       amount_paid: amountPaid,

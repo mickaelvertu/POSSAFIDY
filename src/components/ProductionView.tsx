@@ -1,4 +1,5 @@
 import { useState, FormEvent } from "react";
+import { storeLabel } from "../services/storeLabel";
 import { hasPermission } from "../services/authService";
 import MaterialConsumptionForm from "./MaterialConsumptionForm";
 import SearchableSelect from "./SearchableSelect";
@@ -9,6 +10,7 @@ import {
   Store, 
   Article, 
   StoreStock, 
+  StockMovement,
   UserProfile, 
   StockTransfer,
   RecyclingDecision,
@@ -33,6 +35,7 @@ import {
 } from "lucide-react";
 
 interface ProductionViewProps {
+  movements: StockMovement[];
   onConsumeMaterial: (storeId: string, articleId: string, quantity: number, reason: string) => Promise<void>;
   productions: Production[];
   stores: Store[];
@@ -52,6 +55,7 @@ interface ProductionViewProps {
 }
 
 export default function ProductionView({
+  movements,
   onConsumeMaterial,
   productions,
   stores,
@@ -109,6 +113,8 @@ export default function ProductionView({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [editingProduction, setEditingProduction] = useState<Production | null>(null);
+
+  const [validatingProductionId, setValidatingProductionId] = useState<string | null>(null);
 
   // Manufacturer store
   const manufStore = stores.find(s => s.store_type === "MANUFACTURER") || stores[0];
@@ -301,6 +307,27 @@ export default function ProductionView({
   return (
     <div className="space-y-6">
       <MaterialConsumptionForm stores={stores} articles={articles} stocks={stocks} user={currentUser} onConsume={onConsumeMaterial} />
+      <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+        <h3 className="font-bold text-slate-900">Historique des consommations directes</h3>
+        <p className="text-xs text-slate-500">Retrouvez toutes les consommations, y compris les fabrications validées, dans Rapports → Consommation MP.</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead><tr>{["Date", "Matière première", "Atelier", "Quantité consommée", "Motif", "Opérateur"].map(label => <th key={label} className="p-2">{label}</th>)}</tr></thead>
+            <tbody>{movements.filter(m => m.movement_type === "CONSUMPTION" && m.reference_type === "CONSUMPTION" && m.quantity < 0).sort((a, b) => b.created_at - a.created_at).map(m => {
+              const article = articles.find(a => a.id === m.article_id);
+              return <tr key={m.id} className="border-t border-slate-100">
+                <td className="p-2">{new Date(m.created_at).toLocaleString("fr-FR")}</td>
+                <td className="p-2">{article?.name || m.article_id}</td>
+                <td className="p-2">{stores.find(s => s.id === m.store_id)?.name || m.store_id}</td>
+                <td className="p-2">{Math.abs(m.quantity)} {article?.unit}</td>
+                <td className="p-2">{m.notes || "—"}</td>
+                <td className="p-2">{m.created_by_name}</td>
+              </tr>;
+            })}</tbody>
+          </table>
+          {!movements.some(m => m.movement_type === "CONSUMPTION" && m.reference_type === "CONSUMPTION" && m.quantity < 0) && <p className="p-3 text-xs text-slate-500">Aucune consommation directe dans l'historique chargé.</p>}
+        </div>
+      </section>
       
       {/* Header Banner */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -462,7 +489,12 @@ export default function ProductionView({
                 <span className={`font-bold text-xs px-2.5 py-0.5 rounded-full border ${p.status === "DRAFT" ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"}`}>
                   {p.status}
                 </span>
-                {p.status === "DRAFT" && hasPermission(currentUser, "production.validate") && <button type="button" className="rounded border border-emerald-300 px-2 py-1 text-xs font-bold text-emerald-800" onClick={async () => { if (window.confirm("Confirmer le contrôle des lignes et appliquer les mouvements de stock ?")) await onValidateProduction(p); }}>Contrôler et valider</button>}
+                {p.status === "DRAFT" && hasPermission(currentUser, "production.validate") && <button type="button" disabled={validatingProductionId !== null} className="rounded border border-emerald-300 px-2 py-1 text-xs font-bold text-emerald-800 disabled:opacity-50" onClick={async () => {
+                  if (!window.confirm("Valider la production ? Les produits fabriqués seront ajoutés au stock du laboratoire. Leur envoi vers un dépôt ou un autre site de Production se fera par un transfert séparé.")) return;
+                  setValidatingProductionId(p.id);
+                  try { await onValidateProduction(p); } finally { setValidatingProductionId(null); }
+                }}>{validatingProductionId === p.id ? "Validation..." : "Contrôler et valider"}</button>}
+                {p.status === "COMPLETED" && <p className="text-xs text-slate-600">Produits fabriqués : stock {stores.find(store => store.id === p.manufacturer_store_id) ? storeLabel(stores.find(store => store.id === p.manufacturer_store_id)!) : p.manufacturer_store_id}. Expédition par transfert vers un dépôt ou un autre site de Production.</p>}
                 {p.status === "DRAFT" && p.created_by === currentUser.uid && (
                   <button type="button" onClick={() => handleOpenEditProductionModal(p)} className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50">
                     <Pencil className="h-3 w-3" /> Modifier

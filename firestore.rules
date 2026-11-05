@@ -322,6 +322,8 @@ service cloud.firestore {
         request.resource.data.deposited_amount == 0 &&
         request.resource.data.deposits is list &&
         request.resource.data.deposits.size() == 0 &&
+        (!('payment_method' in request.resource.data) || request.resource.data.payment_method in ['CASH', 'MVOLA', 'OTHER']) &&
+        (!('reference_note' in request.resource.data) || request.resource.data.reference_note is string) &&
         request.resource.data.keys().hasAll([
           'id', 'handover_number', 'store_id', 'store_name', 'business_date',
           'expected_cash_sales', 'cash_sale_count', 'declared_amount',
@@ -332,7 +334,7 @@ service cloud.firestore {
           'id', 'handover_number', 'store_id', 'store_name', 'business_date',
           'expected_cash_sales', 'cash_sale_count', 'declared_amount',
           'declared_by', 'declared_by_name', 'declared_at', 'status',
-          'deposited_amount', 'deposits'
+          'deposited_amount', 'deposits', 'payment_method', 'reference_note'
         ]);
       allow update: if (
         hasPermission('cash_handover.receive') &&
@@ -344,6 +346,11 @@ service cloud.firestore {
         request.resource.data.received_amount >= 0 &&
         request.resource.data.received_by == request.auth.uid &&
         request.resource.data.received_at is number &&
+        (!('treasury_fund_id' in request.resource.data) || (
+          isAdmin() && request.resource.data.allocated_amount == 0 &&
+          request.resource.data.treasury_fund_id == 'pos-' + handoverId &&
+          getAfter(/databases/$(database)/documents/treasuryFunds/$(request.resource.data.treasury_fund_id)).data.balance == request.resource.data.received_amount
+        )) &&
         (
           (request.resource.data.received_amount == resource.data.declared_amount &&
             request.resource.data.status == 'RECEIVED') ||
@@ -354,7 +361,7 @@ service cloud.firestore {
         ) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'status', 'received_amount', 'received_by', 'received_by_name',
-          'received_at', 'discrepancy_note'
+          'received_at', 'discrepancy_note', 'treasury_fund_id', 'allocated_amount'
         ])
       ) || (
         hasPermission('cash_handover.deposit') &&
@@ -367,7 +374,8 @@ service cloud.firestore {
         request.resource.data.deposited_amount ==
           resource.data.deposited_amount +
           request.resource.data.deposits[request.resource.data.deposits.size() - 1].amount &&
-        request.resource.data.deposited_amount <= resource.data.received_amount &&
+        request.resource.data.deposited_amount <= resource.data.received_amount - resource.data.get('allocated_amount', 0) &&
+        (!('treasury_fund_id' in resource.data) || validHandoverTreasuryDeposit()) &&
         request.resource.data.deposits[request.resource.data.deposits.size() - 1].amount is number &&
         request.resource.data.deposits[request.resource.data.deposits.size() - 1].amount > 0 &&
         request.resource.data.deposits[request.resource.data.deposits.size() - 1].bank_name is string &&
@@ -383,10 +391,194 @@ service cloud.firestore {
             request.resource.data.status == 'PARTIALLY_DEPOSITED')
         ) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'deposits', 'deposited_amount', 'status'
+          'deposits', 'deposited_amount', 'status', 'treasury_movement_id'
         ])
       );
+      allow update: if validHandoverAllocation();
+      allow update: if validHandoverRefund();
+      allow update: if isAdmin() && resource.data.received_by == request.auth.uid &&
+        !('treasury_fund_id' in resource.data) && resource.data.status in ['RECEIVED', 'DISCREPANCY', 'PARTIALLY_DEPOSITED'] &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['treasury_fund_id', 'allocated_amount']) &&
+        request.resource.data.allocated_amount == 0 && request.resource.data.treasury_fund_id == 'pos-' + handoverId &&
+        !exists(/databases/$(database)/documents/treasuryFunds/$(request.resource.data.treasury_fund_id)) &&
+        getAfter(/databases/$(database)/documents/treasuryFunds/$(request.resource.data.treasury_fund_id)).data.balance == resource.data.received_amount - resource.data.deposited_amount;
       allow delete: if false;
+    }
+
+    // Treasury is restricted to active administrators. Every balance change
+    // requires a new immutable movement in the same atomic commit.
+    function treasuryDebit(m, id) {
+      let before = get(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
+      let after = getAfter(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
+      return before.owner_id == request.auth.uid && m.from_user == before.owner_id &&
+        before.balance >= m.amount && after.balance == before.balance - m.amount &&
+        after.last_movement_id == id;
+    }
+    function treasuryCredit(m, id) {
+      let f = getAfter(/databases/$(database)/documents/treasuryFunds/$(m.destination_fund_id)).data;
+      return !exists(/databases/$(database)/documents/treasuryFunds/$(m.destination_fund_id)) &&
+        f.owner_id == m.to_user && f.initial_amount == m.amount && f.balance == m.amount && f.last_movement_id == id;
+    }
+    function treasuryPurchase(m) {
+      let before = get(/databases/$(database)/documents/purchases/$(m.purchase_id)).data;
+      let after = getAfter(/databases/$(database)/documents/purchases/$(m.purchase_id)).data;
+      let payment = after.payments[after.payments.size() - 1];
+      return after.payments.size() == before.payments.size() + 1 &&
+        payment.id == m.id && payment.treasury_fund_id == m.fund_id &&
+        payment.amount == m.amount && payment.paid_by == request.auth.uid;
+    }
+    function treasuryExpense(m) {
+      let before = get(/databases/$(database)/documents/expenses/$(m.expense_id)).data;
+      let after = getAfter(/databases/$(database)/documents/expenses/$(m.expense_id)).data;
+      return !('treasury_movement_id' in before) &&
+        ((before.status == 'DRAFT' && before.payment_status == 'PAID') ||
+          (before.status == 'VALIDATED' && before.payment_status == 'PENDING')) &&
+        after.status == 'VALIDATED' && after.payment_status == 'PAID' &&
+        after.treasury_fund_id == m.fund_id && after.treasury_movement_id == m.id &&
+        after.amount == m.amount && after.paid_by == request.auth.uid && after.paid_at == m.created_at;
+    }
+    function treasuryExpenseRefund(m) {
+      let before = get(/databases/$(database)/documents/expenses/$(m.expense_id)).data;
+      let after = getAfter(/databases/$(database)/documents/expenses/$(m.expense_id)).data;
+      let payment = get(/databases/$(database)/documents/treasuryMovements/$(before.treasury_movement_id)).data;
+      let fund = get(/databases/$(database)/documents/treasuryFunds/$(m.destination_fund_id)).data;
+      let credited = getAfter(/databases/$(database)/documents/treasuryFunds/$(m.destination_fund_id)).data;
+      return before.get('status', 'VALIDATED') != 'CANCELLED' && after.status == 'CANCELLED' &&
+        after.cancelled_by == request.auth.uid && after.cancelled_at == m.created_at &&
+        after.treasury_reversal_id == m.id && m.fund_id == '' && m.from_user == '' &&
+        m.destination_fund_id == before.treasury_fund_id && m.to_user == fund.owner_id &&
+        payment.kind == 'EXPENSE' && payment.expense_id == m.expense_id &&
+        payment.fund_id == m.destination_fund_id && payment.from_user == fund.owner_id &&
+        payment.amount == m.amount && m.amount == before.amount &&
+        credited.balance == fund.balance + m.amount && credited.last_movement_id == m.id;
+    }
+    function treasuryRefundAllocation(m) {
+      let fund = get(/databases/$(database)/documents/treasuryFunds/$(m.destination_fund_id)).data;
+      return fund.handover_id == '' || (
+        getAfter(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.allocated_amount ==
+          get(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.allocated_amount - m.amount &&
+        getAfter(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.allocated_amount >= 0 &&
+        getAfter(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.treasury_movement_id == m.id);
+    }
+    function treasuryPosDeposit(m) {
+      let fund = get(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
+      return fund.handover_id == '' || (
+        getAfter(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.deposited_amount ==
+          get(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.deposited_amount + m.amount &&
+        getAfter(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.treasury_movement_id == m.id);
+    }
+    function treasuryAllocated(m) {
+      let fund = get(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
+      return fund.handover_id == '' || (
+        getAfter(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.allocated_amount ==
+          get(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.get('allocated_amount', 0) + m.amount &&
+        getAfter(/databases/$(database)/documents/cashHandovers/$(fund.handover_id)).data.treasury_movement_id == m.id);
+    }
+    function treasuryReceiptSource(f) {
+      return (f.source in ['BANK', 'OTHER', 'OPENING'] && f.handover_id == '') ||
+        (f.source == 'POS' && f.id == 'pos-' + f.handover_id &&
+          (get(/databases/$(database)/documents/cashHandovers/$(f.handover_id)).data.status == 'DECLARED' ||
+            (!('treasury_fund_id' in get(/databases/$(database)/documents/cashHandovers/$(f.handover_id)).data) &&
+              get(/databases/$(database)/documents/cashHandovers/$(f.handover_id)).data.received_by == request.auth.uid)) &&
+          getAfter(/databases/$(database)/documents/cashHandovers/$(f.handover_id)).data.received_by == request.auth.uid &&
+          getAfter(/databases/$(database)/documents/cashHandovers/$(f.handover_id)).data.received_amount -
+            getAfter(/databases/$(database)/documents/cashHandovers/$(f.handover_id)).data.deposited_amount == f.balance &&
+          getAfter(/databases/$(database)/documents/cashHandovers/$(f.handover_id)).data.treasury_fund_id == f.id);
+    }
+    function treasuryTransferSource(f, m) {
+      let original = get(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
+      let recipient = get(/databases/$(database)/documents/users/$(f.owner_id)).data;
+      return f.handover_id == '' && f.source == original.source &&
+        f.source_reference == original.source_reference && f.owner_id != request.auth.uid &&
+        recipient.status == 'ACTIVE' && recipient.role in ['ADMIN', 'SUPER_ADMIN'];
+    }
+    match /treasuryMovements/{movementId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly([
+        'id', 'kind', 'fund_id', 'destination_fund_id', 'from_user', 'to_user', 'amount', 'reference', 'purchase_id', 'expense_id', 'created_by', 'created_at'
+      ]) && request.resource.data.id == movementId && request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.amount is int && request.resource.data.amount > 0 &&
+        request.resource.data.reference is string && request.resource.data.reference.size() > 0 &&
+        request.resource.data.created_at is number && (
+          (request.resource.data.kind == 'RECEIPT' && request.resource.data.fund_id == '' && request.resource.data.from_user == '' &&
+            request.resource.data.to_user == request.auth.uid && treasuryCredit(request.resource.data, movementId)) ||
+          (request.resource.data.kind == 'TRANSFER' && treasuryDebit(request.resource.data, movementId) &&
+            treasuryCredit(request.resource.data, movementId) && treasuryAllocated(request.resource.data)) ||
+          (request.resource.data.kind == 'PURCHASE' && request.resource.data.destination_fund_id == '' &&
+            treasuryDebit(request.resource.data, movementId) && treasuryPurchase(request.resource.data) && treasuryAllocated(request.resource.data)) ||
+          (request.resource.data.kind == 'EXPENSE' && request.resource.data.destination_fund_id == '' &&
+            treasuryDebit(request.resource.data, movementId) && treasuryExpense(request.resource.data) && treasuryAllocated(request.resource.data)) ||
+          (request.resource.data.kind == 'EXPENSE_REFUND' && treasuryExpenseRefund(request.resource.data) && treasuryRefundAllocation(request.resource.data)) ||
+          (request.resource.data.kind == 'DEPOSIT' && request.resource.data.destination_fund_id == '' &&
+            treasuryDebit(request.resource.data, movementId) && treasuryPosDeposit(request.resource.data))
+        );
+      allow update, delete: if false;
+    }
+    match /treasuryFunds/{fundId} {
+      function validCreation() {
+        let f = request.resource.data;
+        let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(f.last_movement_id)).data;
+        return f.keys().hasOnly(['id', 'owner_id', 'owner_name', 'source', 'source_reference', 'handover_id', 'initial_amount', 'balance', 'created_at', 'last_movement_id']) &&
+          f.id == fundId && f.balance is int && f.balance > 0 && f.initial_amount == f.balance &&
+          f.owner_name is string && f.source_reference is string && f.source_reference.size() > 0 &&
+          f.created_at is number && !exists(/databases/$(database)/documents/treasuryMovements/$(f.last_movement_id)) &&
+          m.destination_fund_id == fundId && m.to_user == f.owner_id && m.amount == f.balance && (
+            (m.kind == 'RECEIPT' && f.owner_id == request.auth.uid && treasuryReceiptSource(f)) ||
+            (m.kind == 'TRANSFER' && treasuryTransferSource(f, m)));
+      }
+      function validDebit() {
+        let f = request.resource.data;
+        let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(f.last_movement_id)).data;
+        return resource.data.owner_id == request.auth.uid && f.balance is int && f.balance >= 0 &&
+          f.diff(resource.data).affectedKeys().hasOnly(['balance', 'last_movement_id']) &&
+          !exists(/databases/$(database)/documents/treasuryMovements/$(f.last_movement_id)) &&
+          m.kind in ['TRANSFER', 'PURCHASE', 'EXPENSE', 'DEPOSIT'] && m.fund_id == fundId &&
+          m.amount > 0 && f.balance == resource.data.balance - m.amount;
+      }
+      allow read: if isAdmin();
+      allow create: if isAdmin() && validCreation();
+      allow update: if isAdmin() && validDebit();
+      allow update: if isAdmin() && request.resource.data.balance is int && request.resource.data.balance >= 0 &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance', 'last_movement_id']) &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$(request.resource.data.last_movement_id)) &&
+        getAfter(/databases/$(database)/documents/treasuryMovements/$(request.resource.data.last_movement_id)).data.kind == 'EXPENSE_REFUND' &&
+        getAfter(/databases/$(database)/documents/treasuryMovements/$(request.resource.data.last_movement_id)).data.destination_fund_id == fundId &&
+        treasuryExpenseRefund(getAfter(/databases/$(database)/documents/treasuryMovements/$(request.resource.data.last_movement_id)).data);
+      allow delete: if false;
+    }
+    function validHandoverAllocation() {
+      let before = resource.data;
+      let after = request.resource.data;
+      let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id)).data;
+      return isAdmin() && before.received_by == request.auth.uid &&
+        after.diff(before).affectedKeys().hasOnly(['allocated_amount', 'treasury_movement_id']) &&
+        m.kind in ['TRANSFER', 'PURCHASE', 'EXPENSE'] && m.fund_id == before.treasury_fund_id &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id)) &&
+        after.allocated_amount == before.get('allocated_amount', 0) + m.amount &&
+        after.allocated_amount + before.deposited_amount <= before.received_amount;
+    }
+    function validHandoverRefund() {
+      let after = request.resource.data;
+      let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id)).data;
+      return isAdmin() && m.kind == 'EXPENSE_REFUND' && m.destination_fund_id == resource.data.treasury_fund_id &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$(m.id)) &&
+        after.diff(resource.data).affectedKeys().hasOnly(['allocated_amount', 'treasury_movement_id']) &&
+        after.allocated_amount == resource.data.allocated_amount - m.amount && after.allocated_amount >= 0;
+    }
+    function validHandoverTreasuryDeposit() {
+      let before = resource.data;
+      let after = request.resource.data;
+      let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id)).data;
+      return m.kind == 'DEPOSIT' && m.fund_id == before.treasury_fund_id &&
+        m.amount == after.deposited_amount - before.deposited_amount &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id));
+    }
+    function validTreasuryPayment() {
+      let p = request.resource.data.payments[request.resource.data.payments.size() - 1];
+      let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(p.id)).data;
+      return m.kind == 'PURCHASE' && m.purchase_id == resource.data.id &&
+        m.fund_id == p.treasury_fund_id && m.amount == p.amount &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$(p.id));
     }
 
     match /purchases/{purchaseId} {
@@ -462,6 +654,7 @@ service cloud.firestore {
         request.resource.data.payments is list &&
         request.resource.data.payments.size() == resource.data.payments.size() + 1 &&
         request.resource.data.payments.hasAll(resource.data.payments) &&
+        ((!isAdmin() && !('treasury_fund_id' in request.resource.data.payments[request.resource.data.payments.size() - 1])) || validTreasuryPayment()) &&
         request.resource.data.payments[request.resource.data.payments.size() - 1].amount is number &&
         request.resource.data.payments[request.resource.data.payments.size() - 1].amount > 0 &&
         request.resource.data.payments[request.resource.data.payments.size() - 1].paid_by == request.auth.uid &&
@@ -514,7 +707,7 @@ service cloud.firestore {
     }
 
     function hasExpenseStoreAccess(storeId) {
-      return isSuperAdmin() || (isActiveUser() && storeId is string &&
+      return isSuperAdmin() || (isAdmin() && (storeId == null || storeId == '')) || (isActiveUser() && storeId is string &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([storeId]));
     }
 
@@ -536,6 +729,45 @@ service cloud.firestore {
         data.description.size() > 0;
     }
 
+    function hasExpensePaymentFields(data) {
+      return data.keys().hasAny(['treasury_fund_id', 'treasury_movement_id', 'paid_by', 'paid_by_name', 'paid_at', 'funding_source', 'payment_recorded_by']);
+    }
+    function validStoreExpensePayment() {
+      let after = request.resource.data;
+      let store = get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data;
+      return isAdmin() && store.is_active == true && after.funding_source == 'STORE' &&
+        after.payment_recorded_by == request.auth.uid && after.paid_by_name == store.name && after.paid_at is number &&
+        after.payment_status == 'PAID' && after.status == 'VALIDATED' &&
+        !after.keys().hasAny(['treasury_fund_id', 'treasury_movement_id', 'paid_by']);
+    }
+    function validExpenseCancellation() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return isAdmin() && before.get('status', 'VALIDATED') != 'CANCELLED' && after.status == 'CANCELLED' &&
+        after.cancelled_by == request.auth.uid && after.cancelled_by_name is string && after.cancelled_at is number &&
+        after.cancellation_reason is string && after.cancellation_reason.size() > 0 &&
+        after.diff(before).affectedKeys().hasOnly(['status', 'cancelled_by', 'cancelled_by_name', 'cancelled_at', 'cancellation_reason', 'treasury_reversal_id']) &&
+        (!('treasury_movement_id' in before) || (
+          !exists(/databases/$(database)/documents/treasuryMovements/$(after.treasury_reversal_id)) &&
+          getAfter(/databases/$(database)/documents/treasuryMovements/$(after.treasury_reversal_id)).data.expense_id == before.id &&
+          treasuryExpenseRefund(getAfter(/databases/$(database)/documents/treasuryMovements/$(after.treasury_reversal_id)).data))) &&
+        (!('salary_advance_id' in before) || !exists(/databases/$(database)/documents/salaryAdvances/$(before.salary_advance_id)) || (
+          get(/databases/$(database)/documents/salaryAdvances/$(before.salary_advance_id)).data.status == 'OUTSTANDING' &&
+          get(/databases/$(database)/documents/salaryAdvances/$(before.salary_advance_id)).data.get('amount_deducted', 0) == 0 &&
+          get(/databases/$(database)/documents/salaryAdvances/$(before.salary_advance_id)).data.get('payslip_id', '') == '' &&
+          !existsAfter(/databases/$(database)/documents/salaryAdvances/$(before.salary_advance_id))));
+    }
+    function validExpenseTreasuryPayment() {
+      let after = request.resource.data;
+      let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id)).data;
+      let fund = get(/databases/$(database)/documents/treasuryFunds/$(after.treasury_fund_id)).data;
+      return isAdmin() && after.paid_by == request.auth.uid && after.paid_by_name == fund.owner_name &&
+        after.paid_at is number && after.payment_status == 'PAID' && after.status == 'VALIDATED' &&
+        m.kind == 'EXPENSE' && m.expense_id == resource.data.id && m.amount == resource.data.amount &&
+        m.fund_id == after.treasury_fund_id && m.created_at == after.paid_at &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id));
+    }
+
     match /expenses/{expenseId} {
       // Employees may check their own advance source, including a deleted source.
       allow get: if isActiveUser() && (resource == null || isAdmin() || (
@@ -551,6 +783,9 @@ service cloud.firestore {
         hasExpenseStoreAccess(request.resource.data.get('store_id', null)) &&
         request.resource.data.id == expenseId &&
         request.resource.data.status == 'DRAFT' &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$('expense-' + expenseId)) &&
+        !request.resource.data.keys().hasAny(['cancelled_by', 'cancelled_by_name', 'cancelled_at', 'cancellation_reason', 'treasury_reversal_id']) &&
+        !hasExpensePaymentFields(request.resource.data) &&
         !request.resource.data.keys().hasAny(['validated_by', 'validated_at']) &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.amount is number && request.resource.data.amount > 0 &&
@@ -602,9 +837,20 @@ service cloud.firestore {
             getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.status == 'OUTSTANDING'
           )
         ) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'validated_by', 'validated_at'])
+        ((isAdmin() && resource.data.payment_status == 'PAID' && (validExpenseTreasuryPayment() || validStoreExpensePayment())) ||
+          ((!isAdmin() || resource.data.payment_status != 'PAID') && !hasExpensePaymentFields(request.resource.data))) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'validated_by', 'validated_at', 'treasury_fund_id', 'treasury_movement_id', 'paid_by', 'paid_by_name', 'paid_at', 'funding_source', 'payment_recorded_by'
+        ])
       );
-      allow delete: if isSuperAdmin();
+      allow update: if isAdmin() && resource.data.status == 'VALIDATED' && resource.data.payment_status == 'PENDING' &&
+        !hasExpensePaymentFields(resource.data) && (validExpenseTreasuryPayment() || validStoreExpensePayment()) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'payment_status', 'treasury_fund_id', 'treasury_movement_id', 'paid_by', 'paid_by_name', 'paid_at', 'funding_source', 'payment_recorded_by'
+        ]);
+      allow update: if validExpenseCancellation();
+      allow delete: if isSuperAdmin() && resource.data.get('status', 'VALIDATED') in ['DRAFT', 'CANCELLED'] &&
+        (!('treasury_movement_id' in resource.data) || ('treasury_reversal_id' in resource.data));
     }
 
     match /movements/{movementId} {
@@ -1254,6 +1500,16 @@ service cloud.firestore {
     }
 
     match /transfers/{transferId} {
+      // Production exchanges only with another production site or an active depot.
+      function productionDestinationAllowed(data) {
+        let source = exists(/databases/$(database)/documents/stores/$(data.source_store_id))
+          ? get(/databases/$(database)/documents/stores/$(data.source_store_id)).data : {};
+        let destination = exists(/databases/$(database)/documents/stores/$(data.destination_store_id))
+          ? get(/databases/$(database)/documents/stores/$(data.destination_store_id)).data : {};
+        return source.get('store_type', '') == 'MANUFACTURER'
+          ? (destination.get('store_type', '') in ['MANUFACTURER', 'CENTRAL_WAREHOUSE'] && destination.get('is_active', false))
+          : (destination.get('store_type', '') != 'MANUFACTURER' || source.get('store_type', '') == 'CENTRAL_WAREHOUSE');
+      }
       allow get: if isActiveUser() && (
         resource == null
           ? (hasPermission('procurement.manage') || hasPermission('transfers.create'))
@@ -1277,6 +1533,7 @@ service cloud.firestore {
         request.resource.data.id == transferId &&
         request.resource.data.requested_by == request.auth.uid &&
         hasStoreAccess(request.resource.data.source_store_id) &&
+        productionDestinationAllowed(request.resource.data) &&
         request.resource.data.source_store_id != request.resource.data.destination_store_id &&
         exists(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)) &&
         get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.is_active == true &&
@@ -1310,6 +1567,7 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.created_by == request.resource.data.requested_by
       );
       allow update: if
+        (request.resource.data.status == 'CANCELLED' || productionDestinationAllowed(request.resource.data)) &&
         request.resource.data.id == resource.data.id &&
         request.resource.data.created_at == resource.data.created_at &&
         (

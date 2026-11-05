@@ -4,12 +4,15 @@ import { flushSync } from "react-dom";
 
 interface StockLedgerGridProps {
   blocks: LedgerBlock[];
+  startDate?: string;
+  endDate?: string;
 }
 
 const dateTime = (timestamp: number) => new Date(timestamp).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 const day = (timestamp: number) => new Date(timestamp).toLocaleDateString("fr-FR");
 
-export default function StockLedgerGrid({ blocks }: StockLedgerGridProps) {
+export default function StockLedgerGrid({ blocks, startDate, endDate }: StockLedgerGridProps) {
+  const periodDay = (value: string) => day(new Date(`${value}T00:00:00`).getTime());
   const [blockCount, setBlockCount] = useState(10);
   const [entryCounts, setEntryCounts] = useState<Record<string, number>>({});
   const [printing, setPrinting] = useState(false);
@@ -44,7 +47,8 @@ export default function StockLedgerGrid({ blocks }: StockLedgerGridProps) {
                 <span className="ml-2 text-[11px] font-normal text-slate-300">· {block.storeName}</span>
               </th>
               <th colSpan={2} className="border border-slate-400 px-2 py-2 text-right font-mono text-[11px] font-semibold">
-                {day(block.firstDate) === day(block.lastDate) ? day(block.firstDate) : `${day(block.firstDate)} → ${day(block.lastDate)}`}
+                <div>Période : {startDate ? periodDay(startDate) : "Début de l’historique"} → {endDate ? periodDay(endDate) : "Ce jour"}</div>
+                <div className="mt-1 font-normal text-slate-300">Mouvements : {day(block.firstDate) === day(block.lastDate) ? day(block.firstDate) : `${day(block.firstDate)} → ${day(block.lastDate)}`}</div>
               </th>
             </tr>
             <tr className="bg-slate-100 text-slate-700">

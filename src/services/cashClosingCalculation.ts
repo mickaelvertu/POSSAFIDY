@@ -8,7 +8,7 @@ export const cashBusinessDate = (timestamp: number) => {
 export function calculateStoreDailyTotals(sales: Sale[], expenses: Expense[], storeId: string, businessDate: string) {
   const validatedSales = sales.filter(sale => sale.store_id === storeId && sale.status === "VALIDATED" && cashBusinessDate(sale.created_at) === businessDate);
   const salesAmount = validatedSales.reduce((total, sale) => total + sale.total, 0);
-  const expensesAmount = expenses.filter(expense => expense.store_id === storeId && expense.status !== "DRAFT" &&
+  const expensesAmount = expenses.filter(expense => expense.store_id === storeId && expense.status !== "DRAFT" && expense.status !== "CANCELLED" &&
     expense.payment_status === "PAID" && cashBusinessDate(expense.expense_date) === businessDate)
     .reduce((total, expense) => total + expense.amount, 0);
   return { salesAmount, expensesAmount, netAmount: salesAmount - expensesAmount };
@@ -18,8 +18,8 @@ export function calculateCashClosing(sales: Sale[], expenses: Expense[], storeId
   const cashSales = sales.filter(sale => sale.store_id === storeId && sale.status === "VALIDATED" &&
     sale.payment_method === "CASH" && sale.payment_status !== "PENDING" && cashBusinessDate(sale.created_at) === businessDate);
   const salesAmount = cashSales.reduce((total, sale) => total + Math.max(0, sale.amount_paid - (sale.change_returned || 0)), 0);
-  const expensesAmount = expenses.filter(expense => expense.store_id === storeId && expense.status !== "DRAFT" &&
-    expense.payment_method === "CASH" && expense.payment_status === "PAID" && cashBusinessDate(expense.expense_date) === businessDate)
+  const expensesAmount = expenses.filter(expense => expense.store_id === storeId && expense.status !== "DRAFT" && expense.status !== "CANCELLED" &&
+    !expense.treasury_movement_id && expense.payment_method === "CASH" && expense.payment_status === "PAID" && cashBusinessDate(expense.expense_date) === businessDate)
     .reduce((total, expense) => total + expense.amount, 0);
   return { salesAmount, expensesAmount, netAmount: salesAmount - expensesAmount, saleCount: cashSales.length };
 }

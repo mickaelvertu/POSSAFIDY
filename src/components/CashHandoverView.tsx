@@ -1,3 +1,4 @@
+import { storeLabel } from "../services/storeLabel";
 import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { Banknote, Building2, CheckCircle2, ClipboardCheck, Landmark, Plus, ReceiptText } from "lucide-react";
 import { AppUser, CashHandover, CashHandoverDeposit, Expense, Sale, Store } from "../types";
@@ -16,6 +17,7 @@ interface CashHandoverViewProps {
   onCreate: (handover: CashHandover) => Promise<void>;
   onConfirmReceipt: (handover: CashHandover, receivedAmount: number, note: string) => Promise<void>;
   onRecordDeposit: (handover: CashHandover, deposit: CashHandoverDeposit) => Promise<void>;
+  onAdoptHandover?: (handover: CashHandover) => Promise<void>;
 }
 
 const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
@@ -34,14 +36,20 @@ const statusLabels: Record<CashHandover["status"], string> = {
 
 export default function CashHandoverView({
   handovers, loadError, sales, expenses, stores, currentUser, canCreate, canReceive, canDeposit,
-  onCreate, onConfirmReceipt, onRecordDeposit
+  onCreate, onConfirmReceipt, onRecordDeposit, onAdoptHandover
 }: CashHandoverViewProps) {
+  const getStoreLabel = (id: string, name: string) => {
+    const store = stores.find(item => item.id === id);
+    return store ? storeLabel({ ...store, code: store.code || store.id }) : name + " (" + id + ")";
+  };
   const posStores = stores.filter(store => store.store_type === "POS" && store.is_active);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [receiptHandover, setReceiptHandover] = useState<CashHandover | null>(null);
   const [depositHandover, setDepositHandover] = useState<CashHandover | null>(null);
   const [storeId, setStoreId] = useState(posStores.length === 1 ? posStores[0].id : "");
   const [businessDate, setBusinessDate] = useState(localDate(Date.now()));
+  const [paymentMethod, setPaymentMethod] = useState<NonNullable<CashHandover["payment_method"]>>("CASH");
+  const [referenceNote, setReferenceNote] = useState("");
   const [reviewDate, setReviewDate] = useState(localDate(Date.now()));
   const [reviewStoreId, setReviewStoreId] = useState("");
   const filteredHandovers = handovers.filter(handover => !reviewStoreId || handover.store_id === reviewStoreId);
@@ -64,6 +72,8 @@ export default function CashHandoverView({
   })), [stores, sales, expenses, handovers, reviewDate, reviewStoreId]);
 
   const resetCreateForm = () => {
+    setPaymentMethod("CASH");
+    setReferenceNote("");
     setIsCreateOpen(false);
     setFormError("");
   };
@@ -101,6 +111,8 @@ export default function CashHandoverView({
       expected_cash_sales: expectedCash,
       cash_sale_count: closing.saleCount,
       declared_amount: amount,
+      payment_method: paymentMethod,
+      reference_note: referenceNote.trim(),
       declared_by: currentUser.uid,
       declared_by_name: currentUser.displayName,
       declared_at: timestamp,
@@ -150,7 +162,7 @@ export default function CashHandoverView({
     event.preventDefault();
     if (!depositHandover) return;
     const amount = Number(depositAmount);
-    const remaining = (depositHandover.received_amount || 0) - depositHandover.deposited_amount;
+    const remaining = (depositHandover.received_amount || 0) - depositHandover.deposited_amount - (depositHandover.allocated_amount ?? 0);
     if (!Number.isInteger(amount) || amount <= 0 || amount > remaining || !bankName.trim() || !depositReference.trim()) {
       setFormError(`Saisissez un dépôt positif ne dépassant pas le solde de ${money(remaining)}, la banque et la référence.`);
       return;
@@ -186,7 +198,7 @@ export default function CashHandoverView({
   };
   const openDeposit = (handover: CashHandover) => {
     setFormError("");
-    setDepositAmount(String((handover.received_amount || 0) - handover.deposited_amount));
+    setDepositAmount(String((handover.received_amount || 0) - handover.deposited_amount - (handover.allocated_amount ?? 0)));
     setBankName("");
     setDepositReference("");
     setDepositHandover(handover);
@@ -229,14 +241,14 @@ export default function CashHandoverView({
           <p className="text-xs text-slate-600">Toutes les ventes validées, y compris à crédit, moins les dépenses payées. Le net espèces correspond aux fonds à remettre et à confirmer comme reçus.</p>
           <div className="flex flex-wrap gap-3">
             <label className="text-xs font-semibold text-slate-700">Journée<input type="date" value={reviewDate} max={localDate(Date.now())} onChange={event => setReviewDate(event.target.value)} className={inputClass} /></label>
-            <label className="text-xs font-semibold text-slate-700">Magasin<select value={reviewStoreId} onChange={event => setReviewStoreId(event.target.value)} className={inputClass}><option value="">Tous les magasins</option>{stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select></label>
+            <label className="text-xs font-semibold text-slate-700">Magasin<select value={reviewStoreId} onChange={event => setReviewStoreId(event.target.value)} className={inputClass}><option value="">Tous les magasins</option>{stores.map(store => <option key={store.id} value={store.id}>{getStoreLabel(store.id, store.name)}</option>)}</select></label>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[950px] text-left text-xs">
             <thead className="bg-slate-50 text-slate-600"><tr>{["Magasin", "Ventes", "Dépenses payées", "Ventes − dépenses", "Net espèces à remettre", "Montant reçu", "Statut / Actions"].map(label => <th key={label} className="px-4 py-3">{label}</th>)}</tr></thead>
             <tbody className="divide-y divide-slate-100">{dailyRows.map(({ store, totals, cash, handover }) => <tr key={store.id}>
-              <td className="px-4 py-3 font-bold text-slate-900">{store.name}</td>
+              <td className="px-4 py-3 font-bold text-slate-900">{getStoreLabel(store.id, store.name)}</td>
               <td className="px-4 py-3">{money(totals.salesAmount)}</td>
               <td className="px-4 py-3">{money(totals.expensesAmount)}</td>
               <td className="px-4 py-3 font-bold">{money(totals.netAmount)}</td>
@@ -266,18 +278,19 @@ export default function CashHandoverView({
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredHandovers.map(handover => {
-                  const remaining = (handover.received_amount || 0) - handover.deposited_amount;
+                  const remaining = (handover.received_amount || 0) - handover.deposited_amount - (handover.allocated_amount ?? 0);
                   const canConfirm = canReceive && handover.status === "DECLARED" && handover.declared_by !== currentUser.uid;
-                  const canAddDeposit = canDeposit && ["RECEIVED", "DISCREPANCY", "PARTIALLY_DEPOSITED"].includes(handover.status) && remaining > 0;
+                  const canAddDeposit = canDeposit && (!handover.treasury_fund_id || handover.received_by === currentUser.uid) && ["RECEIVED", "DISCREPANCY", "PARTIALLY_DEPOSITED"].includes(handover.status) && remaining > 0;
                   return (
                     <tr key={handover.id} className="align-top">
-                      <td className="px-4 py-3"><p className="font-bold text-slate-900">{handover.handover_number}</p><p className="mt-1 text-slate-600">{handover.store_name}</p><p className="mt-1 text-slate-500">{new Date(`${handover.business_date}T12:00:00`).toLocaleDateString("fr-FR")}</p></td>
-                      <td className="px-4 py-3"><p className="font-semibold text-slate-800">{money(handover.declared_amount)}</p><p className="mt-1 text-slate-500">Par {handover.declared_by_name}</p><p className="mt-1 text-slate-500">Ventes espèces attendues : {money(handover.expected_cash_sales)} ({handover.cash_sale_count})</p></td>
+                      <td className="px-4 py-3"><p className="font-bold text-slate-900">{handover.handover_number}</p><p className="mt-1 text-slate-600">{getStoreLabel(handover.store_id, handover.store_name)}</p><p className="mt-1 text-slate-500">{new Date(`${handover.business_date}T12:00:00`).toLocaleDateString("fr-FR")}</p></td>
+                      <td className="px-4 py-3"><p className="font-semibold text-slate-800">{money(handover.declared_amount)}</p><p className="mt-1 text-slate-500">Par {handover.declared_by_name}</p><p className="mt-1 text-slate-600">{handover.payment_method === "MVOLA" ? "MVola" : handover.payment_method === "OTHER" ? "Autre mode de paiement" : "Espèces"}</p>{handover.reference_note && <p className="mt-1 max-w-64 whitespace-pre-wrap break-words text-slate-500">{handover.reference_note}</p>}<p className="mt-1 text-slate-500">Ventes espèces attendues : {money(handover.expected_cash_sales)} ({handover.cash_sale_count})</p></td>
                       <td className="px-4 py-3">{handover.received_by ? <><p className="font-semibold text-slate-800">{money(handover.received_amount || 0)}</p><p className="mt-1 text-slate-500">Par {handover.received_by_name}</p>{handover.discrepancy_note && <p className="mt-1 max-w-48 text-rose-700">{handover.discrepancy_note}</p>}</> : <span className="text-slate-400">En attente</span>}</td>
-                      <td className="px-4 py-3"><p className="font-semibold text-slate-800">{money(handover.deposited_amount)}</p>{handover.deposits.map((deposit, index) => <p key={`${deposit.reference}-${index}`} className="mt-1 text-slate-500">{deposit.bank_name} · {deposit.reference} · {money(deposit.amount)}</p>)}{remaining > 0 && handover.received_by && <p className="mt-1 text-amber-700">Solde : {money(remaining)}</p>}</td>
+                      <td className="px-4 py-3"><p className="font-semibold text-slate-800">{money(handover.deposited_amount)}</p>{handover.deposits.map((deposit, index) => <p key={`${deposit.reference}-${index}`} className="mt-1 text-slate-500">{deposit.bank_name} · {deposit.reference} · {money(deposit.amount)}</p>)}{(handover.allocated_amount ?? 0) > 0 && <p className="mt-1 text-slate-600">Utilisé / transféré : {money(handover.allocated_amount ?? 0)}</p>}{remaining > 0 && handover.received_by && <p className="mt-1 text-amber-700">Solde : {money(remaining)}</p>}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex rounded-full px-2 py-1 font-bold ${handover.status === "DISCREPANCY" ? "bg-rose-100 text-rose-800" : handover.status === "DEPOSITED" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{statusLabels[handover.status]}</span>
                         <div className="mt-2 flex flex-wrap gap-2">
+                          {onAdoptHandover && !handover.treasury_fund_id && handover.received_by === currentUser.uid && remaining > 0 && ["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId) && <button type="button" disabled={busy || !!loadError} onClick={async () => { setBusy(true); setFormError(""); try { await onAdoptHandover(handover); } catch (error) { setFormError(error instanceof Error ? error.message : "Reprise impossible."); } finally { setBusy(false); } }} className="font-semibold text-teal-700">Reprendre dans la trésorerie</button>}
                           {canConfirm && <button type="button" onClick={() => openReceipt(handover)} className="inline-flex items-center gap-1 font-semibold text-blue-700"><ClipboardCheck className="h-3.5 w-3.5" /> Confirmer réception</button>}
                           {canAddDeposit && <button type="button" onClick={() => openDeposit(handover)} className="inline-flex items-center gap-1 font-semibold text-emerald-700"><Landmark className="h-3.5 w-3.5" /> Enregistrer dépôt</button>}
                           {!canConfirm && handover.status === "DECLARED" && handover.declared_by === currentUser.uid && <span className="text-slate-500">En attente d'un autre utilisateur</span>}
@@ -293,22 +306,26 @@ export default function CashHandoverView({
       </div>
 
       {isCreateOpen && modal("Déclarer la clôture POS", "Envoyer la déclaration", handleCreate, <>
-      <label className="block space-y-1 text-xs font-semibold text-slate-700">Point de vente<select required value={storeId} onChange={event => { setStoreId(event.target.value); }} className={inputClass}><option value="">Choisir un point de vente</option>{posStores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</select></label>
+      <label className="block space-y-1 text-xs font-semibold text-slate-700">Point de vente<select required value={storeId} onChange={event => { setStoreId(event.target.value); }} className={inputClass}><option value="">Choisir un point de vente</option>{posStores.map(store => <option key={store.id} value={store.id}>{getStoreLabel(store.id, store.name)}</option>)}</select></label>
       <label className="block space-y-1 text-xs font-semibold text-slate-700">Date de clôture<input required type="date" max={localDate(Date.now())} value={businessDate} onChange={event => { setBusinessDate(event.target.value); }} className={inputClass} /></label>
         <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Ventes espèces validées enregistrées : <strong className="text-slate-900">{money(expectedCash)}</strong></div>
         <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Dépenses espèces payées du jour : <strong>{money(closing.expensesAmount)}</strong></div>
         <label className="block space-y-1 text-xs font-semibold text-slate-700">Montant déclaré : ventes − dépenses (Ar)<input required type="number" min="0" step="1" value={declaredAmount} readOnly className={inputClass} /></label>
+        <label className="block space-y-1 text-xs font-semibold text-slate-700">Mode de remise<select required value={paymentMethod} onChange={event => setPaymentMethod(event.target.value as NonNullable<CashHandover["payment_method"]>)} className={inputClass}><option value="CASH">Espèces</option><option value="MVOLA">MVola</option><option value="OTHER">Autre mode de paiement</option></select></label>
+        <label className="block space-y-1 text-xs font-semibold text-slate-700">Note / Référence<textarea value={referenceNote} onChange={event => setReferenceNote(event.target.value)} rows={3} placeholder="Référence de transaction ou précision sur le mode de remise" className={inputClass} /></label>
       </>)}
 
       {receiptHandover && modal(`Confirmer la réception · ${receiptHandover.handover_number}`, "Confirmer la réception", handleReceipt, <>
+        <p className="text-sm font-semibold text-slate-700">{getStoreLabel(receiptHandover.store_id, receiptHandover.store_name)}</p>
         <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">Déclaré par <strong>{receiptHandover.declared_by_name}</strong> : <strong>{money(receiptHandover.declared_amount)}</strong></p>
         <label className="block space-y-1 text-xs font-semibold text-slate-700">Montant réellement reçu (Ar)<input required type="number" min="0" step="1" value={receivedAmount} onChange={event => setReceivedAmount(event.target.value)} className={inputClass} /></label>
         {Number(receivedAmount) !== receiptHandover.declared_amount && <label className="block space-y-1 text-xs font-semibold text-slate-700">Explication obligatoire de l'écart<textarea required value={discrepancyNote} onChange={event => setDiscrepancyNote(event.target.value)} rows={3} className={inputClass} /></label>}
       </>)}
 
       {depositHandover && modal(`Enregistrer le dépôt · ${depositHandover.handover_number}`, "Enregistrer le dépôt", handleDeposit, <>
+        <p className="text-sm font-semibold text-slate-700">{getStoreLabel(depositHandover.store_id, depositHandover.store_name)}</p>
         <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">Montant réceptionné : <strong>{money(depositHandover.received_amount || 0)}</strong> · Déjà déposé : <strong>{money(depositHandover.deposited_amount)}</strong></p>
-        <label className="block space-y-1 text-xs font-semibold text-slate-700">Montant déposé (Ar)<input required type="number" min="1" step="1" max={(depositHandover.received_amount || 0) - depositHandover.deposited_amount} value={depositAmount} onChange={event => setDepositAmount(event.target.value)} className={inputClass} /></label>
+        <label className="block space-y-1 text-xs font-semibold text-slate-700">Montant déposé (Ar)<input required type="number" min="1" step="1" max={(depositHandover.received_amount || 0) - depositHandover.deposited_amount - (depositHandover.allocated_amount ?? 0)} value={depositAmount} onChange={event => setDepositAmount(event.target.value)} className={inputClass} /></label>
         <label className="block space-y-1 text-xs font-semibold text-slate-700">Banque<input required value={bankName} onChange={event => setBankName(event.target.value)} className={inputClass} /></label>
         <label className="block space-y-1 text-xs font-semibold text-slate-700">Référence du bordereau<input required value={depositReference} onChange={event => setDepositReference(event.target.value)} className={inputClass} /></label>
       </>)}

@@ -1,7 +1,7 @@
 import type { ReportType } from "../types";
 
 export function reportHistory(type: ReportType): "movements" | "audit" | null {
-  if (type === "STOCK_MOVEMENTS") return "movements";
+  if (type === "STOCK_MOVEMENTS" || type === "RAW_MATERIAL_CONSUMPTION") return "movements";
   return type === "AUDIT_LOG" ? "audit" : null;
 }
 

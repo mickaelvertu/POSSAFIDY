@@ -12,6 +12,18 @@ test("closing subtracts paid cash expenses for the same POS and business day", (
   assert.deepEqual(result, { salesAmount: 1000, expensesAmount: 300, netAmount: 700, saleCount: 1 });
 });
 
+test("admin treasury payments remain store charges without debiting POS cash twice", () => {
+  const treasuryExpense = { ...expense, treasury_movement_id: "expense-test", treasury_fund_id: "fund", paid_by: "admin" };
+  assert.equal(calculateCashClosing([sale], [treasuryExpense], "pos", cashBusinessDate(today)).netAmount, 1000);
+  assert.equal(calculateStoreDailyTotals([{ ...sale, total: 1000 }], [treasuryExpense], "pos", cashBusinessDate(today)).expensesAmount, 300);
+});
+
+test("cancelled expenses do not reduce store totals or POS closing", () => {
+  const cancelled = { ...expense, status: "CANCELLED" as const };
+  assert.equal(calculateCashClosing([sale], [cancelled], "pos", cashBusinessDate(today)).netAmount, 1000);
+  assert.equal(calculateStoreDailyTotals([{ ...sale, total: 1000 }], [cancelled], "pos", cashBusinessDate(today)).expensesAmount, 0);
+});
+
 test("closing excludes other stores, dates, drafts, unpaid and noncash transactions", () => {
   const excludedExpenses = [
     { ...expense, store_id: "other" }, { ...expense, expense_date: today - 86400000 },

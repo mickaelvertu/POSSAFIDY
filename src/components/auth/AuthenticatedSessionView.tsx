@@ -1,3 +1,6 @@
+import { adoptHistoricalHandover } from "../../services/treasuryService";
+import TreasuryView from "../TreasuryView";
+import { useTreasury } from "../../hooks/useTreasury";
 import FeedbackState from "../FeedbackState";
 import SyncFeedback from "../SyncFeedback";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
@@ -49,7 +52,7 @@ import { reportHistory, reportSources } from "../../services/reportReadiness";
 import NotificationBell from "../NotificationBell";
 import NotificationActionWindow from "../NotificationActionWindow";
 import { buildActionNotifications, type ActionNotification } from "../../services/notificationService";
-import { deleteExpense, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
+import { cancelExpense, deleteExpense, payValidatedExpense, saveExpense, updateDraftExpense, validateExpense } from "../../services/expenseService";
 import { confirmCashHandoverReceipt, createCashHandover, recordCashHandoverDeposit } from "../../services/cashHandoverService";
 import { deleteUnit, loadUnits, saveUnit } from "../../services/unitService";
 import { applyStockSnapshot, importInitialStocks } from "../../services/stockImportService";
@@ -145,7 +148,7 @@ export default function AuthenticatedSessionView() {
   const [auxiliaryLoading, setAuxiliaryLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [payrollLoadedKey, setPayrollLoadedKey] = useState("");
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory" | "employeePresentation">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "treasury" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory" | "employeePresentation">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
   const [notificationAction, setNotificationAction] = useState<{ item: ActionNotification; previousModule: typeof activeModule } | null>(null);
   const closeNotificationAction = () => {
     if (notificationAction) setActiveModule(notificationAction.previousModule);
@@ -484,6 +487,7 @@ export default function AuthenticatedSessionView() {
   };
 
   const currentAppUser = useMemo(() => user ? toAppUser(user) : null, [user]);
+  const treasury = useTreasury(user?.status === "ACTIVE" ? currentAppUser : null);
   const isInventoryAdmin = currentAppUser?.roleId === "SUPER_ADMIN" || currentAppUser?.roleId === "ADMIN";
   const canReviewInventory = Boolean(currentAppUser && (isInventoryAdmin || hasPermission(currentAppUser, "inventory.review")));
   const canCountInventory = Boolean(currentAppUser && (isInventoryAdmin || currentAppUser.storeIds.length > 0)
@@ -2129,6 +2133,7 @@ export default function AuthenticatedSessionView() {
     if (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN" && !currentAppUser.storeIds.includes(purchase.store_id)) {
       throw new Error("Vous ne pouvez régler que les achats d'un magasin qui vous est attribué.");
     }
+    if (["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) && !payment.treasury_fund_id) throw new Error("Sélectionnez un fonds de trésorerie pour ce paiement.");
     const auditLog = createAuditLog(currentAppUser!, "SUPPLIER_PAYMENT_RECORDED", "PURCHASE", purchase.id, purchase, undefined, purchase.store_id);
     const updatedPurchase = await recordSupplierPayment(purchase, payment, auditLog);
     setPurchases(current => current.map(item => item.id === purchase.id ? updatedPurchase : item));
@@ -2238,7 +2243,7 @@ export default function AuthenticatedSessionView() {
     setAuditLogs(current => [auditLog, ...current]);
   };
 
-  const handleValidateExpense = async (expense: Expense) => {
+  const handleValidateExpense = async (expense: Expense, fundId?: string) => {
     if (expensesLoadError) throw new Error(expensesLoadError);
     if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || (currentAppUser.roleId !== "SUPER_ADMIN" && (expense.created_by !== currentAppUser.uid || !expense.store_id || !currentAppUser.storeIds.includes(expense.store_id)))) throw new Error("Vous pouvez uniquement valider vos propres dépenses avec la permission de création.");
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
@@ -2284,7 +2289,8 @@ export default function AuthenticatedSessionView() {
       currentAppUser.roleId === "SUPER_ADMIN",
       isAdmin,
       salaryAdvance,
-      salaryAdvanceAuditLog
+      salaryAdvanceAuditLog,
+      fundId
     );
     setExpenses(current => current.map(item => item.id === updated.id ? updated : item));
     if (salaryAdvance) {
@@ -2298,6 +2304,16 @@ export default function AuthenticatedSessionView() {
       setAuditLogs(current => [{ ...advanceAudit, new_value: createdAdvance }, ...current]);
     }
   };
+  const handlePayExpense = async (expense: Expense, fundId: string) => {
+    if (expensesLoadError) throw new Error(expensesLoadError);
+    if (user?.status !== "ACTIVE" || !currentAppUser || !["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId)) {
+      throw new Error("Seul un administrateur actif peut régler une dépense depuis la trésorerie.");
+    }
+    const audit = createAuditLog(currentAppUser, "EXPENSE_PAID", "EXPENSE", expense.id, expense, undefined, expense.store_id);
+    const updated = await payValidatedExpense(expense.id, fundId, currentAppUser.uid, audit);
+    setExpenses(current => current.map(item => item.id === updated.id ? updated : item));
+    setAuditLogs(current => [{ ...audit, new_value: updated }, ...current]);
+  };
   const handleDeleteExpense = async (expense: Expense) => {
     if (expensesLoadError) throw new Error(expensesLoadError);
     if (currentAppUser?.roleId !== "SUPER_ADMIN") throw new Error("Suppression réservée aux super administrateurs.");
@@ -2306,6 +2322,18 @@ export default function AuthenticatedSessionView() {
     setExpenses(current => current.filter(item => item.id !== expense.id));
     setSalaryAdvances(current => current.filter(item => item.expense_id !== expense.id));
     setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleCancelExpense = async (expense: Expense, reason: string) => {
+    if (expensesLoadError) throw new Error(expensesLoadError);
+    if (user?.status !== "ACTIVE" || !currentAppUser || !["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId)) {
+      throw new Error("Annulation réservée aux administrateurs actifs.");
+    }
+    const audit = createAuditLog(currentAppUser, "EXPENSE_CANCELLED", "EXPENSE", expense.id, expense, undefined, expense.store_id);
+    const updated = await cancelExpense(expense.id, reason, currentAppUser.displayName, audit);
+    setExpenses(current => current.map(item => item.id === updated.id ? updated : item));
+    setSalaryAdvances(current => current.filter(item => item.expense_id !== expense.id));
+    setAuditLogs(current => [{ ...audit, new_value: updated }, ...current]);
   };
 
   if (!user) return null;
@@ -2366,6 +2394,7 @@ export default function AuthenticatedSessionView() {
             setActiveModule(current.module);
           }} />
           {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) && <button type="button" onClick={() => setActiveModule("expenses")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Dépenses</button>}
+          {canManageStores && user.status === "ACTIVE" && <button type="button" onClick={() => setActiveModule("treasury")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Trésorerie</button>}
           {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || ["view", "create", "receive", "deposit"].some(action => hasPermission(currentAppUser, `cash_handover.${action}`))) && <button type="button" onClick={() => setActiveModule("cashHandovers")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Remises de caisse</button>}
           <button
             type="button"
@@ -2637,7 +2666,7 @@ export default function AuthenticatedSessionView() {
             {reportRequest?.type === "STOCK_LEDGER" && !ledgerReport.ready && (
               <div role="status" className="rounded-xl border border-slate-600 bg-slate-800 p-4 text-sm text-slate-100">
                 <p>Grille des mouvements · {ledgerReport.rows.length} mouvements chargés pour la période sélectionnée.</p>
-                <p className="mt-2">{ledgerReport.error || "Chargement en cours…"}</p>
+                <p className="mt-2">{ledgerReport.error || "Chargement de tous les mouvements depuis le serveur… La grille s’ouvrira lorsque toute la période sera chargée."}</p>
                 <div className="mt-3 flex gap-3">
                   {ledgerReport.error && <button type="button" onClick={ledgerReport.retry} className="rounded-lg bg-blue-600 px-3 py-2">Réessayer</button>}
                   <button type="button" onClick={() => setReportRequest(null)} className="rounded-lg border border-slate-500 px-3 py-2">Annuler</button>
@@ -2694,7 +2723,9 @@ export default function AuthenticatedSessionView() {
             >
               ← Retour à l'accueil
             </button>
+            <HistoryPaging {...movementHistory} label="Consommations" />
             <ProductionView
+              movements={visibleMovements}
               onConsumeMaterial={handleConsumeMaterial}
               productions={visibleProductions}
               stores={accessibleStores}
@@ -2730,6 +2761,8 @@ export default function AuthenticatedSessionView() {
               onToggleSupplier={handleToggleSupplier}
               onCreatePurchase={handleCreatePurchase}
               onApprovePurchase={handleApprovePurchase}
+              treasuryFunds={treasury.funds}
+              treasuryReady={treasury.ready && !treasury.error}
               onRecordPayment={handleRecordSupplierPayment}
               onImportData={handleImportSuppliers}
               onResetData={handleResetSuppliers}
@@ -2756,11 +2789,17 @@ export default function AuthenticatedSessionView() {
               canCreate={user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create"))}
               canCreateSalaryAdvance={user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN")}
               onValidateExpense={handleValidateExpense}
+              onPayExpense={handlePayExpense}
+              onCancelExpense={handleCancelExpense}
+              treasuryFunds={treasury.funds}
+              treasuryReady={treasury.ready && !treasury.error}
               onDeleteExpense={handleDeleteExpense}
               onCreateExpense={handleCreateExpense}
               onUpdateExpense={handleUpdateExpense}
             />
           </section>
+        ) : activeModule === "treasury" && currentAppUser && user.status === "ACTIVE" && canManageStores ? (
+          <section className="space-y-4"><button type="button" onClick={() => setActiveModule("home")} className="text-sm text-slate-300">← Retour à l’accueil</button><TreasuryView user={currentAppUser} {...treasury} /></section>
         ) : activeModule === "cashHandovers" && currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || ["view", "create", "receive", "deposit"].some(action => hasPermission(currentAppUser, `cash_handover.${action}`))) ? (
           <section className="space-y-4">
             <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">← Retour à l'accueil</button>
@@ -2777,6 +2816,7 @@ export default function AuthenticatedSessionView() {
               onCreate={handleCreateCashHandover}
               onConfirmReceipt={handleConfirmCashReceipt}
               onRecordDeposit={handleRecordCashDeposit}
+              onAdoptHandover={handover => adoptHistoricalHandover(currentAppUser, handover.id)}
             />
           </section>
         ) : activeModule === "credit" && currentAppUser && (

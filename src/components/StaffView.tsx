@@ -124,7 +124,7 @@ export default function StaffView({ users, onLinkAccount, onOpenUsers, employees
   const profileAdvances = advances.filter(advance => advance.employee_id === profileEmployeeId)
     .sort((left, right) => right.advance_date - left.advance_date);
   const profileExpenseTotal = profileExpenses
-    .filter(expense => expense.status !== "DRAFT")
+    .filter(expense => expense.status !== "DRAFT" && expense.status !== "CANCELLED")
     .reduce((total, expense) => total + expense.amount, 0);
   const outstandingAdvanceTotal = profileAdvances
     .filter(advance => advance.status === "OUTSTANDING")

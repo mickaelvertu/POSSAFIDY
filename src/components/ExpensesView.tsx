@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { AlertCircle, CalendarDays, CheckCircle2, CircleDollarSign, ClipboardList, Clock3, HandCoins, LoaderCircle, Pencil, Plus, ReceiptText, RotateCcw, Search, Trash2 } from "lucide-react";
-import { Employee, Expense, ExpenseCategory, PaymentMethod, Store, UserProfile } from "../types";
+import { Employee, Expense, ExpenseCategory, PaymentMethod, Store, TreasuryFund, UserProfile } from "../types";
+import { STORE_EXPENSE_FUNDS } from "../services/expenseService";
 
 interface ExpensesViewProps {
   expenses: Expense[];
@@ -12,7 +13,11 @@ interface ExpensesViewProps {
   dataReady?: boolean;
   loadError?: string | null;
   onRetry?: () => void;
-  onValidateExpense: (expense: Expense) => Promise<void>;
+  treasuryFunds?: TreasuryFund[];
+  treasuryReady?: boolean;
+  onPayExpense?: (expense: Expense, fundId: string) => Promise<void>;
+  onCancelExpense?: (expense: Expense, reason: string) => Promise<void>;
+  onValidateExpense: (expense: Expense, fundId?: string) => Promise<void>;
   onDeleteExpense: (expense: Expense) => Promise<void>;
   onCreateExpense: (expense: Expense) => Promise<void>;
   onUpdateExpense: (original: Expense, updated: Expense) => Promise<void>;
@@ -50,7 +55,7 @@ const categoryLabel = (category: ExpenseCategory) => CATEGORIES.find(item => ite
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100";
 const employeeLabel = (employee: Employee) => `${employee.last_name} ${employee.first_name} · ${employee.position} · ${employee.code || employee.id}`;
 
-export default function ExpensesView({ expenses, employees, stores, currentUser, canCreate, canCreateSalaryAdvance, dataReady = true, loadError, onRetry, onCreateExpense, onUpdateExpense, onValidateExpense, onDeleteExpense }: ExpensesViewProps) {
+export default function ExpensesView({ expenses, employees, stores, currentUser, canCreate, canCreateSalaryAdvance, dataReady = true, loadError, onRetry, treasuryFunds = [], treasuryReady = false, onPayExpense, onCancelExpense, onCreateExpense, onUpdateExpense, onValidateExpense, onDeleteExpense }: ExpensesViewProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [category, setCategory] = useState<ExpenseCategory>("RENT");
@@ -70,15 +75,44 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "DRAFT" | "VALIDATED">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "DRAFT" | "VALIDATED" | "CANCELLED">("ALL");
+  const [cancelTarget, setCancelTarget] = useState<Expense | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState("");
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [paymentExpense, setPaymentExpense] = useState<{ expense: Expense; action: "validate" | "pay" } | null>(null);
+  const [fundId, setFundId] = useState("");
+  const [paymentError, setPaymentError] = useState("");
+  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId);
+  const ownFunds = treasuryFunds.filter(fund => fund.owner_id === currentUser.uid && fund.balance > 0);
+  const openPayment = (expense: Expense, action: "validate" | "pay") => {
+    setFundId(expense.store_id ? STORE_EXPENSE_FUNDS : ""); setPaymentError(""); setPaymentExpense({ expense, action });
+  };
+  const submitPayment = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!paymentExpense || busyId || (fundId !== STORE_EXPENSE_FUNDS && !treasuryReady)) return;
+    const selectedFund = ownFunds.find(fund => fund.id === fundId);
+    if (fundId !== STORE_EXPENSE_FUNDS && (!selectedFund || selectedFund.balance < paymentExpense.expense.amount)) {
+      setPaymentError("Choisissez un fonds personnel disposant du montant nécessaire."); return;
+    }
+    setBusyId(paymentExpense.expense.id); setPaymentError("");
+    try {
+      if (paymentExpense.action === "validate") await onValidateExpense(paymentExpense.expense, fundId);
+      else {
+        if (!onPayExpense) throw new Error("Le règlement n'est pas disponible dans cet écran.");
+        await onPayExpense(paymentExpense.expense, fundId);
+      }
+      setPaymentExpense(null);
+    } catch (error) { setPaymentError(error instanceof Error ? error.message : "Impossible d'enregistrer le paiement."); }
+    finally { setBusyId(null); }
+  };
   const canValidate = canCreate;
   const canDelete = currentUser.roleId === "SUPER_ADMIN";
-  const canUseGlobalExpense = currentUser.roleId === "SUPER_ADMIN";
-  const selectableStores = stores.filter(store => store.is_active && (canUseGlobalExpense || currentUser.storeIds.includes(store.id)));
+  const canUseGlobalExpense = isAdmin;
+  const selectableStores = stores.filter(store => store.is_active && (currentUser.roleId === "SUPER_ADMIN" || currentUser.storeIds.includes(store.id)));
   const canEditExpense = (expense: Expense) => canCreate && expense.status === "DRAFT"
     && expense.created_by === currentUser.uid
     && (canDelete || Boolean(expense.store_id && currentUser.storeIds.includes(expense.store_id)))
@@ -124,6 +158,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
     setIsFormOpen(true);
   };
   const runAction = async (expense: Expense, action: "validate" | "delete") => {
+    if (action === "validate" && isAdmin && expense.payment_status === "PAID") { openPayment(expense, "validate"); return; }
     if (action === "delete" && !window.confirm("Supprimer la dépense " + expense.expense_number + " ?")) return;
     setBusyId(expense.id);
     setActionError("");
@@ -136,7 +171,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
     return expenses.filter(expense => {
       const date = new Date(expense.expense_date);
       const matchesMonth = !monthFilter || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` === monthFilter;
-      const matchesStatus = statusFilter === "ALL" || (statusFilter === "DRAFT" ? expense.status === "DRAFT" : expense.status !== "DRAFT");
+      const matchesStatus = statusFilter === "ALL" || (expense.status || "VALIDATED") === statusFilter;
       const searchableText = [expense.expense_number, expense.description, expense.payee, expense.employee_name, expense.store_name, expense.reference, categoryLabel(expense.category)]
         .filter(Boolean).join(" ").toLocaleLowerCase("fr-FR");
       return matchesMonth && matchesStatus && (!normalizedSearch || searchableText.includes(normalizedSearch));
@@ -144,27 +179,30 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   }, [expenses, monthFilter, search, statusFilter]);
 
   const currentMonthExpenses = expenses.filter(expense => {
-    if (expense.status === "DRAFT") return false;
+    if (expense.status === "DRAFT" || expense.status === "CANCELLED") return false;
     const date = new Date(expense.expense_date);
     const now = new Date();
     return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
   });
   const monthTotal = currentMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const pendingTotal = expenses.filter(expense => expense.status !== "DRAFT" && expense.payment_status === "PENDING").reduce((sum, expense) => sum + expense.amount, 0);
+  const pendingTotal = expenses.filter(expense => expense.status !== "DRAFT" && expense.status !== "CANCELLED" && expense.payment_status === "PENDING").reduce((sum, expense) => sum + expense.amount, 0);
   const draftCount = expenses.filter(expense => expense.status === "DRAFT").length;
+  const cancelledCount = expenses.filter(expense => expense.status === "CANCELLED").length;
   const hasFilters = Boolean(search || monthFilter || statusFilter !== "ALL");
   const resetFilters = () => { setSearch(""); setMonthFilter(""); setStatusFilter("ALL"); };
   const validationBadge = (expense: Expense) => (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${expense.status === "DRAFT" ? "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200" : "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200"}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${expense.status === "CANCELLED" ? "bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200" : expense.status === "DRAFT" ? "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200" : "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200"}`}>
       {expense.status === "DRAFT" ? <Clock3 className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
-      {expense.status === "DRAFT" ? "Brouillon" : "Validée"}
+      {expense.status === "CANCELLED" ? "Annulée" : expense.status === "DRAFT" ? "Brouillon" : "Validée"}
     </span>
   );
   const expenseActions = (expense: Expense) => (
     <div className="flex flex-wrap items-center gap-2">
       {canEditExpense(expense) && <button type="button" disabled={busyId !== null} onClick={() => openEditForm(expense)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"><Pencil className="h-3 w-3" /> Modifier</button>}
       {canValidate && (canDelete || canEditExpense(expense)) && expense.status === "DRAFT" && <button type="button" disabled={busyId !== null} onClick={() => runAction(expense, "validate")} className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-2.5 py-2 text-[11px] font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">{busyId === expense.id ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Valider</button>}
-      {canDelete && <button type="button" aria-label={`Supprimer ${expense.expense_number}`} title="Supprimer la dépense" disabled={busyId !== null} onClick={() => runAction(expense, "delete")} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /></button>}
+      {isAdmin && onPayExpense && expense.status === "VALIDATED" && expense.payment_status === "PENDING" && <button type="button" disabled={busyId !== null} onClick={() => openPayment(expense, "pay")} className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Régler</button>}
+      {isAdmin && onCancelExpense && expense.status !== "CANCELLED" && <button type="button" disabled={busyId !== null} onClick={() => { setCancelTarget(expense); setCancelReason(""); setCancelError(""); }} className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-bold text-amber-800 disabled:opacity-50">Annuler la dépense</button>}
+      {canDelete && (expense.status === "DRAFT" || expense.status === "CANCELLED") && <button type="button" aria-label={`Supprimer ${expense.expense_number}`} title="Supprimer la dépense" disabled={busyId !== null} onClick={() => runAction(expense, "delete")} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /></button>}
     </div>
   );
 
@@ -180,7 +218,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
       setFormError("Indiquez le motif de l'avance sur salaire.");
       return;
     }
-    if (!canUseGlobalExpense && (!selectedStore || !currentUser.storeIds.includes(selectedStore.id))) {
+    if ((!selectedStore && !canUseGlobalExpense) || (selectedStore && currentUser.roleId !== "SUPER_ADMIN" && !currentUser.storeIds.includes(selectedStore.id))) {
       setFormError("Sélectionnez un magasin qui est attribué à votre compte.");
       return;
     }
@@ -297,7 +335,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
           </div>
           <div className="flex flex-col justify-between gap-3 xl:flex-row xl:items-center">
             <div role="group" aria-label="Filtrer par statut" className="flex w-fit flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
-              {([{ id: "ALL", label: "Toutes", count: expenses.length }, { id: "DRAFT", label: "Brouillons", count: draftCount }, { id: "VALIDATED", label: "Validées", count: expenses.length - draftCount }] as const).map(item => (
+              {([{ id: "ALL", label: "Toutes", count: expenses.length }, { id: "DRAFT", label: "Brouillons", count: draftCount }, { id: "VALIDATED", label: "Validées", count: expenses.length - draftCount - cancelledCount }, { id: "CANCELLED", label: "Annulées", count: cancelledCount }] as const).map(item => (
                 <button key={item.id} type="button" aria-pressed={statusFilter === item.id} onClick={() => setStatusFilter(item.id)} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${statusFilter === item.id ? "bg-emerald-600 text-white shadow-xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{item.label}<span className="ml-1.5 opacity-80">{item.count}</span></button>
               ))}
             </div>
@@ -321,7 +359,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
                       <p className="break-words text-sm font-bold text-slate-900">{expense.description || categoryLabel(expense.category)}</p>
                       <p className="mt-1 break-words text-[11px] text-slate-500">{expense.expense_number} · {dateLabel(expense.expense_date)}</p>
                       <p className="mt-1 break-words text-[11px] text-slate-500">{categoryLabel(expense.category)} · {expense.store_name || "Tous magasins"}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">{validationBadge(expense)}<span className={expense.payment_status === "PAID" ? "text-[11px] font-semibold text-emerald-700" : "text-[11px] font-semibold text-amber-700"}>{expense.payment_status === "PAID" ? "Payée" : "À payer"}</span></div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">{validationBadge(expense)}<span className={expense.payment_status === "PAID" ? "text-[11px] font-semibold text-emerald-700" : "text-[11px] font-semibold text-amber-700"}>{expense.status === "CANCELLED" ? "Paiement annulé" : expense.payment_status === "PAID" ? "Payée" : "À payer"}</span></div>
                     </div>
                     <div className="ml-auto text-right">
                       <p className="break-words text-base font-black tabular-nums text-slate-900">{money(expense.amount)}</p>
@@ -340,9 +378,13 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
                         ["Bénéficiaire / fournisseur", expense.payee || expense.employee_name || "Non renseigné"],
                         ["Employé bénéficiaire", expense.employee_name || "Non renseigné"],
                         ["Mode de paiement", PAYMENT_METHODS.find(method => method.value === expense.payment_method)?.label || expense.payment_method],
-                        ["Statut du paiement", expense.payment_status === "PAID" ? "Payée" : "À payer"],
+                        ["Statut du paiement", expense.status === "CANCELLED" ? "Annulé" : expense.payment_status === "PAID" ? "Payée" : "À payer"],
                         ["N° facture / référence", expense.reference || "Sans référence"],
                         ["Créée par", expense.created_by_name || "Non renseigné"],
+                        ...(expense.status === "CANCELLED" ? [["Annulée par", expense.cancelled_by_name || "Non renseigné"], ["Motif de l'annulation", expense.cancellation_reason || ""], ["Date d'annulation", expense.cancelled_at ? new Date(expense.cancelled_at).toLocaleString("fr-FR") : ""], ["Remboursement au fonds d'origine", expense.treasury_reversal_id ? "Effectué" : "Aucun paiement de trésorerie à recréditer"]] : []),
+                        ["Payée par", expense.paid_by_name || (expense.payment_status === "PAID" && expense.status !== "DRAFT" ? "Non renseigné (ancien suivi / caisse magasin)" : "À déterminer au règlement")],
+                        ["Fonds utilisé", expense.funding_source === "STORE" ? `Fonds du magasin · ${expense.paid_by_name || expense.store_name || ""}` : treasuryFunds.find(fund => fund.id === expense.treasury_fund_id)?.source_reference || (expense.treasury_fund_id ? "Fonds de trésorerie" : "Non renseigné")],
+                        ...(expense.paid_at ? [["Date du règlement", new Date(expense.paid_at).toLocaleString("fr-FR")]] : []),
                         ["Date de création", new Date(expense.created_at).toLocaleString("fr-FR")],
                         ...(expense.validated_at ? [["Date de validation", new Date(expense.validated_at).toLocaleString("fr-FR")]] : [])
                       ].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 whitespace-pre-wrap break-words font-medium text-slate-900">{value}</dd></div>)}
@@ -359,10 +401,38 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
         )}
       </section>
 
+      {cancelTarget && onCancelExpense && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4"><form role="dialog" aria-modal="true" aria-labelledby="expense-cancel-title" className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 text-slate-900" onSubmit={async event => {
+        event.preventDefault(); if (busyId || !cancelReason.trim()) return;
+        setBusyId(cancelTarget.id); setCancelError("");
+        try { await onCancelExpense(cancelTarget, cancelReason.trim()); setCancelTarget(null); }
+        catch (error) { setCancelError(error instanceof Error ? error.message : "Annulation impossible."); }
+        finally { setBusyId(null); }
+      }}>
+        <h3 id="expense-cancel-title" className="font-bold">Annuler {cancelTarget.expense_number}</h3>
+        <p className="text-sm">La dépense sera exclue des totaux. Son historique restera consultable.</p>
+        {cancelTarget.treasury_movement_id && <label className="flex items-start gap-2 rounded bg-amber-50 p-3 text-sm"><input required type="checkbox" />Je confirme que les {money(cancelTarget.amount)} ont été récupérés. Ils seront recrédités au fonds du payeur d'origine.</label>}
+        <label className="block text-sm font-semibold">Motif de l'annulation<textarea required value={cancelReason} onChange={event => setCancelReason(event.target.value)} className={inputClass} /></label>
+        {cancelError && <p role="alert" className="text-sm text-rose-700">{cancelError}</p>}
+        <div className="flex justify-end gap-2"><button type="button" disabled={busyId !== null} onClick={() => setCancelTarget(null)} className="rounded border px-3 py-2">Fermer</button><button disabled={busyId !== null || !cancelReason.trim()} className="rounded bg-amber-700 px-3 py-2 text-white disabled:opacity-50">{busyId ? "Annulation…" : "Confirmer l'annulation"}</button></div>
+      </form></div>}
+      {paymentExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
+          <form onSubmit={submitPayment} role="dialog" aria-modal="true" aria-labelledby="expense-payment-title" className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 text-slate-900 shadow-xl">
+            <h3 id="expense-payment-title" className="font-bold">{paymentExpense.action === "validate" ? "Valider et régler la dépense" : "Régler la dépense"}</h3>
+            <p>{paymentExpense.expense.expense_number} · <strong>{money(paymentExpense.expense.amount)}</strong></p>
+            <p className="text-sm text-slate-600">Charge : {paymentExpense.expense.store_name || "Tous magasins / siège"}. Le déclarant et la source du paiement sont distincts.</p>
+            <label className="block text-sm font-semibold">Prise en charge<select required disabled={busyId !== null} className={inputClass} value={fundId} onChange={event => setFundId(event.target.value)}><option value="">Choisir la source du paiement</option>{paymentExpense.expense.store_id && <option value={STORE_EXPENSE_FUNDS}>Fonds du magasin · {paymentExpense.expense.store_name || paymentExpense.expense.store_id}</option>}<optgroup label={`Fonds personnels · ${currentUser.displayName}`}>{ownFunds.map(fund => <option disabled={!treasuryReady} key={fund.id} value={fund.id}>{fund.source_reference} · {money(fund.balance)}</option>)}</optgroup></select></label>
+            <p className="text-xs text-slate-500">{fundId === STORE_EXPENSE_FUNDS ? "Le magasin prend en charge le paiement. Aucun fonds personnel ne sera débité. Un paiement en espèces est pris en compte dans la clôture de sa caisse POS." : "Le fonds personnel choisi sera débité une seule fois. Si nécessaire, enregistrez une réception ou recevez un transfert dans la trésorerie."}</p>
+            {paymentError && <p role="alert" className="text-sm text-rose-700">{paymentError}</p>}
+            <div className="flex justify-end gap-2"><button type="button" disabled={busyId !== null} onClick={() => setPaymentExpense(null)} className="rounded border px-3 py-2">Annuler</button><button disabled={(fundId !== STORE_EXPENSE_FUNDS && !treasuryReady) || !fundId || busyId !== null} className="rounded bg-emerald-700 px-3 py-2 font-semibold text-white disabled:opacity-50">{busyId ? "Enregistrement…" : "Confirmer le règlement"}</button></div>
+          </form>
+        </div>
+      )}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setIsFormOpen(false); }}>
           <form onSubmit={handleCreateExpense} className="my-auto w-full max-w-2xl space-y-4 rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
             <div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-bold text-slate-900">{editingExpense ? "Modifier le brouillon de dépense" : "Nouvelle dépense"}</h3><p className="mt-1 text-xs text-slate-500">La dépense sera enregistrée en brouillon et prise en compte après votre validation.</p></div><button type="button" onClick={() => setIsFormOpen(false)} aria-label="Fermer" className="rounded-md px-2 py-1 text-lg text-slate-500 hover:bg-slate-100">×</button></div>
+            {isAdmin && <p className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-900">Le magasin indique à qui la charge est affectée. À la validation, choisissez une prise en charge par le magasin ou par un fonds personnel. Aucun débit n'est effectué pendant la saisie du brouillon.</p>}
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-xs font-semibold text-slate-700">Catégorie<select value={category} onChange={event => {
                 const next = event.target.value as ExpenseCategory;
@@ -377,7 +447,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
               <label className="space-y-1 text-xs font-semibold text-slate-700">Montant (Ar)<input required type="number" min="1" step="any" value={amount} onChange={event => setAmount(event.target.value)} placeholder="0" className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700 sm:col-span-2">Motif / description{isSalaryAdvance ? " *" : " (facultatif)"}<input required={isSalaryAdvance} value={description} onChange={event => setDescription(event.target.value)} placeholder={isSalaryAdvance ? "Ex. avance pour frais médicaux" : "Facultatif"} className={inputClass} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-700">Date<input required type="date" value={expenseDate} onChange={event => setExpenseDate(event.target.value)} className={inputClass} /></label>
-              <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense ? <option value="">Tous magasins / siège</option> : <option value="">Sélectionner un magasin</option>}{stores.filter(store => store.is_active && (canUseGlobalExpense || currentUser.storeIds.includes(store.id))).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700">Magasin<select required={!canUseGlobalExpense} value={storeId} onChange={event => setStoreId(event.target.value)} className={inputClass}>{canUseGlobalExpense ? <option value="">Tous magasins / siège</option> : <option value="">Sélectionner un magasin</option>}{stores.filter(store => store.is_active && (currentUser.roleId === "SUPER_ADMIN" || currentUser.storeIds.includes(store.id))).map(store => <option key={store.id} value={store.id}>{store.code} · {store.name}</option>)}</select></label>
               {isSalaryAdvance ? (
                 <label className="space-y-1 text-xs font-semibold text-slate-700">Employé bénéficiaire
                   <input required list="expense-employee-options" value={employeeQuery} onFocus={event => event.target.select()} onChange={event => {

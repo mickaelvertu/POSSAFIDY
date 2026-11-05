@@ -1,3 +1,4 @@
+import { productionTransferAllowed } from "../services/productionTransferRoute";
 import { useListWindow } from "../hooks/useListWindow";
 import ListWindowMore from "./ListWindowMore";
 import { storeLabel } from "../services/storeLabel";
@@ -414,6 +415,10 @@ export default function TransfersView({
 
     const destinationStore = stores.find(store => store.id === destStoreId);
     const sourceStore = stores.find(store => store.id === sourceStoreId);
+    if (!productionTransferAllowed(sourceStore, destinationStore)) {
+      alert("La Production peut échanger uniquement avec un autre site de Production ou un dépôt actif.");
+      return;
+    }
     if (isDirectDeposit && (sourceStoreId !== destStoreId || destinationStore?.store_type !== "CENTRAL_WAREHOUSE")) {
       alert("Un dépôt direct doit cibler un dépôt central.");
       return;
@@ -507,7 +512,11 @@ export default function TransfersView({
     }
   };
 
-  const transferFormIssue = sourceStoreId === destStoreId && transferKind !== "DIRECT_DEPOSIT"
+  const productionDestinationInvalid = !productionTransferAllowed(
+    stores.find(store => store.id === sourceStoreId), stores.find(store => store.id === destStoreId));
+  const transferFormIssue = productionDestinationInvalid
+    ? "La Production peut échanger uniquement avec un autre site de Production ou un dépôt actif."
+    : sourceStoreId === destStoreId && transferKind !== "DIRECT_DEPOSIT"
     ? "Choisissez deux magasins différents pour créer le transfert."
     : transferKind === "STORE_RETURN" && transferLines.some(line => !line.return_reason)
       ? "Indiquez le motif de retour de chaque article."
@@ -1253,7 +1262,7 @@ export default function TransfersView({
                     <label className="block text-xs font-bold text-slate-700">Magasin destinataire</label>
                     <SearchableSelect
                       value={destStoreId}
-                      options={storeOptions}
+                      options={storeOptions.filter(option => productionTransferAllowed(stores.find(store => store.id === sourceStoreId), stores.find(store => store.id === option.value)))}
                       onChange={nextDestinationStoreId => {
                         setDestStoreId(nextDestinationStoreId);
                         const allowedArticles = getTransferArticles(nextDestinationStoreId);

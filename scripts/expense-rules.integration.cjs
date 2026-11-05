@@ -32,6 +32,21 @@ test('expense queries match roles, stores, authors and cash reconciliation', asy
     const result = await queryExpenses();
     assert.equal(result.status, 200, await result.text());
   });
+  for (const [role, allowed] of [['ADMIN', true], ['SUPER_ADMIN', true], ['COMPTABLE', false], ['RESPONSABLE_MAGASIN', false]]) await t.test(role + ' global expense create and validation permission', async () => {
+    await seed(role, ['expenses.create'], []);
+    const globalExpense = { ...expense('new-global', null, 'super', 'DRAFT'), payment_status: 'PENDING' };
+    const result = await commit([write('expenses/new-global', globalExpense)], token);
+    assert.equal(result.status, allowed ? 200 : 403, JSON.stringify(result.body));
+    if (allowed) {
+      const validation = await commit([write('expenses/new-global', { ...globalExpense, status: 'VALIDATED', validated_by: 'super', validated_at: 2 })], token);
+      assert.equal(validation.status, 200, JSON.stringify(validation.body));
+    }
+    if (role === 'ADMIN') assert.equal((await commit([write('expenses/unassigned', expense('unassigned', 'outside', 'super', 'DRAFT'))], token)).status, 403);
+  });
+  await t.test('disabled admin cannot create a general expense', async () => {
+    await seed('ADMIN', [], [], 'DISABLED');
+    assert.equal((await commit([write('expenses/disabled', expense('disabled', null, 'super', 'DRAFT'))], token)).status, 403);
+  });
   for (const permission of ['expenses.view', 'expenses.create']) await t.test(`${permission} reads assigned stores and own records, never all stores`, async () => {
     await seed('COMPTABLE', [permission]);
     assert.equal((await queryExpenses([['store_id', 'shop']])).status, 200);
