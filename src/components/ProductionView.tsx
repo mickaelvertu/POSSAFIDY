@@ -113,8 +113,21 @@ export default function ProductionView({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [editingProduction, setEditingProduction] = useState<Production | null>(null);
+  const [historyStatus, setHistoryStatus] = useState("ALL");
+  const [historyDateFrom, setHistoryDateFrom] = useState("");
+  const [historyDateTo, setHistoryDateTo] = useState("");
+  const [historyDateOrder, setHistoryDateOrder] = useState<"DESC" | "ASC">("DESC");
 
   const [validatingProductionId, setValidatingProductionId] = useState<string | null>(null);
+
+  const filteredProductions = productions.filter(production => {
+    if (historyStatus !== "ALL" && production.status !== historyStatus) return false;
+    const date = new Date(production.created_at);
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    return (!historyDateFrom || dateKey >= historyDateFrom) && (!historyDateTo || dateKey <= historyDateTo);
+  }).sort((left, right) => historyDateOrder === "ASC"
+    ? left.created_at - right.created_at
+    : right.created_at - left.created_at);
 
   // Manufacturer store
   const manufStore = stores.find(s => s.store_type === "MANUFACTURER") || stores[0];
@@ -471,7 +484,35 @@ export default function ProductionView({
 
       {/* Production History */}
       <div className="space-y-4">
-        {productions.map((p) => (
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs sm:flex-row sm:flex-wrap sm:items-end">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Statut
+            <select value={historyStatus} onChange={event => setHistoryStatus(event.target.value)} className="min-w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800">
+              <option value="ALL">Tous les statuts</option>
+              <option value="DRAFT">Brouillon</option>
+              <option value="IN_PROGRESS">En cours</option>
+              <option value="COMPLETED">Terminée</option>
+              <option value="CANCELLED">Annulée</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Du
+            <input type="date" value={historyDateFrom} max={historyDateTo || undefined} onChange={event => setHistoryDateFrom(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Au
+            <input type="date" value={historyDateTo} min={historyDateFrom || undefined} onChange={event => setHistoryDateTo(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            Ordre des dates
+            <select value={historyDateOrder} onChange={event => setHistoryDateOrder(event.target.value as "ASC" | "DESC")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800">
+              <option value="DESC">Plus récente d’abord</option>
+              <option value="ASC">Plus ancienne d’abord</option>
+            </select>
+          </label>
+          <span className="pb-2 text-xs text-slate-500">{filteredProductions.length} production(s)</span>
+        </div>
+        {filteredProductions.map((p) => (
           <div key={p.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -555,6 +596,7 @@ export default function ProductionView({
             </div>
           </div>
         ))}
+        {filteredProductions.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">Aucune production pour ces filtres.</p>}
       </div>
 
       {/* NEW PRODUCTION MODAL */}

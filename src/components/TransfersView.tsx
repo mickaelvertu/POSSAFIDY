@@ -117,6 +117,9 @@ export default function TransfersView({
   const [deliveryTransfer, setDeliveryTransfer] = useState<StockTransfer | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [dateOrder, setDateOrder] = useState<"DESC" | "ASC">("DESC");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<StockTransfer | null>(null);
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
@@ -315,6 +318,9 @@ export default function TransfersView({
   const filteredTransfers = transfers.filter(t => {
     if (focusedTransferId) return t.id === focusedTransferId;
     if (filterStatus !== "ALL" && t.status !== filterStatus) return false;
+    const date = new Date(t.created_at);
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    if ((dateFrom && dateKey < dateFrom) || (dateTo && dateKey > dateTo)) return false;
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       const matchNum = t.transfer_number.toLowerCase().includes(q);
@@ -323,7 +329,9 @@ export default function TransfersView({
       if (!matchNum && !matchSrc && !matchDst) return false;
     }
     return true;
-  }).sort((left, right) => right.created_at - left.created_at);
+  }).sort((left, right) => dateOrder === "ASC"
+    ? left.created_at - right.created_at
+    : right.created_at - left.created_at);
 
   const manufacturerStores = stores.filter(store => store.store_type === "MANUFACTURER" && store.is_active);
   const changeTransferKind = (kind: TransferKind) => {
@@ -555,7 +563,7 @@ export default function TransfersView({
     setInspectingTransfer(null);
   };
 
-  const listWindow = useListWindow(JSON.stringify([filterStatus, searchQuery, focusedTransferId]));
+  const listWindow = useListWindow(JSON.stringify([filterStatus, searchQuery, dateFrom, dateTo, dateOrder, focusedTransferId]));
 
   return (
     <div className="space-y-6 text-slate-900">
@@ -676,6 +684,25 @@ export default function TransfersView({
           />
         </div>
 
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs sm:grid-cols-2 lg:grid-cols-4">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+          Date du
+          <input type="date" value={dateFrom} max={dateTo || undefined} onChange={event => setDateFrom(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+          Date au
+          <input type="date" value={dateTo} min={dateFrom || undefined} onChange={event => setDateTo(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+          Ordre des dates
+          <select value={dateOrder} onChange={event => setDateOrder(event.target.value as "ASC" | "DESC")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800">
+            <option value="DESC">Plus récent d’abord</option>
+            <option value="ASC">Plus ancien d’abord</option>
+          </select>
+        </label>
+        <div className="self-end pb-2 text-xs text-slate-500">{filteredTransfers.length} transfert(s)</div>
       </div>
 
       {returnsByStore.length > 0 && (
