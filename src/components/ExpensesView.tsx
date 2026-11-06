@@ -279,12 +279,12 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   };
 
   if (!dataReady) return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center gap-3">
-        <span className="rounded-xl bg-emerald-50 p-3 text-emerald-600"><HandCoins className="h-5 w-5" /></span>
-        <h2 className="font-serif text-lg font-bold text-slate-900">Dépenses & frais</h2>
+        <span className="rounded-2xl bg-emerald-100 p-3 text-emerald-700"><HandCoins className="h-5 w-5" /></span>
+        <h2 className="text-lg font-black text-slate-900">Dépenses & frais</h2>
       </div>
-      <div className="mt-6 flex flex-col items-center rounded-xl bg-slate-50 px-4 py-8 text-center">
+      <div className="mt-6 flex flex-col items-center rounded-2xl bg-slate-50 px-4 py-8 text-center">
         {loadError ? <AlertCircle className="h-7 w-7 text-amber-600" /> : <LoaderCircle className="h-7 w-7 animate-spin text-emerald-600" />}
         <p role={loadError ? "alert" : "status"} className="mt-3 max-w-lg text-sm text-slate-600">{loadError || "Chargement des dépenses depuis le serveur…"}</p>
         {onRetry && <button type="button" onClick={onRetry} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100"><RotateCcw className="h-3.5 w-3.5" /> Réessayer</button>}
@@ -294,39 +294,45 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
 
   return (
     <div className="space-y-5 text-slate-900">
-      <header className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><HandCoins className="h-5 w-5" /></span>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 font-serif">Dépenses & frais</h2>
-            <p className="mt-1 text-xs text-slate-500">Gardez une vue claire sur vos charges et vos paiements.</p>
+      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-700 p-5 text-white shadow-lg shadow-emerald-900/20">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/15"><HandCoins className="h-5 w-5" /></span>
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-50/90 ring-1 ring-white/15">
+                <ReceiptText className="h-3.5 w-3.5" />
+                Gestion des frais
+              </div>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-white">Dépenses & frais</h2>
+              <p className="mt-1 text-sm text-emerald-50/90">Gardez une vue claire sur vos charges et vos paiements.</p>
+            </div>
           </div>
+          {canCreate && <button type="button" onClick={openCreateForm} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-emerald-800 shadow-md shadow-emerald-950/10 transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"><Plus className="h-4 w-4" /> Nouvelle dépense</button>}
         </div>
-        {canCreate && <button type="button" onClick={openCreateForm} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"><Plus className="h-4 w-4" /> Nouvelle dépense</button>}
       </header>
 
       {actionError && <p role="alert" className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"><AlertCircle className="h-4 w-4 shrink-0" />{actionError}</p>}
 
       <section aria-label="Vue d’ensemble des dépenses" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="bg-emerald-950 text-emerald-100 p-4 rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-emerald-100">Dépenses du mois</p><span className="rounded-lg bg-white/10 p-2 text-emerald-100"><CircleDollarSign className="h-4 w-4" /></span></div>
-          <p className="mt-3 break-words text-2xl font-black tabular-nums tracking-tight">{money(monthTotal)}</p>
-          <p className="mt-2 text-[11px] text-emerald-200">Validées · {new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</p>
+        <article className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 shadow-sm ring-1 ring-emerald-200/60">
+          <div className="flex items-center justify-between gap-3"><p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-emerald-700">Dépenses du mois</p><span className="rounded-xl bg-emerald-600/10 p-2 text-emerald-700"><CircleDollarSign className="h-4 w-4" /></span></div>
+          <p className="mt-3 break-words text-2xl font-black tabular-nums tracking-tight text-emerald-900">{money(monthTotal)}</p>
+          <p className="mt-2 text-[11px] text-emerald-700">Validées · {new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</p>
         </article>
-        <article className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-amber-800">Reste à payer</p><span className="rounded-lg bg-amber-100 p-2 text-amber-700"><Clock3 className="h-4 w-4" /></span></div>
+        <article className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-yellow-50 p-4 shadow-sm ring-1 ring-amber-200/60">
+          <div className="flex items-center justify-between gap-3"><p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-amber-700">Reste à payer</p><span className="rounded-xl bg-amber-100 p-2 text-amber-700"><Clock3 className="h-4 w-4" /></span></div>
           <p className="mt-3 break-words text-2xl font-black tabular-nums tracking-tight text-amber-900">{money(pendingTotal)}</p>
           <p className="mt-2 text-[11px] text-amber-700">Dépenses validées · toutes périodes</p>
         </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-slate-500">Brouillons</p><span className="rounded-lg bg-slate-100 p-2 text-slate-500"><Pencil className="h-4 w-4" /></span></div>
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+          <div className="flex items-center justify-between gap-3"><p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Brouillons</p><span className="rounded-xl bg-slate-100 p-2 text-slate-600"><Pencil className="h-4 w-4" /></span></div>
           <p className="mt-3 text-2xl font-black tabular-nums tracking-tight text-slate-900">{draftCount}</p>
-          <p className="mt-2 text-[11px] text-slate-400">En attente de validation</p>
+          <p className="mt-2 text-[11px] text-slate-500">En attente de validation</p>
         </article>
-        <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-emerald-800">Opérations enregistrées</p><span className="rounded-lg bg-emerald-100 p-2 text-emerald-700"><ReceiptText className="h-4 w-4" /></span></div>
-          <p className="mt-3 text-2xl font-black tabular-nums tracking-tight text-emerald-900">{expenses.length}</p>
-          <p className="mt-2 text-[11px] text-emerald-700">Dans votre périmètre d’accès</p>
+        <article className="rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50 to-sky-50 p-4 shadow-sm ring-1 ring-cyan-200/60">
+          <div className="flex items-center justify-between gap-3"><p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-cyan-700">Opérations</p><span className="rounded-xl bg-cyan-100 p-2 text-cyan-700"><ReceiptText className="h-4 w-4" /></span></div>
+          <p className="mt-3 text-2xl font-black tabular-nums tracking-tight text-cyan-900">{expenses.length}</p>
+          <p className="mt-2 text-[11px] text-cyan-700">Dans votre périmètre d’accès</p>
         </article>
       </section>
 

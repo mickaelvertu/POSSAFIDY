@@ -35,6 +35,13 @@ const statusLabels: Record<CashHandover["status"], string> = {
   PARTIALLY_DEPOSITED: "Dépôt partiel",
   DEPOSITED: "Déposée à la banque"
 };
+const statusClasses: Record<CashHandover["status"], string> = {
+  DECLARED: "bg-amber-100 text-amber-700 ring-1 ring-amber-200",
+  RECEIVED: "bg-blue-100 text-blue-700 ring-1 ring-blue-200",
+  DISCREPANCY: "bg-rose-100 text-rose-700 ring-1 ring-rose-200",
+  PARTIALLY_DEPOSITED: "bg-violet-100 text-violet-700 ring-1 ring-violet-200",
+  DEPOSITED: "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200"
+};
 
 export default function CashHandoverView({
   handovers, loadError: upstreamLoadError, sales, expenses, stores, currentUser, canCreate, canReceive, canDeposit,
@@ -101,6 +108,19 @@ export default function CashHandoverView({
         ? dailyHandovers.reduce((sum, item) => sum + (item.received_amount || 0), 0) : null
     };
   }), [stores, sales, expenses, handovers, reviewDate, reviewStoreId, receipts, currentUser.uid]);
+
+  const summaryCards = useMemo(() => {
+    const totalDeclared = handovers.reduce((sum, handover) => sum + (handover.declared_amount || 0), 0);
+    const totalReceived = handovers.reduce((sum, handover) => sum + (handover.received_amount || 0), 0);
+    const pendingValidation = handovers.filter(handover => handover.status === "DECLARED").length;
+    const totalDeposited = handovers.reduce((sum, handover) => sum + (handover.deposited_amount || 0), 0);
+    return [
+      { label: "Montant déclaré", value: money(totalDeclared), accent: "emerald" },
+      { label: "Montant reçu", value: money(totalReceived), accent: "blue" },
+      { label: "Dépôts enregistrés", value: money(totalDeposited), accent: "violet" },
+      { label: "À valider", value: `${pendingValidation}`, accent: "amber" }
+    ];
+  }, [handovers]);
 
   const resetCreateForm = () => {
     setPaymentMethod("CASH");
@@ -246,14 +266,17 @@ export default function CashHandoverView({
   };
 
   const modal = (title: string, submitLabel: string, onSubmit: (event: FormEvent) => void, children: ReactNode) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4">
-      <form onSubmit={onSubmit} className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
-        <h2 className="text-lg font-black text-slate-900">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm">
+      <form onSubmit={onSubmit} className="w-full max-w-lg space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-900/20 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-lg font-black text-slate-900">{title}</h2>
+          <button type="button" onClick={() => { resetCreateForm(); setReceiptHandover(null); setDepositHandover(null); setFormError(""); }} className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700">✕</button>
+        </div>
         {children}
-        {formError && <p role="alert" className="text-sm font-medium text-rose-700">{formError}</p>}
+        {formError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{formError}</p>}
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={() => { resetCreateForm(); setReceiptHandover(null); setDepositHandover(null); setFormError(""); }} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Annuler</button>
-          <button type="submit" disabled={busy} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{busy ? "Enregistrement…" : submitLabel}</button>
+          <button type="button" onClick={() => { resetCreateForm(); setReceiptHandover(null); setDepositHandover(null); setFormError(""); }} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Annuler</button>
+          <button type="submit" disabled={busy} className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-700/20 transition hover:brightness-110 disabled:opacity-50">{busy ? "Enregistrement…" : submitLabel}</button>
         </div>
       </form>
     </div>
@@ -261,27 +284,59 @@ export default function CashHandoverView({
 
   return (
     <section className="space-y-5">
-      <header className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-black text-slate-900">Remises de caisse</h1>
-          <p className="mt-1 text-sm text-slate-600">Déclaration POS et DEP, confirmation de réception et suivi des dépôts bancaires.</p>
+      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-700 p-5 text-white shadow-lg shadow-emerald-900/20">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-50/90 ring-1 ring-white/15">
+              <ReceiptText className="h-3.5 w-3.5" />
+              Gestion de trésorerie
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-white">Remises de caisse</h1>
+              <p className="mt-1 max-w-2xl text-sm text-emerald-50/90">Déclaration POS et DEP, confirmation de réception et suivi des dépôts bancaires.</p>
+            </div>
+          </div>
+          {canCreate && <button type="button" onClick={() => { setFormError(""); setIsCreateOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-emerald-800 shadow-md shadow-emerald-950/10 transition hover:-translate-y-0.5 hover:bg-emerald-50"><Plus className="h-4 w-4" /> Déclarer une remise de caisse</button>}
         </div>
-        {canCreate && <button type="button" onClick={() => { setFormError(""); setIsCreateOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white"><Plus className="h-4 w-4" /> Déclarer une remise de caisse</button>}
       </header>
 
-      <aside className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
-        <p className="font-bold">Séparation des responsabilités</p>
-        <p className="mt-1">Le responsable du magasin ou un administrateur déclare. Une autre personne confirme le montant encaissé. Le dépôt est ensuite enregistré avec sa banque et son bordereau. Les achats et dépenses restent saisis dans leurs modules habituels avec leurs justificatifs.</p>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((card, index) => (
+          <div key={card.label} className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-100 ${index === 0 ? "border-emerald-100 bg-emerald-50/70" : index === 1 ? "border-blue-100 bg-blue-50/70" : index === 2 ? "border-violet-100 bg-violet-50/80" : "border-amber-100 bg-amber-50/80"}`}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">{card.label}</p>
+            <p className={`mt-3 text-2xl font-black ${card.accent === "emerald" ? "text-emerald-700" : card.accent === "blue" ? "text-blue-700" : card.accent === "violet" ? "text-violet-700" : "text-amber-700"}`}>{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <aside className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 text-sm text-blue-950 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-lg bg-blue-600/10 p-2 text-blue-700"><CheckCircle2 className="h-4 w-4" /></div>
+          <div>
+            <p className="font-bold">Séparation des responsabilités</p>
+            <p className="mt-1 text-blue-900/80">Le responsable du magasin ou un administrateur déclare. Une autre personne confirme le montant encaissé. Le dépôt est ensuite enregistré avec sa banque et son bordereau. Les achats et dépenses restent saisis dans leurs modules habituels avec leurs justificatifs.</p>
+          </div>
+        </div>
       </aside>
 
-      {loadError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">Impossible de charger les remises de caisse : {loadError}</p>}
-      <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">DEP : les sommes à remettre sont vos encaissements espèces identifiés, à la date réelle du paiement, encore détenus par vous. Les anciens paiements sans encaisseur identifié restent à rapprocher ; ils ne sont pas attribués automatiquement. Les dépenses du magasin restent suivies séparément.</p>
-      <section className="rounded-xl bg-white p-4 shadow-sm">
-        <h2 className="font-bold">Encaissements revendeurs identifiés</h2>
-        <p className="text-xs text-slate-600">Journée sélectionnée : {reviewDate}. La personne ayant reçu l'argent reste visible après la remise.</p>
-        <div className="max-h-80 overflow-auto"><table className="w-full text-left text-xs"><thead><tr>{["Date", "Magasin", "Encaisseur", "Saisi par", "Montant / mode", "Destination"].map(label => <th key={label} className="p-2">{label}</th>)}</tr></thead><tbody>
-          {receipts.filter(receipt => receipt.business_date === reviewDate && (!reviewStoreId || receipt.store_id === reviewStoreId)).map(receipt => <tr key={receipt.id} className="border-t"><td className="p-2">{new Date(receipt.paid_at).toLocaleString("fr-FR")}</td><td className="p-2">{getStoreLabel(receipt.store_id, receipt.store_id)}</td><td className="p-2">{receipt.collected_by_name}</td><td className="p-2">{receipt.recorded_by_name}</td><td className="p-2">{money(receipt.amount)} · {receipt.method}</td><td className="p-2">{receipt.destination === "TREASURY" ? "Fonds de l'administrateur" : receipt.handover_id ? "Incluse dans une remise" : receipt.method === "CASH" ? "À remettre par l'encaisseur" : "Paiement hors espèces"}</td></tr>)}
-        </tbody></table></div>
+      {loadError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Impossible de charger les remises de caisse : {loadError}</p>}
+      <p className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-3 text-sm text-amber-900 shadow-sm">DEP : les sommes à remettre sont vos encaissements espèces identifiés, à la date réelle du paiement, encore détenus par vous. Les anciens paiements sans encaisseur identifié restent à rapprocher ; ils ne sont pas attribués automatiquement. Les dépenses du magasin restent suivies séparément.</p>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-lg font-bold text-slate-900">Encaissements revendeurs identifiés</h2>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-600">{receipts.filter(receipt => receipt.business_date === reviewDate && (!reviewStoreId || receipt.store_id === reviewStoreId)).length} enregistrements</span>
+        </div>
+        <p className="mb-3 text-xs text-slate-600">Journée sélectionnée : {reviewDate}. La personne ayant reçu l'argent reste visible après la remise.</p>
+        <div className="max-h-80 overflow-auto rounded-xl border border-slate-100">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>{["Date", "Magasin", "Encaisseur", "Saisi par", "Montant / mode", "Destination"].map(label => <th key={label} className="p-2.5 font-semibold">{label}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {receipts.filter(receipt => receipt.business_date === reviewDate && (!reviewStoreId || receipt.store_id === reviewStoreId)).map(receipt => <tr key={receipt.id} className="bg-white hover:bg-slate-50/80"><td className="p-2.5 text-slate-700">{new Date(receipt.paid_at).toLocaleString("fr-FR")}</td><td className="p-2.5 text-slate-700">{getStoreLabel(receipt.store_id, receipt.store_id)}</td><td className="p-2.5 text-slate-700">{receipt.collected_by_name}</td><td className="p-2.5 text-slate-700">{receipt.recorded_by_name}</td><td className="p-2.5 font-semibold text-slate-900">{money(receipt.amount)} · {receipt.method}</td><td className="p-2.5 text-slate-600">{receipt.destination === "TREASURY" ? "Fonds de l'administrateur" : receipt.handover_id ? "Incluse dans une remise" : receipt.method === "CASH" ? "À remettre par l'encaisseur" : "Paiement hors espèces"}</td></tr>)}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -304,7 +359,7 @@ export default function CashHandoverView({
               <td className="px-4 py-3">{money(cash.netAmount)}{handover && !handover.receipt_ids && handover.declared_amount !== cash.netAmount && <p className="mt-1 text-rose-700">Déclaré : {money(handover.declared_amount)} · données modifiées après déclaration</p>}</td>
               <td className="px-4 py-3">{receivedTotal !== null ? money(receivedTotal) : "En attente"}</td>
               <td className="space-y-2 px-4 py-3">
-                <p>{handover ? statusLabels[handover.status] : "Non déclaré"}</p>
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${handover ? statusClasses[handover.status] : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"}`}>{handover ? statusLabels[handover.status] : "Non déclaré"}</span>
                 {(!handover || (store.store_type === "CENTRAL_WAREHOUSE" && cash.netAmount > 0)) && canCreate && declarationStores.some(item => item.id === store.id) && <button type="button" disabled={!!loadError || !reviewDate || cash.netAmount < 0} onClick={() => { setStoreId(store.id); setBusinessDate(reviewDate); setFormError(""); setIsCreateOpen(true); }} className="font-semibold text-emerald-700 disabled:opacity-40">Déclarer la remise</button>}
                 {handover && canReceive && handover.status === "DECLARED" && handover.declared_by !== currentUser.uid && <button type="button" disabled={!!loadError} onClick={() => openReceipt(handover)} className="flex items-center gap-1 font-semibold text-blue-700 disabled:opacity-40"><ClipboardCheck className="h-4 w-4" /> Confirmer réception</button>}
               </td>
@@ -337,7 +392,7 @@ export default function CashHandoverView({
                       <td className="px-4 py-3">{handover.received_by ? <><p className="font-semibold text-slate-800">{money(handover.received_amount || 0)}</p><p className="mt-1 text-slate-500">Par {handover.received_by_name}</p>{handover.discrepancy_note && <p className="mt-1 max-w-48 text-rose-700">{handover.discrepancy_note}</p>}</> : <span className="text-slate-400">En attente</span>}</td>
                       <td className="px-4 py-3"><p className="font-semibold text-slate-800">{money(handover.deposited_amount)}</p>{handover.deposits.map((deposit, index) => <p key={`${deposit.reference}-${index}`} className="mt-1 text-slate-500">{deposit.bank_name} · {deposit.reference} · {money(deposit.amount)}</p>)}{(handover.allocated_amount ?? 0) > 0 && <p className="mt-1 text-slate-600">Utilisé / transféré : {money(handover.allocated_amount ?? 0)}</p>}{remaining > 0 && handover.received_by && <p className="mt-1 text-amber-700">Solde : {money(remaining)}</p>}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2 py-1 font-bold ${handover.status === "DISCREPANCY" ? "bg-rose-100 text-rose-800" : handover.status === "DEPOSITED" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{statusLabels[handover.status]}</span>
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${statusClasses[handover.status]}`}>{statusLabels[handover.status]}</span>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {onAdoptHandover && !handover.treasury_fund_id && handover.received_by === currentUser.uid && remaining > 0 && ["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId) && <button type="button" disabled={busy || !!loadError} onClick={async () => { setBusy(true); setFormError(""); try { await onAdoptHandover(handover); } catch (error) { setFormError(error instanceof Error ? error.message : "Reprise impossible."); } finally { setBusy(false); } }} className="font-semibold text-teal-700">Reprendre dans la trésorerie</button>}
                           {canConfirm && <button type="button" onClick={() => openReceipt(handover)} className="inline-flex items-center gap-1 font-semibold text-blue-700"><ClipboardCheck className="h-3.5 w-3.5" /> Confirmer réception</button>}
