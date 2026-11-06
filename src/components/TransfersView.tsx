@@ -716,8 +716,6 @@ export default function TransfersView({
             const totalRejected = t.lines.reduce((acc, l) => acc + l.quantity_rejected, 0);
 
             const isReceiver = currentUser.storeIds.includes(t.destination_store_id)
-              && currentUser.uid !== t.requested_by
-              && currentUser.uid !== t.approved_by
               && (t.status !== "RECEIVED" || currentUser.uid !== t.received_by);
             const isCentralDestination = dst?.store_type === "CENTRAL_WAREHOUSE";
             const isSupplierDelivery = t.type === "SUPPLIER_TO_STORE";
@@ -979,7 +977,7 @@ export default function TransfersView({
                     )}
 
                     {t.status === "APPROVED" && t.type === "DIRECT_DEPOSIT" && (
-                      canReceive && currentUser.storeIds.includes(t.destination_store_id) && currentUser.uid !== t.approved_by ? (
+                      canReceive && currentUser.storeIds.includes(t.destination_store_id) ? (
                         <button
                           type="button"
                           onClick={() => {

@@ -53,6 +53,9 @@ const dateInputValue = (timestamp: number) => {
 const dateLabel = (timestamp: number) => new Date(timestamp).toLocaleDateString("fr-FR");
 const categoryLabel = (category: ExpenseCategory) => CATEGORIES.find(item => item.value === category)?.label || "Autres frais";
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100";
+const panelClass = "rounded-2xl border border-slate-200 bg-white shadow-sm";
+const subPanelClass = "rounded-2xl border border-slate-200 bg-slate-50/70 shadow-sm";
+const softButtonClass = "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50";
 const employeeLabel = (employee: Employee) => `${employee.last_name} ${employee.first_name} · ${employee.position} · ${employee.code || employee.id}`;
 
 export default function ExpensesView({ expenses, employees, stores, currentUser, canCreate, canCreateSalaryAdvance, dataReady = true, loadError, onRetry, treasuryFunds = [], treasuryReady = false, onPayExpense, onCancelExpense, onCreateExpense, onUpdateExpense, onValidateExpense, onDeleteExpense }: ExpensesViewProps) {
@@ -198,10 +201,10 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   );
   const expenseActions = (expense: Expense) => (
     <div className="flex flex-wrap items-center gap-2">
-      {canEditExpense(expense) && <button type="button" disabled={busyId !== null} onClick={() => openEditForm(expense)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"><Pencil className="h-3 w-3" /> Modifier</button>}
-      {canValidate && (canDelete || canEditExpense(expense)) && expense.status === "DRAFT" && <button type="button" disabled={busyId !== null} onClick={() => runAction(expense, "validate")} className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-2.5 py-2 text-[11px] font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">{busyId === expense.id ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Valider</button>}
-      {isAdmin && onPayExpense && expense.status === "VALIDATED" && expense.payment_status === "PENDING" && <button type="button" disabled={busyId !== null} onClick={() => openPayment(expense, "pay")} className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Régler</button>}
-      {isAdmin && onCancelExpense && expense.status !== "CANCELLED" && <button type="button" disabled={busyId !== null} onClick={() => { setCancelTarget(expense); setCancelReason(""); setCancelError(""); }} className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-bold text-amber-800 disabled:opacity-50">Annuler la dépense</button>}
+      {canEditExpense(expense) && <button type="button" disabled={busyId !== null} onClick={() => openEditForm(expense)} className={`${softButtonClass} gap-1.5`}><Pencil className="h-3 w-3" /> Modifier</button>}
+      {canValidate && (canDelete || canEditExpense(expense)) && expense.status === "DRAFT" && <button type="button" disabled={busyId !== null} onClick={() => runAction(expense, "validate")} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-2 text-[11px] font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">{busyId === expense.id ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Valider</button>}
+      {isAdmin && onPayExpense && expense.status === "VALIDATED" && expense.payment_status === "PENDING" && <button type="button" disabled={busyId !== null} onClick={() => openPayment(expense, "pay")} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50">Régler</button>}
+      {isAdmin && onCancelExpense && expense.status !== "CANCELLED" && <button type="button" disabled={busyId !== null} onClick={() => { setCancelTarget(expense); setCancelReason(""); setCancelError(""); }} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50">Annuler la dépense</button>}
       {canDelete && (expense.status === "DRAFT" || expense.status === "CANCELLED") && <button type="button" aria-label={`Supprimer ${expense.expense_number}`} title="Supprimer la dépense" disabled={busyId !== null} onClick={() => runAction(expense, "delete")} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /></button>}
     </div>
   );
@@ -305,29 +308,29 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
       {actionError && <p role="alert" className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"><AlertCircle className="h-4 w-4 shrink-0" />{actionError}</p>}
 
       <section aria-label="Vue d’ensemble des dépenses" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="bg-emerald-950 text-emerald-100 p-4 rounded-2xl shadow-xs">
+        <article className="bg-emerald-950 text-emerald-100 p-4 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-emerald-100">Dépenses du mois</p><span className="rounded-lg bg-white/10 p-2 text-emerald-100"><CircleDollarSign className="h-4 w-4" /></span></div>
           <p className="mt-3 break-words text-2xl font-black tabular-nums tracking-tight">{money(monthTotal)}</p>
           <p className="mt-2 text-[11px] text-emerald-200">Validées · {new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</p>
         </article>
-        <article className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-xs">
+        <article className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-amber-800">Reste à payer</p><span className="rounded-lg bg-amber-100 p-2 text-amber-700"><Clock3 className="h-4 w-4" /></span></div>
           <p className="mt-3 break-words text-2xl font-black tabular-nums tracking-tight text-amber-900">{money(pendingTotal)}</p>
           <p className="mt-2 text-[11px] text-amber-700">Dépenses validées · toutes périodes</p>
         </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-slate-500">Brouillons</p><span className="rounded-lg bg-slate-100 p-2 text-slate-500"><Pencil className="h-4 w-4" /></span></div>
           <p className="mt-3 text-2xl font-black tabular-nums tracking-tight text-slate-900">{draftCount}</p>
           <p className="mt-2 text-[11px] text-slate-400">En attente de validation</p>
         </article>
-        <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-xs">
+        <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold text-emerald-800">Opérations enregistrées</p><span className="rounded-lg bg-emerald-100 p-2 text-emerald-700"><ReceiptText className="h-4 w-4" /></span></div>
           <p className="mt-3 text-2xl font-black tabular-nums tracking-tight text-emerald-900">{expenses.length}</p>
           <p className="mt-2 text-[11px] text-emerald-700">Dans votre périmètre d’accès</p>
         </article>
       </section>
 
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <section className={`overflow-hidden ${panelClass}`}>
         <div className="space-y-4 border-b border-slate-200 bg-slate-50/60 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-slate-600" /><h3 className="text-sm font-bold text-slate-900">Historique des dépenses</h3><span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">{visibleExpenses.length}</span></div>
@@ -350,7 +353,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
           <div className="flex flex-col items-center px-5 py-16 text-center"><span className="rounded-2xl bg-emerald-50 p-4 text-emerald-500"><ReceiptText className="h-7 w-7" /></span><p className="mt-4 text-sm font-bold text-slate-800">{hasFilters ? "Aucune dépense ne correspond à vos filtres" : "Votre historique commence ici"}</p><p className="mt-2 max-w-sm text-xs leading-relaxed text-slate-500">{hasFilters ? "Essayez un autre mois, un autre statut ou un autre mot-clé." : "Retrouvez vos loyers, factures, avances et autres frais au même endroit."}</p>{hasFilters && <button type="button" onClick={resetFilters} className="mt-4 text-xs font-bold text-emerald-700 hover:underline">Afficher toutes les dépenses</button>}</div>
         ) : (
           <>
-            <div className="space-y-3 bg-slate-50 p-3 sm:p-5">
+            <div className="space-y-3 bg-slate-50/80 p-3 sm:p-5">
               <p className="text-xs text-slate-500">Sélectionnez une dépense pour afficher ses détails.</p>
               {visibleExpenses.map(expense => (
                 <details key={expense.id} className="group overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 open:border-slate-300 open:bg-slate-50/50">

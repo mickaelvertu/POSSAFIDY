@@ -324,6 +324,10 @@ export default function SalesView({
       alert("Le total modifié ne peut pas être inférieur au montant déjà encaissé.");
       return;
     }
+    if (!isResellerSale && amountPaid < netTotal) {
+      alert("Le montant encaissé ne peut pas être inférieur au total à payer pour une vente POS. Pour un règlement partiel, utilisez le flux crédit/revendeur.");
+      return;
+    }
     if (isResellerSale && (
       !canCreateResellerSale ||
       currentStore?.store_type !== "CENTRAL_WAREHOUSE" ||
@@ -1019,7 +1023,17 @@ export default function SalesView({
                       <select value={paymentMethod} disabled={Boolean(editingSale)} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm font-semibold text-slate-900 disabled:bg-slate-100"><option value="CASH">Espèces</option><option value="MVOLA">MVola</option><option value="AIRTEL_MONEY">Airtel Money</option><option value="ORANGE_MONEY">Orange Money</option><option value="BANK_TRANSFER">Virement bancaire</option><option value="CHECK">Chèque bancaire</option></select>
                     </label>
                     <label className="text-xs font-bold text-slate-600">Montant encaissé (Ar)
-                      <input type="number" min="0" value={amountPaid} disabled={Boolean(editingSale)} onChange={(e) => setAmountPaid(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-right font-mono text-base font-black text-slate-900 disabled:bg-slate-100" />
+                      <input
+                        type="number"
+                        min={isResellerSale ? 0 : netTotal}
+                        value={amountPaid}
+                        disabled={Boolean(editingSale)}
+                        onChange={(e) => {
+                          const nextValue = Number(e.target.value);
+                          setAmountPaid(isResellerSale ? nextValue : Math.max(nextValue, netTotal));
+                        }}
+                        className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-right font-mono text-base font-black text-slate-900 disabled:bg-slate-100"
+                      />
                     </label>
                   </div>
                   {!editingSale && currentStore?.store_type === "CENTRAL_WAREHOUSE" && amountPaid > 0 && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">Encaisseur : {currentUser.displayName}. Le montant reçu est enregistré à votre nom, même si la vente attend encore sa validation.</p>}

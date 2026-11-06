@@ -290,6 +290,41 @@
   color: var(--theme-accent) !important;
 }
 
+.theme-app .bg-white,
+.theme-app .bg-slate-50,
+.theme-app .bg-slate-100,
+.theme-app .bg-slate-50\/60,
+.theme-app .bg-slate-50\/70 {
+  background-color: var(--theme-panel) !important;
+}
+
+.theme-app .border-slate-100,
+.theme-app .border-slate-200,
+.theme-app .border-slate-300 {
+  border-color: var(--theme-border) !important;
+}
+
+.theme-app .text-slate-900,
+.theme-app .text-slate-800,
+.theme-app .text-slate-700 {
+  color: var(--theme-ink) !important;
+}
+
+.theme-app .text-slate-600,
+.theme-app .text-slate-500,
+.theme-app .text-slate-400,
+.theme-app .text-slate-300 {
+  color: color-mix(in srgb, var(--theme-ink) 72%, transparent) !important;
+}
+
+.theme-app input,
+.theme-app select,
+.theme-app textarea {
+  background-color: var(--theme-page) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-ink) !important;
+}
+
 :root[data-theme="sandstone"] .theme-app {
   color: var(--theme-ink);
 }

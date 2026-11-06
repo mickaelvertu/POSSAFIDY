@@ -193,7 +193,6 @@ service cloud.firestore {
         after.status in ['VALIDATED', 'DISCREPANCY'] &&
         after.received_by == request.auth.uid && after.validated_by == request.auth.uid &&
         hasPermission('transfers.receive') && hasStoreAccess(before.destination_store_id) &&
-        request.auth.uid != before.requested_by && request.auth.uid != before.approved_by &&
         data.store_id == before.destination_store_id &&
         get(/databases/$(database)/documents/stores/$(before.destination_store_id)).data.store_type == 'POS' &&
         get(/databases/$(database)/documents/stores/$(before.source_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
@@ -1709,7 +1708,12 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_id)).data.created_by == request.resource.data.requested_by
       );
       allow update: if
-        (request.resource.data.status == 'CANCELLED' || productionDestinationAllowed(request.resource.data)) &&
+        (request.resource.data.status == 'CANCELLED' ||
+          (resource.data.type == 'SUPPLIER_TO_STORE' &&
+            request.resource.data.type == resource.data.type &&
+            request.resource.data.source_store_id == resource.data.source_store_id &&
+            request.resource.data.destination_store_id == resource.data.destination_store_id) ||
+          productionDestinationAllowed(request.resource.data)) &&
         request.resource.data.id == resource.data.id &&
         request.resource.data.created_at == resource.data.created_at &&
         (
@@ -1804,8 +1808,6 @@ service cloud.firestore {
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
             get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
             request.resource.data.received_by == request.auth.uid &&
-            request.auth.uid != resource.data.requested_by &&
-            request.auth.uid != resource.data.approved_by &&
             request.resource.data.lines is list &&
             request.resource.data.has_discrepancy is bool &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -1849,8 +1851,6 @@ service cloud.firestore {
             get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type != 'CENTRAL_WAREHOUSE' &&
             request.resource.data.received_by == request.auth.uid &&
             request.resource.data.validated_by == request.auth.uid &&
-            request.auth.uid != resource.data.requested_by &&
-            request.auth.uid != resource.data.approved_by &&
             request.resource.data.lines is list &&
             (
               resource.data.type != 'SUPPLIER_TO_STORE' ||

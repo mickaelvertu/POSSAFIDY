@@ -1263,11 +1263,9 @@ export default function AuthenticatedSessionView() {
     if (!transfer || transfer.status !== "IN_TRANSIT") return;
     const isAssignedReceiver = Boolean(currentAppUser)
       && hasPermission(currentAppUser!, "transfers.receive")
-      && currentAppUser!.storeIds.includes(transfer.destination_store_id)
-      && currentAppUser!.uid !== transfer.requested_by
-      && currentAppUser!.uid !== transfer.approved_by;
+      && currentAppUser!.storeIds.includes(transfer.destination_store_id);
     if (!isAssignedReceiver) {
-      alert("Un utilisateur autorisé du magasin destinataire, différent du demandeur et de l'approbateur, doit valider cette réception.");
+      alert("Un utilisateur autorisé du magasin destinataire doit valider cette réception.");
       return;
     }
     if (updatedLines.some(line => line.quantity_received < 0 || line.quantity_received > line.quantity_sent || line.quantity_accepted < 0 || line.quantity_accepted > line.quantity_received)) {
@@ -1373,9 +1371,8 @@ export default function AuthenticatedSessionView() {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.type !== "DIRECT_DEPOSIT" || transfer.status !== "APPROVED" || !currentAppUser) return;
     if (!hasPermission(currentAppUser, "transfers.receive")
-      || !currentAppUser.storeIds.includes(transfer.destination_store_id)
-      || currentAppUser.uid === transfer.approved_by) {
-      alert("Seul un responsable du dépôt, différent de l'approbateur, peut réceptionner ce dépôt.");
+      || !currentAppUser.storeIds.includes(transfer.destination_store_id)) {
+      alert("Un utilisateur autorisé du dépôt doit pouvoir réceptionner ce dépôt.");
       return;
     }
     const timestamp = Date.now();
@@ -1446,11 +1443,9 @@ export default function AuthenticatedSessionView() {
     }
     const isAssignedConfirmer = hasPermission(currentAppUser, "transfers.receive")
       && currentAppUser.storeIds.includes(transfer.destination_store_id)
-      && currentAppUser.uid !== transfer.received_by
-      && currentAppUser.uid !== transfer.requested_by
-      && currentAppUser.uid !== transfer.approved_by;
+      && currentAppUser.uid !== transfer.received_by;
     if (!isAssignedConfirmer) {
-      alert("Un autre utilisateur autorisé du dépôt central doit confirmer cette réception.");
+      alert("Un utilisateur autorisé du dépôt central doit confirmer cette réception.");
       return;
     }
     if (transfer.lines.some(line =>

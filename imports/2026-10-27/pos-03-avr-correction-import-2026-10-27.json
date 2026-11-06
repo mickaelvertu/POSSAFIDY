@@ -12,14 +12,14 @@
                      "store_id":  "store-pos-03",
                      "store_code":  "POS-03",
                      "store_name":  "Rex",
-                     "article_id":  "article-resale-avr",
-                     "article_code":  "AV012",
-                     "article_name":  "AVR",
+                     "article_id":  "article-resale-provisional-paracetamol500mg",
+                     "article_code":  "TMP002",
+                     "article_name":  "PARACETAMOL 500MG",
                      "unit":  "Piece",
                      "quantity":  8,
-                     "expected_current_quantity":  1,
-                     "previous_initial_quantity":  11,
-                     "corrected_initial_quantity":  18,
+                     "expected_current_quantity":  0,
+                     "previous_initial_quantity":  0,
+                     "corrected_initial_quantity":  7,
                      "correction_delta":  7
                  }
              ]
