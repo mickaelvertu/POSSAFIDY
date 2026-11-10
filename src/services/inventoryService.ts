@@ -14,7 +14,7 @@ import { prepareFundDebit } from "./treasuryService";
 import { transferLineDataEqual } from "./transferLineEquality";
 import { transferLinesEqual } from "./transferComparison";
 import { canPurchaseArticle } from "./purchaseEligibility";
-import { posReceiptProof } from "./transferReceipt";
+import { isAssignedDepotManager, posReceiptProof } from "./transferReceipt";
 import { cancellationEffects } from "./transferCancellation";
 import type { AppUser } from "../types";
 import { createAuditLog } from "./auditService";
@@ -243,6 +243,16 @@ export async function saveTransferWithStockEffects(
     const transferSnapshot = await transaction.get(transferRef);
     if (!transferSnapshot.exists()) throw new Error("Transfert introuvable.");
     const currentTransfer = transferSnapshot.data() as StockTransfer;
+    let depotManagerConfirmation = false;
+    if (currentTransfer.status === "RECEIVED" && transfer.validated_by) {
+      const [profileSnapshot, destinationSnapshot] = await Promise.all([
+        transaction.get(doc(db, USERS_COLLECTION, transfer.validated_by)),
+        transaction.get(doc(db, STORES_COLLECTION, currentTransfer.destination_store_id))
+      ]);
+      const profile = profileSnapshot.data();
+      depotManagerConfirmation = profile?.status === "ACTIVE" &&
+        isAssignedDepotManager({ roleId: profile.role, storeIds: profile.assignedStores || [] }, destinationSnapshot.data() as Store | undefined);
+    }
     const validTransition = options.recyclingDecision
       ? currentTransfer.type === "RECYCLING"
         && ["VALIDATED", "DISCREPANCY"].includes(currentTransfer.status)
@@ -256,7 +266,7 @@ export async function saveTransferWithStockEffects(
         || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
         || currentTransfer.status === "RECEIVED" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
           && Boolean(currentTransfer.received_by)
-          && currentTransfer.received_by !== transfer.validated_by
+          && (currentTransfer.received_by !== transfer.validated_by || depotManagerConfirmation)
           && currentTransfer.received_by === transfer.received_by
           && transferLineDataEqual(currentTransfer.lines, transfer.lines);
     if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");

@@ -1,4 +1,9 @@
-import type { StockMovement, StockTransfer } from "../types";
+import type { StockMovement, StockTransfer, Store, UserProfile } from "../types";
+
+export function isAssignedDepotManager(user: Pick<UserProfile, "roleId" | "storeIds">, store: Pick<Store, "id" | "store_type"> | undefined) {
+  return user.roleId === "RESPONSABLE_MAGASIN" && store?.store_type === "CENTRAL_WAREHOUSE"
+    && user.storeIds.includes(store.id);
+}
 
 /** Link a positive POS receipt to its exact line in the atomic transfer update. */
 export function posReceiptProof(current: StockTransfer, updated: StockTransfer, movement: StockMovement) {

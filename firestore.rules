@@ -48,6 +48,14 @@ service cloud.firestore {
           (storeId is string && profile.get('assignedStores', []).hasAny([storeId])));
     }
 
+    function isAssignedDepotManager(storeId) {
+      let profile = currentProfile();
+      return profile != null && profile.get('status', '') == 'ACTIVE' &&
+        profile.get('role', '') == 'RESPONSABLE_MAGASIN' &&
+        profile.get('assignedStores', []).hasAny([storeId]) &&
+        get(/databases/$(database)/documents/stores/$(storeId)).data.store_type == 'CENTRAL_WAREHOUSE';
+    }
+
     function canCollectReseller(storeId) {
       return hasPermission('credit.manage') || (isActiveUser() &&
         currentProfile().get('role', '') == 'RESPONSABLE_MAGASIN' && hasStoreAccess(storeId) &&
@@ -842,7 +850,7 @@ service cloud.firestore {
           (
             get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
             getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.validated_by == request.auth.uid &&
-            request.resource.data.received_by != request.auth.uid
+            (request.resource.data.received_by != request.auth.uid || isAssignedDepotManager(resource.data.store_id))
           ) ||
           (
             get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type != 'CENTRAL_WAREHOUSE' &&
@@ -1844,9 +1852,10 @@ service cloud.firestore {
             get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
             resource.data.received_by is string &&
             request.resource.data.received_by == resource.data.received_by &&
-            request.auth.uid != resource.data.received_by &&
-            request.auth.uid != resource.data.requested_by &&
-            request.auth.uid != resource.data.approved_by &&
+            (isAssignedDepotManager(resource.data.destination_store_id) ||
+              (request.auth.uid != resource.data.received_by &&
+               request.auth.uid != resource.data.requested_by &&
+               request.auth.uid != resource.data.approved_by)) &&
             request.resource.data.validated_by == request.auth.uid &&
             request.resource.data.lines == resource.data.lines &&
             (

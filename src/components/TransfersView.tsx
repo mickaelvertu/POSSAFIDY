@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 
 import { canApproveTransfer, isWorkshopTransfer } from "../services/transferApproval";
+import { isAssignedDepotManager } from "../services/transferReceipt";
 
 interface TransfersViewProps {
   focusedTransferId?: string;
@@ -742,8 +743,9 @@ export default function TransfersView({
             const totalAccepted = t.lines.reduce((acc, l) => acc + l.quantity_accepted, 0);
             const totalRejected = t.lines.reduce((acc, l) => acc + l.quantity_rejected, 0);
 
+            const isDepotManager = isAssignedDepotManager(currentUser, dst);
             const isReceiver = currentUser.storeIds.includes(t.destination_store_id)
-              && (t.status !== "RECEIVED" || currentUser.uid !== t.received_by);
+              && (t.status !== "RECEIVED" || currentUser.uid !== t.received_by || isDepotManager);
             const isCentralDestination = dst?.store_type === "CENTRAL_WAREHOUSE";
             const isSupplierDelivery = t.type === "SUPPLIER_TO_STORE";
             const workshopTransfer = isWorkshopTransfer(t, stores);
@@ -774,8 +776,8 @@ export default function TransfersView({
                     {isSupplierDelivery && t.purchase_number && <span className="text-xs font-medium text-teal-700">Achat {t.purchase_number}</span>}
                     {workshopTransfer && <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Approbation par l’atelier source</span>}
                     {isCentralDestination && (
-                      <span className="text-[10px] font-bold uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full" title="Entrée au dépôt central : réception saisie par une personne, confirmée par une autre">
-                        Contrôle à 2
+                      <span className="text-[10px] font-bold uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full" title="Entrée au dépôt central : saisie puis confirmation, autorisées au même responsable affecté au dépôt">
+                        Réception en 2 étapes
                       </span>
                     )}
                     <span className="text-xs text-slate-400">
@@ -1035,7 +1037,7 @@ export default function TransfersView({
                     )}
                     {t.status === "RECEIVED" && isCentralDestination && (
                       <div className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                        Réception saisie par <strong>{t.received_by_name || "un utilisateur"}</strong>. Le stock n'est pas encore crédité ; une autre personne autorisée doit confirmer.
+                        Réception saisie par <strong>{t.received_by_name || "un utilisateur"}</strong>. Le stock n'est pas encore crédité ; {isDepotManager ? "vous pouvez confirmer cette réception en tant que responsable du dépôt." : "une autre personne autorisée ou le responsable du dépôt doit confirmer."}
                       </div>
                     )}
                     {t.status === "RECEIVED" && isCentralDestination && canReceive && isReceiver && (

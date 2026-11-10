@@ -60,3 +60,34 @@ test('production routes allow workshops and depots but deny POS in both directio
     assert.equal(result.status, 200, JSON.stringify(result.body));
   });
 });
+
+test('assigned depot manager records and confirms the same receipt', async t => {
+  const transfer = { id: 'depot-receipt', source_store_id: 'lab', destination_store_id: 'depot', type: 'MANUFACTURER_TO_CENTRAL', status: 'IN_TRANSIT', requested_by: 'super', approved_by: 'super', created_at: 1, lines: [{ article_id: 'finished', quantity_sent: 5, quantity_received: 0, quantity_accepted: 0, quantity_rejected: 0 }] };
+  const received = { ...transfer, status: 'RECEIVED', received_by: 'super', received_by_name: 'Manager', received_at: 2, updated_at: 2, has_discrepancy: false, lines: [{ ...transfer.lines[0], quantity_received: 5, quantity_accepted: 5 }] };
+  const confirmed = { ...received, status: 'VALIDATED', validated_by: 'super', validated_by_name: 'Manager', validated_at: 3, updated_at: 3 };
+  const profile = { role: 'RESPONSABLE_MAGASIN', status: 'ACTIVE', permissions: ['transfers.view', 'transfers.receive'], assignedStores: ['depot'] };
+  assert.equal((await commit([
+    write('users/super', profile),
+    write('stores/lab', { store_type: 'MANUFACTURER', is_active: true }),
+    write('stores/depot', { store_type: 'CENTRAL_WAREHOUSE', is_active: true }),
+    write('transfers/depot-receipt', transfer)
+  ])).status, 200);
+  await t.test('records receipt before confirming', async () => {
+    assert.equal((await commit([write('transfers/depot-receipt', received)], token)).status, 200);
+  });
+  for (const [label, change] of [
+    ['unassigned manager', { assignedStores: ['other'] }],
+    ['disabled manager', { status: 'DISABLED' }],
+    ['manager without receipt permission', { permissions: ['transfers.view'] }],
+    ['warehouse operator confirming own receipt', { role: 'MAGASINIER' }]
+  ]) await t.test('denies ' + label, async () => {
+    assert.equal((await commit([write('users/super', { ...profile, ...change })])).status, 200);
+    assert.equal((await commit([write('transfers/depot-receipt', confirmed)], token)).status, 403);
+  });
+  await t.test('assigned manager confirms once and cannot change recorded quantities', async () => {
+    assert.equal((await commit([write('users/super', profile)])).status, 200);
+    assert.equal((await commit([write('transfers/depot-receipt', { ...confirmed, lines: [{ ...received.lines[0], quantity_accepted: 4 }] })], token)).status, 403);
+    assert.equal((await commit([write('transfers/depot-receipt', confirmed)], token)).status, 200);
+    assert.equal((await commit([write('transfers/depot-receipt', { ...confirmed, updated_at: 4 })], token)).status, 403);
+  });
+});

@@ -61,6 +61,7 @@ import type { StockSyncRow } from "../../services/stockSyncValidation";
 import type { InitialStockImportRow } from "../../services/stockImportValidation";
 import { consumeRawMaterial } from "../../services/operationsService";
 import { canApproveTransfer } from "../../services/transferApproval";
+import { isAssignedDepotManager } from "../../services/transferReceipt";
 import { assertSaleValidationSize } from "../../services/saleValidationLimits";
 const UsersView = lazy(() => import("../UsersView"));
 const SalesView = lazy(() => import("../SalesView"));
@@ -1443,7 +1444,8 @@ export default function AuthenticatedSessionView() {
     }
     const isAssignedConfirmer = hasPermission(currentAppUser, "transfers.receive")
       && currentAppUser.storeIds.includes(transfer.destination_store_id)
-      && currentAppUser.uid !== transfer.received_by;
+      && (currentAppUser.uid !== transfer.received_by
+        || isAssignedDepotManager(currentAppUser, inventoryStores.find(store => store.id === transfer.destination_store_id)));
     if (!isAssignedConfirmer) {
       alert("Un utilisateur autorisé du dépôt central doit confirmer cette réception.");
       return;

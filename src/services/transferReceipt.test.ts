@@ -1,7 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { StockMovement, StockTransfer } from "../types";
-import { posReceiptProof } from "./transferReceipt";
+import { isAssignedDepotManager, posReceiptProof } from "./transferReceipt";
+
+test("only the assigned depot manager can confirm their own central receipt", () => {
+  const manager = { roleId: "RESPONSABLE_MAGASIN" as const, storeIds: ["DEP-01"] };
+  const depot = { id: "DEP-01", store_type: "CENTRAL_WAREHOUSE" as const };
+  assert.equal(isAssignedDepotManager(manager, depot), true);
+  assert.equal(isAssignedDepotManager({ ...manager, storeIds: ["other"] }, depot), false);
+  assert.equal(isAssignedDepotManager({ ...manager, roleId: "MAGASINIER" }, depot), false);
+  assert.equal(isAssignedDepotManager({ ...manager, roleId: "ADMIN" }, depot), false);
+  assert.equal(isAssignedDepotManager(manager, { ...depot, store_type: "POS" }), false);
+  assert.equal(isAssignedDepotManager(manager, undefined), false);
+});
 
 const current = { id: "transfer", type: "CENTRAL_TO_POS", status: "IN_TRANSIT", destination_store_id: "MAG-047" } as StockTransfer;
 const updated = {
