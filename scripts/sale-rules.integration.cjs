@@ -57,3 +57,21 @@ test('sale validation honors roles, store scope, and rule limits atomically', as
     assert.equal((await commit([write('users/super', { email: 'test@example.test', role: null, status: 'PENDING', permissions: [], assignedStores: [] })], token)).status, 200);
   });
 });
+
+test('draft receipt corrections enforce ownership and payment consistency', async () => {
+  const sale = { id: 'draft-correction', sale_number: 'DRAFT-CORRECTION', store_id: 'store', customer_type: 'PARTICULIER', customer_name: 'Client', seller_id: 'super', seller_name: 'Seller', status: 'DRAFT', created_at: 1, subtotal: 100, discount: 0, tax: 0, total: 100, amount_paid: 100, payment_method: 'CASH', payment_status: 'PAID', change_returned: 0, lines: [{ article_id: 'article', quantity: 1, total: 100, unit_price: 100, discount: 0 }] };
+  assert.equal((await commit([
+    write('users/super', { role: 'VENDEUR', status: 'ACTIVE', permissions: ['sales.view', 'sales.create'], assignedStores: ['store'] }),
+    write('stores/store', { store_type: 'POS', is_active: true }),
+    write('sales/draft-correction', sale)
+  ])).status, 200);
+  const corrected = { ...sale, amount_paid: 150, change_returned: 50 };
+  assert.equal((await commit([write('sales/draft-correction', corrected)], token)).status, 200);
+  assert.equal((await commit([write('sales/draft-correction', { ...corrected, amount_paid: -1 })], token)).status, 403);
+  assert.equal((await commit([write('sales/draft-correction', { ...corrected, payment_status: 'PENDING' })], token)).status, 403);
+  assert.equal((await commit([write('sales/draft-correction', { ...corrected, change_returned: 0 })], token)).status, 403);
+  assert.equal((await commit([write('sales/draft-correction', { ...sale, seller_id: 'other' })])).status, 200);
+  assert.equal((await commit([write('sales/draft-correction', { ...corrected, seller_id: 'other' })], token)).status, 403);
+  assert.equal((await commit([write('sales/draft-correction', { ...sale, status: 'VALIDATED' })])).status, 200);
+  assert.equal((await commit([write('sales/draft-correction', { ...corrected, status: 'VALIDATED' })], token)).status, 403);
+});

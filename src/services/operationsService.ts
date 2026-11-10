@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { db, runOnlineTransaction } from "../firebase";
 import { productionStockDeltas } from "./productionStockDeltas";
+import { draftSalePayments } from "./draftSalePayment";
 import { saleLinesEqual, firestoreValuesEqual } from "./saleComparison";
 import { canConsumeMaterials, validateMaterialConsumption } from "./materialConsumption";
 import { SALE_CATALOG_CHECK_SIZE, assertSaleValidationSize } from "./saleValidationLimits";
@@ -155,11 +156,22 @@ export async function updateDraftSale(
     updatedSale.created_at !== originalSale.created_at ||
     updatedSale.customer_type !== originalSale.customer_type ||
     updatedSale.credit_customer_id !== originalSale.credit_customer_id ||
-    updatedSale.amount_paid !== originalSale.amount_paid ||
     updatedSale.payment_method !== originalSale.payment_method
   ) {
     throw new Error("Seul le demandeur peut modifier les informations d'une vente encore en brouillon.");
   }
+
+  if (!Number.isFinite(updatedSale.total) || updatedSale.total < 0 ||
+    !Number.isFinite(updatedSale.amount_paid) || updatedSale.amount_paid < 0 ||
+    (updatedSale.customer_type !== "REVENDEUR" && updatedSale.amount_paid < updatedSale.total)) {
+    throw new Error("Le montant encaissé est invalide pour cette vente.");
+  }
+  updatedSale = {
+    ...updatedSale,
+    credit_payments: draftSalePayments({ ...originalSale, total: updatedSale.total }, updatedSale.amount_paid),
+    payment_status: updatedSale.amount_paid >= updatedSale.total ? "PAID" : updatedSale.amount_paid > 0 ? "PARTIAL" : "PENDING",
+    change_returned: Math.max(0, updatedSale.amount_paid - updatedSale.total)
+  };
 
   const entry = audit("SALE_DRAFT_UPDATED", "SALE", originalSale.id, userId, userName, originalSale.store_id, originalSale, updatedSale);
   await runOnlineTransaction(async transaction => {

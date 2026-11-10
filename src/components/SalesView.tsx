@@ -1,4 +1,5 @@
 import { useListWindow } from "../hooks/useListWindow";
+import { draftSalePayments } from "../services/draftSalePayment";
 import ListWindowMore from "./ListWindowMore";
 import { useRef, useState, FormEvent } from "react";
 import { 
@@ -320,8 +321,8 @@ export default function SalesView({
       alert("Chaque prestation doit avoir un libellé, un prix supérieur à 0 et un motif.");
       return;
     }
-    if (editingSale && netTotal < amountPaid) {
-      alert("Le total modifié ne peut pas être inférieur au montant déjà encaissé.");
+    if (!Number.isFinite(amountPaid) || amountPaid < 0) {
+      alert("Le montant encaissé doit être un nombre positif ou nul.");
       return;
     }
     if (!isResellerSale && amountPaid < netTotal) {
@@ -398,7 +399,7 @@ export default function SalesView({
         credit_due_at: selectedCreditCustomer && creditDue > 0
           ? Date.now() + selectedCreditCustomer.payment_term_days * 24 * 60 * 60 * 1000
           : undefined,
-        credit_payments: editingSale?.credit_payments ?? (selectedCreditCustomer && amountPaid > 0 ? [{
+        credit_payments: editingSale ? draftSalePayments({ ...editingSale, total: netTotal }, amountPaid) : (selectedCreditCustomer && amountPaid > 0 ? [{
           id: `credit-payment-${crypto.randomUUID()}`,
           amount: Math.min(amountPaid, netTotal),
           method: paymentMethod,
@@ -1027,7 +1028,6 @@ export default function SalesView({
                         type="number"
                         min={isResellerSale ? 0 : netTotal}
                         value={amountPaid}
-                        disabled={Boolean(editingSale)}
                         onChange={(e) => {
                           const nextValue = Number(e.target.value);
                           setAmountPaid(isResellerSale ? nextValue : Math.max(nextValue, netTotal));

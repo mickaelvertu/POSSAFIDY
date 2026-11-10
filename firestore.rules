@@ -87,6 +87,25 @@ service cloud.firestore {
         receipt.collected_by_name == payment.collected_by_name && receipt.destination == payment.cash_destination &&
         resellerDebtReduced(before, payment.amount, payment.paid_at);
     }
+    function saleCreditBalance(sale) {
+      return sale.total > sale.amount_paid ? sale.total - sale.amount_paid : 0;
+    }
+    function validDraftPaymentCorrection(before, after) {
+      let oldPayments = before.get('credit_payments', []);
+      let payments = after.get('credit_payments', []);
+      let amount = after.amount_paid > after.total ? after.total : after.amount_paid;
+      return (after.amount_paid == before.amount_paid && payments == oldPayments) ||
+        (!before.keys().hasAny(['credit_customer_id']) && payments == oldPayments) ||
+        (oldPayments.size() <= 1 &&
+          (oldPayments.size() == 0 || !oldPayments[0].keys().hasAny(['cash_destination'])) &&
+          ((amount == 0 && payments.size() == 0) ||
+            (amount > 0 && payments.size() == 1 && payments[0].amount == amount &&
+              ((oldPayments.size() == 1 && payments[0].diff(oldPayments[0]).affectedKeys().hasOnly(['amount'])) ||
+                (oldPayments.size() == 0 && payments[0].id == 'draft-payment-' + before.id &&
+                  payments[0].method == before.payment_method && payments[0].paid_at == before.created_at &&
+                  payments[0].recorded_by == before.seller_id && payments[0].recorded_by_name == before.seller_name &&
+                  payments[0].keys().hasOnly(['id', 'amount', 'method', 'paid_at', 'recorded_by', 'recorded_by_name']))))));
+    }
     function validInitialResellerPayment(sale) {
       let payment = sale.credit_payments[0];
       let receipt = getAfter(/databases/$(database)/documents/resellerReceipts/$(payment.id)).data;
@@ -1081,16 +1100,20 @@ service cloud.firestore {
         request.resource.data.created_at == resource.data.created_at &&
         request.resource.data.customer_type == resource.data.customer_type &&
         request.resource.data.get('credit_customer_id', null) == resource.data.get('credit_customer_id', null) &&
-        request.resource.data.amount_paid == resource.data.amount_paid &&
+        request.resource.data.amount_paid is number &&
+        request.resource.data.amount_paid >= 0 &&
         request.resource.data.payment_method == resource.data.payment_method &&
-        request.resource.data.get('credit_payments', []) == resource.data.get('credit_payments', []) &&
+        request.resource.data.payment_status == (request.resource.data.amount_paid >= request.resource.data.total ? 'PAID' : (request.resource.data.amount_paid > 0 ? 'PARTIAL' : 'PENDING')) &&
+        validDraftPaymentCorrection(resource.data, request.resource.data) &&
+        request.resource.data.change_returned == (request.resource.data.amount_paid > request.resource.data.total ? request.resource.data.amount_paid - request.resource.data.total : 0) &&
+        (resource.data.customer_type == 'REVENDEUR' || request.resource.data.amount_paid >= request.resource.data.total) &&
         request.resource.data.lines is list &&
         request.resource.data.lines.size() > 0 &&
         request.resource.data.total is number &&
         request.resource.data.total >= 0 &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'customer_name', 'customer_phone', 'credit_due_at', 'lines', 'subtotal',
-          'discount', 'tax', 'total', 'payment_status', 'change_returned', 'notes'
+          'discount', 'tax', 'total', 'payment_status', 'change_returned', 'notes', 'amount_paid', 'credit_payments'
         ]) &&
         (
           !resource.data.keys().hasAny(['credit_customer_id']) ||
@@ -1098,8 +1121,7 @@ service cloud.firestore {
             existsAfter(/databases/$(database)/documents/creditCustomers/$(resource.data.credit_customer_id)) &&
             getAfter(/databases/$(database)/documents/creditCustomers/$(resource.data.credit_customer_id)).data.outstanding_balance ==
               get(/databases/$(database)/documents/creditCustomers/$(resource.data.credit_customer_id)).data.outstanding_balance +
-              request.resource.data.total - request.resource.data.amount_paid -
-              resource.data.total + resource.data.amount_paid
+              saleCreditBalance(request.resource.data) - saleCreditBalance(resource.data)
           )
         ) &&
         hasStoreAccess(resource.data.store_id)
@@ -1416,10 +1438,8 @@ service cloud.firestore {
         get(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.status == 'DRAFT' &&
         getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.status == 'DRAFT' &&
         request.resource.data.outstanding_balance - resource.data.outstanding_balance ==
-          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.total -
-          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.amount_paid -
-          get(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.total +
-          get(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data.amount_paid
+          saleCreditBalance(getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data) -
+          saleCreditBalance(get(/databases/$(database)/documents/sales/$(request.resource.data.last_credit_sale_id)).data)
       ) || (
         hasPermission('credit.sales') &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'updated_at']) &&
