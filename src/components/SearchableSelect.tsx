@@ -90,12 +90,12 @@ export default function SearchableSelect({
       </div>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="searchable-select-menu absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
           {allLabel && (
             <button
               type="button"
               onClick={() => selectOption("ALL", allLabel)}
-              className={`w-full px-3 py-2 text-left text-xs font-semibold hover:bg-blue-50 ${value === "ALL" ? "bg-blue-50 text-blue-700" : "text-slate-700"}`}
+              className={`searchable-select-option w-full px-3 py-2 text-left text-xs font-semibold hover:bg-blue-50 ${value === "ALL" ? "bg-blue-50 text-blue-700" : "text-slate-700"}`}
             >
               {allLabel}
             </button>
@@ -105,10 +105,10 @@ export default function SearchableSelect({
               key={option.value}
               type="button"
               onClick={() => selectOption(option.value, option.label)}
-              className={`w-full px-3 py-2 text-left hover:bg-blue-50 ${value === option.value ? "bg-blue-50" : ""}`}
+              className={`searchable-select-option w-full px-3 py-2 text-left hover:bg-blue-50 ${value === option.value ? "bg-blue-50" : ""}`}
             >
-              <span className="block text-xs font-semibold text-slate-900">{option.label}</span>
-              {option.description && <span className="block text-[10px] text-slate-500">{option.description}</span>}
+              <span className="searchable-select-option-label block text-xs font-semibold text-slate-900">{option.label}</span>
+              {option.description && <span className="searchable-select-option-description block text-[10px] text-slate-500">{option.description}</span>}
             </button>
           ))}
           {filteredOptions.length === 0 && (

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "review": {
+    "ready_to_apply": true,
+    "scope": "Stocks initiaux confirmes par utilisateur : Antsirabe / POS-13 / MI061 / MIEL / 6 ; Rex / POS-03 / TMP002 / PARACETAMOL 500MG / 7."
+  },
+  "data": [
+    {
+      "id": "stock-store-pos-13-article-resale-miel",
+      "store_id": "store-pos-13",
+      "store_code": "POS-13",
+      "store_name": "Antsirabe",
+      "article_id": "article-resale-miel",
+      "article_code": "MI061",
+      "article_name": "MIEL",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "id": "stock-store-pos-03-article-resale-provisional-paracetamol500mg",
+      "store_id": "store-pos-03",
+      "store_code": "POS-03",
+      "store_name": "Rex",
+      "article_id": "article-resale-provisional-paracetamol500mg",
+      "article_code": "TMP002",
+      "article_name": "PARACETAMOL 500MG",
+      "unit": "Piece",
+      "quantity": 7
+    }
+  ]
+}

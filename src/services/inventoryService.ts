@@ -14,7 +14,7 @@ import { prepareFundDebit } from "./treasuryService";
 import { transferLineDataEqual } from "./transferLineEquality";
 import { transferLinesEqual } from "./transferComparison";
 import { canPurchaseArticle } from "./purchaseEligibility";
-import { isAssignedDepotManager, posReceiptProof } from "./transferReceipt";
+import { canConfirmReceiptActors, isAssignedDepotManager, posReceiptProof } from "./transferReceipt";
 import { cancellationEffects } from "./transferCancellation";
 import type { AppUser } from "../types";
 import { createAuditLog } from "./auditService";
@@ -211,9 +211,7 @@ export async function recordTransferReceipt(transfer: StockTransfer, auditLog: A
     if (!transferSnapshot.exists() || (transferSnapshot.data() as StockTransfer).status !== "IN_TRANSIT") {
       throw new Error("Ce transfert n'est plus en attente de réception.");
     }
-    if (!storeSnapshot.exists() || (storeSnapshot.data() as Store).store_type !== "CENTRAL_WAREHOUSE") {
-      throw new Error("La double confirmation s'applique uniquement aux entrées du dépôt central.");
-    }
+    if (!storeSnapshot.exists()) throw new Error("Le magasin destinataire est introuvable.");
     transaction.set(transferRef, omitUndefined(transfer));
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   });
@@ -243,15 +241,16 @@ export async function saveTransferWithStockEffects(
     const transferSnapshot = await transaction.get(transferRef);
     if (!transferSnapshot.exists()) throw new Error("Transfert introuvable.");
     const currentTransfer = transferSnapshot.data() as StockTransfer;
-    let depotManagerConfirmation = false;
+    let receiptActorsAllowed = false;
     if (currentTransfer.status === "RECEIVED" && transfer.validated_by) {
       const [profileSnapshot, destinationSnapshot] = await Promise.all([
         transaction.get(doc(db, USERS_COLLECTION, transfer.validated_by)),
         transaction.get(doc(db, STORES_COLLECTION, currentTransfer.destination_store_id))
       ]);
       const profile = profileSnapshot.data();
-      depotManagerConfirmation = profile?.status === "ACTIVE" &&
+      const depotManagerConfirmation = profile?.status === "ACTIVE" &&
         isAssignedDepotManager({ roleId: profile.role, storeIds: profile.assignedStores || [] }, destinationSnapshot.data() as Store | undefined);
+      receiptActorsAllowed = canConfirmReceiptActors(currentTransfer, transfer.validated_by, destinationSnapshot.data() as Store | undefined, depotManagerConfirmation);
     }
     const validTransition = options.recyclingDecision
       ? currentTransfer.type === "RECYCLING"
@@ -266,7 +265,7 @@ export async function saveTransferWithStockEffects(
         || currentTransfer.status === "IN_TRANSIT" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
         || currentTransfer.status === "RECEIVED" && ["VALIDATED", "DISCREPANCY"].includes(transfer.status)
           && Boolean(currentTransfer.received_by)
-          && (currentTransfer.received_by !== transfer.validated_by || depotManagerConfirmation)
+          && receiptActorsAllowed
           && currentTransfer.received_by === transfer.received_by
           && transferLineDataEqual(currentTransfer.lines, transfer.lines);
     if (!validTransition) throw new Error("Le statut du transfert a changé. Rechargez les données.");

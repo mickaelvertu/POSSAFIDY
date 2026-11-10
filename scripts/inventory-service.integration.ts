@@ -43,6 +43,34 @@ test('manager ships 60 POS return lines atomically; wrong quantities and replay 
 });
 after(() => terminate(db));
 
+test('manager confirms 17 received central-to-POS lines atomically without double credit', async () => {
+  await seed();
+  const lines = Array.from({ length: 17 }, (_, i) => ({ id: `line-${i}`, article_id: `receipt-${i}`, quantity_sent: 2, quantity_received: 2, quantity_accepted: 2, quantity_rejected: 0 }));
+  const transfer = { id: 'large-receipt', transfer_number: 'RECEIPT-17', type: 'CENTRAL_TO_POS', status: 'RECEIVED', source_store_id: 'central', destination_store_id: 'shop', requested_by: 'requester', approved_by: 'approver', shipped_by: 'shipper', received_by: 'super', lines, created_at: 1, updated_at: 2 } as StockTransfer;
+  const rows = lines.map(line => ({ id: `stock-${line.article_id}`, store_id: 'shop', article_id: line.article_id, quantity: 10, reserved_quantity: 0, updated_at: 1 }));
+  assert.equal((await commit([
+    write('users/super', { role: 'RESPONSABLE_MAGASIN', status: 'ACTIVE', permissions: ['transfers.view', 'transfers.validate', 'stock.view'], assignedStores: ['shop'] }),
+    write('stores/central', { store_type: 'CENTRAL_WAREHOUSE', is_active: true }),
+    write('transfers/large-receipt', transfer),
+    ...lines.map(line => write(`articles/${line.article_id}`, { article_type: 'RESALE' })),
+    ...rows.map(row => write(`stocks/${row.id}`, row)),
+  ])).status, 200);
+  const confirmed = { ...transfer, status: 'VALIDATED', validated_by: 'super', validated_at: 3, updated_at: 3 } as StockTransfer;
+  const movements = lines.map(line => ({ id: `receive-${line.article_id}`, store_id: 'shop', article_id: line.article_id, movement_type: 'CENTRAL_TO_POS', reference_type: 'TRANSFER', reference_id: transfer.id, quantity: 2, before_quantity: 10, after_quantity: 12, created_by: 'super', created_at: 3 })) as StockMovement[];
+  // The old payload without shared receipt proofs exhausts the rules access budget.
+  const legacy = await commit([
+    ...rows.map(row => write(`stocks/${row.id}`, { ...row, quantity: 12, updated_at: 3 })),
+    ...movements.map(movement => write(`movements/${movement.id}`, movement)),
+    write('transfers/large-receipt', confirmed),
+  ], fixture.token);
+  assert.ok([403, 500].includes(legacy.status), JSON.stringify(legacy));
+  const result = await saveTransferWithStockEffects(confirmed, rows, movements, audit('receipt-confirmed'));
+  assert.equal(result.stocks.length, 17);
+  assert.ok(result.stocks.every(row => row.quantity === 12));
+  await assert.rejects(saveTransferWithStockEffects(confirmed, rows, movements, audit('receipt-replay')));
+  assert.equal((await (await read('stocks/stock-receipt-0')).json()).fields.quantity.integerValue, '12');
+});
+
 test('real POS service validates 100 products, aggregates duplicates, and leaves insufficient stock sales untouched', async () => {
   await seed();
   const lines = Array.from({ length: 100 }, (_, i) => ({ article_id: `product-${i}`, quantity: 1, unit_price: 100, total: 100, discount: 0 }));

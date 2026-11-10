@@ -53,18 +53,19 @@ interface TransfersViewProps {
   onApproveTransfer: (transferId: string) => void;
   onRejectTransfer: (transferId: string, rejectionNote: string) => Promise<boolean>;
   onShipTransfer: (transferId: string) => void;
-  onReceiveAndValidateTransfer: (
+  onRecordTransferReceipt: (
     transferId: string, 
     updatedLines: StockTransferLine[], 
     receiverNote?: string
   ) => void;
-  onConfirmCentralReceipt: (transferId: string) => void;
+  onConfirmTransferReceipt: (transferId: string) => void;
   onReceiveDirectDeposit: (transferId: string) => void;
   onResolveDiscrepancy: (transferId: string, resolutionNote: string) => void;
   canCreate: boolean;
   canReject: boolean;
   canShip: boolean;
   canReceive: boolean;
+  canValidate: boolean;
   canResolveDiscrepancy: boolean;
 }
 
@@ -104,14 +105,15 @@ export default function TransfersView({
   onApproveTransfer,
   onRejectTransfer,
   onShipTransfer,
-  onReceiveAndValidateTransfer,
-  onConfirmCentralReceipt,
+  onRecordTransferReceipt,
+  onConfirmTransferReceipt,
   onReceiveDirectDeposit,
   onResolveDiscrepancy,
   canCreate,
   canReject,
   canShip,
   canReceive,
+  canValidate,
   canResolveDiscrepancy
 }: TransfersViewProps) {
   // UI states
@@ -560,7 +562,7 @@ export default function TransfersView({
 
   const handleConfirmInspection = () => {
     if (!inspectingTransfer) return;
-    onReceiveAndValidateTransfer(inspectingTransfer.id, inspectionLines, receiverGeneralNote);
+    onRecordTransferReceipt(inspectingTransfer.id, inspectionLines, receiverGeneralNote);
     setInspectingTransfer(null);
   };
 
@@ -743,10 +745,17 @@ export default function TransfersView({
             const totalAccepted = t.lines.reduce((acc, l) => acc + l.quantity_accepted, 0);
             const totalRejected = t.lines.reduce((acc, l) => acc + l.quantity_rejected, 0);
 
-            const isDepotManager = isAssignedDepotManager(currentUser, dst);
-            const isReceiver = currentUser.storeIds.includes(t.destination_store_id)
-              && (t.status !== "RECEIVED" || currentUser.uid !== t.received_by || isDepotManager);
             const isCentralDestination = dst?.store_type === "CENTRAL_WAREHOUSE";
+            const isDepotManager = isAssignedDepotManager(currentUser, dst);
+            const isReceiver = currentUser.storeIds.includes(t.destination_store_id);
+            const canConfirmReceipt = t.status === "RECEIVED"
+              && canValidate
+              && isReceiver
+              && (!isCentralDestination || isDepotManager || (
+                currentUser.uid !== t.received_by &&
+                currentUser.uid !== t.requested_by &&
+                currentUser.uid !== t.approved_by
+              ));
             const isSupplierDelivery = t.type === "SUPPLIER_TO_STORE";
             const workshopTransfer = isWorkshopTransfer(t, stores);
             const isSourceOperator = currentUser.roleId === "ADMIN"
@@ -1032,18 +1041,18 @@ export default function TransfersView({
                         className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <FileCheck className="h-4 w-4" />
-                        {isCentralDestination ? "Saisir la réception" : isSupplierDelivery ? "Réceptionner l'achat au Magasin" : "Réceptionner & Valider au Magasin"}
+                        {isCentralDestination ? "Saisir la réception" : "Saisir les quantités reçues"}
                       </button>
                     )}
-                    {t.status === "RECEIVED" && isCentralDestination && (
+                    {t.status === "RECEIVED" && (
                       <div className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                        Réception saisie par <strong>{t.received_by_name || "un utilisateur"}</strong>. Le stock n'est pas encore crédité ; {isDepotManager ? "vous pouvez confirmer cette réception en tant que responsable du dépôt." : "une autre personne autorisée ou le responsable du dépôt doit confirmer."}
+                        Réception saisie par <strong>{t.received_by_name || "un utilisateur"}</strong>. Le stock reste en attente jusqu'à confirmation par un utilisateur ayant le droit transfers.validate.
                       </div>
                     )}
-                    {t.status === "RECEIVED" && isCentralDestination && canReceive && isReceiver && (
+                    {canConfirmReceipt && (
                       <button
                         type="button"
-                        onClick={() => onConfirmCentralReceipt(t.id)}
+                        onClick={() => onConfirmTransferReceipt(t.id)}
                         className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <CheckCircle2 className="h-4 w-4" />
@@ -1638,9 +1647,7 @@ export default function TransfersView({
                   onClick={handleConfirmInspection}
                   className="px-5 py-2 font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs cursor-pointer"
                 >
-                  {stores.find(store => store.id === inspectingTransfer.destination_store_id)?.store_type === "CENTRAL_WAREHOUSE"
-                    ? "Enregistrer la réception (stock non crédité)"
-                    : "Valider la Réception & Mettre à Jour les Stocks"}
+                  Enregistrer la saisie de réception (stock non crédité)
                 </button>
               </div>
 

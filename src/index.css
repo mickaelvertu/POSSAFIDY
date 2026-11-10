@@ -328,3 +328,25 @@
 :root[data-theme="sandstone"] .theme-app {
   color: var(--theme-ink);
 }
+
+.theme-app .searchable-select-menu {
+  background-color: #fff !important;
+}
+
+.theme-app .searchable-select-option,
+.theme-app .searchable-select-option-label {
+  color: #0f172a !important;
+}
+
+.theme-app .searchable-select-option-description {
+  color: #475569 !important;
+}
+
+.theme-app .searchable-select-option:hover,
+.theme-app .searchable-select-option:focus-visible {
+  background-color: #dbeafe !important;
+}
+
+.theme-app .searchable-select-option.bg-blue-50 {
+  background-color: #eff6ff !important;
+}

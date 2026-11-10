@@ -1,7 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { StockMovement, StockTransfer } from "../types";
-import { isAssignedDepotManager, posReceiptProof } from "./transferReceipt";
+import { canConfirmReceiptActors, isAssignedDepotManager, posReceiptProof } from "./transferReceipt";
+
+test("POS confirmation permits the receiver while central confirmation separates actors", () => {
+  const transfer = { received_by: "receiver", requested_by: "requester", approved_by: "approver" };
+  for (const validator of Object.values(transfer)) {
+    assert.equal(canConfirmReceiptActors(transfer, validator, { store_type: "POS" }, false), true);
+    assert.equal(canConfirmReceiptActors(transfer, validator, { store_type: "CENTRAL_WAREHOUSE" }, false), false);
+    assert.equal(canConfirmReceiptActors(transfer, validator, { store_type: "CENTRAL_WAREHOUSE" }, true), true);
+  }
+  assert.equal(canConfirmReceiptActors(transfer, "other", { store_type: "CENTRAL_WAREHOUSE" }, false), true);
+  assert.equal(canConfirmReceiptActors(transfer, undefined, { store_type: "POS" }, false), false);
+  assert.equal(canConfirmReceiptActors(transfer, "receiver", undefined, false), false);
+});
 
 test("only the assigned depot manager can confirm their own central receipt", () => {
   const manager = { roleId: "RESPONSABLE_MAGASIN" as const, storeIds: ["DEP-01"] };
@@ -28,6 +40,11 @@ test("50-article receipt links each stock credit to the correct transfer line", 
     });
   });
   assert.ok(posReceiptProof(current, { ...updated, status: "DISCREPANCY" }, movement).transfer_receipt);
+  updated.lines.forEach((line, line_index) => {
+    assert.deepEqual(posReceiptProof({ ...current, status: "RECEIVED" }, updated, { ...movement, article_id: line.article_id }), {
+      transfer_receipt: { transfer_id: current.id, line_index }
+    });
+  });
 });
 
 test("unrelated, mismatched, grouped duplicate or quarantine credits have no receipt proof", () => {

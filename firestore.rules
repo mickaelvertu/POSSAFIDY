@@ -215,11 +215,11 @@ service cloud.firestore {
       let after = getAfter(/databases/$(database)/documents/transfers/$(transferId)).data;
       return transferId != '' && index is int && index >= 0 &&
         index < before.lines.size() && index < after.lines.size() &&
-        before.type == 'CENTRAL_TO_POS' && before.status == 'IN_TRANSIT' &&
+        before.type == 'CENTRAL_TO_POS' && before.status in ['IN_TRANSIT', 'RECEIVED'] &&
         before.approved_by is string && before.shipped_by is string &&
         after.status in ['VALIDATED', 'DISCREPANCY'] &&
-        after.received_by == request.auth.uid && after.validated_by == request.auth.uid &&
-        hasPermission('transfers.receive') && hasStoreAccess(before.destination_store_id) &&
+        after.received_by is string && after.validated_by == request.auth.uid &&
+        hasPermission('transfers.validate') && hasStoreAccess(before.destination_store_id) &&
         data.store_id == before.destination_store_id &&
         get(/databases/$(database)/documents/stores/$(before.destination_store_id)).data.store_type == 'POS' &&
         get(/databases/$(database)/documents/stores/$(before.source_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
@@ -741,7 +741,7 @@ service cloud.firestore {
       function canReadForReceipt() {
         let transferId = resource.data.get('transfer_id', '');
         let transfer = get(/databases/$(database)/documents/transfers/$(transferId)).data;
-        return hasPermission('transfers.receive') &&
+        return hasAnyPermission(['transfers.receive', 'transfers.validate']) &&
           hasStoreAccess(resource.data.store_id) &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.store_id]) &&
           resource.data.status == 'APPROVED' &&
@@ -1035,7 +1035,7 @@ service cloud.firestore {
           request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity &&
           canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
           (!request.resource.data.keys().hasAny(['sale_check']) && canStoreArticle(request.resource.data.store_id, request.resource.data.article_id))) && (
-        hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
+        hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'transfers.validate', 'sales.validate', 'production.create', 'production.validate']) ||
         (hasPermission('stock.edit') &&
           request.resource.data.movement_type == 'CONSUMPTION' &&
           request.resource.data.reference_type == 'CONSUMPTION' &&
@@ -1639,7 +1639,7 @@ service cloud.firestore {
           canCreditPosReceipt(request.resource.data, request.resource.data.quantity)) ||
           canStoreArticle(request.resource.data.store_id, request.resource.data.article_id)) &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
-          hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
+          hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'transfers.validate', 'sales.validate', 'production.create', 'production.validate']) ||
           isSuperAdmin()
         );
       allow update: if hasStoreAccess(resource.data.store_id) &&
@@ -1657,7 +1657,7 @@ service cloud.firestore {
         request.resource.data.store_id == resource.data.store_id &&
         request.resource.data.article_id == resource.data.article_id &&
         request.resource.data.quantity is number && request.resource.data.quantity >= 0 && (
-          hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'sales.validate', 'production.create', 'production.validate']) ||
+          hasAnyPermission(['stock.adjust', 'transfers.ship', 'transfers.receive', 'transfers.validate', 'sales.validate', 'production.create', 'production.validate']) ||
           (hasPermission('stock.edit') &&
             get(/databases/$(database)/documents/stores/$(resource.data.store_id)).data.store_type == 'MANUFACTURER' &&
             request.resource.data.quantity < resource.data.quantity &&
@@ -1834,7 +1834,6 @@ service cloud.firestore {
             hasPermission('transfers.receive') &&
             hasStoreAccess(resource.data.destination_store_id) &&
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
-            get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
             request.resource.data.received_by == request.auth.uid &&
             request.resource.data.lines is list &&
             request.resource.data.has_discrepancy is bool &&
@@ -1846,13 +1845,13 @@ service cloud.firestore {
           (
             resource.data.status == 'RECEIVED' &&
             request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
-            hasPermission('transfers.receive') &&
+            hasPermission('transfers.validate') &&
             hasStoreAccess(resource.data.destination_store_id) &&
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
-            get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE' &&
             resource.data.received_by is string &&
             request.resource.data.received_by == resource.data.received_by &&
-            (isAssignedDepotManager(resource.data.destination_store_id) ||
+            (get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type != 'CENTRAL_WAREHOUSE' ||
+              isAssignedDepotManager(resource.data.destination_store_id) ||
               (request.auth.uid != resource.data.received_by &&
                request.auth.uid != resource.data.requested_by &&
                request.auth.uid != resource.data.approved_by)) &&
@@ -1869,31 +1868,6 @@ service cloud.firestore {
             ) &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'status', 'validated_by', 'validated_by_name', 'validated_at', 'updated_at'
-            ])
-          ) ||
-          (
-            resource.data.status == 'IN_TRANSIT' &&
-            request.resource.data.status in ['VALIDATED', 'DISCREPANCY'] &&
-            hasPermission('transfers.receive') &&
-            hasStoreAccess(resource.data.destination_store_id) &&
-            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedStores.hasAny([resource.data.destination_store_id]) &&
-            get(/databases/$(database)/documents/stores/$(resource.data.destination_store_id)).data.store_type != 'CENTRAL_WAREHOUSE' &&
-            request.resource.data.received_by == request.auth.uid &&
-            request.resource.data.validated_by == request.auth.uid &&
-            request.resource.data.lines is list &&
-            (
-              resource.data.type != 'SUPPLIER_TO_STORE' ||
-              (
-                resource.data.purchase_id is string &&
-                existsAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)) &&
-                getAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.status == 'RECEIVED' &&
-                getAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.received_by == request.auth.uid
-              )
-            ) &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-              'status', 'lines', 'received_by', 'received_by_name', 'received_at',
-              'validated_by', 'validated_by_name', 'validated_at', 'has_discrepancy',
-              'note', 'updated_at'
             ])
           ) ||
           (

@@ -1259,7 +1259,7 @@ export default function AuthenticatedSessionView() {
     }
   };
 
-  const handleReceiveTransfer = async (transferId: string, updatedLines: StockTransferLine[], receiverNote?: string) => {
+  const handleRecordTransferReceipt = async (transferId: string, updatedLines: StockTransferLine[], receiverNote?: string) => {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "IN_TRANSIT") return;
     const isAssignedReceiver = Boolean(currentAppUser)
@@ -1274,98 +1274,32 @@ export default function AuthenticatedSessionView() {
       return;
     }
     const destinationStore = inventoryStores.find(store => store.id === transfer.destination_store_id);
-    if (destinationStore?.store_type === "CENTRAL_WAREHOUSE") {
-      const hasDiscrepancy = updatedLines.some(line => line.quantity_rejected > 0 || line.quantity_received !== line.quantity_sent);
-      const timestamp = Date.now();
-      const stagedTransfer: StockTransfer = {
-        ...transfer,
-        status: "RECEIVED",
-        lines: updatedLines,
-        received_by: currentAppUser!.uid,
-        received_by_name: currentAppUser!.displayName,
-        received_at: timestamp,
-        has_discrepancy: hasDiscrepancy,
-        note: receiverNote || transfer.note,
-        updated_at: timestamp
-      };
-      try {
-        const auditLog = createAuditLog(currentAppUser!, "TRANSFER_RECEIPT_RECORDED", "TRANSFER", transfer.id, transfer, stagedTransfer, transfer.destination_store_id);
-        await recordTransferReceipt(stagedTransfer, auditLog);
-        setTransfers(current => current.map(item => item.id === transferId ? stagedTransfer : item));
-        setAuditLogs(current => [auditLog, ...current]);
-      } catch (error) {
-        alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception en attente de confirmation.");
-      }
+    if (!destinationStore) {
+      alert("Le magasin destinataire est introuvable. Rechargez les données avant de saisir la réception.");
       return;
     }
-    let updatedStocks = stocks;
-    const movements: StockMovement[] = [];
-    const receiveIntoQuarantine = transfer.type === "STORE_RETURN" || transfer.type === "RECYCLING";
-    updatedLines.forEach(line => {
-      if (line.quantity_accepted > 0) {
-        const { newStocks, beforeQty, afterQty } = (receiveIntoQuarantine ? updateQuarantineQuantity : updateStockQuantity)(updatedStocks, transfer.destination_store_id, line.article_id, line.quantity_accepted);
-        updatedStocks = newStocks;
-        const isSupplierDelivery = transfer.type === "SUPPLIER_TO_STORE";
-        movements.push({
-          id: `movement-${transfer.id}-receive-${line.article_id}`,
-          store_id: transfer.destination_store_id,
-          article_id: line.article_id,
-          movement_type: isSupplierDelivery ? "PURCHASE" : transfer.type,
-          ...(receiveIntoQuarantine ? { stock_bucket: "QUARANTINE" as const } : {}),
-          quantity: line.quantity_accepted,
-          reference_type: isSupplierDelivery ? "PURCHASE" : "TRANSFER",
-          reference_id: isSupplierDelivery ? transfer.purchase_id! : transfer.id,
-          reference_number: isSupplierDelivery ? transfer.purchase_number || transfer.transfer_number : transfer.transfer_number,
-          before_quantity: beforeQty,
-          after_quantity: afterQty,
-          created_by: currentAppUser?.uid || "",
-          created_by_name: currentAppUser?.displayName || currentAppUser?.email || "Utilisateur",
-          notes: isSupplierDelivery ? `Réception achat fournisseur ${transfer.supplier_name || transfer.source_name || ""}` : undefined,
-          created_at: Date.now()
-        });
-      }
-    });
     const hasDiscrepancy = updatedLines.some(line => line.quantity_rejected > 0 || line.quantity_received !== line.quantity_sent);
     const timestamp = Date.now();
-    const updatedTransfer: StockTransfer = {
+    const stagedTransfer: StockTransfer = {
       ...transfer,
-      status: hasDiscrepancy ? "DISCREPANCY" : "VALIDATED",
+      status: "RECEIVED",
       lines: updatedLines,
-      received_by: currentAppUser?.uid,
-      received_by_name: currentAppUser?.displayName,
+      received_by: currentAppUser!.uid,
+      received_by_name: currentAppUser!.displayName,
       received_at: timestamp,
-      validated_by: currentAppUser?.uid,
-      validated_by_name: currentAppUser?.displayName,
-      validated_at: timestamp,
       has_discrepancy: hasDiscrepancy,
       note: receiverNote || transfer.note,
       updated_at: timestamp
     };
-    const changedStocks = updatedStocks.filter(stock =>
-      transfer.lines.some(line => stock.store_id === transfer.destination_store_id && stock.article_id === line.article_id)
-    );
     try {
-      const auditLog = createAuditLog(currentAppUser, hasDiscrepancy ? "TRANSFER_DISCREPANCY_RECORDED" : "TRANSFER_RECEIVED", "TRANSFER", transfer.id, transfer, updatedTransfer, transfer.destination_store_id);
-      const purchaseAuditLog = transfer.purchase_id
-        ? createAuditLog(
-            currentAppUser,
-            "PURCHASE_RECEIVED",
-            "PURCHASE",
-            transfer.purchase_id,
-            { status: "APPROVED", transfer_id: transfer.id },
-            { status: "RECEIVED", transfer_id: transfer.id, received_by: currentAppUser.uid, received_by_name: currentAppUser.displayName, received_at: timestamp },
-            transfer.destination_store_id
-          )
-        : undefined;
-      const result = await saveTransferWithStockEffects(updatedTransfer, changedStocks, movements, auditLog, purchaseAuditLog);
-      setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
-        .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
-      setMovements(current => [...result.movements, ...current]);
-      setTransfers(current => current.map(item => item.id === transferId ? updatedTransfer : item));
-      setAuditLogs(current => [auditLog, ...(purchaseAuditLog ? [purchaseAuditLog] : []), ...current]);
+      const auditLog = createAuditLog(currentAppUser!, "TRANSFER_RECEIPT_RECORDED", "TRANSFER", transfer.id, transfer, stagedTransfer, transfer.destination_store_id);
+      await recordTransferReceipt(stagedTransfer, auditLog);
+      setTransfers(current => current.map(item => item.id === transferId ? stagedTransfer : item));
+      setAuditLogs(current => [auditLog, ...current]);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception du transfert dans Firestore.");
+      alert(error instanceof Error ? error.message : "Impossible d'enregistrer la réception en attente de confirmation.");
     }
+    return;
   };
 
   const handleReceiveDirectDeposit = async (transferId: string, receiverNote?: string) => {
@@ -1435,19 +1369,20 @@ export default function AuthenticatedSessionView() {
     }
   };
 
-  const handleConfirmCentralReceipt = async (transferId: string) => {
+  const handleConfirmTransferReceipt = async (transferId: string) => {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "RECEIVED" || !currentAppUser) return;
-    if (inventoryStores.find(store => store.id === transfer.destination_store_id)?.store_type !== "CENTRAL_WAREHOUSE") {
-      alert("Cette double confirmation est réservée aux entrées du dépôt central.");
-      return;
-    }
-    const isAssignedConfirmer = hasPermission(currentAppUser, "transfers.receive")
+    const destinationStore = inventoryStores.find(store => store.id === transfer.destination_store_id);
+    const isCentralDestination = destinationStore?.store_type === "CENTRAL_WAREHOUSE";
+    const isAssignedConfirmer = hasPermission(currentAppUser, "transfers.validate")
       && currentAppUser.storeIds.includes(transfer.destination_store_id)
-      && (currentAppUser.uid !== transfer.received_by
-        || isAssignedDepotManager(currentAppUser, inventoryStores.find(store => store.id === transfer.destination_store_id)));
+      && (!isCentralDestination || isAssignedDepotManager(currentAppUser, destinationStore) || (
+        currentAppUser.uid !== transfer.received_by &&
+        currentAppUser.uid !== transfer.requested_by &&
+        currentAppUser.uid !== transfer.approved_by
+      ));
     if (!isAssignedConfirmer) {
-      alert("Un utilisateur autorisé du dépôt central doit confirmer cette réception.");
+      alert("Un utilisateur autorisé du magasin destinataire doit confirmer cette entrée avec la permission de validation.");
       return;
     }
     if (transfer.lines.some(line =>
@@ -2618,6 +2553,7 @@ export default function AuthenticatedSessionView() {
               canReject={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               canShip={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "transfers.ship")}
               canReceive={hasPermission(currentAppUser, "transfers.receive")}
+              canValidate={hasPermission(currentAppUser, "transfers.validate")}
               canResolveDiscrepancy={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               onCreateTransfer={handleCreateTransfer}
               onUpdateTransfer={handleUpdateTransfer}
@@ -2626,8 +2562,8 @@ export default function AuthenticatedSessionView() {
               onApproveTransfer={handleApproveTransfer}
               onRejectTransfer={handleRejectTransfer}
               onShipTransfer={handleShipTransfer}
-              onReceiveAndValidateTransfer={handleReceiveTransfer}
-              onConfirmCentralReceipt={handleConfirmCentralReceipt}
+              onRecordTransferReceipt={handleRecordTransferReceipt}
+              onConfirmTransferReceipt={handleConfirmTransferReceipt}
               onReceiveDirectDeposit={handleReceiveDirectDeposit}
               onResolveDiscrepancy={handleResolveTransferDiscrepancy}
             />
