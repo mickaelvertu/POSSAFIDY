@@ -99,6 +99,9 @@ export default function InventoryControlView({
   const [busy, setBusy] = useState(false);
   const [managerId, setManagerId] = useState("");
   const [storeManagers, setStoreManagers] = useState<{ id: string; name: string }[]>([]);
+  const [managersLoading, setManagersLoading] = useState(true);
+  const [managersError, setManagersError] = useState("");
+  const [managersRetry, setManagersRetry] = useState(0);
   const [refusing, setRefusing] = useState<string | null>(null);
   const [refuseNote, setRefuseNote] = useState("");
   const [error, setError] = useState("");
@@ -152,9 +155,19 @@ export default function InventoryControlView({
   useEffect(() => {
     if (!canCount || !storeId) return;
     let active = true;
-    loadStoreManagers(storeId).then(list => { if (active) setStoreManagers(list); }).catch(() => { if (active) setStoreManagers([]); });
+    setManagersLoading(true);
+    setManagersError("");
+    setStoreManagers([]);
+    loadStoreManagers(storeId).then(list => {
+      if (active) {
+        setStoreManagers(list);
+        setManagerId(current => list.some(item => item.id === current) ? current : "");
+      }
+    }).catch(() => {
+      if (active) setManagersError("Impossible de charger les responsables. Réessayez avant d'envoyer le comptage.");
+    }).finally(() => { if (active) setManagersLoading(false); });
     return () => { active = false; };
-  }, [canCount, storeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [canCount, storeId, managersRetry]); // eslint-disable-line react-hooks/exhaustive-deps
   const toSign = counts.filter(count => count.status === "AWAITING_SIGNATURE" && count.manager_id === currentUser.uid);
   const storeArticles = useMemo(() => store ? countableArticles(store, articles, stocks) : [], [store, articles, stocks]);
   const systemQuantity = (articleId: string) => stocks.find(stock => stock.store_id === storeId && stock.article_id === articleId)?.quantity || 0;
@@ -231,6 +244,8 @@ export default function InventoryControlView({
     if (invalidInputs.length > 0) return setError("Certaines quantités comptées sont invalides (nombre positif attendu).");
     if (currentLines.length === 0) return setError("Saisissez au moins une quantité comptée.");
     if (submit) {
+      if (managersLoading || managersError) return setError("La liste des responsables doit être chargée avant l'envoi.");
+      if (!withoutSignature && !storeManagers.some(item => item.id === managerId)) return setError("Choisissez un responsable actif affecté à ce magasin.");
       if (withoutSignature && storeManagers.length > 0) return setError("Un responsable est inscrit pour ce magasin : la signature est requise.");
       if (!withoutSignature && !managerId) return setError("Désignez le responsable du magasin qui doit signer le comptage.");
       const missing = missingReasons(currentLines);
@@ -473,11 +488,14 @@ export default function InventoryControlView({
 
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
             <label className="block text-xs font-semibold text-slate-600">Responsable du magasin (doit signer pour attester sa présence)
-              <select value={managerId} onChange={event => setManagerId(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+              <select disabled={managersLoading || Boolean(managersError)} value={managerId} onChange={event => setManagerId(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
                 <option value="">— Choisir le responsable —</option>
                 {storeManagers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
-              {storeManagers.length === 0 && <span className="mt-1 block font-normal text-amber-700">Aucun responsable de magasin actif n'est assigné à ce magasin : vous pouvez envoyer le comptage directement à l'administrateur, sans signature.</span>}
+              {managersLoading && <span className="mt-1 block">Chargement des responsables…</span>}
+              {managersError && <span role="alert" className="mt-1 block text-rose-700">{managersError} <button type="button" onClick={() => setManagersRetry(current => current + 1)} className="underline">Réessayer</button></span>}
+              {!managersLoading && !managersError && storeManagers.length === 0 && <span className="mt-1 block font-normal text-amber-700">Aucun responsable actif affecté à ce magasin : vous pouvez envoyer le comptage directement à l'administrateur, sans signature.</span>}
+              <span className="mt-1 block font-normal text-slate-500">Comptes actifs affectés au magasin : responsables magasin, contrôleurs, production ou utilisateurs autorisés au comptage ou au contrôle d'inventaire.</span>
             </label>
             <label className="block text-xs font-semibold text-slate-600">Remarque générale (optionnelle)
               <textarea value={notes} onChange={event => setNotes(event.target.value)} rows={2} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
@@ -486,7 +504,7 @@ export default function InventoryControlView({
               <p className="text-xs text-slate-500">Manque estimé : <strong className="text-rose-700">{money(summary.shortageValue)}</strong> · Excédent : <strong className="text-emerald-700">{money(summary.surplusValue)}</strong></p>
               <div className="flex gap-2">
                 <button type="button" disabled={busy} onClick={() => void persist(false)} className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Save className="h-4 w-4" />Enregistrer en brouillon</button>
-                {storeManagers.length === 0 ? (
+                {managersLoading || managersError ? <button type="button" disabled className="rounded-xl bg-slate-200 px-4 py-2 text-xs text-slate-500">Envoi indisponible</button> : storeManagers.length === 0 ? (
                   <button type="button" disabled={busy} onClick={() => void persist(true, true)} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"><Send className="h-4 w-4" />Envoyer à l'administrateur (sans signature)</button>
                 ) : (
                   <button type="button" disabled={busy} onClick={() => void persist(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"><Send className="h-4 w-4" />Envoyer au responsable pour signature</button>

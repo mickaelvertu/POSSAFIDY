@@ -1,6 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+@plugin "daisyui" {
+  themes: false;
+  root: ".treasury-shell";
+  include: button, table, modal, select;
+  prefix: ui-;
+  logs: false;
+}
+
+.treasury-shell {
+  --color-base-100: var(--theme-panel, #ffffff);
+  --color-base-200: var(--theme-page, #f8fafc);
+  --color-base-300: var(--theme-border, #e2e8f0);
+  --color-base-content: var(--theme-ink, #0f172a);
+  --color-neutral: var(--theme-ink, #0f172a);
+  --color-neutral-content: var(--theme-panel, #ffffff);
+  --radius-field: 0.5rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+.treasury-shell :is(button, input, select, summary, a):focus-visible {
+  outline: 2px solid var(--theme-accent, #047857);
+  outline-offset: 3px;
+}
+.treasury-shell input { caret-color: var(--theme-accent, #047857); }
+.treasury-shell ::selection { background: var(--theme-accent-soft, #d1fae5); }
+.treasury-shell td { font-variant-numeric: tabular-nums; }
+.treasury-shell td:nth-last-child(2) { white-space: nowrap; }
+.treasury-shell summary { min-height: 2.5rem; align-content: center; }
+.treasury-shell .ui-table th { color: var(--theme-ink, #475569); font-weight: 500; }
+
+
 @media print {
   @page { margin: 15mm; }
   @page thermal-receipt {

@@ -6,11 +6,13 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot, waitForPendingWrites } from "firebase/firestore";
 import { trackUserPresence } from "../services/presenceService";
 import { describeReadError } from "../services/dataSyncPolicy";
+import { sessionExpiry, watchSessionExpiration } from "../services/sessionExpiration";
 
 interface AuthContextType extends AuthState {
   isProfileFromCache: boolean;
   hasPendingWrites: boolean;
   authorizationError: string | null;
+  sessionMessage: string | null;
   signUp: (payload: SignUpPayload) => Promise<ApiResponse>;
   signUpReseller: (payload: ResellerSignUpPayload) => Promise<ApiResponse>;
   login: (payload: LoginPayload) => Promise<ApiResponse<{ token: string; user: User }>>;
@@ -32,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [hasPendingWrites, setHasPendingWrites] = useState(false);
   const [authorizationError, setAuthorizationError] = useState<string | null>(null);
   const [authorizationRetry, setAuthorizationRetry] = useState(0);
+  const [sessionMessage, setSessionMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -79,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       snapshot => {
         setIsProfileFromCache(snapshot.metadata.fromCache);
         if (!isMounted || auth.currentUser?.uid !== user.id) return;
+        if (Date.now() >= sessionExpiry(auth.currentUser.metadata.lastSignInTime)) return;
         setAuthorizationError(null);
         const current = snapshot.exists() ? authService.userFromProfile(auth.currentUser, snapshot.data()) : null;
         setUser(keepStableUser(current?.status === "ACTIVE" ? current : null));
@@ -97,27 +101,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore session on initial boot
   useEffect(() => {
     let isMounted = true;
+    let version = 0;
+    let stopExpiration = () => {};
 
     const unsubscribe = onAuthStateChanged(auth, async firebaseUser => {
+      const currentVersion = ++version;
+      stopExpiration();
+      let expired = false;
+      if (firebaseUser) {
+        stopExpiration = watchSessionExpiration(sessionExpiry(firebaseUser.metadata.lastSignInTime), () => {
+          expired = true;
+          if (!isMounted || version !== currentVersion) return;
+          setUser(null);
+          setToken(null);
+          setIsProfileFromCache(false);
+          setIsLoading(false);
+          setSessionMessage("Votre session a expiré après 4 heures. Reconnectez-vous pour continuer.");
+          void authService.logout();
+        }, {
+          now: Date.now,
+          schedule: (callback, delay) => window.setTimeout(callback, delay),
+          cancel: timer => window.clearTimeout(timer as number),
+          onResume: callback => {
+            window.addEventListener('focus', callback);
+            window.addEventListener('pageshow', callback);
+            document.addEventListener('visibilitychange', callback);
+            return () => {
+              window.removeEventListener('focus', callback);
+              window.removeEventListener('pageshow', callback);
+              document.removeEventListener('visibilitychange', callback);
+            };
+          }
+        });
+      }
+      if (expired) return;
       try {
         const currentUser = firebaseUser ? await authService.restoreSession() : null;
-        if (!isMounted) return;
+        if (!isMounted || version !== currentVersion || expired) return;
         setUser(keepStableUser(currentUser));
         setToken(authService.getToken());
         setIsProfileFromCache(Boolean(currentUser) && !navigator.onLine);
       } catch (err) {
         console.error("Firebase session restoration failed:", err);
-        if (isMounted) {
+        if (isMounted && version === currentVersion && !expired) {
           setUser(null);
           setToken(null);
         }
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted && version === currentVersion) setIsLoading(false);
       }
     });
 
     return () => {
       isMounted = false;
+      version++;
+      stopExpiration();
       unsubscribe();
     };
   }, []);
@@ -133,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleLogin = async (payload: LoginPayload): Promise<ApiResponse<{ token: string; user: User }>> => {
     const res = await authService.login(payload);
     if (res.success && res.data) {
+      setSessionMessage(null);
       setUser(res.data.user);
       setToken(res.data.token);
       setIsProfileFromCache(false);
@@ -161,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isProfileFromCache,
     hasPendingWrites,
     authorizationError,
+    sessionMessage,
     signUp: handleSignUp,
     signUpReseller: handleResellerSignUp,
     login: handleLogin,

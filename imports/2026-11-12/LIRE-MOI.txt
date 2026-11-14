@@ -1,0 +1,9 @@
+Fichier recommande : catalogue-complet-verifie-2026-11-12.json.
+Importer dans Catalogue > Importer.
+411 articles et 32 categories : 402 articles du catalogue fourni et 9 ajouts.
+Le fichier catalogue-articles-categories-complement.json contient uniquement les 9 ajouts et leurs 3 categories existantes.
+FLACON HE correspond a FV143, confirme par utilisateur : aucun nouvel article cree pour ce flacon.
+GANT et ALU 50 RADRIAKA exclus : correspondances GAN / POT ALU 50G a confirmer.
+Ajouts : type RAW_MATERIAL, unite Piece, prix et seuils a zero, aucun stock cree.
+Classification de SFOI et CALLOT proposee, a verifier.
+Verification des identifiants, codes et categories effectuee contre catalogue-2026-11-12.json.

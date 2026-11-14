@@ -5,7 +5,7 @@ const root = `projects/${project}/databases/(default)/documents`;
 const enc = value => value === null ? { nullValue: null } : Array.isArray(value) ? { arrayValue: { values: value.map(enc) } } : typeof value === 'object' ? { mapValue: { fields: fields(value) } } : typeof value === 'number' ? Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value } : typeof value === 'boolean' ? { booleanValue: value } : { stringValue: value };
 const fields = data => Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined).map(([key, value]) => [key, enc(value)]));
 const write = (path, data) => ({ update: { name: `${root}/${path}`, fields: fields(data) } });
-const payload = { sub: 'super', user_id: 'super', aud: project, iss: `https://securetoken.google.com/${project}`, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600, firebase: { identities: {}, sign_in_provider: 'custom' } };
+const payload = { sub: 'super', user_id: 'super', aud: project, iss: `https://securetoken.google.com/${project}`, auth_time: Math.floor(Date.now() / 1000), iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600, firebase: { identities: {}, sign_in_provider: 'custom' } };
 const token = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url') + '.' + Buffer.from(JSON.stringify(payload)).toString('base64url') + '.';
 async function commit(writes, auth = 'owner') {
   const response = await fetch(`${origin}/v1/${root}:commit`, { method: 'POST', headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ writes }) });

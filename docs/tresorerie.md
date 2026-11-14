@@ -40,3 +40,41 @@ Déployer les règles `firestore.rules` et cette version de l'application lors d
 - `npm run test:rules` : régressions des droits, ventes, stocks et paie.
 
 Les tests de trésorerie couvrent la réception unique, la conservation de l'origine, les achats, les dépenses du siège, les paiements différés, les avances sur salaire, les dépôts, les débits concurrents, les écritures falsifiées, les droits et la reprise des anciennes remises. Ils ne modifient aucune donnée de production.
+
+## Suivi et contrôle des fonds
+
+Le module propose des filtres par période, administrateur, origine, opération et référence. Le résumé de période suit uniquement la période et l’administrateur ; les filtres de recherche, de fonds, d’origine et d’opération concernent les lignes d’historique. Les soldes sont reconstruits depuis le solde courant et les mouvements enregistrés. Les transferts internes ne créent pas de recettes : leur effet global est nul.
+
+La fiche d’un fonds affiche les montants reçus, utilisés, transférés, déposés et remboursés. Les fonds épuisés restent consultables. Les liens d’un mouvement permettent de consulter sa dépense, son achat ou sa remise et de remonter vers les fonds source et destination.
+
+Les alertes portent sur l’âge du fonds depuis sa réception par son détenteur courant. Le seuil est modifiable et mémorisé dans ce navigateur. Il ne déclenche pas de notification externe.
+
+Le contrôle physique enregistre une déclaration immuable du détenteur : solde attendu des fonds lus lors du contrôle, montant compté et motif obligatoire en cas d’écart. Il ne modifie aucun solde. Les règles contrôlent l’auteur et la cohérence de la déclaration ; elles ne certifient pas la somme déclarée. Éviter toute réception simultanée pendant le comptage : un nouveau fonds créé pendant la lecture peut être absent du périmètre, dont les identifiants sont conservés.
+
+Les justificatifs PDF, JPEG, PNG et WebP sont limités à 350 Ko par fichier et conservés dans une collection Firestore distincte. Les administrateurs actifs peuvent les ajouter aux mouvements existants et les télécharger. Les ajouts sont immuables. Les fichiers sont chargés dans le module : surveiller le volume si le nombre de pièces augmente.
+
+L’export CSV UTF-8, compatible Excel, reprend les mouvements filtrés et protège les cellules textuelles contre les formules. Le bouton Imprimer / PDF ouvre un rapport indépendant avec les filtres et les soldes de période ; choisir Enregistrer en PDF dans le navigateur.
+
+Déployer les nouvelles règles Firestore avec l’application pour activer les collections `treasuryChecks` et `treasuryAttachments`. Aucun déploiement n’est effectué par les vérifications locales.
+
+Vérifications supplémentaires : `node --import tsx --test src/services/treasuryTracking.test.ts` et `firebase emulators:exec --only firestore --project demo-sale-rules --config firebase.test.json "node --test scripts/treasury-tracking-rules.integration.cjs"` (Java requis).
+
+### Paiement fournisseur avec plusieurs fonds
+
+Dans le formulaire de paiement d’un achat, choisir « Payer avec plusieurs fonds » puis indiquer le montant pris sur chaque fonds. Le total doit correspondre au montant versé. Un paiement accepte au maximum trois fonds distincts appartenant au payeur, dont deux remises POS / DEP au maximum. Pour davantage de fonds, enregistrer plusieurs paiements sur le même achat.
+
+Un seul règlement fournisseur est créé avec sa répartition ; chaque origine a son mouvement de trésorerie. Tous les débits, les allocations des remises, le paiement et son audit sont enregistrés dans une même transaction. Les soldes sont relus au moment de confirmer et aucun débit n’est appliqué si un fonds est insuffisant. Les paiements historiques avec un seul fonds restent compatibles.
+
+### Transfert par le super administrateur
+
+Dans Trésorerie > Nouvelle opération > Transférer à un administrateur, le super administrateur peut choisir un fonds positif quel que soit son détenteur. Il peut le transférer à un autre administrateur actif, y compris lui-même, sans validation du détenteur source. La référence est obligatoire.
+
+Le mouvement indique le détenteur source, le destinataire et le super administrateur ayant enregistré le transfert. La source et sa référence sont conservées. Le fonds source, le fonds destinataire et l’allocation de la remise POS éventuelle sont enregistrés dans une même transaction. Les administrateurs ordinaires restent limités à leurs propres fonds ; cette faculté ne permet pas de payer un achat ou une dépense directement avec les fonds d’un autre administrateur.
+
+### Annulation des achats fournisseurs
+
+Le super administrateur peut utiliser « Annuler l’achat » avec un motif obligatoire. L’achat et sa livraison sont conservés avec le statut CANCELLED. Les statuts de l’achat, de la livraison et des paiements sont rapprochés avant toute écriture. Une livraison absente ou incohérente impose un rapprochement manuel.
+
+Pour les réceptions validées ou avec écart, seules les quantités acceptées sont retirées du stock. L’opération est bloquée si cela entame les quantités réservées ou rend le stock négatif, si un stock est absent ou en doublon, ou si les données ont changé. Achat, livraison, stocks, mouvements et audit sont enregistrés dans une seule transaction (200 articles distincts maximum).
+
+Les paiements réalisés restent inchangés, ainsi que les fonds débités : le montant payé est affiché comme montant à récupérer auprès du fournisseur (refund_due_amount), sans prétendre qu’un remboursement a eu lieu. Aucun remboursement effectif n’est enregistré automatiquement. Les paiements supplémentaires sont interdits, le reste dû devient nul dans l’interface et l’achat est exclu des échéances futures.

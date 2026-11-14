@@ -1,0 +1,26 @@
+﻿const {test}=require('node:test');const assert=require('node:assert/strict');
+const {commit,write,token}=require('./sale-rules-fixture.cjs');
+test('manual debt requires matching customer balance and audit, payments cannot overpay or bypass cash treasury',async()=>{
+  const now=Date.now();
+  const customer={id:'manual-c',name:'Revendeur test',phone:'',credit_limit:1000,payment_term_days:15,outstanding_balance:0,is_active:true,created_at:now,updated_at:now};
+  await commit([write('users/super',{role:'ADMIN',status:'ACTIVE',displayName:'Admin'}),write('creditCustomers/manual-c',customer)]);
+  const debt={id:'manual-d',customer_id:customer.id,customer_name:customer.name,reference:'ANCIENNE-01',note:'Reprise',amount:500,amount_paid:0,due_at:now+86400000,created_at:now,updated_at:now,created_by:'super',created_by_name:'Admin',payments:[],last_audit_id:'manual-audit-create'};
+  const audit=(id,action)=>({id,user_id:'super',user_name:'Admin',action,entity_type:'CREDIT_CUSTOMER',entity_id:customer.id,created_at:now});
+  const created=write('manualCreditDebts/manual-d',debt);
+  assert.equal((await commit([created],token)).status,403);
+  const result=await commit([created,write('creditCustomers/manual-c',{...customer,outstanding_balance:500,last_manual_debt_id:debt.id}),write('auditLogs/manual-audit-create',audit('manual-audit-create','MANUAL_CREDIT_CREATED'))],token);
+  assert.equal(result.status,200,JSON.stringify(result.body));
+  const p={id:'manual-p1',amount:200,method:'BANK_TRANSFER',reference:'VIR-01',paid_at:now,collected_by:'super',collected_by_name:'Admin',recorded_by:'super',recorded_by_name:'Admin'};
+  const paid={...debt,amount_paid:200,payments:[p],last_audit_id:'manual-audit-pay'};
+  assert.equal((await commit([write('manualCreditDebts/manual-d',paid)],token)).status,403);
+  const ok=await commit([write('manualCreditDebts/manual-d',paid),write('creditCustomers/manual-c',{...customer,outstanding_balance:300,last_manual_debt_id:debt.id}),write('auditLogs/manual-audit-pay',audit('manual-audit-pay','MANUAL_CREDIT_PAYMENT'))],token);
+  assert.equal(ok.status,200,JSON.stringify(ok.body));
+  const changed={...paid,amount:800};
+  assert.equal((await commit([write('manualCreditDebts/manual-d',changed)],token)).status,403);
+  const bad={...p,id:'manual-p2',amount:301};
+  assert.equal((await commit([write('manualCreditDebts/manual-d',{...paid,amount_paid:501,payments:[p,bad],last_audit_id:'manual-overpay'}),write('auditLogs/manual-overpay',audit('manual-overpay','MANUAL_CREDIT_PAYMENT'))],token)).status,403);
+  const cash={...p,id:'manual-cash',method:'CASH',amount:100};
+  assert.equal((await commit([write('manualCreditDebts/manual-d',{...paid,amount_paid:300,payments:[p,cash],last_audit_id:'manual-cash-audit'}),write('creditCustomers/manual-c',{...customer,outstanding_balance:200,last_manual_debt_id:debt.id}),write('auditLogs/manual-cash-audit',audit('manual-cash-audit','MANUAL_CREDIT_PAYMENT'))],token)).status,403);
+  await commit([write('users/super',{role:'VENDEUR',status:'ACTIVE',permissions:[]})]);
+  assert.equal((await commit([write('manualCreditDebts/manual-d',{...paid,amount_paid:300})],token)).status,403);
+});

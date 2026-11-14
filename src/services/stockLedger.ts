@@ -56,6 +56,8 @@ export function describeMovementCause(movement: StockMovement, lookups: LedgerLo
     }
     case "PRODUCTION":
       return isEntry ? "Production" : "Consommation";
+    case "PURCHASE_CANCELLATION":
+      return "Annulation d’achat fournisseur";
     case "PURCHASE":
     case "RECEPTION_FOURNISSEUR":
       return "Achat fournisseur";

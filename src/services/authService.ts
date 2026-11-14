@@ -357,8 +357,11 @@ export class AuthService {
   }
 
   async listStoreManagers(storeId: string): Promise<{ id: string; name: string }[]> {
-    const snapshot = await getDocs(query(collection(db, "users"), where("role", "==", "RESPONSABLE_MAGASIN")));
-    return snapshot.docs
+    const snapshots = await Promise.all([
+      getDocs(query(collection(db, "users"), where("role", "in", ["RESPONSABLE_MAGASIN", "CONTROLEUR", "PRODUCTION"]))),
+      getDocs(query(collection(db, "users"), where("permissions", "array-contains-any", ["inventory.count", "inventory.review"])))
+    ]);
+    return [...new Map(snapshots.flatMap(snapshot => snapshot.docs).map(item => [item.id, item])).values()]
       .filter(item => {
         const data = item.data();
         return data.status === "ACTIVE" && Array.isArray(data.assignedStores) && data.assignedStores.includes(storeId);
@@ -367,7 +370,7 @@ export class AuthService {
         const data = item.data();
         const name = `${data.firstName || ""} ${data.lastName || ""}`.trim() || String(data.email || item.id);
         return { id: item.id, name };
-      });
+      }).sort((a, b) => a.name.localeCompare(b.name, "fr"));
   }
 
   async listManagedUsers(): Promise<ApiResponse<{ users: User[] }>> {

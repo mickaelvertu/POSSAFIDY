@@ -1,0 +1,816 @@
+{
+  "version": 1,
+  "exportedAt": "2026-11-12T14:25:37.437Z",
+  "data": [
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-alcool",
+      "article_code": "MP04-001",
+      "article_name": "ALCOOL",
+      "unit": "Litre",
+      "quantity": 2
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-aloe-noni",
+      "article_code": "MP04-002",
+      "article_name": "ALOE NONI",
+      "unit": "Litre",
+      "quantity": 160
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-complement-alu-30g",
+      "article_code": "MP-COMP-001",
+      "article_name": "ALU 30G",
+      "unit": "Piece",
+      "quantity": 91
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-ambre-100ml",
+      "article_code": "A1126",
+      "article_name": "AMBRE 100ML",
+      "unit": "Piece",
+      "quantity": 74
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-ambre-125ml",
+      "article_code": "A1125",
+      "article_name": "AMBRE 125ML",
+      "unit": "Piece",
+      "quantity": 589
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-ambre-250ml",
+      "article_code": "A2124",
+      "article_name": "AMBRE 250ML",
+      "unit": "Piece",
+      "quantity": 439
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-ambre-500ml-02",
+      "article_code": "A5121",
+      "article_name": "AMBRE 500ML",
+      "unit": "Piece",
+      "quantity": 2415
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-ambre-50ml",
+      "article_code": "A5127",
+      "article_name": "AMBRE 50ML",
+      "unit": "Piece",
+      "quantity": 737
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-anjarasoa",
+      "article_code": "MP04-003",
+      "article_name": "ANJARASOA",
+      "unit": "Litre",
+      "quantity": 40
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-ascorbigue",
+      "article_code": "MP04-006",
+      "article_name": "ASCORBIGUE",
+      "unit": "Kg",
+      "quantity": 1967
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-bactoderm-creme",
+      "article_code": "MP04-007",
+      "article_name": "BACTODERM CREME",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-baobab",
+      "article_code": "MP04-008",
+      "article_name": "BAOBAB",
+      "unit": "Kg",
+      "quantity": 37
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-beure-de-karite",
+      "article_code": "MP04-011",
+      "article_name": "BEURE DE Karité",
+      "unit": "Gramme",
+      "quantity": 8242
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-beurre-de-cacao",
+      "article_code": "MP04-012",
+      "article_name": "Beurre de cacao",
+      "unit": "Kg",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-bois-de-rose",
+      "article_code": "MP04-013",
+      "article_name": "BOIS DE ROSE",
+      "unit": "Kg",
+      "quantity": 1
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-cajou",
+      "article_code": "MP04-015",
+      "article_name": "CAJOU",
+      "unit": "Kg",
+      "quantity": 60
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-calophilum",
+      "article_code": "MP04-016",
+      "article_name": "CALOPHILUM",
+      "unit": "Litre",
+      "quantity": 18
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-camphre",
+      "article_code": "MP04-017",
+      "article_name": "CAMPHRE",
+      "unit": "Gramme",
+      "quantity": 930
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-canelle",
+      "article_code": "MP04-018",
+      "article_name": "CANELLE",
+      "unit": "Gramme",
+      "quantity": 3000
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-cire-d-abeil",
+      "article_code": "MP04-019",
+      "article_name": "CIRE D'ABEIL",
+      "unit": "Gramme",
+      "quantity": 19575
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-citrique",
+      "article_code": "MP04-020",
+      "article_name": "CITRIQUE",
+      "unit": "Gramme",
+      "quantity": 3127
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-citron",
+      "article_code": "MP04-021",
+      "article_name": "CITRON",
+      "unit": "Litre",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-colle-protofar",
+      "article_code": "MP04-024",
+      "article_name": "COLLE PROTOFAR",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-courge-madio",
+      "article_code": "MP04-025",
+      "article_name": "COURGE MADIO",
+      "unit": "KPK",
+      "quantity": 150
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-cristal-100ml",
+      "article_code": "C1131",
+      "article_name": "CRISTAL 100ML",
+      "unit": "Piece",
+      "quantity": 20
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-cristal-125ml",
+      "article_code": "C1130",
+      "article_name": "CRISTAL 125ML",
+      "unit": "Piece",
+      "quantity": 288
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-cristal-250ml",
+      "article_code": "C2129",
+      "article_name": "CRISTAL 250ML",
+      "unit": "Piece",
+      "quantity": 117
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-cristal-500ml",
+      "article_code": "C5128",
+      "article_name": "CRISTAL 500ML",
+      "unit": "Piece",
+      "quantity": 568
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-cristal-50ml",
+      "article_code": "C5132",
+      "article_name": "CRISTAL 50ML",
+      "unit": "Piece",
+      "quantity": 31
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-cuvee-blanche",
+      "article_code": "MP04-028",
+      "article_name": "CUVEE BLANCHE",
+      "unit": "Litre",
+      "quantity": 1.5
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-detox",
+      "article_code": "MP04-031",
+      "article_name": "DETOX",
+      "unit": "Litre",
+      "quantity": 100
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-complement-doypack-ananambo",
+      "article_code": "MP-COMP-004",
+      "article_name": "DOYPACK ANANAMBO",
+      "unit": "Piece",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-complement-doypack-cataplasme",
+      "article_code": "MP-COMP-009",
+      "article_name": "DOYPACK CATAPLASME",
+      "unit": "Piece",
+      "quantity": 18
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-complement-doypack-spiriline",
+      "article_code": "MP-COMP-005",
+      "article_name": "DOYPACK SPIRILINE",
+      "unit": "Piece",
+      "quantity": 102
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-fenugrec",
+      "article_code": "MP04-038",
+      "article_name": "Fenugrec",
+      "unit": "Kg",
+      "quantity": 2.5
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-g-articul",
+      "article_code": "MP04-041",
+      "article_name": "G-ARTICUL",
+      "unit": "Litre",
+      "quantity": 100
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "ART-394",
+      "article_code": "01",
+      "article_name": "GAN",
+      "unit": "Piece",
+      "quantity": 7
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-glycerine",
+      "article_code": "MP04-042",
+      "article_name": "GLYCERINE",
+      "unit": "Millilitre",
+      "quantity": 1675
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-h-e-palamarosa",
+      "article_code": "MP04-043",
+      "article_name": "H.E PALAMAROSA",
+      "unit": "Millilitre",
+      "quantity": 500
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-he-teatree",
+      "article_code": "MP04-045",
+      "article_name": "HE Teatree",
+      "unit": "Millilitre",
+      "quantity": 1700
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-huile-coco",
+      "article_code": "MP04-048",
+      "article_name": "Huile coco",
+      "unit": "Litre",
+      "quantity": 15
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "ART-400",
+      "article_code": "H",
+      "article_name": "HUILE COLZA",
+      "unit": "Litre",
+      "quantity": 11.5
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-huile-d-amande",
+      "article_code": "MP04-049",
+      "article_name": "Huile d'amande",
+      "unit": "Litre",
+      "quantity": 1.9
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-huile-hina",
+      "article_code": "MP04-054",
+      "article_name": "HUILE HINA",
+      "unit": "Litre",
+      "quantity": 24
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-huile-tournesol",
+      "article_code": "MP04-056",
+      "article_name": "HUILE TOURNESOL",
+      "unit": "Litre",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-hyd-citriodorat",
+      "article_code": "MP04-058",
+      "article_name": "HYD CITRIODORAT",
+      "unit": "Litre",
+      "quantity": 40
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-hydgera",
+      "article_code": "MP04-060",
+      "article_name": "HYDGERA",
+      "unit": "Litre",
+      "quantity": 23
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-hydrav",
+      "article_code": "MP04-061",
+      "article_name": "HYDRAV",
+      "unit": "Litre",
+      "quantity": 35
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-kalanjy",
+      "article_code": "MP04-063",
+      "article_name": "KALANJY",
+      "unit": "Piece",
+      "quantity": 24
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-mandrava-sarotra",
+      "article_code": "MP04-066",
+      "article_name": "MANDRAVA-SAROTRA",
+      "unit": "Kg",
+      "quantity": 45
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-menaka-mandry",
+      "article_code": "MP04-069",
+      "article_name": "MENAKA MANDRY",
+      "unit": "Litre",
+      "quantity": 26
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-miconax-creme",
+      "article_code": "MP04-070",
+      "article_name": "MICONAX CREME",
+      "unit": "Piece",
+      "quantity": 10
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-04",
+      "article_code": "MP04-078",
+      "article_name": "N''04",
+      "unit": "Millilitre",
+      "quantity": 200
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-01",
+      "article_code": "MP04-075",
+      "article_name": "N\" 01",
+      "unit": "Millilitre",
+      "quantity": 15910
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-02",
+      "article_code": "MP04-076",
+      "article_name": "N\" 02",
+      "unit": "Millilitre",
+      "quantity": 710
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-03",
+      "article_code": "MP04-077",
+      "article_name": "N\" 03",
+      "unit": "Millilitre",
+      "quantity": 2850
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-05",
+      "article_code": "MP04-079",
+      "article_name": "N\" 05",
+      "unit": "Millilitre",
+      "quantity": 500
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-06",
+      "article_code": "MP04-080",
+      "article_name": "N\" 06",
+      "unit": "Millilitre",
+      "quantity": 80
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-07",
+      "article_code": "MP04-081",
+      "article_name": "N\" 07",
+      "unit": "Millilitre",
+      "quantity": 500
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-08",
+      "article_code": "MP04-082",
+      "article_name": "N\" 08",
+      "unit": "Millilitre",
+      "quantity": 150
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-09",
+      "article_code": "MP04-083",
+      "article_name": "N\" 09",
+      "unit": "Millilitre",
+      "quantity": 50
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-10",
+      "article_code": "MP04-084",
+      "article_name": "N\" 10",
+      "unit": "Millilitre",
+      "quantity": 155
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-11",
+      "article_code": "MP04-085",
+      "article_name": "N\" 11",
+      "unit": "Millilitre",
+      "quantity": 150
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-12",
+      "article_code": "MP04-086",
+      "article_name": "N\" 12",
+      "unit": "Millilitre",
+      "quantity": 910
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-14",
+      "article_code": "MP04-088",
+      "article_name": "N\" 14",
+      "unit": "Millilitre",
+      "quantity": 120
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-16",
+      "article_code": "MP04-090",
+      "article_name": "N\"° 16",
+      "unit": "Millilitre",
+      "quantity": 850
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-13",
+      "article_code": "MP04-087",
+      "article_name": "N\"13",
+      "unit": "Millilitre",
+      "quantity": 240
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-n-15",
+      "article_code": "MP04-089",
+      "article_name": "N\"15",
+      "unit": "Millilitre",
+      "quantity": 500
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-noni",
+      "article_code": "MP04-092",
+      "article_name": "NONI",
+      "unit": "Litre",
+      "quantity": 100
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-papier-cuisson",
+      "article_code": "MP04-093",
+      "article_name": "PAPIER CUISSON",
+      "unit": "FEUILLE",
+      "quantity": 40
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-complement-pot-alavonto",
+      "article_code": "MP-COMP-007",
+      "article_name": "POT ALAVONTO",
+      "unit": "Piece",
+      "quantity": 280
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-pot-alu-200ml",
+      "article_code": "PA137",
+      "article_name": "POT ALU 200ML",
+      "unit": "Piece",
+      "quantity": 43
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-rofia",
+      "article_code": "MP04-099",
+      "article_name": "ROFIA",
+      "unit": "FATORANA",
+      "quantity": 9
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-sachet-protofar",
+      "article_code": "MP04-101",
+      "article_name": "SACHET PROTOFAR",
+      "unit": "Piece",
+      "quantity": 15
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-complement-sfoi",
+      "article_code": "MP-COMP-008",
+      "article_name": "SFOI",
+      "unit": "Piece",
+      "quantity": 893
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-soja",
+      "article_code": "MP04-105",
+      "article_name": "SOJA",
+      "unit": "Kg",
+      "quantity": 23
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-soude",
+      "article_code": "MP04-107",
+      "article_name": "SOUDE",
+      "unit": "Kg",
+      "quantity": 6
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-spiru-cacapig",
+      "article_code": "MP04-108",
+      "article_name": "SPIRU CACAPIG",
+      "unit": "Kg",
+      "quantity": 4
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-tsunami",
+      "article_code": "MP04-118",
+      "article_name": "TSUNAMI",
+      "unit": "Gramme",
+      "quantity": 156
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-turbo",
+      "article_code": "MP04-119",
+      "article_name": "TURBO",
+      "unit": "Gramme",
+      "quantity": 1670
+    },
+    {
+      "store_id": "MAG-046",
+      "store_code": "DEP-04",
+      "store_name": "Matiere Premiere",
+      "article_id": "article-raw-material-dep04-vinaigre",
+      "article_code": "MP04-124",
+      "article_name": "VINAIGRE",
+      "unit": "BOUTEILLE",
+      "quantity": 100
+    }
+  ]
+}

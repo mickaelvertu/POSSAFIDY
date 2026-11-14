@@ -109,6 +109,8 @@ export interface UnitOfMeasure {
 
 export interface Supplier {
   id: string;
+  deleted_at?: number;
+  deleted_by?: string;
   name: string;
   contact_name?: string;
   phone?: string;
@@ -167,7 +169,7 @@ export interface TreasuryFund {
 
 export interface TreasuryMovement {
   id: string;
-  kind: "RECEIPT" | "TRANSFER" | "PURCHASE" | "EXPENSE" | "EXPENSE_REFUND" | "DEPOSIT";
+  kind: "RECEIPT" | "TRANSFER" | "PURCHASE" | "EXPENSE" | "EXPENSE_REFUND" | "DEPOSIT" | "RECEIPT_REVERSAL";
   fund_id: string;
   destination_fund_id: string;
   from_user: string;
@@ -181,6 +183,7 @@ export interface TreasuryMovement {
 }
 
 export interface SupplierPayment {
+  fund_allocations?: { fund_id: string; amount: number }[];
   treasury_fund_id?: string;
   id: string;
   amount: number;
@@ -269,7 +272,13 @@ export interface CashHandover {
 }
 
 export interface Purchase {
-  status?: "DRAFT" | "APPROVED" | "RECEIVED";
+  raw_material_order_id?: string;
+  status?: "DRAFT" | "APPROVED" | "RECEIVED" | "CANCELLED";
+  cancelled_by?: string;
+  cancelled_by_name?: string;
+  cancelled_at?: number;
+  cancellation_reason?: string;
+  refund_due_amount?: number;
   id: string;
   purchase_number: string;
   supplier_id: string;
@@ -298,6 +307,7 @@ export interface Purchase {
 
 // 4. Stock par magasin
 export interface StoreStock {
+  purchase_cancellation_id?: string;
   id: string; // UUID PK
   store_id: string;
   article_id: string;
@@ -498,6 +508,8 @@ export interface Sale {
   credit_customer_id?: string;
   credit_due_at?: number;
   credit_payments?: CreditPayment[];
+  credit_payment_reversals?: CreditPaymentReversal[];
+  last_credit_reversal_id?: string;
   credit_followups?: CreditFollowUp[];
   status: SaleStatus;
   seller_id: string;
@@ -564,6 +576,7 @@ export interface ResellerNotification {
 }
 
 export interface CreditCustomer {
+  last_manual_debt_id?: string;
   last_payment_sale_id?: string;
   id: string;
   linked_user_id?: string;
@@ -592,7 +605,19 @@ export interface CreditPayment {
   recorded_by_name: string;
 }
 
+export interface CreditPaymentReversal {
+  id: string;
+  sale_id: string;
+  payment: CreditPayment;
+  reason: string;
+  reversed_at: number;
+  reversed_by: string;
+  reversed_by_name: string;
+  audit_id: string;
+}
+
 export interface ResellerReceipt {
+  reversal_id?: string;
   id: string;
   sale_id: string;
   store_id: string;
@@ -734,6 +759,11 @@ export interface AuditLog {
 // 10. Filtres généraux obligatoires
 export type MovementDirection = "ALL" | "IN" | "OUT";
 export interface GeneralFilters {
+  supplierId?: string;
+  expenseCategory?: ExpenseCategory;
+  expenseScope?: "ALL" | "STORE" | "HEAD_OFFICE";
+  treasuryView?: "ALL" | "IN" | "OUT" | "BALANCE";
+  treasuryAdminId?: string;
   startDate?: string;
   endDate?: string;
   storeIds: string[]; // multi-sélection
@@ -754,6 +784,8 @@ export interface GeneralFilters {
 
 // 11. Type de rapport PDF
 export type ReportType = 
+  | "SUPPLIER_PURCHASES"
+  | "TREASURY"
   | "STOCK_STATUS"
   | "STOCK_BY_ARTICLE"
   | "STOCK_MOVEMENTS"

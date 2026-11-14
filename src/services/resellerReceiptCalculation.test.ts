@@ -11,6 +11,7 @@ test('DEP remits only the selected collector actual daily cash still held outsid
   const rows = [receipt, { ...receipt, id: 'admin', collected_by: 'admin', destination: 'TREASURY' },
     { ...receipt, id: 'claimed', handover_id: 'h' }, { ...receipt, id: 'noncash', method: 'MVOLA' },
     { ...receipt, id: 'store', store_id: 'other' }, { ...receipt, id: 'collector', collected_by: 'other' },
+    { ...receipt, id: 'reversed', reversal_id: 'reversed' },
     { ...receipt, id: 'date', business_date: '2026-11-05' }] as ResellerReceipt[];
   const pending = pendingResellerReceipts(rows, 'dep', '2026-11-06', 'responsible');
   assert.deepEqual(pending.map(row => row.id), ['r']); assert.equal(resellerReceiptTotal(pending), 40000);

@@ -1,3 +1,4 @@
+import { permitsSameStoreTransfer } from '../services/transferSameStore';
 import { productionTransferAllowed } from "../services/productionTransferRoute";
 import { useListWindow } from "../hooks/useListWindow";
 import ListWindowMore from "./ListWindowMore";
@@ -415,7 +416,7 @@ export default function TransfersView({
   const handleSaveNewTransfer = async (e: FormEvent) => {
     e.preventDefault();
     const isDirectDeposit = transferKind === "DIRECT_DEPOSIT";
-    if (sourceStoreId === destStoreId && !isDirectDeposit) {
+    if (sourceStoreId === destStoreId && !permitsSameStoreTransfer(transferKind, stores.find(store => store.id === destStoreId))) {
       alert("Le magasin source et le magasin destination doivent être distincts !");
       return;
     }
@@ -435,7 +436,7 @@ export default function TransfersView({
       return;
     }
     if (transferKind === "STORE_RETURN") {
-      if (destinationStore?.store_type !== "CENTRAL_WAREHOUSE" || sourceStore?.store_type === "CENTRAL_WAREHOUSE") {
+      if (destinationStore?.store_type !== "CENTRAL_WAREHOUSE" || (sourceStore?.store_type === "CENTRAL_WAREHOUSE" && sourceStoreId !== destStoreId)) {
         alert("Un retour doit être envoyé d'un magasin vers un entrepôt.");
         return;
       }
@@ -527,7 +528,7 @@ export default function TransfersView({
     stores.find(store => store.id === sourceStoreId), stores.find(store => store.id === destStoreId));
   const transferFormIssue = productionDestinationInvalid
     ? "La Production peut échanger uniquement avec un autre site de Production ou un dépôt actif."
-    : sourceStoreId === destStoreId && transferKind !== "DIRECT_DEPOSIT"
+    : sourceStoreId === destStoreId && !permitsSameStoreTransfer(transferKind, stores.find(store => store.id === destStoreId))
     ? "Choisissez deux magasins différents pour créer le transfert."
     : transferKind === "STORE_RETURN" && transferLines.some(line => !line.return_reason)
       ? "Indiquez le motif de retour de chaque article."
@@ -1260,7 +1261,7 @@ export default function TransfersView({
                   <option value="RECYCLING">Entrepôt → magasin de production (recyclage)</option>
                 </select>
                 {transferKind === "STORE_RETURN" && (
-                  <p className="mt-2 text-xs text-slate-500">L'entrepôt réceptionne les articles, puis les envoie en production, qui décide : recycler ou détruire.</p>
+                  <p className="mt-2 text-xs text-slate-500">L'entrepôt réceptionne les articles, puis les envoie en production, qui décide : recycler ou détruire. Pour un retour interne à l’entrepôt, l’expéditeur et le destinataire peuvent être identiques : les articles acceptés passent en quarantaine.</p>
                 )}
               </section>
 
@@ -1314,7 +1315,7 @@ export default function TransfersView({
                   </div>
                 </div>
                 )}
-                {sourceStoreId === destStoreId && transferKind !== "DIRECT_DEPOSIT" && (
+                {sourceStoreId === destStoreId && !permitsSameStoreTransfer(transferKind, stores.find(store => store.id === destStoreId)) && (
                   <p className="mt-2 text-xs font-medium text-amber-700" role="alert">
                     Le magasin expéditeur et le destinataire doivent être différents.
                   </p>

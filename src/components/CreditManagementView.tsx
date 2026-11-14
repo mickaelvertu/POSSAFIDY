@@ -1,4 +1,5 @@
-import { FormEvent, useMemo, useRef, useState } from "react";
+import ManualResellerDebts from './ManualResellerDebts';
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AppUser, CreditCustomer, CreditFollowUp, CreditPayment, PaymentMethod, Sale, UserProfile } from "../types";
 import { Banknote, CalendarClock, CircleAlert, HandCoins, Plus, Search, Users } from "lucide-react";
 
@@ -10,6 +11,7 @@ interface CreditManagementViewProps {
   collectionStoreIds: string[];
   onSaveCustomer: (customer: CreditCustomer) => Promise<boolean>;
   onRecordPayment: (sale: Sale, payment: CreditPayment) => Promise<boolean>;
+  onReversePayment: (sale: Sale, payment: CreditPayment, reason: string) => Promise<boolean>;
   onRecordFollowUp: (sale: Sale, followUp: CreditFollowUp) => Promise<boolean>;
 }
 
@@ -42,6 +44,7 @@ export default function CreditManagementView({
   collectionStoreIds,
   onSaveCustomer,
   onRecordPayment,
+  onReversePayment,
   onRecordFollowUp
 }: CreditManagementViewProps) {
   const [search, setSearch] = useState("");
@@ -56,6 +59,27 @@ export default function CreditManagementView({
   const paymentId = useRef("");
   const [followUpNote, setFollowUpNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [reversalTarget, setReversalTarget] = useState<{ sale: Sale; payment: CreditPayment } | null>(null);
+  const [reversalReason, setReversalReason] = useState("");
+  const reversalInFlight = useRef(false);
+  const canReverse = currentUser.roleId === "SUPER_ADMIN";
+  useEffect(() => {
+    if (reversalTarget) {
+      const input = document.getElementById("credit-reversal-reason");
+      input?.scrollIntoView({ block: "center" });
+      input?.focus({ preventScroll: true });
+    }
+  }, [reversalTarget]);
+  const submitReversal = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!reversalTarget || !reversalReason.trim() || saving || reversalInFlight.current) return;
+    reversalInFlight.current = true; setSaving(true);
+    try {
+      if (await onReversePayment(reversalTarget.sale, reversalTarget.payment, reversalReason.trim())) {
+        setReversalTarget(null); setReversalReason("");
+      }
+    } finally { reversalInFlight.current = false; setSaving(false); }
+  };
   const canManage = ["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId) || currentUser.permissions.includes("credit.manage");
 
   const money = (value: number) => `${value.toLocaleString("fr-FR")} Ar`;
@@ -83,7 +107,7 @@ export default function CreditManagementView({
     })
     .sort((left, right) => (left.credit_due_at || Number.MAX_SAFE_INTEGER) - (right.credit_due_at || Number.MAX_SAFE_INTEGER));
   const recentReceipts = useMemo(() => sales
-    .filter(sale => sale.customer_type === "REVENDEUR" && sale.status === "VALIDATED" && sale.amount_paid > 0)
+    .filter(sale => sale.customer_type === "REVENDEUR" && sale.status === "VALIDATED" && (sale.amount_paid > 0 || sale.credit_payment_reversals?.length))
     .map(sale => ({
       sale,
       lastPayment: [...(sale.credit_payments || [])].sort((a, b) => b.paid_at - a.paid_at)[0]
@@ -205,6 +229,8 @@ export default function CreditManagementView({
         <p className="text-xs text-slate-500">S’applique aux échéances et aux ventes récemment encaissées.</p>
       </div>
 
+      {canManage && <ManualResellerDebts customers={customers} currentUser={currentUser} selectedReseller={selectedReseller} search={search} />}
+
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-teal-700" /><h3 className="font-bold">Échéances et relances</h3></div>
@@ -272,11 +298,11 @@ export default function CreditManagementView({
                 const balance = Math.max(0, sale.total - sale.amount_paid);
                 return <tr key={sale.id} className="h-16">
                   <td className="px-4 py-3"><strong className="block">{customer?.name || sale.customer_name}</strong><span className="text-xs text-slate-500">{sale.sale_number}</span></td>
-                  <td className="px-4 py-3 text-xs text-slate-600">{new Date(lastPayment?.paid_at || sale.validated_at || sale.created_at).toLocaleString("fr-FR")}<span className="mt-1 block">{lastPayment ? `${money(lastPayment.amount)} · ${paymentMethods.find(item => item.value === lastPayment.method)?.label || lastPayment.method}` : "Encaissement à la vente"}</span></td>
-                  <td className="px-4 py-3 text-right font-mono">{money(sale.total)}<details className="mt-2 text-left font-sans"><summary>Historique des encaissements</summary>{(sale.credit_payments || []).map(payment => <p key={payment.id} className="mt-2">{new Date(payment.paid_at).toLocaleString("fr-FR")} : {money(payment.amount)} {payment.method}<br />Encaisseur : {payment.collected_by_name || "Non identifié (ancien paiement)"} {payment.collected_by ? '(' + payment.collected_by + ')' : ''}<br />Saisi par : {payment.recorded_by_name}</p>)}{(!sale.credit_payments?.length || sale.amount_paid - (sale.change_returned || 0) > (sale.credit_payments || []).reduce((sum, payment) => sum + payment.amount, 0)) && <p className="mt-2 text-amber-800">Un montant initial sans encaisseur identifié reste à rapprocher.</p>}</details></td>
+                  <td className="px-4 py-3 text-xs text-slate-600">{new Date(lastPayment?.paid_at || sale.credit_payment_reversals?.at(-1)?.reversed_at || sale.validated_at || sale.created_at).toLocaleString("fr-FR")}<span className="mt-1 block">{lastPayment ? `${money(lastPayment.amount)} · ${paymentMethods.find(item => item.value === lastPayment.method)?.label || lastPayment.method}` : sale.credit_payment_reversals?.length ? "Encaissement annulé" : "Encaissement à la vente"}</span></td>
+                  <td className="px-4 py-3 text-right font-mono">{money(sale.total)}<details className="mt-2 text-left font-sans"><summary>Historique des encaissements</summary>{(sale.credit_payments || []).map(payment => <p key={payment.id} className="mt-2">{new Date(payment.paid_at).toLocaleString("fr-FR")} : {money(payment.amount)} {payment.method}<br />Encaisseur : {payment.collected_by_name || "Non identifié (ancien paiement)"} {payment.collected_by ? '(' + payment.collected_by + ')' : ''}<br />Saisi par : {payment.recorded_by_name}{canReverse && <button type="button" disabled={saving} onClick={() => { setReversalTarget({ sale, payment }); setReversalReason(""); }} className="mt-2 block rounded-lg border border-rose-200 px-3 py-2 font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50">Annuler cet encaissement</button>}</p>)}{(sale.credit_payment_reversals || []).map(reversal => <p key={reversal.id} className="mt-2 text-rose-800">Encaissement annulé : {money(reversal.payment.amount)}<br />{new Date(reversal.reversed_at).toLocaleString("fr-FR")} par {reversal.reversed_by_name}<br />Motif : {reversal.reason}</p>)}{(sale.amount_paid - (sale.change_returned || 0) > (sale.credit_payments || []).reduce((sum, payment) => sum + payment.amount, 0)) && <p className="mt-2 text-amber-800">Un montant initial sans encaisseur identifié reste à rapprocher.</p>}</details></td>
                   <td className="px-4 py-3 text-right font-mono font-bold text-teal-700">{money(sale.amount_paid)}</td>
                   <td className="px-4 py-3 text-right font-mono">{money(balance)}</td>
-                  <td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${balance > 0 ? "bg-amber-50 text-amber-800" : "bg-teal-50 text-teal-800"}`}>{balance > 0 ? "Paiement partiel" : "Soldée"}</span></td>
+                  <td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${balance > 0 ? "bg-amber-50 text-amber-800" : "bg-teal-50 text-teal-800"}`}>{balance > 0 ? (sale.amount_paid > 0 ? "Paiement partiel" : "Non pay\u00e9") : "Soldée"}</span></td>
                 </tr>;
               })}
               {matchingReceipts.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">Aucune vente encaissée ne correspond à la recherche.</td></tr>}
@@ -285,6 +311,13 @@ export default function CreditManagementView({
         </div>
       </section>
 
+      {reversalTarget && canReverse && <form onSubmit={submitReversal} className="treasury-shell space-y-3 rounded-xl border border-rose-200 bg-white p-4 text-slate-900" aria-label="Annuler un encaissement">
+        <h3 className="font-bold">Annuler l'encaissement de {money(reversalTarget.payment.amount)}</h3>
+        <p className="text-sm">{reversalTarget.sale.sale_number} / {reversalTarget.sale.customer_name}. Le montant sera remis en dette et retiré des fonds liés. L'historique conservera cette annulation.</p>
+        <label className="block text-sm font-semibold" htmlFor="credit-reversal-reason">Motif de l'annulation</label>
+        <textarea id="credit-reversal-reason" required maxLength={1000} disabled={saving} value={reversalReason} onChange={event => setReversalReason(event.target.value)} className="w-full rounded-lg border border-slate-300 p-2" />
+        <div className="flex flex-wrap gap-3"><button type="submit" disabled={saving || !reversalReason.trim()} className="ui-btn border-rose-200 bg-rose-50 text-rose-800">{saving ? "Annulation..." : "Confirmer l'annulation"}</button><button type="button" disabled={saving} className="ui-btn" onClick={() => setReversalTarget(null)}>Conserver l'encaissement</button></div>
+      </form>}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-3 flex items-center gap-2"><Users className="h-4 w-4 text-teal-700" /><h3 className="font-bold">Comptes revendeurs et plafonds</h3></div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

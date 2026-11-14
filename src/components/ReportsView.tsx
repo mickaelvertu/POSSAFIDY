@@ -1,6 +1,7 @@
 import { storeLabel } from "../services/storeLabel";
 import { useMemo, useState, ReactNode } from "react";
 import { 
+  Purchase, TreasuryFund, TreasuryMovement,
   ReportType, 
   GeneralFilters, 
   Store, 
@@ -19,7 +20,7 @@ import {
   MovementDirection,
   ArticleTypeCode
 } from "../types";
-import { filterReportData, getReportKpis, RESELLER_PAYMENT_LABELS } from "../services/reportService";
+import { EXPENSE_CATEGORY_LABELS, filterReportData, getReportKpis, RESELLER_PAYMENT_LABELS } from "../services/reportService";
 import { 
   FileText, 
   Printer, 
@@ -47,6 +48,9 @@ interface ReportsViewProps {
   historyStatus?: ReactNode;
   userAuditReport?: ReactNode;
   /** Fournies uniquement aux utilisateurs autorisés à consulter les dépenses. */
+  purchases?: Purchase[];
+  treasuryFunds?: TreasuryFund[];
+  treasuryMovements?: TreasuryMovement[];
   expenses?: Expense[];
   cashHandovers?: CashHandover[];
   stores: Store[];
@@ -67,6 +71,7 @@ export default function ReportsView({
   onSelectReport,
   historyStatus,
   userAuditReport,
+  purchases, treasuryFunds, treasuryMovements,
   expenses,
   cashHandovers,
   stores,
@@ -99,6 +104,11 @@ export default function ReportsView({
   const [maxQty, setMaxQty] = useState<number | undefined>(undefined);
   const [customerName, setCustomerName] = useState<string>("");
   const [resellerPaymentStatus, setResellerPaymentStatus] = useState<NonNullable<GeneralFilters["resellerPaymentStatus"]>>("ALL");
+  const [supplierId, setSupplierId] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState("");
+  const [expenseScope, setExpenseScope] = useState<NonNullable<GeneralFilters["expenseScope"]>>("ALL");
+  const [treasuryView, setTreasuryView] = useState<NonNullable<GeneralFilters["treasuryView"]>>("ALL");
+  const [treasuryAdminId, setTreasuryAdminId] = useState("");
   const [articleIds, setArticleIds] = useState<string[]>([]);
   const [articleQuery, setArticleQuery] = useState<string>("");
 
@@ -142,28 +152,33 @@ export default function ReportsView({
     icon: Wallet, color: "text-amber-600 bg-amber-50 border-amber-200"
   };
   const reportCount = REPORTS_CATALOG.length + 1 + (cashHandovers ? 1 : 0) + (userAuditReport ? 1 : 0) + (EXPENSES_REPORT ? 1 : 0);
-  const allReports = [...REPORTS_CATALOG, ...(EXPENSES_REPORT ? [EXPENSES_REPORT] : []), resellerReport, ...(cashHandovers ? [{
+  const allReports = [...REPORTS_CATALOG, ...(purchases ? [{ type: "SUPPLIER_PURCHASES" as const, number: 21, title: "Achats fournisseurs", description: "Achats, montants payés et reste à payer par fournisseur", icon: Truck, color: "text-blue-600 bg-blue-50 border-blue-200" }] : []), ...(treasuryFunds ? [{ type: "TREASURY" as const, number: 22, title: "Trésorerie", description: "Entrées, sorties et reste par fonds sur la période", icon: Wallet, color: "text-emerald-600 bg-emerald-50 border-emerald-200" }] : []), ...(EXPENSES_REPORT ? [EXPENSES_REPORT] : []), resellerReport, ...(cashHandovers ? [{
 type: "CASH_HANDOVERS" as const, number: 19, title: "Remises de caisse",
 description: "Montants déclarés, reçus, écarts et dépôts bancaires", icon: Wallet,
 color: "text-emerald-600 bg-emerald-50 border-emerald-200"
 }] : [])];
 
   const filters = useMemo<GeneralFilters>(() => ({
+    supplierId: selectedReport === "SUPPLIER_PURCHASES" ? supplierId || undefined : undefined,
+    expenseCategory: selectedReport === "EXPENSES" ? expenseCategory as GeneralFilters["expenseCategory"] || undefined : undefined,
+    expenseScope: selectedReport === "EXPENSES" ? expenseScope : undefined,
+    treasuryView: selectedReport === "TREASURY" ? treasuryView : undefined,
+    treasuryAdminId: selectedReport === "TREASURY" ? treasuryAdminId || undefined : undefined,
     startDate: selectedReport === "STOCK_BY_ARTICLE" ? undefined : startDate || undefined,
     endDate: selectedReport === "STOCK_BY_ARTICLE" ? undefined : endDate || undefined,
-    storeIds: selectedStoreIds,
-    statuses: selectedReport === "SALES_BY_STORE_ARTICLE" ? ["VALIDATED"] : selectedReport === "RESELLER_CREDIT" ? [] : selectedStatuses,
+    storeIds: selectedReport === "TREASURY" || (selectedReport === "EXPENSES" && expenseScope === "HEAD_OFFICE") ? [] : selectedStoreIds,
+    statuses: selectedReport === "TREASURY" ? [] : selectedReport === "SALES_BY_STORE_ARTICLE" ? ["VALIDATED"] : selectedReport === "RESELLER_CREDIT" ? [] : selectedStatuses,
     resellerPaymentStatus: selectedReport === "RESELLER_CREDIT" ? resellerPaymentStatus : undefined,
     movementTypes: selectedMovementTypes,
     movementDirection,
-    categoryIds: selectedCategoryIds,
-    articleType,
+    categoryIds: ["EXPENSES", "TREASURY"].includes(selectedReport) ? [] : selectedCategoryIds,
+    articleType: ["EXPENSES", "TREASURY"].includes(selectedReport) ? "ALL" : articleType,
     searchRef: searchRef || undefined,
     minQty: selectedReport === "STOCK_BY_ARTICLE" ? undefined : minQty,
     maxQty: selectedReport === "STOCK_BY_ARTICLE" ? undefined : maxQty,
     customerName: customerName || undefined,
     articleIds: ["STOCK_LEDGER", "SALES_BY_STORE_ARTICLE"].includes(selectedReport) && articleIds.length ? articleIds : undefined
-  }), [selectedReport, resellerPaymentStatus, articleIds, startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
+  }), [supplierId, expenseCategory, expenseScope, treasuryView, treasuryAdminId, selectedReport, resellerPaymentStatus, articleIds, startDate, endDate, selectedStoreIds, selectedStatuses, selectedMovementTypes, movementDirection, selectedCategoryIds, articleType, searchRef, minQty, maxQty, customerName]);
 
   const filteredData = useMemo(() => filterReportData({
     articles,
@@ -174,9 +189,10 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
     sales,
     productions,
     auditLogs,
-    expenses,
+    purchases, treasuryFunds, treasuryMovements,
+  expenses,
     cashHandovers
-  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers, filters]);
+  }, filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers, purchases, treasuryFunds, treasuryMovements, filters]);
   const kpiData = useMemo(() => ({
     ...filteredData,
     transfers: selectedReport === "RETURNS"
@@ -188,7 +204,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           : filteredData.transfers
   }), [filteredData, selectedReport]);
   const kpis = useMemo(() => getReportKpis(selectedReport, kpiData, categories, filters), [selectedReport, kpiData, categories, filters]);
-  const statusOptions = selectedReport === "SALES_BY_STORE_ARTICLE" ? [] : selectedReport === "CASH_HANDOVERS"
+  const statusOptions = selectedReport === "SUPPLIER_PURCHASES" ? ["DRAFT", "APPROVED", "RECEIVED", "CANCELLED"] : selectedReport === "SALES_BY_STORE_ARTICLE" ? [] : selectedReport === "CASH_HANDOVERS"
     ? ["DECLARED", "RECEIVED", "DISCREPANCY", "PARTIALLY_DEPOSITED", "DEPOSITED"]
     : selectedReport.startsWith("SALES")
     ? ["DRAFT", "CHECKING", "VERIFIED", "APPROVED", "VALIDATED", "CANCELLED", "REFUNDED"]
@@ -298,7 +314,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
               Rapports officiels GILEADA
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-emerald-50/70">
-              {reportCount} rapports certifiés pour suivre les stocks, les ventes, la production et les opérations.
+              {reportCount + (purchases ? 1 : 0) + (treasuryFunds ? 1 : 0)} rapports certifiés pour suivre les stocks, les ventes, la production et les opérations.
               Chaque édition conserve ses filtres et ses totaux.
             </p>
           </div>
@@ -341,11 +357,11 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             <h3 id="reports-catalog-title" className="mt-1 text-lg font-bold text-white">Choisir un rapport</h3>
           </div>
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300">
-            {reportCount} éditions disponibles
+            {allReports.length + (userAuditReport ? 1 : 0)} éditions disponibles
           </span>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {REPORTS_CATALOG.map(renderReportCard)}
+        {allReports.map(renderReportCard)}
         {userAuditReport && (
           <button
             type="button"
@@ -375,8 +391,8 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             </div>
           </button>
         )}
-        {EXPENSES_REPORT && renderReportCard(EXPENSES_REPORT)}
-        {renderReportCard(resellerReport)}
+
+
         </div>
       </section>
 
@@ -403,6 +419,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
               setSelectedMovementTypes([]);
               setMovementDirection("ALL");
               setArticleType("ALL");
+              setSupplierId(""); setExpenseCategory(""); setExpenseScope("ALL"); setTreasuryView("ALL"); setTreasuryAdminId("");
               setSearchRef("");
               setMinQty(undefined);
               setMaxQty(undefined);
@@ -417,10 +434,37 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           </button>
         </div>
 
+        <div className="treasury-shell grid grid-cols-1 gap-4 text-xs sm:grid-cols-2">
+          {selectedReport === "EXPENSES" && <label className="block font-bold text-slate-700">Périmètre des dépenses
+            <select className="select ui-select mt-1 w-full" value={expenseScope} onChange={event => setExpenseScope(event.target.value as typeof expenseScope)}>
+              <option value="ALL">Tous</option>
+              <option value="STORE">Magasin</option>
+              <option value="HEAD_OFFICE">Siège</option>
+            </select></label>}
+          {selectedReport === "SUPPLIER_PURCHASES" && <label className="block font-bold text-slate-700">Fournisseur
+            <select className="ui-select mt-1 w-full bg-slate-50 border-slate-300 text-slate-900" value={supplierId} onChange={event => setSupplierId(event.target.value)}>
+              <option value="">Tous les fournisseurs</option>
+              {[...new Map((purchases || []).map(row => [row.supplier_id, row.supplier_name])).entries()].sort((a,b) => a[1].localeCompare(b[1], "fr-FR")).map(([id,name]) => <option key={id} value={id}>{name}</option>)}
+            </select></label>}
+          {selectedReport === "EXPENSES" && <label className="block font-bold text-slate-700">Catégorie de dépense
+            <select className="ui-select mt-1 w-full bg-slate-50 border-slate-300 text-slate-900" value={expenseCategory} onChange={event => setExpenseCategory(event.target.value)}>
+              <option value="">Toutes les catégories</option>{Object.entries(EXPENSE_CATEGORY_LABELS).map(([id,name]) => <option key={id} value={id}>{name}</option>)}
+            </select></label>}
+          {selectedReport === "TREASURY" && <label className="block font-bold text-slate-700">Administrateur
+            <select className="ui-select mt-1 w-full bg-slate-50 border-slate-300 text-slate-900" value={treasuryAdminId} onChange={event => setTreasuryAdminId(event.target.value)}>
+              <option value="">Tous les administrateurs</option>
+              {[...new Map((treasuryFunds || []).map(fund => [fund.owner_id, fund.owner_name])).entries()].sort((a, b) => a[1].localeCompare(b[1], "fr-FR")).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select></label>}
+          {selectedReport === "TREASURY" && <label className="block font-bold text-slate-700">Vue de trésorerie
+            <select className="ui-select mt-1 w-full bg-slate-50 border-slate-300 text-slate-900" value={treasuryView} onChange={event => setTreasuryView(event.target.value as typeof treasuryView)}>
+              <option value="ALL">Entrées, sorties et reste</option><option value="IN">Entrées</option><option value="OUT">Sorties</option><option value="BALANCE">Reste disponible</option>
+            </select></label>}
+        </div>
+        {selectedReport === "TREASURY" && <p className="text-xs text-slate-600">Soldes à la fin de la période. Les transferts entre fonds figurent en sortie du fonds source et en entrée du fonds destinataire.</p>}
         {/* Row 1: Date Range, Article Type, Search Ref */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          
-          {(statusOptions.length > 0 || selectedReport === "SALES_BY_STORE_ARTICLE" || selectedReport === "RESELLER_CREDIT" || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
+
+          {(selectedReport === "TREASURY" || statusOptions.length > 0 || selectedReport === "SALES_BY_STORE_ARTICLE" || selectedReport === "RESELLER_CREDIT" || selectedReport === "STOCK_MOVEMENTS" || selectedReport === "STOCK_LEDGER") && <div>
             <label className="block font-bold text-slate-700 mb-1">Date de début :</label>
             <input
               type="date"
@@ -441,7 +485,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             />
           </div>
 
-          <div>
+          {!["EXPENSES", "TREASURY"].includes(selectedReport) && <div>
             <label className="block font-bold text-slate-700 mb-1">Type d'Article :</label>
             <select
               value={articleType}
@@ -452,7 +496,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
               <option value="RESALE">RESALE (Revente)</option>
               <option value="RAW_MATERIAL">RAW_MATERIAL (Matière Première)</option>
             </select>
-          </div>
+          </div>}
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">Numéro / Réf (Recherche) :</label>
@@ -524,8 +568,9 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
             <p className="text-slate-500">Ventes validées uniquement. La période porte sur la date de vente ; les montants encaissés et les soldes sont ceux à ce jour. Le filtre de paiement sélectionne les ventes avant regroupement par revendeur.</p>
           </div>
         )}
+        {selectedReport !== "TREASURY" && <>
         {/* Row 2: Multi-selection Stores */}
-        <div>
+        <div hidden={selectedReport === "EXPENSES" && expenseScope === "HEAD_OFFICE"}>
           <label className="block text-xs font-bold text-slate-700 mb-2">
             Magasins & Entrepôts (Multi-sélection) :
           </label>
@@ -551,6 +596,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           </div>
         </div>
 
+        {selectedReport !== "EXPENSES" && <>
         {/* Row 3: Multi-selection Categories */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-2">
@@ -578,6 +624,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           </div>
         </div>
 
+        </>}
         {/* Row 4: Client & Quantity bounds */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div>
@@ -649,6 +696,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
           )}
         </div>
 
+        </>}
         {/* Action Button */}
         <div className="pt-4 border-t border-slate-200 flex justify-end">
           <button

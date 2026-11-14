@@ -1,0 +1,113 @@
+import { treasuryCounterparties } from '../services/treasuryCounterparties';
+import TreasuryDetailsDialog from './TreasuryDetailsDialog';
+import { useEffect, useMemo, useState } from 'react';
+import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import type { AppUser, Expense, Purchase, TreasuryFund, TreasuryMovement } from '../types';
+import { periodSummary, treasuryCsv } from '../services/treasuryTracking';
+import { recordTreasuryCheck, attachTreasuryDocument, type TreasuryCheck, type TreasuryAttachment } from '../services/treasuryTrackingService';
+const money = (n: number) => `${n.toLocaleString('fr-FR')} Ar`;
+const kinds = { RECEIPT_REVERSAL: 'Annulation encaissement', RECEIPT: 'Réception', TRANSFER: 'Transfert', PURCHASE: 'Achat', EXPENSE: 'Dépense', EXPENSE_REFUND: 'Remboursement', DEPOSIT: 'Dépôt bancaire' };
+const sources = { POS: 'Remise POS / DEP', BANK: 'Retrait bancaire', OTHER: 'Autre source', OPENING: 'Solde initial' };
+const input = 'max-w-full rounded border border-slate-300 p-2 text-sm';
+const localDate = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+export default function TreasuryTracking({ user, funds, movements, ready, purchases = [], expenses = [] }: { purchases?: Purchase[]; expenses?: Expense[]; user: AppUser; funds: TreasuryFund[]; movements: TreasuryMovement[]; ready: boolean }) {
+  const [view, setView] = useState<'history' | 'funds' | 'checks'>('history');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [detailFundId, setDetailFundId] = useState('');
+  const [periodDetailsOpen, setPeriodDetailsOpen] = useState(false);
+  const [sourceRecord, setSourceRecord] = useState<{title:string; fields:[string,string][]}|null>(null);
+  async function openDocument(kind: 'expenses' | 'procurement' | 'cashHandovers', id: string) {
+    try {
+      const snapshot = await getDoc(doc(db, kind === 'procurement' ? 'purchases' : kind, id));
+      if (!snapshot.exists()) throw new Error('Document supprimé ou indisponible.');
+      const d = snapshot.data();
+      const labels: Record<string,string> = {expense_number:'Numéro', handover_number:'Numéro', invoice_number:'Facture', description:'Description', payee:'Bénéficiaire', supplier_name:'Fournisseur', amount:'Montant (Ar)', total:'Total (Ar)', amount_paid:'Déjà payé (Ar)', received_amount:'Reçu (Ar)', deposited_amount:'Déposé (Ar)', status:'Statut', payment_status:'Paiement', store_name:'Magasin', reference:'Référence', paid_by_name:'Payeur', received_by_name:'Réceptionnaire', notes:'Notes', cancellation_reason:'Motif d’annulation'};
+      setSourceRecord({title: (kind === 'expenses' ? 'Dépense' : kind === 'procurement' ? 'Achat' : 'Remise') + ' · ' + id, fields:Object.entries(labels).filter(([key]) => d[key] !== undefined).map(([key,label]) => [label,String(d[key])])});
+    } catch(e) {setFeedback(e instanceof Error ? e.message : 'Document indisponible.');}
+  }
+  const [start, setStart] = useState(localDate().slice(0, 7) + '-01');
+  const [end, setEnd] = useState(localDate());
+  const [owner, setOwner] = useState(''); const [source, setSource] = useState(''); const [kind, setKind] = useState(''); const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(''); const [movementId, setMovementId] = useState('');
+  const [days, setDays] = useState(() => { try { return Math.max(1, Math.min(3650, Number(localStorage.getItem('treasury-alert-days')) || 7)); } catch { return 7; } }); const [counted, setCounted] = useState(''); const [reason, setReason] = useState('');
+  const [checks, setChecks] = useState<TreasuryCheck[]>([]); const [attachments, setAttachments] = useState<TreasuryAttachment[]>([]);
+  const [feedback, setFeedback] = useState(''); const [loadError, setLoadError] = useState(''); const [busy, setBusy] = useState(false);
+  useEffect(() => { const fail = () => setLoadError('Chargement des contrôles ou justificatifs impossible. Vérifiez les droits et la connexion.'); const stops = [onSnapshot(collection(db, 'treasuryChecks'), s => setChecks(s.docs.map(d => d.data() as TreasuryCheck).sort((a,b) => b.created_at-a.created_at)), fail), onSnapshot(collection(db, 'treasuryAttachments'), s => setAttachments(s.docs.map(d => d.data() as TreasuryAttachment)), fail)]; return () => stops.forEach(s => s()); }, []);
+  useEffect(() => { try { localStorage.setItem('treasury-alert-days', String(days)); } catch { /* Preferences may be unavailable. */ } }, [days]);
+  const owners = [...new Map(funds.map(f => [f.owner_id, f.owner_name])).entries()];
+  const name = (id: string) => owners.find(([key]) => key === id)?.[1] || id || 'Externe';
+  const parties = useMemo(() => treasuryCounterparties(funds, purchases, expenses), [funds, purchases, expenses]);
+  const fund = (id: string) => funds.find(f => f.id === id);
+  const startAt = start ? new Date(start + 'T00:00:00').getTime() : -Infinity;
+  const endAt = end ? new Date(end + 'T23:59:59.999').getTime() : Infinity;
+  const validPeriod = startAt <= endAt;
+  const summary = periodSummary(funds, movements, startAt, endAt, owner);
+  const visibleFunds = funds.filter(f => (!owner || f.owner_id === owner) && (!source || f.source === source));
+  const filtered = movements.filter(m => validPeriod && m.created_at >= startAt && m.created_at <= endAt && (!owner || m.from_user === owner || m.to_user === owner) && (!kind || m.kind === kind) && (!source || fund(m.fund_id || m.destination_fund_id)?.source === source) && (!selected || m.fund_id === selected || m.destination_fund_id === selected) && (!search || [m.reference, m.id, parties(m).from, parties(m).to, fund(m.fund_id)?.source_reference, fund(m.destination_fund_id)?.source_reference].join(' ').toLocaleLowerCase().includes(search.toLocaleLowerCase())));
+  const chosen = fund(detailFundId);
+  const fundMovements = movements.filter(m => m.fund_id === detailFundId || m.destination_fund_id === detailFundId);
+  const fundTotals = (kinds: string[]) => fundMovements.filter(m => kinds.includes(m.kind) && m.fund_id === detailFundId).reduce((sum,m) => sum+m.amount,0);
+  const fundRefunds = fundMovements.filter(m => m.kind === 'EXPENSE_REFUND' && m.destination_fund_id === detailFundId).reduce((sum,m) => sum+m.amount,0); const movement = movements.find(m => m.id === movementId);
+  const availableFundsTotal = visibleFunds.reduce((total, f) => total + f.balance, 0);
+  const stale = visibleFunds.filter(f => f.balance > 0 && Date.now() - f.created_at >= days * 86400000);
+  const activeFilters = Number(Boolean(owner)) + Number(Boolean(source)) + Number(Boolean(kind));
+  useEffect(() => { setPage(1); }, [start, end, owner, source, kind, search, selected]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / 15));
+  const currentPage = Math.min(page, pageCount);
+  const pageMovements = filtered.slice((currentPage - 1) * 15, currentPage * 15);
+  function showFund(id: string) { setDetailFundId(id); }
+  const rows = [['Date', 'Opération', 'De', 'Vers', 'Référence', 'Montant (Ar)', 'Identifiant'], ...filtered.map(m => [new Date(m.created_at).toLocaleString('fr-FR'), kinds[m.kind], parties(m).from, parties(m).to, m.reference, m.amount, m.id])];
+  async function action(fn: () => Promise<void>) { setBusy(true); setFeedback(''); try { await fn(); setFeedback('Enregistrement effectué.'); } catch(e) { setFeedback(e instanceof Error ? e.message : 'Enregistrement impossible.'); } finally { setBusy(false); } }
+  function download() { const url = URL.createObjectURL(new Blob([treasuryCsv(rows)], {type:'text/csv;charset=utf-8'})); const a = document.createElement('a'); a.href = url; a.download = `tresorerie-${start || 'debut'}-${end || 'fin'}.csv`; a.click(); URL.revokeObjectURL(url); }
+  function print() { const w = window.open('', '_blank'); if (!w) { setFeedback('Autorisez les fenêtres pour imprimer le rapport.'); return; } const esc = (s: unknown) => String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); w.document.write(`<html lang="fr"><head><title>Rapport trésorerie</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:5px}th{text-align:left}</style></head><body><h1>Trésorerie — ${esc(name(owner) === 'Externe' ? 'Tous administrateurs' : name(owner))}</h1><p>Période : ${esc(start || 'Début')} au ${esc(end || 'Fin')} · Origine : ${esc(source || 'Toutes')} · Opération : ${esc(kind || 'Toutes')} · Recherche : ${esc(search)} · Fonds : ${esc(selected || 'Tous')}</p><p>Soldes de la période (toutes origines et opérations) : initial ${esc(money(summary.opening))} ; final ${esc(money(summary.closing))}</p><table>${rows.map((r,i) => `<tr>${r.map(c => `<${i ? 'td' : 'th'}>${esc(c)}</${i ? 'td' : 'th'}>`).join('')}</tr>`).join('')}</table></body></html>`); w.document.close(); w.focus(); w.print(); }
+  return <section className="space-y-5">
+    <nav aria-label="Vues de la trésorerie" className="flex gap-1 border-b border-slate-200 pb-3">{([['history','Mouvements'],['funds','Fonds'],['checks','Contrôles']] as const).map(([id,label]) => <button key={id} type="button" aria-pressed={view === id} className={"ui-btn ui-btn-sm " + (view === id ? "" : "ui-btn-ghost")} onClick={() => setView(id)}>{label}</button>)}</nav>
+    <div className="flex flex-wrap items-end gap-3">
+      <label className="text-sm">Du <input aria-label="Date de début" type="date" className={input} value={start} onChange={e => setStart(e.target.value)}/></label>
+      <label className="text-sm">Au <input aria-label="Date de fin" type="date" className={input} value={end} onChange={e => setEnd(e.target.value)}/></label>
+      <input aria-label="Rechercher un mouvement" placeholder="Rechercher un mouvement…" className={input + " min-w-0 flex-1 basis-48"} value={search} onChange={e => setSearch(e.target.value)}/>
+      <button className="ui-btn ui-btn-sm" aria-expanded={filtersOpen} aria-controls="treasury-advanced-filters" onClick={() => setFiltersOpen(open => !open)}>Filtres{activeFilters ? " (" + activeFilters + ")" : ""}</button>
+    </div>
+    {filtersOpen && <div id="treasury-advanced-filters" className="flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 p-3">
+      <select aria-label="Administrateur" className={input} value={owner} onChange={e => {setOwner(e.target.value); setSelected('');}}><option value="">Tous les administrateurs</option>{owners.map(([id,n]) => <option key={id} value={id}>{n}</option>)}</select>
+      <select aria-label="Origine" className={input} value={source} onChange={e => {setSource(e.target.value); setSelected('');}}><option value="">Toutes les origines</option>{Object.entries(sources).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select>
+      <select aria-label="Opération" className={input} value={kind} onChange={e => setKind(e.target.value)}><option value="">Toutes les opérations</option>{Object.entries(kinds).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select>
+      {activeFilters > 0 && <button className="ui-btn ui-btn-sm ui-btn-ghost" onClick={() => {setOwner(''); setSource(''); setKind('');}}>Effacer les filtres</button>}
+    </div>}
+    {!validPeriod && <p role="alert">La date de fin doit suivre la date de début.</p>}
+    {ready && validPeriod && <div className="space-y-3">
+      <dl className="grid grid-cols-1 gap-4 border-y border-slate-200 py-4 sm:grid-cols-3">{[['Solde initial',summary.opening],['Entrées reçues',summary.receipts],['Solde final',summary.closing]].map(([label,n]) => <div key={label}><dt className="text-sm text-slate-500">{label}</dt><dd className="mt-1 text-xl font-semibold tabular-nums">{money(Number(n))}</dd></div>)}</dl>
+      <button type="button" className="ui-btn ui-btn-sm ui-btn-ghost" onClick={() => setPeriodDetailsOpen(true)}>Détail du bilan de période</button>
+    </div>}
+    {view === 'funds' && <div className="space-y-4">
+      <details className="text-sm"><summary className="cursor-pointer text-slate-600">Soldes par administrateur</summary><dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{owners.map(([id,n]) => <div key={id} className="flex items-center justify-between gap-3"><dt>{n}{id === user.uid ? ' (vous)' : ''}</dt><dd className="font-semibold tabular-nums">{money(funds.filter(f => f.owner_id === id).reduce((sum,f) => sum+f.balance,0))}</dd></div>)}</dl></details>
+    <details className="rounded-lg border border-slate-200 p-3"><summary className="cursor-pointer text-sm font-medium">{stale.length ? `${stale.length} fonds à surveiller` : 'Aucun fonds en retard'}</summary><div className="mt-3 space-y-2 text-sm"><label>Alerter après <input aria-label="Seuil en jours" className={input + ' w-20'} type="number" min="1" max="3650" value={days} onChange={e => setDays(Math.max(1,Math.min(3650,Number(e.target.value)||1)))}/> jours de détention</label><p>{stale.length} fonds encore disponibles dépassent ce seuil · {money(stale.reduce((s,f) => s+f.balance,0))}</p>{stale.map(f => <button key={f.id} className="mr-3 underline" onClick={() => showFund(f.id)}>{f.owner_name} · {f.source_reference}</button>)}</div></details>
+    <h3 className="font-bold">Fonds par origine</h3><div className="overflow-x-auto"><table className="ui-table ui-table-sm w-full text-left text-sm"><thead><tr>{['Administrateur','Origine','Référence','Reçu','Disponible','Âge','Détail'].map(t => <th key={t}>{t}</th>)}</tr></thead><tbody>{visibleFunds.map(f => <tr key={f.id} className="border-t"><td>{f.owner_name}</td><td>{sources[f.source]}</td><td>{f.source_reference}</td><td>{money(f.initial_amount)}</td><td>{money(f.balance)}</td><td>{Math.max(0,Math.floor((Date.now()-f.created_at)/86400000))} j</td><td><button className="p-2 underline" onClick={() => showFund(f.id)}>Voir</button></td></tr>)}</tbody><tfoot><tr className="border-t-2 border-slate-200"><th scope="row" colSpan={4} className="py-3 text-left text-sm font-semibold">Total des fonds disponibles</th><td className="py-3 text-base font-bold tabular-nums">{ready ? money(availableFundsTotal) : "Chargement…"}</td><td colSpan={2} /></tr></tfoot></table></div>
+    </div>}
+    {view === 'history' && <>
+    {selected && <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>Fonds : {fund(selected)?.source_reference || selected}</span><button className="ui-btn ui-btn-sm ui-btn-ghost" onClick={() => setSelected('')}>Tous les fonds</button></div>}
+    <div className="flex flex-wrap items-center gap-3"><h3 className="mr-auto font-semibold">{filtered.length} mouvements</h3><details className="relative"><summary className="cursor-pointer rounded border border-slate-200 px-3 py-2 text-sm">Exporter</summary><div className="absolute right-0 z-10 mt-2 flex min-w-48 flex-col gap-1 rounded-lg border border-slate-200 bg-white p-2"><button disabled={!ready || !validPeriod} className="ui-btn ui-btn-sm ui-btn-ghost" onClick={download}>CSV pour Excel</button><button disabled={!ready || !validPeriod} className="ui-btn ui-btn-sm ui-btn-ghost" onClick={print}>Imprimer / PDF</button></div></details></div>
+    <div className="max-h-[32rem] overflow-auto"><table className="ui-table ui-table-sm w-full text-left text-sm"><thead><tr>{['Date','Opération','De → vers','Référence','Montant','Détails'].map(t => <th key={t}>{t}</th>)}</tr></thead><tbody>{pageMovements.map(m => <tr key={m.id} className="border-t"><td className="py-2">{new Date(m.created_at).toLocaleString('fr-FR')}</td><td>{kinds[m.kind]}</td><td>{parties(m).from} → {parties(m).to}</td><td>{m.reference}</td><td>{money(m.amount)}</td><td><button className="p-2 underline" onClick={() => setMovementId(m.id)}>Consulter ({attachments.filter(a => a.movement_id === m.id).length} pièces)</button></td></tr>)}</tbody></table>{!filtered.length && <p className="p-3">Aucun mouvement pour ces filtres.</p>}</div>
+
+    {pageCount > 1 && <div className="flex items-center justify-between gap-3 text-sm"><span>Page {currentPage} sur {pageCount}</span><div className="flex gap-2"><button className="ui-btn ui-btn-sm" disabled={currentPage === 1} onClick={() => setPage(currentPage-1)}>Précédent</button><button className="ui-btn ui-btn-sm" disabled={currentPage === pageCount} onClick={() => setPage(currentPage+1)}>Suivant</button></div></div>}
+    </>}
+    {view === 'checks' && <div className="space-y-4">
+    <h3 className="font-bold">Contrôle de l’argent réellement détenu</h3><p className="text-sm text-slate-600">Votre déclaration est comparée aux fonds enregistrés lors du contrôle. Un écart ne corrige pas le solde. Évitez les réceptions simultanées pendant le comptage.</p>
+    <form className="flex flex-wrap gap-3" onSubmit={e => {e.preventDefault(); void action(async () => {await recordTreasuryCheck(user,Number(counted),reason); setCounted(''); setReason('');});}}><label>Montant compté (Ar)<input required className={input + ' block'} type="number" min="0" step="1" value={counted} onChange={e => setCounted(e.target.value)}/></label><label>Explication de l’écart<input className={input + ' block'} maxLength={2000} value={reason} onChange={e => setReason(e.target.value)}/></label><button className="ui-btn" disabled={busy || !ready || !!loadError}>Enregistrer mon contrôle</button></form>
+    <div className="max-h-64 overflow-auto"><table className="w-full text-left text-sm"><thead><tr>{['Date','Administrateur','Attendu déclaré','Compté','Écart','Motif'].map(t => <th key={t}>{t}</th>)}</tr></thead><tbody>{checks.filter(c => !owner || c.owner_id===owner).map(c => <tr key={c.id} className="border-t"><td>{new Date(c.created_at).toLocaleString('fr-FR')}</td><td>{c.owner_name}</td><td>{money(c.expected)}</td><td>{money(c.counted)}</td><td className={c.difference ? 'font-bold text-red-700' : 'text-emerald-700'}>{money(c.difference)}</td><td>{c.reason}</td></tr>)}</tbody></table></div>
+    </div>}
+    {periodDetailsOpen && <TreasuryDetailsDialog title="Bilan de période" onClose={() => setPeriodDetailsOpen(false)}><dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">{[['Achats et dépenses',summary.expenses],['Remboursements',summary.refunds],['Dépôts bancaires',summary.deposits],['Transferts nets',summary.transfers],['Annulations encaissements',summary.reversals]].map(([label,n]) => <div key={label}><dt className="text-slate-500">{label}</dt><dd className="mt-1 font-semibold tabular-nums">{money(Number(n))}</dd></div>)}</dl><p className="mt-3 max-w-prose text-xs text-slate-500">Bilan pour la période et l’administrateur choisis, toutes origines et opérations. Les filtres supplémentaires concernent les mouvements.</p></TreasuryDetailsDialog>}
+    {chosen && <TreasuryDetailsDialog title={chosen.source_reference} onClose={() => setDetailFundId('')}>
+      <p className="text-slate-500">{chosen.owner_name} — {sources[chosen.source]}</p>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-5">{[['Montant reçu',chosen.initial_amount],['Disponible',chosen.balance],['Achats et dépenses',fundTotals(['PURCHASE','EXPENSE'])],['Transféré',fundTotals(['TRANSFER'])],['Déposé',fundTotals(['DEPOSIT'])],['Remboursé',fundRefunds],['Encaissements annulés',fundTotals(['RECEIPT_REVERSAL'])]].map(([label,n]) => <div key={label}><dt className="text-slate-500">{label}</dt><dd className="mt-1 font-semibold tabular-nums">{money(Number(n))}</dd></div>)}</dl>
+      <p className="text-slate-500">Créé le {new Date(chosen.created_at).toLocaleString('fr-FR')}</p>
+      <p className="break-all text-xs text-slate-500">Identifiant : {chosen.id}</p>
+      <div className="flex flex-wrap gap-2"><button className="ui-btn ui-btn-sm" onClick={() => {setSelected(chosen.id); setView('history'); setDetailFundId(''); setMovementId('');}}>Voir les mouvements</button>{chosen.handover_id && <button className="ui-btn ui-btn-sm ui-btn-ghost" onClick={() => void openDocument('cashHandovers',chosen.handover_id)}>Ouvrir la remise</button>}</div>
+    </TreasuryDetailsDialog>}
+    {movement && <TreasuryDetailsDialog title={kinds[movement.kind] + ' — ' + movement.reference} onClose={() => setMovementId('')}><p>{parties(movement).from} → {parties(movement).to}</p><p>{money(movement.amount)} · {movement.id}</p><p>Enregistré par {name(movement.created_by)} le {new Date(movement.created_at).toLocaleString('fr-FR')}</p>{[movement.fund_id,movement.destination_fund_id].filter(Boolean).map(id => <button key={id} className="mr-3 underline" onClick={() => showFund(id)}>Fonds : {fund(id)?.source_reference || id}</button>)}{movement.expense_id && <button className="underline" onClick={() => void openDocument('expenses',movement.expense_id!)}>Ouvrir la dépense {movement.expense_id}</button>}{movement.purchase_id && <button className="underline" onClick={() => void openDocument('procurement',movement.purchase_id)}>Ouvrir l’achat {movement.purchase_id}</button>}<div>{attachments.filter(a => a.movement_id === movement.id).map(a => <p key={a.id}><button className="underline" onClick={() => {const bytes = atob(a.data.split(',')[1]); const blob = new Blob([Uint8Array.from(bytes,c => c.charCodeAt(0))],{type:a.data.slice(5,a.data.indexOf(';'))}); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href=url; link.download=a.name; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000);}}>{a.name}</button> · {new Date(a.created_at).toLocaleDateString('fr-FR')}</p>)}</div><label className="block">Joindre un justificatif (PDF, JPG, PNG, WebP · 350 Ko max)<input className="block max-w-full" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={busy || !ready} onChange={e => {const file=e.target.files?.[0]; if(file) void action(() => attachTreasuryDocument(user,movement.id,file)); e.target.value='';}}/></label>{feedback && <p role="status">{feedback}</p>}</TreasuryDetailsDialog>}
+    {sourceRecord && <TreasuryDetailsDialog title={sourceRecord.title} onClose={() => setSourceRecord(null)}><dl>{sourceRecord.fields.map(([label,value]) => <div key={label} className="border-b border-slate-200 py-2"><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1">{value}</dd></div>)}</dl></TreasuryDetailsDialog>}
+    {(feedback || loadError) && <p role="status">{feedback} {loadError}</p>}
+  </section>;
+}

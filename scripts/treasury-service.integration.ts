@@ -1,3 +1,4 @@
+import { cancelPurchase } from '../src/services/purchaseCancellationService';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { doc, getDoc, getDocs, collection, terminate } from 'firebase/firestore';
@@ -225,6 +226,115 @@ test('treasury services and security rules', async t => {
     assert.equal(paid.status, 200);
     assert.equal((await commit([write('expenses/nonadmin', { id: 'nonadmin', category: 'RENT', status: 'CANCELLED', amount: 1, payment_status: 'PENDING', created_by: 'super', cancelled_by: 'super', cancelled_by_name: 'Comptable', cancelled_at: 1, cancellation_reason: 'Interdit' })], token)).status, 403);
     await commit([write('users/super', { role: 'SUPER_ADMIN', status: 'ACTIVE', permissions: [], assignedStores: [] })]);
+  });
+  await t.test('super admin transfers another holder funds immediately with actor attribution', async () => {
+    const source = { id: 'controlled-source', owner_id: 'second', owner_name: 'Admin B', source: 'POS', source_reference: 'REM-CONTROLLED', handover_id: 'controlled-h', initial_amount: 500, balance: 500, created_at: 1, last_movement_id: 'controlled-old' };
+    const superActor = { ...user, roleId: 'SUPER_ADMIN' } as AppUser;
+    await commit([write('users/super', { role: 'ADMIN', status: 'ACTIVE', permissions: [], assignedStores: [] }),
+      write('treasuryFunds/controlled-source', source),
+      write('cashHandovers/controlled-h', { ...handover, id: 'controlled-h', status: 'RECEIVED', received_by: 'second', received_amount: 500, allocated_amount: 0, treasury_fund_id: source.id })]);
+    await assert.rejects(moveTreasuryFunds(user, source.id, 100, 'Unauthorized', user));
+    // A forged client role must still be refused by server rules.
+    await assert.rejects(moveTreasuryFunds(superActor, source.id, 100, 'Forged role', user));
+    assert.equal((await read('treasuryFunds/controlled-source')).balance, 500);
+    await commit([write('users/super', { role: 'SUPER_ADMIN', status: 'ACTIVE', permissions: [], assignedStores: [] })]);
+    await assert.rejects(moveTreasuryFunds(superActor, source.id, 100, 'Same holder', recipient));
+    await assert.rejects(moveTreasuryFunds(superActor, source.id, 501, 'Too large', user));
+    await assert.rejects(moveTreasuryFunds(superActor, source.id, 100, 'Not a transfer'));
+    await moveTreasuryFunds(superActor, source.id, 200, 'Reallocation by super admin', user);
+    const updated = await read('treasuryFunds/controlled-source');
+    const movement = await read('treasuryMovements/' + updated.last_movement_id);
+    assert.equal(updated.balance, 300);
+    assert.equal(movement.kind, 'TRANSFER');
+    assert.equal(movement.from_user, 'second');
+    assert.equal(movement.to_user, 'super');
+    assert.equal(movement.created_by, 'super');
+    const destination = await read('treasuryFunds/' + movement.destination_fund_id);
+    assert.equal(destination.owner_id, 'super');
+    assert.equal(destination.balance, 200);
+    assert.equal(destination.source_reference, source.source_reference);
+    assert.equal(destination.handover_id, '');
+    assert.equal((await read('cashHandovers/controlled-h')).allocated_amount, 200);
+  });
+  await t.test('one payment atomically debits three sources including two POS handovers', async () => {
+    await commit([write('users/super', { role: 'SUPER_ADMIN', status: 'ACTIVE', permissions: [], assignedStores: [] }),
+      write('purchases/split-p', { ...purchase, id: 'split-p' }),
+      ...[0, 1, 2].map(i => write('treasuryFunds/split-f' + i, { id: 'split-f' + i, owner_id: 'super', owner_name: 'Admin', source: i < 2 ? 'POS' : 'BANK', source_reference: 'Split ' + i, handover_id: i < 2 ? 'split-h' + i : '', initial_amount: 500, balance: 500, created_at: 1, last_movement_id: 'old-' + i })),
+      ...[0, 1].map(i => write('cashHandovers/split-h' + i, { ...handover, id: 'split-h' + i, status: 'RECEIVED', received_by: 'super', received_amount: 500, treasury_fund_id: 'split-f' + i, allocated_amount: 0 })),
+    ]);
+    const allocations = [0, 1, 2].map(i => ({ fund_id: 'split-f' + i, amount: 200 }));
+    const payment = { id: 'split-pay', amount: 600, fund_allocations: allocations, paid_at: 10, method: 'CASH' as const, paid_by: 'super', paid_by_name: 'Admin' };
+    const original = await read('purchases/split-p') as Purchase;
+    await assert.rejects(recordSupplierPayment(original, { ...payment, amount: 601 }));
+    await assert.rejects(recordSupplierPayment(original, { ...payment, fund_allocations: [allocations[0], allocations[0], allocations[2]] }));
+    await assert.rejects(recordSupplierPayment(original, { ...payment, amount: 900, fund_allocations: [{ fund_id: 'split-f0', amount: 100 }, { fund_id: 'split-f1', amount: 800 }] }));
+    assert.equal((await read('treasuryFunds/split-f0')).balance, 500);
+    assert.equal((await read('purchases/split-p')).amount_paid, 0);
+    assert.equal((await commit([write('purchases/split-p', { ...original, amount_paid: 600, payment_status: 'PARTIAL', updated_at: 10, payments: [payment] })], token)).status, 403);
+    const updated = await recordSupplierPayment(original, payment);
+    assert.equal(updated.amount_paid, 600);
+    assert.equal(updated.payments.length, 1);
+    for (const i of [0, 1, 2]) {
+      assert.equal((await read('treasuryFunds/split-f' + i)).balance, 300);
+      assert.equal((await read('treasuryMovements/split-pay-' + i)).amount, 200);
+    }
+
+    for (const i of [0, 1]) assert.equal((await read('cashHandovers/split-h' + i)).allocated_amount, 200);
+    await assert.rejects(recordSupplierPayment(updated, payment));
+    assert.equal((await read('treasuryFunds/split-f0')).balance, 300);
+  });
+  await t.test('purchase cancellation preserves payments and reverses only accepted stock', async () => {
+    const actor = { ...user, roleId: 'SUPER_ADMIN' } as AppUser;
+    const initialPurchase = { ...purchase, id: 'cancel-p', transfer_id: 'cancel-t', status: 'RECEIVED', payments: [], amount_paid: 0, payment_status: 'UNPAID', updated_at: 1 } as Purchase;
+    const transfer = { id: 'cancel-t', type: 'SUPPLIER_TO_STORE', purchase_id: 'cancel-p', transfer_number: 'T-CANCEL', status: 'DISCREPANCY', destination_store_id: 'warehouse', source_store_id: 'supplier', updated_at: 1, lines: [{ article_id: 'raw', quantity_sent: 5, quantity_received: 4, quantity_accepted: 3, quantity_rejected: 1 }] };
+    const stock = { id: 'cancel-stock', store_id: 'warehouse', article_id: 'raw', quantity: 4, reserved_quantity: 2, updated_at: 1 };
+    await commit([write('users/super', { role: 'SUPER_ADMIN', status: 'ACTIVE', permissions: [], assignedStores: [] }), write('purchases/cancel-p', initialPurchase), write('transfers/cancel-t', transfer), write('stocks/cancel-stock', stock)]);
+    await assert.rejects(cancelPurchase(initialPurchase, actor, 'Retour fournisseur'));
+    assert.equal((await read('purchases/cancel-p')).status, 'RECEIVED');
+    assert.equal((await read('stocks/cancel-stock')).quantity, 4);
+    await commit([write('stocks/cancel-stock', { ...stock, quantity: 10 })]);
+    await assert.rejects(cancelPurchase(initialPurchase, actor, ''));
+    await commit([write('users/super', { role: 'ADMIN', status: 'ACTIVE', permissions: [], assignedStores: [] })]);
+    await assert.rejects(cancelPurchase(initialPurchase, actor, 'Forbidden by rules'));
+    assert.equal((await read('stocks/cancel-stock')).quantity, 10);
+    await commit([write('users/super', { role: 'SUPER_ADMIN', status: 'ACTIVE', permissions: [], assignedStores: [] })]);
+    const result = await cancelPurchase(initialPurchase, actor, 'Retour fournisseur');
+    assert.equal(result.purchase.status, 'CANCELLED');
+    assert.equal(result.purchase.refund_due_amount, 0);
+    assert.equal((await read('stocks/cancel-stock')).quantity, 7);
+    assert.equal((await read('stocks/cancel-stock')).reserved_quantity, 2);
+    assert.equal((await read('transfers/cancel-t')).status, 'CANCELLED');
+    assert.equal(result.movements[0].quantity, -3);
+    await assert.rejects(cancelPurchase(result.purchase, actor, 'Repeated'));
+    await assert.rejects(recordSupplierPayment(result.purchase, { id: 'cancel-pay', amount: 1, paid_at: 5, method: 'CASH', paid_by: 'super', paid_by_name: 'Admin', treasury_fund_id: 'split-f0' }));
+    assert.equal((await read('stocks/cancel-stock')).quantity, 7);
+    for (const [id, total] of [['partial', 1000], ['full', 100]] as const) {
+      const base = { ...purchase, id: 'cancel-' + id, total, transfer_id: 'cancel-t-' + id, updated_at: 1 } as Purchase;
+      const source = { id: 'refund-source-' + id, owner_id: 'super', owner_name: 'Admin', source: 'BANK', source_reference: id, handover_id: '', initial_amount: 1000, balance: 1000, created_at: 1, last_movement_id: 'old' };
+      await commit([write('purchases/' + base.id, base), write('transfers/' + base.transfer_id, { ...transfer, id: base.transfer_id, purchase_id: base.id, status: 'IN_TRANSIT' }), write('treasuryFunds/' + source.id, source)]);
+      const paid = await recordSupplierPayment(base, { id: 'paid-' + id, amount: 100, method: 'CASH', paid_at: 10, paid_by: 'super', paid_by_name: 'Admin', treasury_fund_id: source.id });
+      await assert.rejects(cancelPurchase(base, actor, 'Stale purchase'));
+      const cancelled = await cancelPurchase(paid, actor, 'Achat paye annule');
+      assert.equal(cancelled.purchase.refund_due_amount, 100);
+      assert.equal(cancelled.purchase.amount_paid, 100);
+      assert.deepEqual(cancelled.purchase.payments, paid.payments);
+      assert.equal(cancelled.purchase.payment_status, id === 'full' ? 'PAID' : 'PARTIAL');
+      assert.equal((await read('treasuryFunds/' + source.id)).balance, 900);
+      assert.equal(cancelled.stocks.length, 0);
+    }
+    const draft = { ...purchase, id: 'cancel-draft', status: 'DRAFT', updated_at: 1 } as Purchase;
+    await commit([write('purchases/' + draft.id, draft)]);
+    assert.equal((await cancelPurchase(draft, actor, 'Doublon')).purchase.status, 'CANCELLED');
+  });
+  await t.test('large receipt cancellation stays atomic with one shared purchase proof', async () => {
+    const lines = Array.from({ length: 25 }, (_, i) => ({ article_id: 'cancel-large-' + i, quantity_accepted: 1 }));
+    const base = { ...purchase, id: 'cancel-large', status: 'RECEIVED', transfer_id: 'cancel-large-transfer', updated_at: 1 } as Purchase;
+    await commit([write('purchases/' + base.id, base), write('transfers/' + base.transfer_id, { id: base.transfer_id, purchase_id: base.id, type: 'SUPPLIER_TO_STORE', status: 'VALIDATED', destination_store_id: base.store_id, lines }),
+      ...lines.map(line => write('stocks/stock-' + line.article_id, { id: 'stock-' + line.article_id, store_id: base.store_id, article_id: line.article_id, quantity: 2, reserved_quantity: 0, updated_at: 1 }))]);
+    const result = await cancelPurchase(base, { ...user, roleId: 'SUPER_ADMIN' } as AppUser, 'Retour lot');
+    assert.equal(result.stocks.length, 25);
+    assert.ok(result.stocks.every(stock => stock.quantity === 1));
+    assert.equal((await read('purchases/' + base.id)).status, 'CANCELLED');
   });
   await t.test('historical handovers stay usable; non-admins cannot access treasury', async () => {
     const old = { ...handover, id: 'old', status: 'RECEIVED', received_amount: 100, received_by: 'super' };

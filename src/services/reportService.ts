@@ -1,6 +1,7 @@
 import { buildSalesStoreMatrix } from "./salesStoreMatrix";
 import { buildArticleStockRows } from "./stockByArticle";
 import {
+  Purchase, TreasuryFund, TreasuryMovement,
   Article,
   AuditLog,
   Category,
@@ -19,6 +20,9 @@ import {
 } from "../types";
 
 export interface ReportData {
+  purchases?: Purchase[];
+  treasuryFunds?: TreasuryFund[];
+  treasuryMovements?: TreasuryMovement[];
   articles: Article[];
   stores: Store[];
   stocks: StoreStock[];
@@ -192,7 +196,9 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
   });
 
   const expenses = data.expenses?.filter(expense =>
+    (!filters.expenseScope || filters.expenseScope === "ALL" || (filters.expenseScope === "STORE" ? Boolean(expense.store_id) : !expense.store_id)) &&
     (filters.storeIds.length === 0 || (Boolean(expense.store_id) && filters.storeIds.includes(expense.store_id as string))) &&
+    (!filters.expenseCategory || expense.category === filters.expenseCategory) &&
     isInPeriod(expense.expense_date, filters) && matchesStatus(expenseStatus(expense)) && matchesQuantity(expense.amount, filters) &&
     matchesQuery(expense.expense_number, expense.description, EXPENSE_CATEGORY_LABELS[expense.category], expense.store_name, expense.payee, expense.employee_name, expense.reference, expense.created_by_name)
   );
@@ -206,7 +212,11 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
       handover.payment_method === "MVOLA" ? "MVola" : handover.payment_method === "OTHER" ? "Autre mode de paiement" : "Espèces",
       ...handover.deposits.flatMap(deposit => [deposit.bank_name, deposit.reference]))
   );
-  return { ...data, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers };
+  const purchases = data.purchases?.filter(purchase => matchesStore(purchase.store_id) && isInPeriod(purchase.created_at, filters) &&
+    matchesStatus(purchase.status || "RECEIVED") && (!filters.supplierId || purchase.supplier_id === filters.supplierId) &&
+    (!articleFiltersActive || purchase.lines.some(line => matchesArticle(line.article_id))) &&
+    matchesQuery(purchase.purchase_number, purchase.supplier_name, purchase.invoice_number, purchase.notes));
+  return { ...data, purchases, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers };
 }
 
 const money = (amount: number) => `${Math.round(amount).toLocaleString("fr-FR")} Ar`;
@@ -240,6 +250,19 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
   const allSalesLines = data.sales.flatMap(sale => sale.lines);
 
   switch (reportType) {
+    case "SUPPLIER_PURCHASES": {
+      const rows = (data.purchases || []).filter(row => row.status !== "CANCELLED");
+      return [{ label: "Achats hors annulations", value: String(rows.length) },
+        { label: "Total achats", value: money(rows.reduce((sum, row) => sum + row.total, 0)) },
+        { label: "Montant payé", value: money(rows.reduce((sum, row) => sum + row.amount_paid, 0)) },
+        { label: "Reste à payer", value: money(rows.reduce((sum, row) => sum + Math.max(0, row.total - row.amount_paid), 0)) }];
+    }
+    case "TREASURY": {
+      const rows = buildTreasuryReportRows(data.treasuryFunds || [], data.treasuryMovements || [], filters);
+      return [{ label: "Fonds", value: String(rows.length) }, ...(["incoming", "outgoing", "balance"] as const).map((key, index) => ({
+        label: ["Entrées de la période", "Sorties de la période", "Reste en fin de période"][index], value: money(rows.reduce((sum, row) => sum + row[key], 0))
+      }))];
+    }
     case "SALES_BY_STORE_ARTICLE": {
       const matrix = buildSalesStoreMatrix(data, filters);
       return [
@@ -365,4 +388,22 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Lignes de vente", value: String(allSalesLines.length) }
       ];
   }
+}
+
+export interface TreasuryReportRow { id: string; owner: string; reference: string; opening: number; incoming: number; outgoing: number; balance: number; }
+export function buildTreasuryReportRows(funds: TreasuryFund[], movements: TreasuryMovement[], filters: GeneralFilters): TreasuryReportRow[] {
+  const start = filters.startDate ? new Date(filters.startDate + "T00:00:00").getTime() : -Infinity;
+  const end = filters.endDate ? new Date(filters.endDate + "T23:59:59.999").getTime() : Infinity;
+  return funds.filter(fund => fund.created_at <= end && (!filters.treasuryAdminId || fund.owner_id === filters.treasuryAdminId)).map(fund => {
+    let incoming = 0, outgoing = 0, after = 0;
+    for (const movement of movements) {
+      const credit = movement.destination_fund_id === fund.id ? movement.amount : 0;
+      const debit = movement.fund_id === fund.id ? movement.amount : 0;
+      if (movement.created_at > end) after += credit - debit;
+      else if (movement.created_at >= start) { incoming += credit; outgoing += debit; }
+    }
+    const balance = fund.balance - after;
+    return { id: fund.id, owner: fund.owner_name, reference: fund.source_reference, opening: balance - incoming + outgoing, incoming, outgoing, balance };
+  }).filter(row => (!filters.searchRef || (row.owner + " " + row.reference).toLocaleLowerCase('fr-FR').includes(filters.searchRef.toLocaleLowerCase('fr-FR'))) &&
+    (filters.treasuryView === "IN" ? row.incoming > 0 : filters.treasuryView === "OUT" ? row.outgoing > 0 : filters.treasuryView === "BALANCE" ? row.balance !== 0 : true));
 }

@@ -11,7 +11,7 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ onSwitchToSignUp, onSwitchToReseller, prefillEmail = "" }: LoginFormProps) {
-  const { login } = useAuth();
+  const { login, sessionMessage } = useAuth();
 
   const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
@@ -105,6 +105,7 @@ export default function LoginForm({ onSwitchToSignUp, onSwitchToReseller, prefil
         </p>
       </div>
 
+      {sessionMessage && <p role="status" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{sessionMessage}</p>}
       {/* Error state display */}
       {errorMessage && (
         <div

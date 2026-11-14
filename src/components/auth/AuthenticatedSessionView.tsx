@@ -1,3 +1,8 @@
+import { permitsSameStoreTransfer } from '../../services/transferSameStore';
+import ProductionOrdersView from '../ProductionOrdersView';
+import PointOfSaleOrdersView from "../PointOfSaleOrdersView";
+import RawMaterialOrdersView from "../RawMaterialOrdersView";
+import { cancelPurchase } from "../../services/purchaseCancellationService";
 import { adoptHistoricalHandover } from "../../services/treasuryService";
 import TreasuryView from "../TreasuryView";
 import { useTreasury } from "../../hooks/useTreasury";
@@ -20,11 +25,13 @@ import {
   approvePurchase,
   recordSupplierPayment,
   saveDraftPurchase,
+  deletePurchase,
   saveArticle,
   saveCategory,
   saveStockAdjustment,
   saveStore,
   saveSupplier,
+  removeSupplier,
   saveTransfer,
   saveTransferWithStockEffects,
   recordTransferReceipt,
@@ -32,6 +39,7 @@ import {
 } from "../../services/inventoryService";
 import { advanceSale, approveSale, cancelSale, createProduction, deleteCancelledSale, deleteDraftSale, deleteDraftProduction, saveAuditLog, updateDraftProduction, updateDraftSale, validateSale } from "../../services/operationsService";
 import { createCreditSale, recordCreditFollowUp, recordCreditPayment, saveCreditCustomer } from "../../services/creditService";
+import { reverseCreditPayment } from "../../services/creditPaymentReversalService";
 import { PaymentAccessError, paymentClockHint } from "../../services/paymentAccess";
 import { createResellerOrder, markResellerNotificationsRead, recordResellerCashPayment, reviewResellerOrder, subscribeResellerNotifications, subscribeResellerOrders, updateResellerOrder } from "../../services/resellerOrderService";
 import { createAuditLog } from "../../services/auditService";
@@ -150,7 +158,7 @@ export default function AuthenticatedSessionView() {
   const [auxiliaryLoading, setAuxiliaryLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [payrollLoadedKey, setPayrollLoadedKey] = useState("");
-  const [activeModule, setActiveModule] = useState<"home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "treasury" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory" | "employeePresentation">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [activeModule, setActiveModule] = useState<"rawMaterialOrders" | "productionOrders" | "posOrders" | "home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "treasury" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory" | "employeePresentation">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
   const [notificationAction, setNotificationAction] = useState<{ item: ActionNotification; previousModule: typeof activeModule } | null>(null);
   const closeNotificationAction = () => {
     if (notificationAction) setActiveModule(notificationAction.previousModule);
@@ -531,6 +539,7 @@ export default function AuthenticatedSessionView() {
     !containsHiddenArticleReference([entry.old_value, entry.new_value], visibleArticleIds)
   ), [auditLogs, visibleArticleIds]);
   const isReportReady = (type: ReportType) => {
+    if (type === "TREASURY") return treasury.enabled && treasury.ready && !treasury.error;
     if (!reportSources(type).every(label => synchronization.status[label] === "ready")) return false;
     const required = reportHistory(type);
     const history = required === "movements" ? movementHistory : required === "audit" ? auditHistory : null;
@@ -811,6 +820,19 @@ export default function AuthenticatedSessionView() {
     }
   };
 
+  const handleReverseCreditPayment = async (sale: Sale, payment: CreditPayment, reason: string): Promise<boolean> => {
+    if (!currentAppUser || currentAppUser.roleId !== "SUPER_ADMIN") return false;
+    const audit = createAuditLog(currentAppUser, "CREDIT_PAYMENT_REVERSED", "SALE", sale.id, sale, { payment, reason }, sale.store_id);
+    try {
+      const updated = await reverseCreditPayment(sale.id, payment.id, reason, audit);
+      setSales(current => current.map(item => item.id === sale.id ? updated : item));
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Impossible d’annuler cet encaissement.");
+      return false;
+    }
+  };
+
   const handleRecordCreditFollowUp = async (sale: Sale, followUp: CreditFollowUp): Promise<boolean> => {
     if (!currentAppUser || (
       currentAppUser.roleId !== "ADMIN" &&
@@ -1033,7 +1055,7 @@ export default function AuthenticatedSessionView() {
     if ((!isAdmin && !currentAppUser.storeIds.includes(transfer.source_store_id))
       || (isDirectDeposit
         ? transfer.source_store_id !== transfer.destination_store_id || destinationStore?.store_type !== "CENTRAL_WAREHOUSE"
-        : transfer.source_store_id === transfer.destination_store_id)
+        : transfer.source_store_id === transfer.destination_store_id && !permitsSameStoreTransfer(transfer.type, destinationStore))
       || !sourceStore?.is_active
       || !destinationStore?.is_active) {
       alert("Choisissez un magasin source qui vous est attribué et un autre magasin destinataire.");
@@ -1801,23 +1823,38 @@ export default function AuthenticatedSessionView() {
     if (data.articles.some(article => !allowedTypes.includes(article.article_type))) {
       throw new Error("Le fichier contient un type d'article que votre compte n'est pas autorisé à voir ou gérer.");
     }
-    const auditLogs = [
-      ...data.articles.map(article => createAuditLog(
-        currentAppUser!, "ARTICLE_IMPORTED", "ARTICLE", article.id,
-        articles.find(existing => existing.id === article.id), article
-      )),
-      ...data.categories.map(category => createAuditLog(
-        currentAppUser!, "CATEGORY_IMPORTED", "CATEGORY", category.id,
-        categories.find(existing => existing.id === category.id), category
-      ))
-    ];
-    await Promise.all([
-      ...data.articles.map((article, index) => saveArticle(article, auditLogs[index])),
-      ...data.categories.map((category, index) => saveCategory(category, auditLogs[data.articles.length + index]))
-    ]);
-    setArticles(data.articles);
-    setCategories(data.categories);
-    setAuditLogs(current => [...auditLogs, ...current]);
+    if (user?.status !== "ACTIVE" || !currentAppUser || !["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId)) {
+      throw new Error("Import réservé aux administrateurs actifs. Reconnectez-vous avec le compte administrateur.");
+    }
+    // Keep each record and its audit atomic, and stop at the first rejected write.
+    // Merge successful records so a partial import never hides the existing catalog.
+    const merge = <T extends { id: string },>(records: T[], record: T): T[] =>
+      records.some(item => item.id === record.id)
+        ? records.map(item => item.id === record.id ? record : item)
+        : [...records, record];
+    const persist = async (label: string, save: () => Promise<void>) => {
+      try { await save(); }
+      catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new Error("Import interrompu sur " + label + " : " + reason + ". Les lignes déjà importées sont conservées. Si les permissions sont insuffisantes, reconnectez-vous avec un administrateur actif.");
+      }
+    };
+    for (const category of data.categories) {
+      const previous = categories.find(item => item.id === category.id);
+      if (previous && JSON.stringify(previous) === JSON.stringify(category)) continue;
+      const audit = createAuditLog(currentAppUser, "CATEGORY_IMPORTED", "CATEGORY", category.id, previous, category);
+      await persist("la catégorie " + category.code + " (" + category.name + ")", () => saveCategory(category, audit));
+      setCategories(current => merge(current, category));
+      setAuditLogs(current => [audit, ...current]);
+    }
+    for (const article of data.articles) {
+      const previous = articles.find(item => item.id === article.id);
+      if (previous && JSON.stringify(previous) === JSON.stringify(article)) continue;
+      const audit = createAuditLog(currentAppUser, "ARTICLE_IMPORTED", "ARTICLE", article.id, previous, article);
+      await persist("l'article " + article.code + " (" + article.name + ")", () => saveArticle(article, audit));
+      setArticles(current => merge(current, article));
+      setAuditLogs(current => [audit, ...current]);
+    }
   };
   
   const handleResetCatalogData = async () => {
@@ -1870,6 +1907,12 @@ export default function AuthenticatedSessionView() {
     setSuppliers(current => current.map(item => item.id === supplier.id ? supplier : item));
     setAuditLogs(current => [auditLog, ...current]);
   };
+
+  const handleDeleteSupplier = async (supplier: Supplier) => {
+    if (user?.status !== "ACTIVE" || !currentAppUser || !hasProcurementPermission(currentAppUser)) throw new Error("Vous ne disposez pas de la permission de supprimer un fournisseur.");
+    await removeSupplier(supplier, currentAppUser);
+    setSuppliers(current => current.filter(item => item.id !== supplier.id));
+  };
   
   const handleImportSuppliers = async (data: Supplier[]) => {
     if (!currentAppUser || currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN") {
@@ -1912,6 +1955,32 @@ export default function AuthenticatedSessionView() {
     await saveDraftPurchase(purchase, auditLog);
     setPurchases(current => [purchase, ...current]);
     setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleUpdatePurchase = async (purchase: Purchase, previous: Purchase) => {
+    if (user?.status !== "ACTIVE" || !currentAppUser || !hasProcurementPermission(currentAppUser)) throw new Error("Modification non autoris?e.");
+    if (previous.status !== "DRAFT") throw new Error("Seuls les brouillons peuvent ?tre modifi?s.");
+    const auditLog = createAuditLog(currentAppUser, "PURCHASE_DRAFT_UPDATED", "PURCHASE", purchase.id, previous, purchase, purchase.store_id);
+    await saveDraftPurchase(purchase, auditLog, previous);
+    setPurchases(current => current.map(item => item.id === purchase.id ? purchase : item));
+    setAuditLogs(current => [auditLog, ...current]);
+  };
+
+  const handleCancelPurchase = async (purchase: Purchase, reason: string) => {
+    if (user?.status !== "ACTIVE" || currentAppUser?.roleId !== "SUPER_ADMIN") throw new Error("Annulation réservée au super administrateur actif.");
+    const result = await cancelPurchase(purchase, currentAppUser, reason);
+    setPurchases(current => current.map(item => item.id === result.purchase.id ? result.purchase : item));
+    if (result.transfer) setTransfers(current => current.map(item => item.id === result.transfer!.id ? result.transfer! : item));
+    setStocks(current => current.map(item => result.stocks.find(stock => stock.id === item.id) || item));
+    setMovements(current => [...result.movements, ...current]);
+    setAuditLogs(current => [result.auditLog, ...current]);
+  };
+
+  const handleDeletePurchase = async (purchase: Purchase) => {
+    if (user?.status !== "ACTIVE" || currentAppUser?.roleId !== "SUPER_ADMIN") throw new Error("Suppression réservée au super administrateur actif.");
+    await deletePurchase(purchase, currentAppUser);
+    setPurchases(current => current.filter(item => item.id !== purchase.id));
+    setTransfers(current => current.filter(item => item.purchase_id !== purchase.id));
   };
 
   const handleApprovePurchase = async (purchase: Purchase) => {
@@ -2067,7 +2136,7 @@ export default function AuthenticatedSessionView() {
     if (currentAppUser.roleId !== "ADMIN" && currentAppUser.roleId !== "SUPER_ADMIN" && !currentAppUser.storeIds.includes(purchase.store_id)) {
       throw new Error("Vous ne pouvez régler que les achats d'un magasin qui vous est attribué.");
     }
-    if (["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) && !payment.treasury_fund_id) throw new Error("Sélectionnez un fonds de trésorerie pour ce paiement.");
+    if (["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) && !payment.treasury_fund_id && !payment.fund_allocations?.length) throw new Error("Sélectionnez un fonds de trésorerie pour ce paiement.");
     const auditLog = createAuditLog(currentAppUser!, "SUPPLIER_PAYMENT_RECORDED", "PURCHASE", purchase.id, purchase, undefined, purchase.store_id);
     const updatedPurchase = await recordSupplierPayment(purchase, payment, auditLog);
     setPurchases(current => current.map(item => item.id === purchase.id ? updatedPurchase : item));
@@ -2364,7 +2433,9 @@ export default function AuthenticatedSessionView() {
         <SyncFeedback online={isOnline} status={synchronization.status} />
         <NotificationActionWindow active={!!notificationAction && activeModule === notificationAction.item.module} title={notificationAction?.item.title || "Action en attente"} onClose={closeNotificationAction}>
         <Suspense fallback={<FeedbackState kind="loading" title="Chargement de la page" />}>
-        {activeModule === "resellerPortal" && currentAppUser && (
+        {activeModule === "rawMaterialOrders" && currentAppUser && ["ADMIN", "SUPER_ADMIN", "RESPONSABLE_MAGASIN"].includes(currentAppUser.roleId) ? <RawMaterialOrdersView user={currentAppUser} articles={articles} stores={inventoryStores} suppliers={suppliers} onBack={() => setActiveModule("home")} onPurchases={() => setActiveModule("procurement")} /> : activeModule === "productionOrders" && currentAppUser ? <ProductionOrdersView user={currentAppUser} stores={inventoryStores} articles={articles} stocks={stocks} transfers={transfers} productions={productions} stockStatus={synchronization.status["Stocks"]} transfersStatus={synchronization.status["Transferts"]} productionsStatus={synchronization.status["Productions"]} onBack={() => setActiveModule("home")} /> : activeModule === "posOrders" && currentAppUser && ["ADMIN", "SUPER_ADMIN", "RESPONSABLE_MAGASIN"].includes(currentAppUser.roleId) ? (
+<PointOfSaleOrdersView user={currentAppUser} articles={articles} stores={inventoryStores} onBack={() => setActiveModule("home")} onTransfers={() => setActiveModule("transfers")} />
+) : activeModule === "resellerPortal" && currentAppUser && (
           currentAppUser.roleId === "REVENDEUR" ||
           currentAppUser.roleId === "ADMIN" ||
           currentAppUser.roleId === "SUPER_ADMIN"
@@ -2446,7 +2517,7 @@ export default function AuthenticatedSessionView() {
         ) : activeModule === "employeePresentation" && currentAppUser ? (
           <section className="space-y-4">
             <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300">← Retour à l’accueil</button>
-            <EmployeePresentationView user={currentAppUser} stores={accessibleStores} employees={employees} />
+            <EmployeePresentationView onBack={() => setActiveModule("home")} user={currentAppUser} stores={accessibleStores} employees={employees} />
           </section>
         ) : activeModule === "inventory" && currentAppUser && (canCountInventory || canReviewInventory) ? (
           <section className="space-y-4">
@@ -2591,6 +2662,9 @@ export default function AuthenticatedSessionView() {
               sales={visibleSales}
               productions={visibleProductions}
               auditLogs={visibleAuditLogs}
+              purchases={user.status === "ACTIVE" && (canManageStores || user.permissions.includes("procurement.manage")) ? visiblePurchases : undefined}
+              treasuryFunds={treasury.enabled ? treasury.funds : undefined}
+              treasuryMovements={treasury.enabled ? treasury.movements : undefined}
               expenses={reportExpenses}
               cashHandovers={user.status === "ACTIVE" && (canManageStores || user.permissions.some(permission => permission.startsWith("cash_handover."))) ? cashHandovers : undefined}
               currentUser={currentAppUser}
@@ -2619,7 +2693,10 @@ export default function AuthenticatedSessionView() {
                 sales={visibleSales}
                 productions={visibleProductions}
                 auditLogs={visibleAuditLogs}
-                expenses={reportExpenses}
+                purchases={user.status === "ACTIVE" && (canManageStores || user.permissions.includes("procurement.manage")) ? visiblePurchases : undefined}
+              treasuryFunds={treasury.enabled ? treasury.funds : undefined}
+              treasuryMovements={treasury.enabled ? treasury.movements : undefined}
+              expenses={reportExpenses}
               cashHandovers={user.status === "ACTIVE" && (canManageStores || user.permissions.some(permission => permission.startsWith("cash_handover."))) ? cashHandovers : undefined}
                 currentUser={currentAppUser}
                 onClose={() => setReportRequest(null)}
@@ -2690,10 +2767,15 @@ export default function AuthenticatedSessionView() {
               articles={articles}
               stocks={visibleStocks}
               currentUser={currentAppUser}
+              auditLogs={visibleAuditLogs}
+              onUpdatePurchase={handleUpdatePurchase}
               onCreateSupplier={handleCreateSupplier}
               onToggleSupplier={handleToggleSupplier}
+              onDeleteSupplier={handleDeleteSupplier}
               onCreatePurchase={handleCreatePurchase}
               onApprovePurchase={handleApprovePurchase}
+              onDeletePurchase={handleDeletePurchase}
+              onCancelPurchase={handleCancelPurchase}
               treasuryFunds={treasury.funds}
               treasuryReady={treasury.ready && !treasury.error}
               onRecordPayment={handleRecordSupplierPayment}
@@ -2732,7 +2814,7 @@ export default function AuthenticatedSessionView() {
             />
           </section>
         ) : activeModule === "treasury" && currentAppUser && user.status === "ACTIVE" && canManageStores ? (
-          <section className="space-y-4"><button type="button" onClick={() => setActiveModule("home")} className="text-sm text-slate-300">← Retour à l’accueil</button><TreasuryView user={currentAppUser} {...treasury} /></section>
+          <section className="space-y-4"><button type="button" onClick={() => setActiveModule("home")} className="text-sm text-slate-300">← Retour à l’accueil</button><TreasuryView user={currentAppUser} {...treasury} purchases={purchases} expenses={expenses} /></section>
         ) : activeModule === "cashHandovers" && currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || ["view", "create", "receive", "deposit"].some(action => hasPermission(currentAppUser, `cash_handover.${action}`))) ? (
           <section className="space-y-4">
             <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">← Retour à l'accueil</button>
@@ -2774,6 +2856,7 @@ export default function AuthenticatedSessionView() {
               resellerUsers={managedUsers.filter(managedUser => managedUser.roleId === "REVENDEUR")}
               onSaveCustomer={handleSaveCreditCustomer}
               onRecordPayment={handleRecordCreditPayment}
+              onReversePayment={handleReverseCreditPayment}
               onRecordFollowUp={handleRecordCreditFollowUp}
             />
           </section>
@@ -2826,6 +2909,9 @@ export default function AuthenticatedSessionView() {
             onOpenCashHandovers={() => setActiveModule("cashHandovers")}
             onOpenTransfers={() => setActiveModule("transfers")}
             onOpenCredit={() => setActiveModule("credit")}
+            onOpenProductionOrders={() => setActiveModule("productionOrders")}
+            onOpenPosOrders={() => setActiveModule("posOrders")}
+            onOpenRawMaterialOrders={() => setActiveModule("rawMaterialOrders")}
             onOpenResellerOrders={() => setActiveModule("resellerPortal")}
             pendingResellerOrders={resellerOrders.filter(order => order.status === "PENDING").length}
             onOpenUnits={() => setActiveModule("units")}

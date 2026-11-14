@@ -4,6 +4,7 @@ import { buildArticleStockRows, type ArticleStockRow } from "./stockByArticle";
 import { ReactNode } from "react";
 import { formatSignedQuantity, LedgerBlock } from "./stockLedger";
 import {
+  Purchase,
   Article,
   AuditLog,
   Expense,
@@ -16,7 +17,7 @@ import {
   StockTransferLine,
   StoreStock
 } from "../types";
-import { buildResellerCreditRows, ResellerCreditRow, EXPENSE_CATEGORY_LABELS, expenseStatus, PAYMENT_METHOD_LABELS } from "./reportService";
+import { type TreasuryReportRow, buildResellerCreditRows, ResellerCreditRow, EXPENSE_CATEGORY_LABELS, expenseStatus, PAYMENT_METHOD_LABELS } from "./reportService";
 
 export interface ReportColumn<T = any> {
   key: string;
@@ -48,6 +49,9 @@ export interface ReportColumnsContext {
   reportSales: Sale[];
   reportProductions: Production[];
   reportAuditLogs: AuditLog[];
+  reportPurchases?: Purchase[];
+  treasuryRows?: TreasuryReportRow[];
+  treasuryView?: "ALL" | "IN" | "OUT" | "BALANCE";
   reportExpenses: Expense[];
   reportCashHandovers?: CashHandover[];
   salesByCustomer: { name: string; count: number; total: number }[];
@@ -63,6 +67,30 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
   const { getStoreName, getCategoryName, getArticle } = ctx;
 
   switch (reportType) {
+    case "SUPPLIER_PURCHASES": {
+      const columns: ReportColumn<Purchase>[] = [
+        { key: "number", label: "N° achat", value: row => row.purchase_number },
+        { key: "date", label: "Date", value: row => row.created_at, render: row => new Date(row.created_at).toLocaleDateString("fr-FR") },
+        { key: "supplier", label: "Fournisseur", value: row => row.supplier_name },
+        { key: "invoice", label: "Facture", value: row => row.invoice_number },
+        { key: "store", label: "Magasin", value: row => getStoreName(row.store_id) },
+        { key: "status", label: "Statut", value: row => ({ DRAFT: "Brouillon", APPROVED: "Approuvé", RECEIVED: "Réceptionné", CANCELLED: "Annulé" }[row.status || "RECEIVED"]) },
+        ...(["total", "amount_paid", "balance"] as const).map((key, i): ReportColumn<Purchase> => {
+          const amount = (row: Purchase) => row.status === "CANCELLED" ? 0 : key === "balance" ? Math.max(0, row.total - row.amount_paid) : row[key];
+          return { key, label: ["Total hors annulations", "Pay? hors annulations", "Reste à payer"][i], align: "right", value: amount, render: row => money(amount(row)), footer: rows => money(sum(rows.map(amount))) };
+        })
+      ];
+      return { columns, rows: ctx.reportPurchases || [], rowKey: row => row.id };
+    }
+    case "TREASURY": {
+      const keys = ctx.treasuryView === "IN" ? ["incoming"] as const : ctx.treasuryView === "OUT" ? ["outgoing"] as const : ctx.treasuryView === "BALANCE" ? ["balance"] as const : ["opening", "incoming", "outgoing", "balance"] as const;
+      const labels = { opening: "Solde avant période", incoming: "Entrées", outgoing: "Sorties", balance: "Reste en fin de période" };
+      const columns: ReportColumn<TreasuryReportRow>[] = [
+        { key: "owner", label: "Détenteur", value: row => row.owner }, { key: "reference", label: "Référence du fonds", value: row => row.reference },
+        ...keys.map((key): ReportColumn<TreasuryReportRow> => ({ key, label: labels[key], align: "right", value: row => row[key], render: row => money(row[key]), footer: rows => money(sum(rows.map(row => row[key]))) }))
+      ];
+      return { columns, rows: ctx.treasuryRows || [], rowKey: row => row.id };
+    }
     case "SALES_BY_STORE_ARTICLE": {
       const matrix = ctx.salesStoreMatrix || { stores: [], rows: [] };
       const columns: ReportColumn<SalesStoreRow>[] = [

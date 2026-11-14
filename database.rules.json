@@ -2,10 +2,10 @@
   "rules": {
     "presence": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
+        ".read": "auth != null && auth.uid === $uid && auth.token.auth_time != null && now < auth.token.auth_time * 1000 + 14400000",
         "connections": {
           "$connectionId": {
-            ".write": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid && auth.token.auth_time != null && now < auth.token.auth_time * 1000 + 14400000",
             ".validate": "newData.hasChildren(['online']) && newData.child('online').isBoolean()"
           }
         }

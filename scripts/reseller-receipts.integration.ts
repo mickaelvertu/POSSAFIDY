@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { doc, getDoc, terminate } from 'firebase/firestore';
 import { db } from '../src/firebase';
 import { createCreditSale, recordCreditPayment } from '../src/services/creditService';
+import { reverseCreditPayment } from '../src/services/creditPaymentReversalService';
 import { recordResellerCashPayment } from '../src/services/resellerOrderService';
 import { createCashHandover, confirmCashHandoverReceipt } from '../src/services/cashHandoverService';
 import { resellerBusinessDate } from '../src/services/resellerReceiptCalculation';
@@ -215,6 +216,80 @@ test('real collector, daily DEP handover and direct treasury receipts', async t 
       const paid = await recordCreditPayment(partial, payment(`complete-final-${count}`, 53000), audit(`complete-final-${count}`));
       assert.equal(paid.payment_status, 'PAID');
     });
+    });
+    await t.test('super admin reversal restores debt, reverses treasury and cannot run twice', async () => {
+      const id = 'reversal-invoice';
+      const original = { ...sale, id, credit_customer_id: id, sale_number: id, total: 116500 };
+      await commit([write('users/super', { ...profile('SUPER_ADMIN'), permissions: ALL_PERMISSIONS }), write(`sales/${id}`, original),
+        write(`creditCustomers/${id}`, { id, outstanding_balance: 116500, credit_limit: 200000, payment_term_days: 15, is_active: true })]);
+      const paid = await recordCreditPayment(original, payment('reverse-me', 116500), audit('record-reverse-me'));
+      await commit([write('users/super', { ...profile('ADMIN'), permissions: ALL_PERMISSIONS })]);
+      await assert.rejects(reverseCreditPayment(id, 'reverse-me', 'Erreur de saisie', audit('admin-denied')), /super administrateurs/);
+      // Verify the server also rejects an otherwise complete reversal by ADMIN.
+      const timestamp = Date.now();
+      const attempted = { id: 'reverse-me', sale_id: id, payment: paid.credit_payments![0], reason: 'Erreur de saisie',
+        reversed_at: timestamp, reversed_by: 'super', reversed_by_name: 'Encaisseur', audit_id: 'admin-direct-denied' };
+      const fund = await read('treasuryFunds/reseller-reverse-me');
+      const receipt = await read('resellerReceipts/reverse-me');
+      const writes = [write('resellerPaymentReversals/reverse-me', attempted),
+        write(`sales/${id}`, { ...paid, amount_paid: 0, payment_status: 'PENDING', credit_payments: [], credit_payment_reversals: [attempted], last_credit_reversal_id: 'reverse-me' }),
+        write(`creditCustomers/${id}`, { id, outstanding_balance: 116500, credit_limit: 200000, payment_term_days: 15, is_active: true, last_payment_sale_id: id, updated_at: timestamp }),
+        write('resellerReceipts/reverse-me', { ...receipt, reversal_id: 'reverse-me' }),
+        write('treasuryFunds/reseller-reverse-me', { ...fund, balance: 0, last_movement_id: 'reversal-reverse-me' }),
+        write('treasuryMovements/reversal-reverse-me', { id: 'reversal-reverse-me', kind: 'RECEIPT_REVERSAL', fund_id: fund.id, destination_fund_id: '', from_user: 'super', to_user: '', amount: 116500,
+          reference: 'Annulation', purchase_id: '', created_by: 'super', created_at: timestamp }),
+        write('auditLogs/admin-direct-denied', { ...audit('admin-direct-denied'), action: 'CREDIT_PAYMENT_REVERSED', entity_id: id, created_at: timestamp })];
+      assert.equal((await commit(writes, token)).status, 403);
+      assert.equal((await read(`sales/${id}`)).amount_paid, 116500);
+      assert.equal((await read('treasuryFunds/reseller-reverse-me')).balance, 116500);
+      await commit([write('users/super', { ...profile('SUPER_ADMIN'), permissions: ALL_PERMISSIONS })]);
+      const reversed = await reverseCreditPayment(id, 'reverse-me', 'Erreur de saisie', audit('reverse-me-audit'));
+      assert.equal(reversed.amount_paid, 0);
+      assert.equal(reversed.payment_status, 'PENDING');
+      assert.equal((await read(`creditCustomers/${id}`)).outstanding_balance, 116500);
+      assert.equal((await read('treasuryFunds/reseller-reverse-me')).balance, 0);
+      assert.equal((await read('resellerReceipts/reverse-me')).reversal_id, 'reverse-me');
+      assert.equal((await read('treasuryMovements/reversal-reverse-me')).kind, 'RECEIPT_REVERSAL');
+      assert.equal((await read('auditLogs/reverse-me-audit')).action, 'CREDIT_PAYMENT_REVERSED');
+      assert.equal(reversed.credit_payment_reversals?.[0].payment.amount, 116500);
+      await assert.rejects(reverseCreditPayment(id, 'reverse-me', 'Encore', audit('duplicate-reversal')));
+      assert.equal((await read(`creditCustomers/${id}`)).outstanding_balance, 116500);
+      // A standalone reduction of a paid sale is still forbidden.
+      assert.equal((await commit([write(`sales/${id}`, { ...paid, amount_paid: 0, payment_status: 'PENDING' })], token)).status, 403);
+    });
+    await t.test('used treasury funds and non-admin reversals are rejected', async () => {
+      const id = 'reversal-used';
+      const original = { ...sale, id, credit_customer_id: id, sale_number: id, total: 100 };
+      await commit([write(`sales/${id}`, original), write(`creditCustomers/${id}`, { id, outstanding_balance: 100, credit_limit: 200, payment_term_days: 15, is_active: true })]);
+      await recordCreditPayment(original, payment('used-funds', 100), audit('used-record'));
+      const fund = await read('treasuryFunds/reseller-used-funds');
+      await commit([write('treasuryFunds/reseller-used-funds', { ...fund, balance: 50 })]);
+      await assert.rejects(reverseCreditPayment(id, 'used-funds', 'Erreur', audit('used-reversal')), /utilisés/);
+      assert.equal((await read(`sales/${id}`)).amount_paid, 100);
+      await commit([write('users/super', profile('RESPONSABLE_MAGASIN'))]);
+      await assert.rejects(reverseCreditPayment(id, 'used-funds', 'Erreur', audit('staff-reversal')));
+      await commit([write('users/super', { ...profile('SUPER_ADMIN'), permissions: ALL_PERMISSIONS })]);
+    });
+    await t.test('unremitted cash can be reversed; claimed cash and closed POS days cannot', async () => {
+      for (const mode of ['unremitted', 'claimed', 'closed-day']) {
+        const id = `reversal-${mode}`;
+        const original = { ...sale, id, credit_customer_id: id, sale_number: id, total: 100 };
+        await commit([write('users/super', profile('RESPONSABLE_MAGASIN')), write(`sales/${id}`, original),
+          write(`creditCustomers/${id}`, { id, outstanding_balance: 100, credit_limit: 200, payment_term_days: 15, is_active: true })]);
+        await recordCreditPayment(original, payment(id, 100), audit(`record-${id}`));
+        await commit([write('users/super', { ...profile('SUPER_ADMIN'), permissions: ALL_PERMISSIONS })]);
+        const receipt = await read(`resellerReceipts/${id}`);
+        if (mode === 'claimed') await commit([write(`resellerReceipts/${id}`, { ...receipt, handover_id: 'already-remitted' })]);
+        if (mode === 'closed-day') await commit([write(`cashHandovers/cash-handover-dep-${receipt.business_date}`, { store_id: 'dep' })]);
+        if (mode === 'unremitted') {
+          const result = await reverseCreditPayment(id, id, 'Erreur de saisie', audit(`audit-${id}`));
+          assert.equal(result.amount_paid, 0);
+          assert.equal((await read(`creditCustomers/${id}`)).outstanding_balance, 100);
+        } else {
+          await assert.rejects(reverseCreditPayment(id, id, 'Erreur', audit(`audit-${id}`)), /remise/);
+          assert.equal((await read(`sales/${id}`)).amount_paid, 100);
+        }
+      }
     });
   } finally { await terminate(db); }
 });

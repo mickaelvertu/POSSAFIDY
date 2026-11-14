@@ -89,11 +89,16 @@ export async function adoptHistoricalHandover(user: AppUser, handoverId: string)
 
 export async function moveTreasuryFunds(user: AppUser, fundId: string, amount: number, reference: string, recipient?: AppUser) {
   if (!reference.trim()) throw new Error("Une référence est obligatoire.");
-  if (recipient?.uid === user.uid) throw new Error("Choisissez un autre administrateur.");
+
   const id = doc(collection(db, "treasuryMovements")).id;
   const destinationId = recipient ? `transfer-${id}` : "";
   await runOnlineTransaction(async transaction => {
-    const debit = await prepareFundDebit(transaction, fundId, user.uid, amount);
+    const sourceSnapshot = await transaction.get(doc(db, "treasuryFunds", fundId));
+    if (!sourceSnapshot.exists()) throw new Error("Fonds introuvable.");
+    const ownerId = (sourceSnapshot.data() as TreasuryFund).owner_id;
+    if (ownerId !== user.uid && (!recipient || user.roleId !== "SUPER_ADMIN")) throw new Error("Seul le super administrateur peut transférer les fonds d'un autre détenteur.");
+    if (recipient?.uid === ownerId) throw new Error("Le destinataire doit être différent du détenteur actuel.");
+    const debit = await prepareFundDebit(transaction, fundId, ownerId, amount);
     if (!recipient && debit.fund.handover_id) throw new Error("Enregistrez ce dépôt depuis la remise de caisse correspondante.");
     if (recipient) {
       const profile = await transaction.get(doc(db, "users", recipient.uid));
@@ -103,7 +108,7 @@ export async function moveTreasuryFunds(user: AppUser, fundId: string, amount: n
     }
     const now = Date.now();
     debit.apply({ id, kind: recipient ? "TRANSFER" : "DEPOSIT", fund_id: fundId,
-      destination_fund_id: destinationId, from_user: user.uid, to_user: recipient?.uid ?? "",
+      destination_fund_id: destinationId, from_user: debit.fund.owner_id, to_user: recipient?.uid ?? "",
       amount, reference: reference.trim(), purchase_id: "", created_by: user.uid, created_at: now });
     if (recipient) transaction.set(doc(db, "treasuryFunds", destinationId), {
       ...debit.fund, id: destinationId, owner_id: recipient.uid, owner_name: recipient.displayName,

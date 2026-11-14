@@ -107,7 +107,7 @@ export function useSessionSync(user: User | null, setters: Setters, initializeUn
     watch<Production>("Productions", permitted("production.view") ? scopedQueries("productions", ["manufacturer_store_id"], storeIds) : [], setters.productions);
     watch<InventoryCount>("Inventaires", scopedQueries("inventoryCounts", ["store_id"], storeIds), setters.counts);
     if (permitted("procurement.manage")) {
-      watch<Supplier>("Fournisseurs", [collectionQuery("suppliers")], setters.suppliers);
+      watch<Supplier>("Fournisseurs", [collectionQuery("suppliers")], rows => setters.suppliers(rows.filter(row => !row.deleted_at)));
       watch<Purchase>("Achats", scopedQueries("purchases", ["store_id"], storeIds), setters.purchases);
     }
     if (admin) watch<UnitOfMeasure>("Unités", [collectionQuery("units")], setters.units);

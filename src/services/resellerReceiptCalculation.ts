@@ -4,7 +4,7 @@ export const resellerBusinessDate = (timestamp: number) => new Intl.DateTimeForm
 }).format(timestamp);
 
 export function pendingResellerReceipts(receipts: ResellerReceipt[], storeId: string, day: string, collector: string) {
-  return receipts.filter(receipt => receipt.store_id === storeId && receipt.business_date === day &&
+  return receipts.filter(receipt => !receipt.reversal_id && receipt.store_id === storeId && receipt.business_date === day &&
     resellerBusinessDate(receipt.paid_at) === day && receipt.collected_by === collector &&
     receipt.method === "CASH" && receipt.destination === "HANDOVER" && !receipt.handover_id);
 }

@@ -6,6 +6,8 @@ export function reportHistory(type: ReportType): "movements" | "audit" | null {
 }
 
 export function reportSources(type: ReportType): string[] {
+  if (type === "SUPPLIER_PURCHASES") return ["Achats", "Fournisseurs", "Magasins", "Articles"];
+  if (type === "TREASURY") return [];
   const base = ["Magasins", "Articles", "Catégories"];
   if (type === "STOCK_BY_ARTICLE" || type === "STOCK_STATUS" || type === "STOCK_LEDGER") return [...base, "Stocks"];
   if (type.startsWith("SALES") || type === "RESELLER_CREDIT") return [...base, "Ventes"];

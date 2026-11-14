@@ -7,7 +7,8 @@ service cloud.firestore {
     }
 
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null && request.auth.token.auth_time is number &&
+        request.time.toMillis() < request.auth.token.auth_time * 1000 + 14400000;
     }
 
     function isAdmin() {
@@ -94,6 +95,54 @@ service cloud.firestore {
         receipt.collected_by == payment.collected_by && receipt.paid_at == payment.paid_at &&
         receipt.collected_by_name == payment.collected_by_name && receipt.destination == payment.cash_destination &&
         resellerDebtReduced(before, payment.amount, payment.paid_at);
+    }
+    function validCreditReversal(before, after) {
+      let id = after.last_credit_reversal_id;
+      let r = getAfter(/databases/$(database)/documents/resellerPaymentReversals/$(id)).data;
+      let amount = r.payment.amount;
+      let paid = before.amount_paid - amount;
+      let customer = before.get('credit_customer_id', '');
+      return isSuperAdmin() && before.customer_type == 'REVENDEUR' && before.status == 'VALIDATED' &&
+        !exists(/databases/$(database)/documents/resellerPaymentReversals/$(id)) &&
+        r.id == id && r.sale_id == before.id && r.payment.id == id && r.reversed_by == request.auth.uid &&
+        r.reason is string && r.reason.size() > 0 && r.reason.size() <= 1000 &&
+        r.reversed_at is int && r.reversed_at >= request.time.toMillis() - 300000 && r.reversed_at <= request.time.toMillis() + 60000 &&
+        amount is int && amount > 0 && paid >= 0 && r.payment in before.credit_payments &&
+        after.credit_payments == before.credit_payments.removeAll([r.payment]) &&
+        after.credit_payment_reversals == before.get('credit_payment_reversals', []).concat([r]) &&
+        after.amount_paid == paid && after.payment_status == (paid >= before.total ? 'PAID' : (paid > 0 ? 'PARTIAL' : 'PENDING')) &&
+        after.diff(before).affectedKeys().hasOnly(['amount_paid', 'payment_status', 'credit_payments', 'credit_payment_reversals', 'last_credit_reversal_id']) &&
+        (customer == '' || (
+          getAfter(/databases/$(database)/documents/creditCustomers/$(customer)).data.outstanding_balance ==
+            get(/databases/$(database)/documents/creditCustomers/$(customer)).data.outstanding_balance + amount &&
+          getAfter(/databases/$(database)/documents/creditCustomers/$(customer)).data.last_payment_sale_id == before.id &&
+          getAfter(/databases/$(database)/documents/creditCustomers/$(customer)).data.updated_at == r.reversed_at));
+    }
+    function creditReversalRouting(r) {
+      let path = /databases/$(database)/documents/resellerReceipts/$(r.id);
+      return (!exists(path) && !r.payment.keys().hasAny(['cash_destination']) && r.payment.method != 'CASH') ||
+        (exists(path) && get(path).data.sale_id == r.sale_id && get(path).data.amount == r.payment.amount &&
+          (get(path).data.method != 'CASH' || get(path).data.destination == 'TREASURY' ||
+            !exists(/databases/$(database)/documents/cashHandovers/$('cash-handover-' + get(path).data.store_id + '-' + get(path).data.business_date))) &&
+          get(path).data.handover_id == '' && get(path).data.get('reversal_id', '') == '' &&
+          getAfter(path).data.reversal_id == r.id && (get(path).data.destination != 'TREASURY' ||
+            (getAfter(/databases/$(database)/documents/treasuryFunds/$('reseller-' + r.id)).data.balance == 0 &&
+             getAfter(/databases/$(database)/documents/treasuryMovements/$('reversal-' + r.id)).data.kind == 'RECEIPT_REVERSAL' &&
+             getAfter(/databases/$(database)/documents/treasuryFunds/$('reseller-' + r.id)).data.last_movement_id == 'reversal-' + r.id)));
+    }
+    match /resellerPaymentReversals/{id} {
+      allow read: if isAdmin();
+      allow create: if isSuperAdmin() && request.resource.data.id == id &&
+        getAfter(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)).data.last_credit_reversal_id == id &&
+        request.resource.data.keys().hasOnly(['id', 'sale_id', 'payment', 'reason', 'reversed_at', 'reversed_by', 'reversed_by_name', 'audit_id']) &&
+        validCreditReversal(get(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)).data,
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.sale_id)).data) &&
+        creditReversalRouting(request.resource.data) &&
+        !exists(/databases/$(database)/documents/auditLogs/$(request.resource.data.audit_id)) &&
+        getAfter(/databases/$(database)/documents/auditLogs/$(request.resource.data.audit_id)).data.action == 'CREDIT_PAYMENT_REVERSED' &&
+        getAfter(/databases/$(database)/documents/auditLogs/$(request.resource.data.audit_id)).data.entity_id == request.resource.data.sale_id &&
+        getAfter(/databases/$(database)/documents/auditLogs/$(request.resource.data.audit_id)).data.user_id == request.auth.uid;
+      allow update, delete: if false;
     }
     function saleCreditBalance(sale) {
       return sale.total > sale.amount_paid ? sale.total - sale.amount_paid : 0;
@@ -188,7 +237,7 @@ service cloud.firestore {
         let after = request.resource.data;
         let h = getAfter(/databases/$(database)/documents/cashHandovers/$(after.handover_id)).data;
         return isActiveUser() && before.collected_by == request.auth.uid &&
-          before.destination == 'HANDOVER' && before.method == 'CASH' && before.handover_id == '' &&
+          before.destination == 'HANDOVER' && before.method == 'CASH' && before.handover_id == '' && before.get('reversal_id', '') == '' &&
           after.diff(before).affectedKeys().hasOnly(['handover_id']) &&
           after.handover_id is string && after.handover_id != '' &&
           !exists(/databases/$(database)/documents/cashHandovers/$(after.handover_id)) &&
@@ -196,6 +245,10 @@ service cloud.firestore {
           h.business_date == before.business_date && receiptId in h.receipt_ids;
       }
       allow update: if validClaim();
+      allow update: if isSuperAdmin() && resource.data.handover_id == '' && resource.data.get('reversal_id', '') == '' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reversal_id']) && request.resource.data.reversal_id == receiptId &&
+        !exists(/databases/$(database)/documents/resellerPaymentReversals/$(receiptId)) &&
+        getAfter(/databases/$(database)/documents/resellerPaymentReversals/$(receiptId)).data.sale_id == resource.data.sale_id;
       allow delete: if false;
     }
 
@@ -309,7 +362,10 @@ service cloud.firestore {
     // User collection access rules
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin() || (isActiveUser() && resource.data.role == 'RESPONSABLE_MAGASIN');
+      allow list: if isAdmin() || (isActiveUser() && (
+        resource.data.role in ['RESPONSABLE_MAGASIN', 'CONTROLEUR', 'PRODUCTION'] ||
+        resource.data.get('permissions', []).hasAny(['inventory.count', 'inventory.review'])
+      ));
       allow create: if (
         isSuperAdmin() ||
         (isAdmin() && !(request.resource.data.role in ['ADMIN', 'SUPER_ADMIN'])) ||
@@ -395,7 +451,15 @@ service cloud.firestore {
 
     match /suppliers/{supplierId} {
       allow read: if isAdmin() || hasPermission('procurement.manage');
-      allow create, update: if hasPermission('procurement.manage');
+      allow create: if hasPermission('procurement.manage') && !('deleted_at' in request.resource.data);
+      allow update: if hasPermission('procurement.manage') && !('deleted_at' in resource.data) &&
+        (!('deleted_at' in request.resource.data) || (
+          request.resource.data.is_active == false &&
+          request.resource.data.deleted_by == request.auth.uid &&
+          request.resource.data.deleted_at is number &&
+          request.resource.data.updated_at == request.resource.data.deleted_at &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_active', 'deleted_at', 'deleted_by', 'updated_at'])
+        ));
       allow delete: if false;
     }
 
@@ -490,7 +554,9 @@ service cloud.firestore {
           'declared_by', 'declared_by_name', 'declared_at', 'status',
           'deposited_amount', 'deposits', 'payment_method', 'reference_note'
         ]);
+      allow update: if validHandoverAllocation();
       allow update: if (
+        request.resource.data.get('treasury_movement_id', '') == resource.data.get('treasury_movement_id', '') &&
         hasPermission('cash_handover.receive') &&
         hasStoreAccess(resource.data.store_id) &&
         resource.data.status == 'DECLARED' &&
@@ -548,7 +614,6 @@ service cloud.firestore {
           'deposits', 'deposited_amount', 'status', 'treasury_movement_id'
         ])
       );
-      allow update: if validHandoverAllocation();
       allow update: if validHandoverRefund();
       allow update: if isAdmin() && resource.data.received_by == request.auth.uid &&
         !('treasury_fund_id' in resource.data) && resource.data.status in ['RECEIVED', 'DISCREPANCY', 'PARTIALLY_DEPOSITED'] &&
@@ -561,10 +626,13 @@ service cloud.firestore {
 
     // Treasury is restricted to active administrators. Every balance change
     // requires a new immutable movement in the same atomic commit.
+    function canDebitTreasuryOwner(ownerId, movement) {
+      return ownerId == request.auth.uid || (movement.kind == 'TRANSFER' && isSuperAdmin());
+    }
     function treasuryDebit(m, id) {
       let before = get(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
       let after = getAfter(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
-      return before.owner_id == request.auth.uid && m.from_user == before.owner_id &&
+      return canDebitTreasuryOwner(before.owner_id, m) && m.from_user == before.owner_id &&
         before.balance >= m.amount && after.balance == before.balance - m.amount &&
         after.last_movement_id == id;
     }
@@ -576,10 +644,14 @@ service cloud.firestore {
     function treasuryPurchase(m) {
       let before = get(/databases/$(database)/documents/purchases/$(m.purchase_id)).data;
       let after = getAfter(/databases/$(database)/documents/purchases/$(m.purchase_id)).data;
-      let payment = after.payments[after.payments.size() - 1];
-      return after.payments.size() == before.payments.size() + 1 &&
-        payment.id == m.id && payment.treasury_fund_id == m.fund_id &&
-        payment.amount == m.amount && payment.paid_by == request.auth.uid;
+      let p = after.payments[after.payments.size() - 1];
+      let a = p.get('fund_allocations', []);
+      let part = {'fund_id': m.fund_id, 'amount': m.amount};
+      return after.payments.size() == before.payments.size() + 1 && p.paid_by == request.auth.uid &&
+        ((a.size() == 0 && p.id == m.id && p.treasury_fund_id == m.fund_id && p.amount == m.amount) ||
+         (a.size() > 0 && ((m.id == p.id + '-0' && a[0] == part) ||
+          (a.size() > 1 && m.id == p.id + '-1' && a[1] == part) ||
+          (a.size() > 2 && m.id == p.id + '-2' && a[2] == part))));
     }
     function treasuryExpense(m) {
       let before = get(/databases/$(database)/documents/expenses/$(m.expense_id)).data;
@@ -643,10 +715,54 @@ service cloud.firestore {
       let original = get(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
       let recipient = get(/databases/$(database)/documents/users/$(f.owner_id)).data;
       return f.handover_id == '' && f.source == original.source &&
-        f.source_reference == original.source_reference && f.owner_id != request.auth.uid &&
+        f.source_reference == original.source_reference && f.owner_id != original.owner_id &&
         recipient.status == 'ACTIVE' && recipient.role in ['ADMIN', 'SUPER_ADMIN'];
     }
+    // Counts are immutable declarations; no automatic ledger adjustment.
+    match /treasuryChecks/{checkId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly([
+        'id', 'owner_id', 'owner_name', 'expected', 'counted', 'difference', 'reason', 'created_at', 'fund_ids'
+      ]) && request.resource.data.id == checkId && request.resource.data.owner_id == request.auth.uid &&
+        request.resource.data.owner_name is string && request.resource.data.expected is int && request.resource.data.expected >= 0 &&
+        request.resource.data.counted is int && request.resource.data.counted >= 0 &&
+        request.resource.data.difference == request.resource.data.counted - request.resource.data.expected &&
+        request.resource.data.reason is string && request.resource.data.reason.size() <= 2000 &&
+        (request.resource.data.difference == 0 || request.resource.data.reason.size() > 0) &&
+        request.resource.data.fund_ids is list && request.resource.data.created_at is number &&
+        request.resource.data.created_at >= request.time.toMillis() - 300000 && request.resource.data.created_at <= request.time.toMillis() + 60000;
+      allow update, delete: if false;
+    }
+    match /treasuryAttachments/{attachmentId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly([
+        'id', 'movement_id', 'name', 'data', 'created_by', 'created_at'
+      ]) && request.resource.data.id == attachmentId && request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.movement_id is string &&
+        exists(/databases/$(database)/documents/treasuryMovements/$(request.resource.data.movement_id)) &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 255 &&
+        request.resource.data.data is string && request.resource.data.data.size() <= 470000 &&
+        request.resource.data.data.matches('data:(application/pdf|image/jpeg|image/png|image/webp);base64,[A-Za-z0-9+/=]+') &&
+        request.resource.data.created_at is number &&
+        request.resource.data.created_at >= request.time.toMillis() - 300000 && request.resource.data.created_at <= request.time.toMillis() + 60000;
+      allow update, delete: if false;
+    }
+    function validReceiptReversalMovement(m, id) {
+      let receiptId = id.replace('^reversal-', '');
+      let r = getAfter(/databases/$(database)/documents/resellerPaymentReversals/$(receiptId)).data;
+      let fund = get(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data;
+      return m.keys().hasOnly(['id', 'kind', 'fund_id', 'destination_fund_id', 'from_user', 'to_user', 'amount', 'reference', 'purchase_id', 'created_by', 'created_at']) &&
+        m.id == id && id == 'reversal-' + r.id && m.kind == 'RECEIPT_REVERSAL' && m.created_by == request.auth.uid &&
+        m.created_at == r.reversed_at && m.amount == r.payment.amount && m.amount > 0 &&
+        !exists(/databases/$(database)/documents/resellerPaymentReversals/$(r.id)) &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$(id)) &&
+        m.fund_id == 'reseller-' + r.id && m.from_user == fund.owner_id && m.destination_fund_id == '' && m.to_user == '' &&
+        fund.initial_amount == m.amount && fund.balance == m.amount && fund.last_movement_id == 'receipt-' + m.fund_id &&
+        getAfter(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data.balance == 0 &&
+        getAfter(/databases/$(database)/documents/treasuryFunds/$(m.fund_id)).data.last_movement_id == id;
+    }
     match /treasuryMovements/{movementId} {
+      allow create: if isSuperAdmin() && validReceiptReversalMovement(request.resource.data, movementId);
       allow read: if isAdmin();
       allow create: if isAdmin() && request.resource.data.keys().hasOnly([
         'id', 'kind', 'fund_id', 'destination_fund_id', 'from_user', 'to_user', 'amount', 'reference', 'purchase_id', 'expense_id', 'created_by', 'created_at'
@@ -669,6 +785,10 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     match /treasuryFunds/{fundId} {
+      allow update: if isSuperAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance', 'last_movement_id']) &&
+        request.resource.data.balance == 0 &&
+        getAfter(/databases/$(database)/documents/treasuryMovements/$(request.resource.data.last_movement_id)).data.fund_id == fundId &&
+        validReceiptReversalMovement(getAfter(/databases/$(database)/documents/treasuryMovements/$(request.resource.data.last_movement_id)).data, request.resource.data.last_movement_id);
       function validCreation() {
         let f = request.resource.data;
         let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(f.last_movement_id)).data;
@@ -683,7 +803,7 @@ service cloud.firestore {
       function validDebit() {
         let f = request.resource.data;
         let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(f.last_movement_id)).data;
-        return resource.data.owner_id == request.auth.uid && f.balance is int && f.balance >= 0 &&
+        return canDebitTreasuryOwner(resource.data.owner_id, m) && f.balance is int && f.balance >= 0 &&
           f.diff(resource.data).affectedKeys().hasOnly(['balance', 'last_movement_id']) &&
           !exists(/databases/$(database)/documents/treasuryMovements/$(f.last_movement_id)) &&
           m.kind in ['TRANSFER', 'PURCHASE', 'EXPENSE', 'DEPOSIT'] && m.fund_id == fundId &&
@@ -704,7 +824,7 @@ service cloud.firestore {
       let before = resource.data;
       let after = request.resource.data;
       let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id)).data;
-      return isAdmin() && before.received_by == request.auth.uid &&
+      return isAdmin() && canDebitTreasuryOwner(before.received_by, m) && m.from_user == before.received_by &&
         after.diff(before).affectedKeys().hasOnly(['allocated_amount', 'treasury_movement_id']) &&
         m.kind in ['TRANSFER', 'PURCHASE', 'EXPENSE'] && m.fund_id == before.treasury_fund_id &&
         !exists(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id)) &&
@@ -727,15 +847,77 @@ service cloud.firestore {
         m.amount == after.deposited_amount - before.deposited_amount &&
         !exists(/databases/$(database)/documents/treasuryMovements/$(after.treasury_movement_id));
     }
+    function validPurchasePaymentUpdate() {
+      let b = resource.data;
+      let a = request.resource.data;
+      let p = a.payments[a.payments.size() - 1];
+      return hasPermission('procurement.manage') && hasStoreAccess(b.store_id) &&
+        b.get('status', 'RECEIVED') in ['APPROVED', 'RECEIVED'] &&
+        a.get('status', 'RECEIVED') == b.get('status', 'RECEIVED') &&
+        a.payments is list && a.payments.size() == b.payments.size() + 1 && a.payments.hasAll(b.payments) &&
+        ((!isAdmin() && !('treasury_fund_id' in p) && !('fund_allocations' in p)) || validTreasuryPayment()) &&
+        p.amount is number && p.amount > 0 && p.paid_by == request.auth.uid && p.paid_at is number &&
+        p.method in ['CASH', 'MVOLA', 'AIRTEL_MONEY', 'ORANGE_MONEY', 'CHECK', 'BANK_TRANSFER'] &&
+        a.amount_paid is number && a.amount_paid == b.amount_paid + p.amount && a.amount_paid <= b.total &&
+        ((a.amount_paid == b.total && a.payment_status == 'PAID') || (a.amount_paid < b.total && a.payment_status == 'PARTIAL')) &&
+        a.updated_at == p.paid_at && a.diff(b).affectedKeys().hasOnly(['amount_paid', 'payment_status', 'payments', 'updated_at']);
+    }
+    function validPurchaseAllocation(p, index, suffix) {
+      let a = p.fund_allocations[index];
+      let movementId = p.id + suffix;
+      let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(movementId)).data;
+      return a.keys().hasOnly(['fund_id', 'amount']) && a.fund_id is string &&
+        a.amount is int && a.amount > 0 &&
+        m.kind == 'PURCHASE' && m.purchase_id == resource.data.id &&
+        m.fund_id == a.fund_id && m.amount == a.amount &&
+        m.from_user == request.auth.uid &&
+        !exists(/databases/$(database)/documents/treasuryMovements/$(movementId));
+    }
+    function validSplitTreasuryPayment(p) {
+      let a = p.fund_allocations;
+      return isAdmin() && !('treasury_fund_id' in p) && a is list && a.size() >= 1 && a.size() <= 3 &&
+        validPurchaseAllocation(p, 0, '-0') &&
+        (a.size() < 2 || (a[1].fund_id != a[0].fund_id && validPurchaseAllocation(p, 1, '-1'))) &&
+        (a.size() < 3 || (a[2].fund_id != a[0].fund_id && a[2].fund_id != a[1].fund_id && validPurchaseAllocation(p, 2, '-2'))) &&
+        p.amount == a[0].amount + (a.size() > 1 ? a[1].amount : 0) + (a.size() > 2 ? a[2].amount : 0);
+    }
     function validTreasuryPayment() {
       let p = request.resource.data.payments[request.resource.data.payments.size() - 1];
+      return ('fund_allocations' in p && validSplitTreasuryPayment(p)) ||
+        (!('fund_allocations' in p) && validSingleTreasuryPayment(p));
+    }
+    function validSingleTreasuryPayment(p) {
       let m = getAfter(/databases/$(database)/documents/treasuryMovements/$(p.id)).data;
       return m.kind == 'PURCHASE' && m.purchase_id == resource.data.id &&
         m.fund_id == p.treasury_fund_id && m.amount == p.amount &&
         !exists(/databases/$(database)/documents/treasuryMovements/$(p.id));
     }
 
+    function purchaseCancellationProof(purchaseId) {
+      let b = get(/databases/$(database)/documents/purchases/$(purchaseId)).data;
+      let a = getAfter(/databases/$(database)/documents/purchases/$(purchaseId)).data;
+      return isSuperAdmin() && b.get('status', 'RECEIVED') != 'CANCELLED' &&
+        a.status == 'CANCELLED' && a.cancelled_by == request.auth.uid;
+    }
     match /purchases/{purchaseId} {
+      allow update: if isSuperAdmin() && resource.data.get('status', 'RECEIVED') in ['DRAFT', 'APPROVED', 'RECEIVED'] &&
+        request.resource.data.status == 'CANCELLED' && request.resource.data.cancelled_by == request.auth.uid &&
+        request.resource.data.cancelled_at is number && request.resource.data.updated_at == request.resource.data.cancelled_at &&
+        request.resource.data.cancellation_reason is string && request.resource.data.cancellation_reason.size() > 0 &&
+        request.resource.data.refund_due_amount == resource.data.amount_paid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelled_by', 'cancelled_by_name', 'cancelled_at', 'cancellation_reason', 'refund_due_amount', 'updated_at']) &&
+        ((resource.data.status == 'DRAFT' && resource.data.get('transfer_id', '') == '' && resource.data.amount_paid == 0) ||
+         (resource.data.get('transfer_id', '') != '' &&
+          getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.status == 'CANCELLED' &&
+          getAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)).data.purchase_id == purchaseId));
+
+      allow delete: if isSuperAdmin() &&
+        resource.data.status in ['DRAFT', 'APPROVED'] &&
+        resource.data.amount_paid == 0 && resource.data.payments.size() == 0 &&
+        resource.data.get('received_at', null) == null &&
+        (resource.data.get('transfer_id', '') == '' ||
+          !existsAfter(/databases/$(database)/documents/transfers/$(resource.data.transfer_id)));
+
       // Receipt transactions read the linked purchase before crediting stock.
       // Keep this document-only access separate from procurement list/manage rights.
       function canReadForReceipt() {
@@ -757,6 +939,14 @@ service cloud.firestore {
       allow list: if hasPermission('procurement.manage') && hasStoreAccess(resource.data.store_id);
       allow create: if hasPermission('procurement.manage') &&
         request.resource.data.id == purchaseId &&
+        (!request.resource.data.keys().hasAny(['raw_material_order_id']) || (
+          isAdmin() && purchaseId == 'purchase-raw-' + request.resource.data.raw_material_order_id &&
+          get(/databases/$(database)/documents/rawMaterialOrders/$(request.resource.data.raw_material_order_id)).data.status == 'PENDING' &&
+          getAfter(/databases/$(database)/documents/rawMaterialOrders/$(request.resource.data.raw_material_order_id)).data.status == 'PURCHASE_CREATED' &&
+          getAfter(/databases/$(database)/documents/rawMaterialOrders/$(request.resource.data.raw_material_order_id)).data.purchase_id == purchaseId &&
+          getAfter(/databases/$(database)/documents/rawMaterialOrders/$(request.resource.data.raw_material_order_id)).data.store_id == request.resource.data.store_id &&
+          getAfter(/databases/$(database)/documents/rawMaterialOrders/$(request.resource.data.raw_material_order_id)).data.supplier_id == request.resource.data.supplier_id
+        )) &&
         request.resource.data.created_by == request.auth.uid &&
         request.resource.data.status == 'DRAFT' &&
         hasStoreAccess(request.resource.data.store_id) &&
@@ -773,7 +963,22 @@ service cloud.firestore {
         request.resource.data.payment_status == 'UNPAID' &&
         request.resource.data.payments is list &&
         request.resource.data.payments.size() == 0;
+      allow update: if validPurchasePaymentUpdate();
       allow update: if (
+        hasPermission('procurement.manage') &&
+        hasStoreAccess(resource.data.store_id) && hasStoreAccess(request.resource.data.store_id) &&
+        resource.data.status == 'DRAFT' && request.resource.data.status == 'DRAFT' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'supplier_id', 'supplier_name', 'store_id', 'invoice_number', 'expected_payment_at', 'notes', 'lines', 'total', 'updated_at'
+        ]) &&
+        get(/databases/$(database)/documents/suppliers/$(request.resource.data.supplier_id)).data.is_active == true &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.is_active == true &&
+        get(/databases/$(database)/documents/stores/$(request.resource.data.store_id)).data.store_type in ['CENTRAL_WAREHOUSE', 'MANUFACTURER'] &&
+        request.resource.data.lines is list && request.resource.data.lines.size() > 0 &&
+        request.resource.data.total is number && request.resource.data.total >= 0 &&
+        request.resource.data.expected_payment_at is number &&
+        request.resource.data.invoice_number is string && request.resource.data.invoice_number.size() > 0
+      ) || (
         hasPermission('procurement.manage') &&
         hasStoreAccess(resource.data.store_id) &&
         resource.data.status == 'DRAFT' &&
@@ -800,37 +1005,6 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.requested_by == resource.data.created_by &&
         getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.destination_store_id == resource.data.store_id &&
         getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.supplier_id == resource.data.supplier_id
-      ) || (
-        hasPermission('procurement.manage') &&
-        hasStoreAccess(resource.data.store_id) &&
-        resource.data.get('status', 'RECEIVED') in ['APPROVED', 'RECEIVED'] &&
-        request.resource.data.get('status', 'RECEIVED') == resource.data.get('status', 'RECEIVED') &&
-        request.resource.data.payments is list &&
-        request.resource.data.payments.size() == resource.data.payments.size() + 1 &&
-        request.resource.data.payments.hasAll(resource.data.payments) &&
-        ((!isAdmin() && !('treasury_fund_id' in request.resource.data.payments[request.resource.data.payments.size() - 1])) || validTreasuryPayment()) &&
-        request.resource.data.payments[request.resource.data.payments.size() - 1].amount is number &&
-        request.resource.data.payments[request.resource.data.payments.size() - 1].amount > 0 &&
-        request.resource.data.payments[request.resource.data.payments.size() - 1].paid_by == request.auth.uid &&
-        request.resource.data.payments[request.resource.data.payments.size() - 1].paid_at is number &&
-        request.resource.data.payments[request.resource.data.payments.size() - 1].method in [
-          'CASH', 'MVOLA', 'AIRTEL_MONEY', 'ORANGE_MONEY', 'CHECK', 'BANK_TRANSFER'
-        ] &&
-        request.resource.data.amount_paid is number &&
-        request.resource.data.amount_paid ==
-          resource.data.amount_paid +
-          request.resource.data.payments[request.resource.data.payments.size() - 1].amount &&
-        request.resource.data.amount_paid <= resource.data.total &&
-        (
-          (request.resource.data.amount_paid == resource.data.total &&
-            request.resource.data.payment_status == 'PAID') ||
-          (request.resource.data.amount_paid < resource.data.total &&
-            request.resource.data.payment_status == 'PARTIAL')
-        ) &&
-        request.resource.data.updated_at == request.resource.data.payments[request.resource.data.payments.size() - 1].paid_at &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'amount_paid', 'payment_status', 'payments', 'updated_at'
-        ])
       ) || (
         isActiveUser() &&
         resource.data.status == 'APPROVED' &&
@@ -1008,6 +1182,13 @@ service cloud.firestore {
     }
 
     match /movements/{movementId} {
+      allow create: if request.resource.data.reference_type == 'PURCHASE_CANCELLATION' &&
+        purchaseCancellationProof(request.resource.data.reference_id) &&
+        request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.store_id == get(/databases/$(database)/documents/purchases/$(request.resource.data.reference_id)).data.store_id &&
+        request.resource.data.quantity < 0 && request.resource.data.after_quantity >= 0 &&
+        request.resource.data.after_quantity == request.resource.data.before_quantity + request.resource.data.quantity;
+
       allow read: if isActiveUser() && hasStoreAccess(resource.data.store_id);
       allow create: if hasStoreAccess(request.resource.data.store_id) &&
         (!(request.resource.data.get('movement_type', '') == 'CONSUMPTION' || request.resource.data.get('reference_type', '') == 'CONSUMPTION') ||
@@ -1048,6 +1229,8 @@ service cloud.firestore {
     }
 
     match /sales/{saleId} {
+      allow update: if request.resource.data.get('last_credit_reversal_id', '') != resource.data.get('last_credit_reversal_id', '') &&
+        validCreditReversal(resource.data, request.resource.data);
       allow read: if (hasPermission('sales.view') && (resource == null || hasStoreAccess(resource.data.store_id)) || hasPermission('credit.manage'));
       allow create: if hasPermission('sales.create') &&
         request.resource.data.seller_id == request.auth.uid &&
@@ -1402,7 +1585,75 @@ service cloud.firestore {
       allow delete: if isCounter() && resource.data.status == 'DRAFT' && resource.data.created_by == request.auth.uid;
     }
 
+    // Manual reseller debts are separate from sales and inventory.
+    match /manualCreditDebts/{debtId} {
+      function customerInSync(delta) {
+        let customer = get(/databases/$(database)/documents/creditCustomers/$(request.resource.data.customer_id)).data;
+        let updated = getAfter(/databases/$(database)/documents/creditCustomers/$(request.resource.data.customer_id)).data;
+        return updated.outstanding_balance == customer.outstanding_balance + delta &&
+          updated.outstanding_balance >= 0 && updated.last_manual_debt_id == debtId &&
+          updated.updated_at == request.resource.data.updated_at;
+      }
+      function auditRecorded(action) {
+        let id = request.resource.data.last_audit_id;
+        let audit = getAfter(/databases/$(database)/documents/auditLogs/$(id)).data;
+        return id is string && !exists(/databases/$(database)/documents/auditLogs/$(id)) &&
+          audit.user_id == request.auth.uid && audit.entity_type == 'CREDIT_CUSTOMER' &&
+          audit.entity_id == request.resource.data.customer_id && audit.action == action &&
+          audit.created_at == request.resource.data.updated_at;
+      }
+      function validCashPayment(p) {
+        let fundId = 'manual-credit-' + p.id;
+        let fund = getAfter(/databases/$(database)/documents/treasuryFunds/$(fundId)).data;
+        return isAdmin() && !exists(/databases/$(database)/documents/treasuryFunds/$(fundId)) &&
+          fund.owner_id == request.auth.uid && fund.source == 'OTHER' &&
+          fund.initial_amount == p.amount && fund.balance == p.amount && fund.created_at == p.paid_at;
+      }
+      function validPayment() {
+        let before = resource.data;
+        let after = request.resource.data;
+        let p = after.payments[after.payments.size() - 1];
+        return after.diff(before).affectedKeys().hasOnly(['amount_paid', 'payments', 'updated_at', 'last_audit_id']) &&
+          after.payments.size() == before.payments.size() + 1 && after.payments.removeAll([p]) == before.payments &&
+          p.keys().hasOnly(['id','amount','method','reference','paid_at','collected_by','collected_by_name','recorded_by','recorded_by_name']) &&
+          p.id is string && p.id.size() > 0 && p.id.size() <= 150 &&
+          p.amount is int && p.amount > 0 && after.amount_paid == before.amount_paid + p.amount && after.amount_paid <= before.amount &&
+          p.method in ['CASH','BANK_TRANSFER','MVOLA','AIRTEL_MONEY','ORANGE_MONEY','CHECK'] &&
+          p.reference is string && p.reference.size() <= 150 &&
+          p.collected_by == request.auth.uid && p.recorded_by == request.auth.uid &&
+          p.collected_by_name == resellerCollectorName() && p.recorded_by_name == resellerCollectorName() &&
+          p.paid_at == after.updated_at && (p.method != 'CASH' || validCashPayment(p)) &&
+          customerInSync(0 - p.amount) && auditRecorded('MANUAL_CREDIT_PAYMENT');
+      }
+      allow read: if hasPermission('credit.manage');
+      allow create: if hasPermission('credit.manage') &&
+        request.resource.data.keys().hasOnly(['id','customer_id','customer_name','reference','note','amount','amount_paid','due_at','created_at','created_by','created_by_name','updated_at','payments','last_audit_id']) &&
+        request.resource.data.id == debtId && request.resource.data.customer_id is string &&
+        request.resource.data.customer_name == get(/databases/$(database)/documents/creditCustomers/$(request.resource.data.customer_id)).data.name &&
+        get(/databases/$(database)/documents/creditCustomers/$(request.resource.data.customer_id)).data.is_active == true &&
+        request.resource.data.amount is int && request.resource.data.amount > 0 && request.resource.data.amount <= 9007199254740991 &&
+        request.resource.data.amount_paid == 0 && request.resource.data.payments == [] &&
+        request.resource.data.reference is string && request.resource.data.reference.size() > 0 && request.resource.data.reference.size() <= 150 &&
+        request.resource.data.note is string && request.resource.data.note.size() <= 2000 &&
+        request.resource.data.due_at is int && request.resource.data.due_at > 0 && request.resource.data.due_at <= 8640000000000000 &&
+        request.resource.data.created_by == request.auth.uid && request.resource.data.created_by_name == resellerCollectorName() &&
+        request.resource.data.created_at is int && request.resource.data.updated_at == request.resource.data.created_at &&
+        request.resource.data.updated_at >= request.time.toMillis() - 300000 && request.resource.data.updated_at <= request.time.toMillis() + 60000 &&
+        getAfter(/databases/$(database)/documents/creditCustomers/$(request.resource.data.customer_id)).data.outstanding_balance <=
+          get(/databases/$(database)/documents/creditCustomers/$(request.resource.data.customer_id)).data.credit_limit &&
+        customerInSync(request.resource.data.amount) && auditRecorded('MANUAL_CREDIT_CREATED');
+      allow update: if hasPermission('credit.manage') && request.resource.data.updated_at is int &&
+        request.resource.data.updated_at >= request.time.toMillis() - 300000 && request.resource.data.updated_at <= request.time.toMillis() + 60000 &&
+        validPayment();
+      allow delete: if false;
+    }
+
     match /creditCustomers/{customerId} {
+      allow update: if isSuperAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'updated_at', 'last_payment_sale_id']) &&
+        request.resource.data.outstanding_balance > resource.data.outstanding_balance &&
+        get(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data.credit_customer_id == customerId &&
+        validCreditReversal(get(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data,
+          getAfter(/databases/$(database)/documents/sales/$(request.resource.data.last_payment_sale_id)).data);
       allow update: if isActiveUser() && currentProfile().get('role', '') == 'RESPONSABLE_MAGASIN' &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['outstanding_balance', 'updated_at', 'last_payment_sale_id']) &&
         request.resource.data.last_payment_sale_id is string &&
@@ -1540,6 +1791,93 @@ service cloud.firestore {
       allow delete: if hasPermission('credit.manage') && resource.data.outstanding_balance == 0;
     }
 
+
+    match /productionOrders/{orderId} {
+      function activePrd(storeId) {
+        let store = get(/databases/$(database)/documents/stores/$(storeId)).data;
+        return store.store_type == 'MANUFACTURER' && store.is_active == true;
+      }
+      allow read: if isAdmin() || (isActiveUser() &&
+        currentProfile().get('role', '') in ['PRODUCTION', 'MAGASINIER', 'RESPONSABLE_MAGASIN'] &&
+        resource.data.status == 'PUBLISHED' && hasStoreAccess(resource.data.store_id));
+      allow create: if isAdmin() && request.resource.data.id == orderId &&
+        activePrd(request.resource.data.store_id) && request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.status == 'DRAFT' && request.resource.data.period in ['WEEK', 'MONTH'] &&
+        request.resource.data.start is number && request.resource.data.end > request.resource.data.start &&
+        request.resource.data.lines is list && request.resource.data.lines.size() > 0 && request.resource.data.lines.size() <= 100 &&
+        request.resource.data.reviewed_lines == request.resource.data.lines;
+      allow update: if isAdmin() && resource.data.status == 'DRAFT' && activePrd(resource.data.store_id) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewed_lines', 'admin_note', 'status', 'updated_at']) &&
+        request.resource.data.status in ['DRAFT', 'PUBLISHED'] && request.resource.data.updated_at > resource.data.updated_at &&
+        request.resource.data.admin_note is string && request.resource.data.reviewed_lines is list &&
+        request.resource.data.reviewed_lines.size() > 0 && request.resource.data.reviewed_lines.size() <= 100;
+    }
+
+    match /rawMaterialOrders/{orderId} {
+      function manager(storeId) {
+        return isActiveUser() && currentProfile().get('role', '') == 'RESPONSABLE_MAGASIN' && hasStoreAccess(storeId);
+      }
+      function activeDepot(storeId) {
+        let store = get(/databases/$(database)/documents/stores/$(storeId)).data;
+        return store.store_type == 'CENTRAL_WAREHOUSE' && store.is_active == true;
+      }
+      function validReview(data) {
+        return data.reviewed_lines is list && data.reviewed_lines.size() > 0 && data.reviewed_lines.size() <= 100 && data.supplier_id is string;
+      }
+      function linkedPurchase(data) {
+        let purchase = getAfter(/databases/$(database)/documents/purchases/$(data.purchase_id)).data;
+        return data.purchase_id == 'purchase-raw-' + orderId &&
+          !exists(/databases/$(database)/documents/purchases/$(data.purchase_id)) &&
+          purchase.raw_material_order_id == orderId && purchase.store_id == resource.data.store_id &&
+          purchase.supplier_id == data.supplier_id && purchase.status == 'DRAFT' &&
+          purchase.created_by == request.auth.uid && purchase.lines.size() == data.reviewed_lines.size();
+      }
+      allow read: if isAdmin() || (manager(resource.data.store_id) && resource.data.created_by == request.auth.uid);
+      allow create: if (isAdmin() || manager(request.resource.data.store_id)) &&
+        activeDepot(request.resource.data.store_id) && request.resource.data.id == orderId &&
+        request.resource.data.created_by == request.auth.uid && request.resource.data.status == 'PENDING' &&
+        request.resource.data.lines is list && request.resource.data.lines.size() > 0 && request.resource.data.lines.size() <= 100 &&
+        request.resource.data.reviewed_lines == [] && request.resource.data.purchase_id == '' &&
+        request.resource.data.reviewed_by == '' && request.resource.data.supplier_id == '' && request.resource.data.admin_note == '' &&
+        request.resource.data.notes is string && request.resource.data.created_at is number && request.resource.data.updated_at == request.resource.data.created_at;
+      allow update: if isAdmin() && resource.data.status == 'PENDING' && resource.data.purchase_id == '' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'reviewed_lines', 'admin_note', 'supplier_id', 'reviewed_by', 'status', 'purchase_id', 'updated_at'
+        ]) && request.resource.data.reviewed_by == request.auth.uid && request.resource.data.updated_at > resource.data.updated_at &&
+        request.resource.data.admin_note is string &&
+        ((request.resource.data.status == 'REJECTED' && request.resource.data.admin_note.size() > 0 && request.resource.data.purchase_id == '' && request.resource.data.reviewed_lines == resource.data.reviewed_lines) ||
+         (request.resource.data.status == 'PENDING' && validReview(request.resource.data) && request.resource.data.purchase_id == '') ||
+         (request.resource.data.status == 'PURCHASE_CREATED' && validReview(request.resource.data) && activeDepot(resource.data.store_id) && linkedPurchase(request.resource.data)));
+    }
+
+    match /posOrders/{orderId} {
+      function manager(storeId) {
+        return isActiveUser() && currentProfile().get('role', '') == 'RESPONSABLE_MAGASIN' && hasStoreAccess(storeId);
+      }
+      function activePos(storeId) {
+        let store = get(/databases/$(database)/documents/stores/$(storeId)).data;
+        return store.store_type == 'POS' && store.is_active == true;
+      }
+      allow read: if isAdmin() || (manager(resource.data.store_id) && resource.data.created_by == request.auth.uid);
+      allow create: if (isAdmin() || manager(request.resource.data.store_id)) &&
+        activePos(request.resource.data.store_id) && request.resource.data.id == orderId &&
+        request.resource.data.created_by == request.auth.uid && request.resource.data.status == 'PENDING' &&
+        request.resource.data.lines is list && request.resource.data.lines.size() > 0 && request.resource.data.lines.size() <= 100 &&
+        request.resource.data.reviewed_lines == [] && request.resource.data.transfer_id == '' &&
+        request.resource.data.reviewed_by == '' && request.resource.data.source_store_id == '' && request.resource.data.admin_note == '';
+      allow update: if isAdmin() && resource.data.status == 'PENDING' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'reviewed_lines', 'admin_note', 'source_store_id', 'reviewed_by', 'status', 'transfer_id', 'updated_at'
+        ]) && request.resource.data.reviewed_by == request.auth.uid && request.resource.data.updated_at > resource.data.updated_at &&
+        ((request.resource.data.status in ['PENDING', 'REJECTED'] && request.resource.data.transfer_id == '') ||
+          (request.resource.data.status == 'TRANSFER_CREATED' && request.resource.data.transfer_id == 'trf-pos-' + orderId &&
+            !exists(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)) &&
+            getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.destination_store_id == resource.data.store_id &&
+            getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.source_store_id == request.resource.data.source_store_id &&
+            getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.type == 'CENTRAL_TO_POS' &&
+            getAfter(/databases/$(database)/documents/transfers/$(request.resource.data.transfer_id)).data.status == 'DRAFT'));
+    }
+
     match /resellerOrders/{orderId} {
       allow read: if isAdmin() ||
         (isActiveUser() && resource.data.reseller_user_id == request.auth.uid &&
@@ -1620,6 +1958,13 @@ service cloud.firestore {
     }
 
     match /stocks/{stockId} {
+      allow update: if request.resource.data.get('purchase_cancellation_id', '') != '' &&
+        purchaseCancellationProof(request.resource.data.purchase_cancellation_id) &&
+        get(/databases/$(database)/documents/purchases/$(request.resource.data.purchase_cancellation_id)).data.store_id == resource.data.store_id &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updated_at', 'purchase_cancellation_id']) &&
+        request.resource.data.quantity is number && request.resource.data.quantity >= resource.data.reserved_quantity &&
+        request.resource.data.quantity >= 0 && request.resource.data.quantity < resource.data.quantity;
+
       // resource == null lets transactions probe a stock row that does not exist yet (first receipt of an article in a store)
       allow read: if isActiveUser() && (
         resource == null ||
@@ -1669,6 +2014,13 @@ service cloud.firestore {
     }
 
     match /transfers/{transferId} {
+      allow update: if resource.data.type == 'SUPPLIER_TO_STORE' && resource.data.status in ['IN_TRANSIT', 'RECEIVED', 'VALIDATED', 'DISCREPANCY'] &&
+        purchaseCancellationProof(resource.data.purchase_id) &&
+        getAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.transfer_id == transferId &&
+        request.resource.data.status == 'CANCELLED' && request.resource.data.cancelled_by == request.auth.uid &&
+        request.resource.data.cancelled_at is number && request.resource.data.updated_at == request.resource.data.cancelled_at &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelled_by', 'cancelled_by_name', 'cancelled_at', 'updated_at']);
+
       // Production exchanges only with another production site or an active depot.
       function productionDestinationAllowed(data) {
         let source = exists(/databases/$(database)/documents/stores/$(data.source_store_id))
@@ -1703,7 +2055,9 @@ service cloud.firestore {
         request.resource.data.requested_by == request.auth.uid &&
         hasStoreAccess(request.resource.data.source_store_id) &&
         productionDestinationAllowed(request.resource.data) &&
-        request.resource.data.source_store_id != request.resource.data.destination_store_id &&
+        (request.resource.data.source_store_id != request.resource.data.destination_store_id ||
+          (request.resource.data.type == 'STORE_RETURN' &&
+            get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE')) &&
         exists(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)) &&
         get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.is_active == true &&
         exists(/databases/$(database)/documents/stores/$(request.resource.data.source_store_id)) &&
@@ -1766,8 +2120,8 @@ service cloud.firestore {
           (
             request.resource.data.source_store_id != request.resource.data.destination_store_id ||
             (
-              resource.data.type == 'DIRECT_DEPOSIT' &&
-              request.resource.data.type == 'DIRECT_DEPOSIT' &&
+              (request.resource.data.type == 'STORE_RETURN' ||
+                (resource.data.type == 'DIRECT_DEPOSIT' && request.resource.data.type == 'DIRECT_DEPOSIT')) &&
               get(/databases/$(database)/documents/stores/$(request.resource.data.destination_store_id)).data.store_type == 'CENTRAL_WAREHOUSE'
             )
           ) &&
@@ -1910,7 +2264,12 @@ service cloud.firestore {
       );
       allow delete: if isSuperAdmin() && (
         resource.data.status == 'DRAFT' ||
-        (resource.data.status == 'APPROVED' && !('purchase_id' in resource.data))
+        (resource.data.status == 'APPROVED' && !('purchase_id' in resource.data)) ||
+        (resource.data.status == 'IN_TRANSIT' && resource.data.type == 'SUPPLIER_TO_STORE' &&
+          resource.data.purchase_id is string &&
+          exists(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)) &&
+          get(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)).data.transfer_id == transferId &&
+          !existsAfter(/databases/$(database)/documents/purchases/$(resource.data.purchase_id)))
       );
     }
   }

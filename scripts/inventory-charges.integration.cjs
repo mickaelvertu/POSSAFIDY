@@ -63,7 +63,7 @@ test('inventory employee assignment and payroll settlement', async t => {
   await t.test('assigned employee sees their own charge after linking a login', async () => {
     await seed('SUPER_ADMIN', { ...assigned, charged_to: 'employee-a' }, { ...employee, user_id: 'staff' });
     await commit([write('users/staff', { role: 'STAFF', status: 'ACTIVE', permissions: [], assignedStores: [] })]);
-    const payload = { sub: 'staff', user_id: 'staff', aud: project, iss: `https://securetoken.google.com/${project}`, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600, firebase: { identities: {}, sign_in_provider: 'custom' } };
+    const payload = { sub: 'staff', user_id: 'staff', aud: project, iss: `https://securetoken.google.com/${project}`, auth_time: Math.floor(Date.now() / 1000), iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600, firebase: { identities: {}, sign_in_provider: 'custom' } };
     const staffToken = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url') + '.' + Buffer.from(JSON.stringify(payload)).toString('base64url') + '.';
     const response = await fetch(`${origin}/v1/${root}:runQuery`, { method: 'POST', headers: { Authorization: `Bearer ${staffToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'inventoryCounts' }], where: { fieldFilter: { field: { fieldPath: 'charged_employee_id' }, op: 'EQUAL', value: { stringValue: 'employee-a' } } } } }) });
     assert.equal(response.status, 200);

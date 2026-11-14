@@ -58,7 +58,7 @@ export async function createCashHandover(handover: CashHandover, auditLog: Audit
     if (isDep) {
       const receipts = snapshots.map(snapshot => snapshot.data() as ResellerReceipt | undefined);
       if (receipts.some(receipt => !receipt || receipt.collected_by !== handover.declared_by || receipt.store_id !== handover.store_id ||
-        receipt.business_date !== handover.business_date || receipt.handover_id || receipt.destination !== "HANDOVER" || receipt.method !== "CASH") ||
+        receipt.business_date !== handover.business_date || receipt.reversal_id || receipt.handover_id || receipt.destination !== "HANDOVER" || receipt.method !== "CASH") ||
         receipts.reduce((sum, receipt) => sum + (receipt?.amount || 0), 0) !== handover.declared_amount) {
         throw new Error("Les encaissements ont changé ou ne vous appartiennent pas. Rechargez avant de déclarer.");
       }

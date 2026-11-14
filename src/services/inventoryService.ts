@@ -429,7 +429,21 @@ export async function saveSupplier(supplier: Supplier, auditLog?: AuditLog): Pro
   await batch.commit();
 }
 
-export async function saveDraftPurchase(purchase: Purchase, auditLog: AuditLog): Promise<void> {
+export async function removeSupplier(supplier: Supplier, actor: AppUser): Promise<void> {
+  await runOnlineTransaction(async transaction => {
+    const ref = doc(db, SUPPLIERS_COLLECTION, supplier.id);
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists() || snapshot.data().deleted_at) throw new Error("Ce fournisseur a déjà été supprimé.");
+    const previous = snapshot.data() as Supplier;
+    const timestamp = Date.now();
+    const removed: Supplier = { ...previous, is_active: false, deleted_at: timestamp, deleted_by: actor.uid, updated_at: timestamp };
+    const auditLog = createAuditLog(actor, "SUPPLIER_DELETED", "SUPPLIER", supplier.id, previous, removed);
+    transaction.set(ref, omitUndefined(removed));
+    transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
+  });
+}
+
+export async function saveDraftPurchase(purchase: Purchase, auditLog: AuditLog, previous?: Purchase): Promise<void> {
   if (
     purchase.status !== "DRAFT" ||
     purchase.lines.length === 0 ||
@@ -465,7 +479,10 @@ export async function saveDraftPurchase(purchase: Purchase, auditLog: AuditLog):
   }
   await runOnlineTransaction(async transaction => {
     const purchaseRef = doc(db, PURCHASES_COLLECTION, purchase.id);
-    if ((await transaction.get(purchaseRef)).exists()) throw new Error("Cet achat existe déjà.");
+    const snapshot = await transaction.get(purchaseRef);
+    if (previous) {
+      if (!snapshot.exists() || snapshot.data().status !== "DRAFT" || snapshot.data().updated_at !== previous.updated_at) throw new Error("Cet achat a change. Actualisez avant de reessayer.");
+    } else if (snapshot.exists()) throw new Error("Cet achat existe deja.");
     transaction.set(purchaseRef, omitUndefined(purchase));
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined(auditLog));
   });
@@ -539,6 +556,27 @@ export async function approvePurchase(
   });
 }
 
+export async function deletePurchase(purchase: Purchase, actor: AppUser): Promise<void> {
+  if (actor.roleId !== "SUPER_ADMIN") throw new Error("Suppression réservée au super administrateur.");
+  await runOnlineTransaction(async transaction => {
+    const ref = doc(db, PURCHASES_COLLECTION, purchase.id);
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists()) throw new Error("Achat introuvable ou déjà supprimé.");
+    const current = snapshot.data() as Purchase;
+    if (!["DRAFT", "APPROVED"].includes(current.status || "") || current.amount_paid !== 0 || current.payments.length || current.received_at) throw new Error("Seuls les achats sans paiement ni réception peuvent être supprimés.");
+    const transferRef = current.transfer_id ? doc(db, TRANSFERS_COLLECTION, current.transfer_id) : null;
+    const transferSnapshot = transferRef ? await transaction.get(transferRef) : null;
+    if (transferSnapshot?.exists()) {
+      const transfer = transferSnapshot.data() as StockTransfer;
+      if (transfer.purchase_id !== current.id || transfer.type !== "SUPPLIER_TO_STORE" || transfer.status !== "IN_TRANSIT") throw new Error("La livraison a déjà été traitée : suppression impossible.");
+    }
+    const audit = createAuditLog(actor, "PURCHASE_DELETED", "PURCHASE", current.id, current, undefined, current.store_id);
+    transaction.delete(ref);
+    if (transferRef && transferSnapshot?.exists()) transaction.delete(transferRef);
+    transaction.set(doc(db, "auditLogs", audit.id), omitUndefined(audit));
+  });
+}
+
 export async function recordSupplierPayment(purchase: Purchase, payment: SupplierPayment, auditLog?: AuditLog): Promise<Purchase> {
   if (!Number.isFinite(payment.amount) || payment.amount <= 0) throw new Error("Le montant du paiement doit être positif.");
   if (!payment.paid_by || !payment.paid_by_name) throw new Error("L'utilisateur qui enregistre le paiement doit être identifié.");
@@ -548,12 +586,27 @@ export async function recordSupplierPayment(purchase: Purchase, payment: Supplie
     const snapshot = await transaction.get(purchaseRef);
     if (!snapshot.exists()) throw new Error("Achat fournisseur introuvable.");
     const current = snapshot.data() as Purchase;
+    if (current.status === "CANCELLED") throw new Error("Cet achat est annulé : aucun nouveau paiement autorisé.");
     if (current.status === "DRAFT") throw new Error("Un achat doit être approuvé avant son règlement.");
     if (current.payments.some(item => item.id === payment.id)) throw new Error("Ce paiement existe déjà.");
     const amountPaid = current.amount_paid + payment.amount;
     if (amountPaid > current.total) throw new Error("Le paiement dépasse le solde de la facture.");
-    const debit = payment.treasury_fund_id ? await prepareFundDebit(transaction, payment.treasury_fund_id, payment.paid_by!, payment.amount) : null;
-    if (debit) debit.apply({ id: payment.id, kind: "PURCHASE", fund_id: payment.treasury_fund_id!, destination_fund_id: "", from_user: payment.paid_by!, to_user: "", amount: payment.amount, reference: purchase.purchase_number, purchase_id: purchase.id, created_by: payment.paid_by!, created_at: payment.paid_at });
+    const allocations = payment.fund_allocations;
+    if (allocations && (payment.treasury_fund_id || allocations.length < 1 || allocations.length > 3 ||
+      new Set(allocations.map(item => item.fund_id)).size !== allocations.length ||
+      allocations.some(item => !item.fund_id || !Number.isSafeInteger(item.amount) || item.amount <= 0) ||
+      allocations.reduce((total, item) => total + item.amount, 0) !== payment.amount)) {
+      throw new Error("Répartition invalide : choisissez jusqu'à trois fonds distincts dont le total correspond au paiement.");
+    }
+    const sources = allocations || (payment.treasury_fund_id ? [{ fund_id: payment.treasury_fund_id, amount: payment.amount }] : []);
+    const debits = [];
+    for (const source of sources) {
+      const debit = await prepareFundDebit(transaction, source.fund_id, payment.paid_by!, source.amount);
+      if (debit.fund.handover_id && debits.some(item => item.debit.fund.handover_id === debit.fund.handover_id)) throw new Error("Deux fonds proviennent de la même remise : paiement impossible.");
+      debits.push({ source, debit });
+    }
+    if (allocations && debits.filter(item => item.debit.fund.handover_id).length > 2) throw new Error("Utilisez au maximum deux remises POS / DEP dans un même paiement.");
+    debits.forEach(({ source, debit }, index) => debit.apply({ id: allocations ? payment.id + '-' + index : payment.id, kind: "PURCHASE", fund_id: source.fund_id, destination_fund_id: "", from_user: payment.paid_by!, to_user: "", amount: source.amount, reference: purchase.purchase_number, purchase_id: purchase.id, created_by: payment.paid_by!, created_at: payment.paid_at }));
     updatedPurchase = {
       ...current,
       amount_paid: amountPaid,

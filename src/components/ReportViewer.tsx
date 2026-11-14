@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { buildSalesStoreMatrix } from "../services/salesStoreMatrix";
 import { storeLabel } from "../services/storeLabel";
 import { 
+  Purchase, TreasuryFund, TreasuryMovement,
   ReportType, 
   Store, 
   Category, 
@@ -16,7 +17,7 @@ import {
   CashHandover,
   GeneralFilters 
 } from "../types";
-import { filterReportData, RESELLER_PAYMENT_LABELS } from "../services/reportService";
+import { buildTreasuryReportRows, EXPENSE_CATEGORY_LABELS, filterReportData, RESELLER_PAYMENT_LABELS } from "../services/reportService";
 import { downloadReportCsv, getReportTableConfig } from "../services/reportColumns";
 import ReportDataTable, { ReportSortState } from "./ReportDataTable";
 import StockLedgerGrid from "./StockLedgerGrid";
@@ -44,6 +45,9 @@ interface ReportViewerProps {
   sales: Sale[];
   productions: Production[];
   auditLogs: AuditLog[];
+  purchases?: Purchase[];
+  treasuryFunds?: TreasuryFund[];
+  treasuryMovements?: TreasuryMovement[];
   expenses?: Expense[];
   cashHandovers?: CashHandover[];
   currentUser: { email: string; displayName: string };
@@ -62,6 +66,7 @@ export default function ReportViewer({
   sales,
   productions,
   auditLogs,
+  purchases, treasuryFunds, treasuryMovements,
   expenses,
   cashHandovers,
   currentUser,
@@ -75,7 +80,7 @@ export default function ReportViewer({
   const getStoreName = (id: string) => { const s = stores.find(st => st.id === id); return s ? storeLabel(s) : id; };
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
   const getArticle = (id: string) => articles.find(a => a.id === id);
-  const filteredData = useMemo(() => filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers }, reportType === "RESELLER_CREDIT" ? { ...filters, statuses: [], resellerPaymentStatus: filters.resellerPaymentStatus || "ALL" } : filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers, filters, reportType]);
+  const filteredData = useMemo(() => filterReportData({ articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers, purchases, treasuryFunds, treasuryMovements }, reportType === "RESELLER_CREDIT" ? { ...filters, statuses: [], resellerPaymentStatus: filters.resellerPaymentStatus || "ALL" } : filters), [articles, stores, stocks, transfers, movements, sales, productions, auditLogs, expenses, cashHandovers, purchases, treasuryFunds, treasuryMovements, filters, reportType]);
   const reportStocks = filteredData.stocks;
   const reportTransfers = filteredData.transfers;
   const reportMovements = filteredData.movements;
@@ -142,13 +147,16 @@ export default function ReportViewer({
     reportSales,
     reportProductions,
     reportAuditLogs,
+    reportPurchases: filteredData.purchases,
+    treasuryRows: buildTreasuryReportRows(treasuryFunds || [], treasuryMovements || [], filters),
+    treasuryView: filters.treasuryView,
     reportExpenses,
     reportCashHandovers: filteredData.cashHandovers,
     salesByCustomer,
     salesByArticle,
     salesByCategory,
     filteredSalesLines
-  }), [salesStoreMatrix, reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, filteredData.cashHandovers, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
+  }), [salesStoreMatrix, reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, filteredData.cashHandovers, filteredData.purchases, treasuryFunds, treasuryMovements, filters, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
 
   const hiddenKeys = useMemo(() => new Set(hiddenKeysByReport[reportType] || []), [hiddenKeysByReport, reportType]);
 
@@ -180,6 +188,11 @@ export default function ReportViewer({
   // Active filters summary
   const getFiltersSummary = () => {
     const parts: string[] = [];
+    if (reportType === "TREASURY" && filters.treasuryAdminId) parts.push(`Administrateur : ${treasuryFunds?.find(fund => fund.owner_id === filters.treasuryAdminId)?.owner_name || filters.treasuryAdminId}`);
+    if (filters.supplierId) parts.push(`Fournisseur : ${purchases?.find(row => row.supplier_id === filters.supplierId)?.supplier_name || filters.supplierId}`);
+    if (filters.expenseCategory) parts.push(`Catégorie de dépense : ${EXPENSE_CATEGORY_LABELS[filters.expenseCategory]}`);
+    if (filters.expenseScope && filters.expenseScope !== "ALL") parts.push(`Périmètre des dépenses : ${filters.expenseScope === "STORE" ? "Magasin" : "Siège"}`);
+    if (reportType === "TREASURY") parts.push(`Trésorerie : ${{ ALL: "Entrées, sorties et reste", IN: "Entrées", OUT: "Sorties", BALANCE: "Reste disponible" }[filters.treasuryView || "ALL"]}`);
     if (filters.startDate || filters.endDate) {
       parts.push(`Période: ${filters.startDate || "Début"} au ${filters.endDate || "Ce jour"}`);
     } else {
@@ -222,6 +235,8 @@ export default function ReportViewer({
 
   // Title dictionary
   const REPORT_TITLES: Record<ReportType, string> = {
+    SUPPLIER_PURCHASES: "N° 21 — RAPPORT DES ACHATS FOURNISSEURS",
+    TREASURY: "N° 22 — RAPPORT DE TRÉSORERIE",
     SALES_BY_STORE_ARTICLE: "N° 20 — QUANTITÉS VENDUES PAR ARTICLE ET POINT DE VENTE",
     RESELLER_CREDIT: "N° 17 — CRÉDITS & ENCAISSEMENTS DES REVENDEURS",
     STOCK_BY_ARTICLE: "N\u00b0 18 \u2014 \u00c9TAT DU STOCK PAR ARTICLE CONSOLID\u00c9",

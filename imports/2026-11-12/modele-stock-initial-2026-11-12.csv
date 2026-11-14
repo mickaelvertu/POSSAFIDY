@@ -1,0 +1,407 @@
+Code magasin,Quantite initiale,Code article,Designation,Unite,Categorie,Type article,ID article - ne pas modifier
+,2.,MP04-001,ALCOOL,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-alcool
+,160.,MP04-002,ALOE NONI,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-aloe-noni
+,91.,MP-COMP-001,ALU 30G,Piece,Flacons,RAW_MATERIAL,article-raw-material-complement-alu-30g
+,74.,A1126,AMBRE 100ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-ambre-100ml
+,589.,A1125,AMBRE 125ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-ambre-125ml
+,439.,A2124,AMBRE 250ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-ambre-250ml
+,2415.,A5121,AMBRE 500ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-ambre-500ml-02
+,737.,A5127,AMBRE 50ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-ambre-50ml
+,40.,MP04-003,ANJARASOA,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-anjarasoa
+,,MP04-004,ARGILE ROUGE,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-argile-rouge
+,,MP04-005,ARGILE VERTE,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-argile-verte
+,1967.,MP04-006,ASCORBIGUE,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-ascorbigue
+,10.,MP04-007,BACTODERM CREME,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-bactoderm-creme
+,37.,MP04-008,BAOBAB,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-baobab
+,,LENA,BEROBEROKA,Kg,Périssable,RAW_MATERIAL,ART-399
+,,BE086,Beroka,Kilo,MP,RAW_MATERIAL,article-raw-material-beroka
+,,MP04-009,BEROKA RAVINY,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-beroka-raviny
+,,MP04-010,BEROKAFAKANY,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-berokafakany
+,8242.,MP04-011,BEURE DE Karité,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-beure-de-karite
+,10.,MP04-012,Beurre de cacao,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-beurre-de-cacao
+,,BK140,Beurre de Karité brut pressé à froid,Kg,Matières Premières Végétales & Extraits,RAW_MATERIAL,article-raw-material-beurre-de-karite-brut-presse-a-froid
+,,MP-COMP-006,BOCALE BEURRE DE KARITE,Piece,Flacons,RAW_MATERIAL,article-raw-material-complement-bocale-beurre-de-karite
+,1.,MP04-013,BOIS DE ROSE,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-bois-de-rose
+,,B1133,Bouteille 10ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-bouteille-10ml
+,,P,BOUTEILLE PET 500ML,Piece,Flacons,RAW_MATERIAL,ART-401
+,60.,MP04-015,CAJOU,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-cajou
+,,MP-COMP-010,CALLOT,Piece,Consommable Medical,RAW_MATERIAL,article-raw-material-complement-callot
+,18.,MP04-016,CALOPHILUM,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-calophilum
+,,1,CALOT,Piece,Non Périssable,RAW_MATERIAL,ART-395
+,930.,MP04-017,CAMPHRE,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-camphre
+,3000.,MP04-018,CANELLE,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-canelle
+,,MP04-014,CHARBON,GONY,MP,RAW_MATERIAL,article-raw-material-dep04-charbon
+,19575.,MP04-019,CIRE D'ABEIL,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-cire-d-abeil
+,,CD139,Cire d'abeille d'opercule filtrée,Kg,Matières Premières Végétales & Extraits,RAW_MATERIAL,article-raw-material-cire-d-abeille-d-opercule-filtree
+,3127.,MP04-020,CITRIQUE,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-citrique
+,6.,MP04-021,CITRON,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-citron
+,,MP04-022,CLOU DE GIROFLE,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-clou-de-girofle
+,,MP04-023,COLA MILONA,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-cola-milona
+DEP-04,6.,MP04-024,COLLE PROTOFAR,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-colle-protofar
+DEP-04,150.,MP04-025,COURGE MADIO,KPK,MP,RAW_MATERIAL,article-raw-material-dep04-courge-madio
+DEP-04,,MP04-026,COURGE MALOTO,KPK,MP,RAW_MATERIAL,article-raw-material-dep04-courge-maloto
+DEP-04,20.,C1131,CRISTAL 100ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-cristal-100ml
+DEP-04,288.,C1130,CRISTAL 125ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-cristal-125ml
+DEP-04,117.,C2129,CRISTAL 250ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-cristal-250ml
+DEP-04,568.,C5128,CRISTAL 500ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-cristal-500ml
+DEP-04,31.,C5132,CRISTAL 50ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-cristal-50ml
+DEP-04,,MP04-027,CURCUMA,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-curcuma
+DEP-04,1.5,MP04-028,CUVEE BLANCHE,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-cuvee-blanche
+DEP-04,,MP04-029,DESM,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-desm
+DEP-04,,MP04-030,DESM MAINA,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-desm-maina
+DEP-04,100.,MP04-031,DETOX,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-detox
+DEP-04,6.,MP-COMP-004,DOYPACK ANANAMBO,Piece,Emballages & Conditionnements,RAW_MATERIAL,article-raw-material-complement-doypack-ananambo
+DEP-04,,MP-COMP-003,DOYPACK BAOBAB,Piece,Emballages & Conditionnements,RAW_MATERIAL,article-raw-material-complement-doypack-baobab
+DEP-04,,GM,DOYPACK BEIZE,Piece,Flacons,RAW_MATERIAL,ART-398
+DEP-04,18.,MP-COMP-009,DOYPACK CATAPLASME,Piece,Emballages & Conditionnements,RAW_MATERIAL,article-raw-material-complement-doypack-cataplasme
+DEP-04,,10/15,DOYPACK NOIR,Piece,Flacons,RAW_MATERIAL,ART-396
+DEP-04,,12/20,DOYPACK NOIR,Piece,Flacons,RAW_MATERIAL,ART-397
+DEP-04,102.,MP-COMP-005,DOYPACK SPIRILINE,Piece,Emballages & Conditionnements,RAW_MATERIAL,article-raw-material-complement-doypack-spiriline
+DEP-04,,MP04-032,EAU THERMALE,PACK,MP,RAW_MATERIAL,article-raw-material-dep04-eau-thermale
+DEP-04,,MP04-033,EAU VIVE,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-eau-vive
+DEP-04,,ES141,Écorce séchée de Katrafay sauvage,Kg,Matières Premières Végétales & Extraits,RAW_MATERIAL,article-raw-material-ecorce-sechee-de-katrafay-sauvage
+DEP-04,,MP-ETQ-001,Etiquette Autocollant ALOE MIEL,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-aloe-miel
+DEP-04,,MP-ETQ-002,Etiquette Autocollant ALOE NONI,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-aloe-noni
+DEP-04,,MP-ETQ-003,Etiquette Autocollant ALOE PUR,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-aloe-pur
+DEP-04,,MP-ETQ-0041,Etiquette Autocollant ANANAMBO KL,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-382
+DEP-04,,MP-ETQ-004,Etiquette Autocollant ANANAMBO LHB,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-ananambo
+DEP-04,,MP-ETQ-005,Etiquette Autocollant ANJARASOA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-anjarasoa
+DEP-04,,MP-ETQ-006,Etiquette Autocollant ANTI STRESS GM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-anti-stress-gm
+DEP-04,,MP-ETQ-008,Etiquette Autocollant ARGILE JAUNE,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-argile-jaune
+DEP-04,,MP-ETQ-009,Etiquette Autocollant ARGILE ROUGE,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-argile-rouge
+DEP-04,,MP-ETQ-010,Etiquette Autocollant ARGILE VERTE,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-argile-verte
+DEP-04,,MP-ETQ-007,Etiquette Autocollant AVR,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-avr
+DEP-04,,MP-ETQ-0111,Etiquette Autocollant BAOBAB KL,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-383
+DEP-04,,MP-ETQ-011,Etiquette Autocollant BAOBAB LHB,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baobab
+DEP-04,,MP-ETQ-0121,Etiquette Autocollant BAUME ALAVONTO RCT,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-390
+DEP-04,,MP-ETQ-012,Etiquette Autocollant BAUME ALAVONTO RND,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-alavonto
+DEP-04,,MP-ETQ-013,Etiquette Autocollant BAUME ANTI CELLULITE,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-anti-cellulite
+DEP-04,,MP-ETQ-0141,Etiquette Autocollant BAUME ANTIVIRUS RCT,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-389
+DEP-04,,MP-ETQ-014,Etiquette Autocollant BAUME ANTIVIRUS RND,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-antivirus
+DEP-04,,MP-ETQ-0151,Etiquette Autocollant BAUME CHAMPION RCT,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-386
+DEP-04,,MP-ETQ-015,Etiquette Autocollant BAUME CHAMPION RND,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-champion
+DEP-04,,MP-ETQ-016,Etiquette Autocollant BAUME CYPRES,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-cypres
+DEP-04,,MP-ETQ-017,Etiquette Autocollant BAUME KATRAFAY,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-katrafay
+DEP-04,,MP-ETQ-0181,Etiquette Autocollant BAUME MÉMOIRE KL,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-384
+DEP-04,,MP-ETQ-018,Etiquette Autocollant BAUME MÉMOIRE LHB,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-memoire
+DEP-04,,MP-ETQ-019,Etiquette Autocollant BAUME RADRIAKA KL,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-radriaka
+DEP-04,,MP-ETQ-0191,Etiquette Autocollant BAUME RADRIAKA LHB,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-388
+DEP-04,,MP-ETQ-020,Etiquette Autocollant BAUME RAMBIA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-rambia
+DEP-04,,MP-ETQ-0211,Etiquette Autocollant BAUME RAVINTSARA RCT,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-385
+DEP-04,,MP-ETQ-021,Etiquette Autocollant BAUME RAVINTSARA RND,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-baume-ravintsara
+DEP-04,,MP-ETQ-022,Etiquette Autocollant BEROBEROKA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-beroberoka
+DEP-04,,MP-ETQ-09991,Etiquette Autocollant BEROKA FAKANY,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-391
+DEP-04,,MP-ETQ-023,Etiquette Autocollant BEURE DE KARITE,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-beure-de-karite
+DEP-04,,MP-ETQ-024,Etiquette Autocollant BOIS DE ROSE,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-bois-de-rose
+DEP-04,,MP-ETQ-025,Etiquette Autocollant CATAPLASME,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-cataplasme
+DEP-04,,MP-ETQ-026,Etiquette Autocollant CIRCULATION,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-circulation
+DEP-04,,MP-ETQ-027,Etiquette Autocollant COROFAR GM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-corofar-gm
+DEP-04,,MP-ETQ-028,Etiquette Autocollant CREME COIFFANTE,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-creme-coiffante
+DEP-04,,MP-ETQ-0291,Etiquette Autocollant DERMAG RCT,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-387
+DEP-04,,MP-ETQ-029,Etiquette Autocollant DERMAG RND,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-dermag-gm
+DEP-04,,MP-ETQ-030,Etiquette Autocollant DESMOFAR GM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-desmofar-gm
+DEP-04,,MP-ETQ-031,Etiquette Autocollant DETOX,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-detox
+DEP-04,,MP-ETQ-032,Etiquette Autocollant EAU MICELLAIRE GM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-eau-micellaire-gm
+DEP-04,,MP-ETQ-033,Etiquette Autocollant EAU MICELLAIRE PM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-eau-micellaire-pm
+DEP-04,,MP-ETQ-034,Etiquette Autocollant G ARTICULATION,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-g-articulation
+DEP-04,,MP-ETQ-038,Etiquette Autocollant HE EUCALUPT,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-he-eucalupt
+DEP-04,,MP-ETQ-035,Etiquette Autocollant HE RADRIAKA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-he-radriaka
+DEP-04,,MP-ETQ-036,Etiquette Autocollant HE RAVITSARA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-he-ravitsara
+DEP-04,,MP-ETQ-037,Etiquette Autocollant HODIPOTSY,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-hodipotsy
+DEP-04,,MP-ETQ-039,Etiquette Autocollant KINANA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-kinana
+DEP-04,,MP-ETQ-040,Etiquette Autocollant KOMIMA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-komima
+DEP-04,,MP-ETQ-041,Etiquette Autocollant KOMIMA CANCER,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-komima-cancer
+DEP-04,,MP-ETQ-042,Etiquette Autocollant LOTION INTIME,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-lotion-intime
+DEP-04,,MP-ETQ-043,Etiquette Autocollant NONI GM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-noni-gm
+DEP-04,,MP-ETQ-044,Etiquette Autocollant OMEGA 3,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-omega-3
+DEP-04,,MP-ETQ-045,Etiquette Autocollant OMEGA 3 DIABETA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-omega-3-diabeta
+DEP-04,,MP-ETQ-046,Etiquette Autocollant PROTOFAR PM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-protofar-pm
+DEP-04,,MP-ETQ-047,Etiquette Autocollant REVITALISANT,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-revitalisant
+DEP-04,,MP-ETQ-048,Etiquette Autocollant SAVLAH,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-savlah
+DEP-04,,MP-ETQ-0501,Etiquette Autocollant SPIRULINE KL,Piece,Etiquette Autocollant,RAW_MATERIAL,ART-381
+DEP-04,,MP-ETQ-050,Etiquette Autocollant SPIRULINE LHB,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-spiruline
+DEP-04,,MP-ETQ-049,Etiquette Autocollant SPRAY,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-spray
+DEP-04,,MP-ETQ-051,Etiquette Autocollant TANJAKA,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-tanjaka
+DEP-04,,MP-ETQ-052,Etiquette Autocollant TANJAKA PLUS,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-tanjaka-plus
+DEP-04,,MP-ETQ-053,Etiquette Autocollant VINAIGRE GM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-vinaigre-gm
+DEP-04,,MP-ETQ-054,Etiquette Autocollant VINAIGRE PM,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-vinaigre-pm
+DEP-04,,MP-ETQ-055,Etiquette Autocollant VOAMBOATAVO,Piece,Etiquette Autocollant,RAW_MATERIAL,article-raw-material-etiquette-autocollant-voamboatavo
+DEP-04,,MP04-034,Faka beroka maina,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-faka-beroka-maina
+DEP-04,,MP04-035,FARINE DE BANANE,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-farine-de-banane
+DEP-04,,MP04-036,FARINE DE LAIN,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-farine-de-lain
+DEP-04,,MP04-037,FARINE DE RIZ,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-farine-de-riz
+DEP-04,2.5,MP04-038,Fenugrec,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-fenugrec
+DEP-04,,MP04-039,FENUGREC POUDRE,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-fenugrec-poudre
+DEP-04,,MP04-040,Feuille d'Hibiscus,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-feuille-d-hibiscus
+DEP-04,,FF145,Feuilles fraîches de Ravintsara de cueillette,Kg,Matières Premières Végétales & Extraits,RAW_MATERIAL,article-raw-material-feuilles-fraiches-de-ravintsara-de-cueillette
+DEP-04,,FV143,Flacon verre ambré 10ml avec codigoutte,Unité,Emballages & Conditionnements,RAW_MATERIAL,article-raw-material-flacon-verre-ambre-10ml-avec-codigoutte
+DEP-04,100.,MP04-041,G-ARTICUL,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-g-articul
+DEP-04,7.,01,GAN,Piece,Non Périssable,RAW_MATERIAL,ART-394
+DEP-04,1675.,MP04-042,GLYCERINE,Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-glycerine
+DEP-04,500.,MP04-043,H.E PALAMAROSA,Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-h-e-palamarosa
+DEP-04,,MP04-044,HE Cypres,Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-he-cypres
+DEP-04,,MP-SARO-HE,HE SARO,Millilitre,Huiles Essentielles Pures,RAW_MATERIAL,ART-402
+DEP-04,1700.,MP04-045,HE Teatree,Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-he-teatree
+DEP-04,,MP04-046,HIBISCUS,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-hibiscus
+DEP-04,,MP04-047,HODIPOTSY,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-hodipotsy
+DEP-04,15.,MP04-048,Huile coco,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-coco
+DEP-04,11.5,H,HUILE COLZA,Litre,Huille,RAW_MATERIAL,ART-400
+DEP-04,1.9,MP04-049,Huile d'amande,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-d-amande
+DEP-04,,MP04-050,HUILE D'ARGAN,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-huile-d-argan
+DEP-04,,MP04-051,HUILE D'OLIVE,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-d-olive
+DEP-04,,MP04-052,HUILE DE BAOBAB,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-de-baobab
+DEP-04,,MP04-053,HUILE DE PEPIN DE RAISIN,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-de-pepin-de-raisin
+DEP-04,24.,MP04-054,HUILE HINA,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-hina
+DEP-04,,MP04-055,HUILE JOJOBA,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-jojoba
+DEP-04,6.,MP04-056,HUILE TOURNESOL,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-tournesol
+DEP-04,,MP04-057,HUILE VEGETAL,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-huile-vegetal
+DEP-04,40.,MP04-058,HYD CITRIODORAT,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-hyd-citriodorat
+DEP-04,,MP04-059,HYD CYPRES,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-hyd-cypres
+DEP-04,,MP04-062,HYD ROMBA,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-hyd-romba
+DEP-04,23.,MP04-060,HYDGERA,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-hydgera
+DEP-04,35.,MP04-061,HYDRAV,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-hydrav
+DEP-04,24.,MP04-063,KALANJY,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-kalanjy
+DEP-04,,MP04-064,KINANA,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-kinana
+DEP-04,,MP04-065,KOLZA,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-kolza
+DEP-04,45.,MP04-066,MANDRAVA-SAROTRA,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-mandrava-sarotra
+DEP-04,,MP04-067,MASMAHA,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-masmaha
+DEP-04,,MP04-068,MENAKA (Dr),Litre,MP,RAW_MATERIAL,article-raw-material-dep04-menaka-dr
+DEP-04,26.,MP04-069,MENAKA MANDRY,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-menaka-mandry
+DEP-04,10.,MP04-070,MICONAX CREME,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-miconax-creme
+DEP-04,,MP04-071,MIEL,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-miel
+DEP-04,,MP142,Miel pur de forêt non pasteurisé (brut),Litre,Matières Premières Végétales & Extraits,RAW_MATERIAL,article-raw-material-miel-pur-de-foret-non-pasteurise-brut
+DEP-04,,MP04-072,MIELMANDRY,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-mielmandry
+DEP-04,,MP04-073,MORINGA,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-moringa
+DEP-04,,MP04-074,MORVITE,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-morvite
+DEP-04,200.,MP04-078,N''04,Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-04
+DEP-04,15910.,MP04-075,"N"" 01",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-01
+DEP-04,710.,MP04-076,"N"" 02",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-02
+DEP-04,2850.,MP04-077,"N"" 03",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-03
+DEP-04,500.,MP04-079,"N"" 05",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-05
+DEP-04,80.,MP04-080,"N"" 06",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-06
+DEP-04,500.,MP04-081,"N"" 07",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-07
+DEP-04,150.,MP04-082,"N"" 08",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-08
+DEP-04,50.,MP04-083,"N"" 09",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-09
+DEP-04,155.,MP04-084,"N"" 10",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-10
+DEP-04,150.,MP04-085,"N"" 11",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-11
+DEP-04,910.,MP04-086,"N"" 12",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-12
+DEP-04,120.,MP04-088,"N"" 14",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-14
+DEP-04,850.,MP04-090,"N""° 16",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-16
+DEP-04,240.,MP04-087,"N""13",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-13
+DEP-04,500.,MP04-089,"N""15",Millilitre,MP,RAW_MATERIAL,article-raw-material-dep04-n-15
+DEP-04,,MP04-091,NICO,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-nico
+DEP-04,100.,MP04-092,NONI,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-noni
+DEP-04,,PAA4,Papier Autocollant A4,FEUILLE,Papier Autocollant,RAW_MATERIAL,ART-151
+DEP-04,,PCA3,Papier Carton A3,FEUILLE,Papier Carton,RAW_MATERIAL,ART-149
+DEP-04,,PCA4,Papier Carton A4,FEUILLE,Papier Carton,RAW_MATERIAL,ART-150
+DEP-04,,MP-PCI-001,Papier Carton IMPRIMÉ BEROKA FAKANY,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-beroka-fakany
+DEP-04,,MP-PCI-004,Papier Carton IMPRIMÉ OMEGA DIABETA,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-omega-diabeta
+DEP-04,,MP-PCI-002,Papier Carton IMPRIMÉ OMEGA GM,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-omega-gm
+DEP-04,,MP-PCI-003,Papier Carton IMPRIMÉ OMEGA PM,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-omega-pm
+DEP-04,,MP-PCI-005,Papier Carton IMPRIMÉ PROTOFAR GM,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-protofar-gm
+DEP-04,,MP-PCI-006,Papier Carton IMPRIMÉ PROTOFAR PM,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-protofar-pm
+DEP-04,,MP-PCI-007,Papier Carton IMPRIMÉ SAVON ACNE,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-savon-acne
+DEP-04,,MP-PCI-008,Papier Carton IMPRIMÉ SAVON AMINC,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-savon-aminc
+DEP-04,,MP-PCI-009,Papier Carton IMPRIMÉ SAVON ANTIRIDE,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-savon-antiride
+DEP-04,,MP-PCI-010,Papier Carton IMPRIMÉ SAVON MANAZAVA,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-savon-manazava
+DEP-04,,MP-PCI-011,Papier Carton IMPRIMÉ SAVON REP,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-savon-rep
+DEP-04,,MP-PCI-012,Papier Carton IMPRIMÉ SAVON VAHONA,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-savon-vahona
+DEP-04,,MP-PCI-013,Papier Carton IMPRIMÉ VOAMBOATAVO GM,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-voamboatavo-gm
+DEP-04,,MP-PCI-014,Papier Carton IMPRIMÉ VOAMBOATAVO PM,Piece,Papier Carton IMPRIMÉ,RAW_MATERIAL,article-raw-material-papier-carton-imprime-voamboatavo-pm
+DEP-04,40.,MP04-093,PAPIER CUISSON,FEUILLE,MP,RAW_MATERIAL,article-raw-material-dep04-papier-cuisson
+DEP-04,,PF-A4,Papier Flyers Carton Savon,FEUILLE,Papier Carton,RAW_MATERIAL,ART-182
+DEP-04,,VELIN,Papier Velin A4,FEUILLE,Papier Velin,RAW_MATERIAL,ART-311
+DEP-04,,MP04-094,PERYLE,BOTY,MP,RAW_MATERIAL,article-raw-material-dep04-peryle
+DEP-04,,MP04-095,POMME,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-pomme
+DEP-04,,P5134,POT 50ML BLANC,Piece,Flacons,RAW_MATERIAL,article-raw-material-pot-50ml-blanc
+DEP-04,280.,MP-COMP-007,POT ALAVONTO,Piece,Flacons,RAW_MATERIAL,article-raw-material-complement-pot-alavonto
+DEP-04,43.,PA137,POT ALU 200ML,Piece,Flacons,RAW_MATERIAL,article-raw-material-pot-alu-200ml
+DEP-04,,PA135,POT ALU 50G,Piece,Flacons,RAW_MATERIAL,article-raw-material-pot-alu-50g
+DEP-04,,PA144,Pot aluminium verni 50ml pour baume,Unité,Emballages & Conditionnements,RAW_MATERIAL,article-raw-material-pot-aluminium-verni-50ml-pour-baume
+DEP-04,,PB138,POT BLANC 30G,Piece,Flacons,RAW_MATERIAL,article-raw-material-pot-blanc-30g
+DEP-04,,PC136,POT COSMETIQUE 50G,Piece,Flacons,RAW_MATERIAL,article-raw-material-pot-cosmetique-50g
+DEP-04,,MP04-096,POUDRE CAFE,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-poudre-cafe
+DEP-04,,MP04-097,Ravina beroka maina,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-ravina-beroka-maina
+DEP-04,,MP04-098,REVITALISANT,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-revitalisant
+DEP-04,9.,MP04-099,ROFIA,FATORANA,MP,RAW_MATERIAL,article-raw-material-dep04-rofia
+DEP-04,,MP04-100,RONONO,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-ronono
+DEP-04,15.,MP04-101,SACHET PROTOFAR,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-sachet-protofar
+DEP-04,,SA120,Sakamalaho,Kg,Périssable,RAW_MATERIAL,article-raw-material-sakamalaho
+DEP-04,,MP04-102,SAKAMALAO,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-sakamalao
+DEP-04,,MP04-111,savlah,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-savlah
+DEP-04,,MP04-103,SESAM,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-sesam
+DEP-04,893.,MP-COMP-008,SFOI,Piece,Emballages & Conditionnements,RAW_MATERIAL,article-raw-material-complement-sfoi
+DEP-04,,MP04-104,SOANAMBO POUDRE,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-soanambo-poudre
+DEP-04,23.,MP04-105,SOJA,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-soja
+DEP-04,,MP04-106,SORBATE,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-sorbate
+DEP-04,6.,MP04-107,SOUDE,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-soude
+DEP-04,4.,MP04-108,SPIRU CACAPIG,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-spiru-cacapig
+DEP-04,,MP04-109,SPIRU POUDRE,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-spiru-poudre
+DEP-04,,MP04-110,STEVIA,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-stevia
+DEP-04,,MP04-112,Sucre glace,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-sucre-glace
+DEP-04,,MP04-113,Taho beroka maina,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-taho-beroka-maina
+DEP-04,,MP04-114,TANJAKA MIBOTSINA,BOUTEILLE,MP,RAW_MATERIAL,article-raw-material-dep04-tanjaka-mibotsina
+DEP-04,,MP04-115,TK,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-tk
+DEP-04,,MP04-116,TONGOLO,KPK,MP,RAW_MATERIAL,article-raw-material-dep04-tongolo
+DEP-04,,TO122,TONGOLO,Kg,À classer,RAW_MATERIAL,article-raw-material-tongolo
+DEP-04,,MP04-117,TONGOLO GASY,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-tongolo-gasy
+DEP-04,156.,MP04-118,TSUNAMI,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-tsunami
+DEP-04,1670.,MP04-119,TURBO,Gramme,MP,RAW_MATERIAL,article-raw-material-dep04-turbo
+DEP-04,,MP04-126,VAHONA,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-vahona
+DEP-04,,MP04-120,VASELINE,Kg,MP,RAW_MATERIAL,article-raw-material-dep04-vaseline
+DEP-04,,MP04-121,VIN,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-vin
+DEP-04,,MP04-122,Vin blanc @ bidon fotsy,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-vin-blanc-bidon-fotsy
+DEP-04,,MP04-123,VIN MAHASOA,Litre,MP,RAW_MATERIAL,article-raw-material-dep04-vin-mahasoa
+DEP-04,100.,MP04-124,VINAIGRE,BOUTEILLE,MP,RAW_MATERIAL,article-raw-material-dep04-vinaigre
+DEP-04,,MP04-125,VINAIGRE DE VIN,Piece,MP,RAW_MATERIAL,article-raw-material-dep04-vinaigre-de-vin
+DEP-04,,AC091,ALBEN CP,,Chimique,RESALE,article-resale-alben-cp
+DEP-04,,AS105,ALBEN SP,,Chimique,RESALE,article-resale-alben-sp
+DEP-04,,AM002,ALOE MIEL,Piece,Sirop,RESALE,article-resale-aloe-miel
+DEP-04,,AN001,ALOE NONI,Piece,Sirop,RESALE,article-resale-aloe-noni
+DEP-04,,AP004,ALOE PUR,Piece,Sirop,RESALE,article-resale-aloe-pur
+DEP-04,,TMP004,AMOXICILINE 500MG,Piece,À classer,RESALE,article-resale-provisional-amoxiciline500mg
+DEP-04,,AI095,AMPI INJ,,Chimique,RESALE,article-resale-ampi-inj
+DEP-04,,TMP011,AMPIBACT 1G INJECTION,Piece,À classer,RESALE,article-resale-provisional-ampibact1ginjection
+DEP-04,,AN003,ANANAMBO,Piece,Poudre,RESALE,article-resale-ananambo
+DEP-04,,AN034,ANJARASOA,Piece,Sirop,RESALE,article-resale-anjarasoa
+DEP-04,,AS017,ANTI STRESS,Piece,Huille,RESALE,article-resale-anti-stress
+DEP-04,,AJ021,ARGILE JAUNE,Piece,Poudre,RESALE,article-resale-argile-jaune
+DEP-04,,AR005,ARGILE ROUGE,Piece,Poudre,RESALE,article-resale-argile-rouge
+DEP-04,,AV026,ARGILE VERTE,Piece,Poudre,RESALE,article-resale-argile-verte
+DEP-04,,AR112,ARINA,Piece,Poudre,RESALE,article-resale-arina
+DEP-04,,AS087,ASHVAGANDHA,Piece,Pillule,RESALE,article-resale-ashvagandha
+DEP-04,,AT103,ATROPINE,Piece,Chimique,RESALE,article-resale-atropine
+DEP-04,,AV012,AVR,Piece,Sirop,RESALE,article-resale-avr
+DEP-04,,BA036,BAOBAB,Piece,Poudre,RESALE,article-resale-baobab
+DEP-04,,BA006,Baume ALAVONTO,Piece,Baume,RESALE,article-resale-baume-alavonto
+DEP-04,,BA010,Baume Anti cellulites,Piece,Baume,RESALE,article-resale-baume-anti-cellulites
+DEP-04,,BA041,Baume ANTI VIRUS,Piece,Baume,RESALE,article-resale-baume-anti-virus
+DEP-04,,BC037,Baume CHAMPION,Piece,Baume,RESALE,article-resale-baume-champion
+DEP-04,,BC018,Baume Cyprès,Piece,Baume,RESALE,article-resale-baume-cypres
+DEP-04,,BK009,Baume KATRAFAY,Piece,Baume,RESALE,article-resale-baume-katrafay
+DEP-04,,BM008,Baume MEMOIRE,Piece,Baume,RESALE,article-resale-baume-memoire
+DEP-04,,BR025,Baume RADRIAKA,Piece,Baume,RESALE,article-resale-baume-radriaka
+DEP-04,,BR149,Baume RAMBIAZINA,Pot 50ml,Soins & Baumes Thérapeutiques,RESALE,article-resale-baume-rambiazina
+DEP-04,,BR015,Baume RAMIAZINA,Piece,Baume,RESALE,article-resale-baume-ramiazina
+DEP-04,,BR150,Baume RAVINTSARA,Piece,Baume,RESALE,article-resale-baume-ravitsara
+DEP-04,,TMP013,BECILAN INJECTION 250MG,Piece,À classer,RESALE,article-resale-provisional-becilaninjection250mg
+DEP-04,,BE031,BEROBEROKA,Piece,Sirop,RESALE,article-resale-beroberoka
+DEP-04,,BF088,BEROKA FAKANY,Piece,Poudre,RESALE,article-resale-beroka-fakany
+DEP-04,,BK016,BEURRE DE KARITE,Piece,Baume,RESALE,article-resale-beurre-de-karite
+DEP-04,,BR019,BOIS DE ROSE,Piece,Poudre,RESALE,article-resale-bois-de-rose
+DEP-04,,TMP016,CALCIUM INJECTION 10%,Piece,À classer,RESALE,article-resale-provisional-calciuminjection10
+DEP-04,,CM040,CALCIUM MASY,Piece,Poudre,RESALE,article-resale-calcium-masy
+DEP-04,,CA035,CATAPLASME,Piece,Poudre,RESALE,article-resale-cataplasme
+DEP-04,,CH115,CHLORPHENIRAMINE,Piece,Chimique,RESALE,article-resale-chlorpheniramine
+DEP-04,,TMP017,"CHLORURE DE SODIUM 0,9%",Piece,À classer,RESALE,article-resale-provisional-chloruredesodium09
+DEP-04,,TMP005,CIPROFLOXACINE 500MG,Piece,À classer,RESALE,article-resale-provisional-ciprofloxacine500mg
+DEP-04,,CI032,CIRCULATION,Piece,Huille,RESALE,article-resale-circulation
+DEP-04,,TMP014,COMPLEX B INJECTION,Piece,À classer,RESALE,article-resale-provisional-complexbinjection
+DEP-04,,TMP020,CONFIDO,Piece,À classer,RESALE,article-resale-provisional-confido
+DEP-04,,CG024,COROFAR GM,Piece,Sirop,RESALE,article-resale-corofar-gm
+DEP-04,,TMP026,COTON 200G,Piece,À classer,RESALE,article-resale-provisional-coton200g
+DEP-04,,CC013,CREME COIFFANTE,Piece,Crème,RESALE,article-resale-creme-coiffante
+DEP-04,,DG039,DERMA-G,Piece,Baume,RESALE,article-resale-derma-g
+DEP-04,,DG011,DESMOFAR GM,Piece,Sirop,RESALE,article-resale-desmofar-gm
+DEP-04,,DE030,DETOX,Piece,Sirop,RESALE,article-resale-detox
+DEP-04,,DE118,DEXA,Piece,Chimique,RESALE,article-resale-dexa
+DEP-04,,TMP012,DEXA INJECTION 4MG,Piece,À classer,RESALE,article-resale-provisional-dexainjection4mg
+DEP-04,,DI096,DICLO,Piece,Chimique,RESALE,article-resale-diclo
+DEP-04,,TMP015,DICLO INJECTION 75MG,Piece,À classer,RESALE,article-resale-provisional-dicloinjection75mg
+DEP-04,,EM023,EAU MICELLAIRE GM,Piece,Hygiène,RESALE,article-resale-eau-micellaire-gm
+DEP-04,,EM007,EAU MICELLAIRE PM,Piece,Hygiène,RESALE,article-resale-eau-micellaire-pm
+DEP-04,,FA029,FANAZAVA,Piece,Poudre,RESALE,article-resale-fanazava
+DEP-04,,FA014,FANDRAVAGODRO,Piece,Sirop,RESALE,article-resale-fandravagodro
+DEP-04,,FA022,FANJATONY,Piece,Sirop,RESALE,article-resale-fanjatony
+DEP-04,,FT117,FIEVRE TYPHO,Piece,TDR,RESALE,article-resale-fievre-typho
+DEP-04,,FA4D,Flyers A4 Depliants,Piece,Papier Velin,RESALE,ART-392
+DEP-04,,FA4PROSP,Flyers Prospectus,Piece,Papier Velin,RESALE,ART-393
+DEP-04,,GA020,G-ARTICULATION,Piece,Sirop,RESALE,article-resale-g-articulation
+DEP-04,,TMP018,GLUCOSE 5%,Piece,À classer,RESALE,article-resale-provisional-glucose5
+DEP-04,,GL109,GLYCEMIE,Piece,TDR,RESALE,article-resale-glycemie
+DEP-04,,GU092,GUDICHI,Piece,Pillule,RESALE,article-resale-gudichi
+DEP-04,,HC110,HCG,Piece,TDR,RESALE,article-resale-hcg
+DEP-04,,HC027,HE CYPRES,Piece,HE,RESALE,article-resale-he-cypres
+DEP-04,,HE106,HE EUCALUPTUS,Piece,HE,RESALE,article-resale-he-eucaluptus
+DEP-04,,HG038,HE GERANIUM,Piece,HE,RESALE,article-resale-he-geranium
+DEP-04,,HG033,HE GIROFLE,Piece,HE,RESALE,article-resale-he-girofle
+DEP-04,,HH059,HE HELICHRYSE,Piece,HE,RESALE,article-resale-he-helichryse
+DEP-04,,HK042,HE KATRAFAY,Piece,HE,RESALE,article-resale-he-katrafay
+DEP-04,,HM060,HE MENTHE,Piece,HE,RESALE,article-resale-he-menthe
+DEP-04,,HR089,HE RADRIAKA,Piece,HE,RESALE,article-resale-he-radriaka
+DEP-04,,HR046,HE RAVINTSARA,Piece,HE,RESALE,article-resale-he-ravintsara
+DEP-04,,HS053,HE SARO,Piece,HE,RESALE,article-resale-he-saro
+DEP-04,,HB107,HEPATITE B,,TDR,RESALE,article-resale-hepatite-b
+DEP-04,,HEP-C,HEPATITE C,Unité,TDR,RESALE,ART-181
+DEP-04,,HO043,HODIPOTSY,Piece,Huille,RESALE,article-resale-hodipotsy
+DEP-04,,IN094,INJECTION,,Chimique,RESALE,article-resale-injection
+DEP-04,,KA097,KAPIKACHU,,Pillule,RESALE,article-resale-kapikachu
+DEP-04,,KA098,KARELA,,Pillule,RESALE,article-resale-karela
+DEP-04,,KI044,KINANA,Piece,Huille,RESALE,article-resale-kinana
+DEP-04,,KO064,KOMIMA,Piece,Sirop,RESALE,article-resale-komima
+DEP-04,,KC056,KOMIMA CANCER,Piece,Sirop,RESALE,article-resale-komima-cancer
+DEP-04,,TMP019,LASUNA,Piece,À classer,RESALE,article-resale-provisional-lasuna
+DEP-04,,LH,LH TEST D'OVULATION,Unité,TDR,RESALE,ART-180
+DEP-04,,LI047,LOTION INTIME,Piece,Hygiène,RESALE,article-resale-lotion-intime
+DEP-04,,MA048,MADEGLUCYL,Piece,Sirop,RESALE,article-resale-madeglucyl
+DEP-04,,MA062,MADETONYL,Piece,Sirop,RESALE,article-resale-madetonyl
+DEP-04,,MA051,MADETOXYL,Piece,Sirop,RESALE,article-resale-madetoxyl
+DEP-04,,MA045,MADETUSSYL,Piece,Sirop,RESALE,article-resale-madetussyl
+DEP-04,,MA099,MAGASINE,,Feuilleton,RESALE,article-resale-magasine
+DEP-04,,MP058,MASY PAGYL,Piece,Crème,RESALE,article-resale-masy-pagyl
+DEP-04,,TMP006,METRONIS 500MG,Piece,À classer,RESALE,article-resale-provisional-metronis500mg
+DEP-04,,TMP024,MICROPERFUSEUR BLEU,Piece,À classer,RESALE,article-resale-provisional-microperfuseurbleu
+DEP-04,,MI061,MIEL,Piece,Sirop,RESALE,article-resale-miel
+DEP-04,,MR100,MRG,,Pillule,RESALE,article-resale-mrg
+DEP-04,,TMP001,NIM 100,Piece,À classer,RESALE,article-resale-provisional-nim100
+DEP-04,,NO052,NONI,Piece,Sirop,RESALE,article-resale-noni
+DEP-04,,OA049,OAC,Piece,À classer,RESALE,article-resale-oac
+DEP-04,,OV054,ODY VATO,Piece,À classer,RESALE,article-resale-ody-vato
+DEP-04,,OF057,OFA,Piece,À classer,RESALE,article-resale-ofa
+DEP-04,,OF063,OFM,Piece,À classer,RESALE,article-resale-ofm
+DEP-04,,O3050,OMEGA 3 GM,Piece,Poudre,RESALE,article-resale-omega-3-gm
+DEP-04,,O3055,OMEGA 3 PM,Piece,Poudre,RESALE,article-resale-omega-3-pm
+DEP-04,,OD065,OMEGA DIABETE,Piece,Poudre,RESALE,article-resale-omega-diabete
+DEP-04,,TMP003,OPRAL 20MG,Piece,À classer,RESALE,article-resale-provisional-opral20mg
+DEP-04,,PA113,PALU,,TDR,RESALE,article-resale-palu
+DEP-04,,P5114,PARACETA 500MG,,Chimique,RESALE,article-resale-paraceta-500mg
+DEP-04,,TMP009,PARACETAMOL 1G,Piece,À classer,RESALE,article-resale-provisional-paracetamol1g
+DEP-04,,TMP002,PARACETAMOL 500MG,Piece,À classer,RESALE,article-resale-provisional-paracetamol500mg
+DEP-04,,TMP025,PERFUSSEUR,Piece,À classer,RESALE,article-resale-provisional-perfusseur
+DEP-04,,TMP007,PREDISOLONE 5MG,Piece,À classer,RESALE,article-resale-provisional-predisolone5mg
+DEP-04,,P5093,PREDNI 50G,,Chimique,RESALE,article-resale-predni-50g
+DEP-04,,PG077,PROTOFAR GM,Piece,Poudre,RESALE,article-resale-protofar-gm
+DEP-04,,PP081,PROTOFAR PM,Piece,Poudre,RESALE,article-resale-protofar-pm
+DEP-04,,PU101,PUNARNAVA,,Pillule,RESALE,article-resale-punarnava
+DEP-04,,RE070,REVITALISANT,Piece,Sirop,RESALE,article-resale-revitalisant
+DEP-04,,RH090,ROIS DES HERBES,,Huille,RESALE,article-resale-rois-des-herbes
+DEP-04,,SA082,SAVLAH,Piece,Poudre,RESALE,article-resale-savlah
+DEP-04,,SA071,SAVON AMINCI,Piece,Savon,RESALE,article-resale-savon-aminci
+DEP-04,,SA073,SAVON ANTI ACNE,Piece,Savon,RESALE,article-resale-savon-anti-acne
+DEP-04,,SA079,SAVON ANTI RIDES,Piece,Savon,RESALE,article-resale-savon-anti-rides
+DEP-04,,SM068,SAVON MANAZAVA,Piece,Savon,RESALE,article-resale-savon-manazava
+DEP-04,,SR078,SAVON REPOUSSE,Piece,Savon,RESALE,article-resale-savon-repousse
+DEP-04,,SV066,SAVON VAHONA,Piece,Savon,RESALE,article-resale-savon-vahona
+DEP-04,,SE119,SERINGUE,,Consommable Medical,RESALE,article-resale-seringue
+DEP-04,,TMP023,SERINGUE 20CC,Piece,À classer,RESALE,article-resale-provisional-seringue20cc
+DEP-04,,TMP021,SERINGUE 5CC,Piece,À classer,RESALE,article-resale-provisional-seringue5cc
+DEP-04,,TMP022,SERINGUE10CC,Piece,À classer,RESALE,article-resale-provisional-seringue10cc
+DEP-04,,SP076,SPIRULINE,Piece,Poudre,RESALE,article-resale-spiruline
+DEP-04,,SP102,SPRAY,,Hygiène,RESALE,article-resale-spray
+DEP-04,,TA083,TANJAKA,Piece,Sirop,RESALE,article-resale-tanjaka
+DEP-04,,TP074,TANJAKA PLUS,Piece,Sirop,RESALE,article-resale-tanjaka-plus
+DEP-04,,TB072,THE BEROBEROKA,Piece,Poudre,RESALE,article-resale-the-beroberoka
+DEP-04,,TB154,THE BEROKA,Sachet 100g,"Tisanes, Extraits & Remèdes Traditionnels",RESALE,article-resale-the-beroka
+DEP-04,,THE CANELLE,THE CANELLE,Unité,"Tisanes, Extraits & Remèdes Traditionnels",RESALE,ART-178
+DEP-04,,TH067,THE HIBISCUS,Piece,Poudre,RESALE,article-resale-the-hibiscus
+DEP-04,,TO116,THE OLIVE,,Poudre,RESALE,article-resale-the-olive
+DEP-04,,TS080,THE STEVIA,Piece,Poudre,RESALE,article-resale-the-stevia
+DEP-04,,TO104,TOXO,,TDR,RESALE,article-resale-toxo
+DEP-04,,VIH,VIH Combo,Unité,TDR,RESALE,ART-179
+DEP-04,,VG075,VINAIGRE GM,Piece,Sirop,RESALE,article-resale-vinaigre-gm
+DEP-04,,VP069,VINAIGRE PM,Piece,Sirop,RESALE,article-resale-vinaigre-pm
+DEP-04,,VC108,VITAMINE C,,Chimique,RESALE,article-resale-vitamine-c
+DEP-04,,TMP008,VITAMINE C 500MG,Piece,À classer,RESALE,article-resale-provisional-vitaminec500mg
+DEP-04,,TMP010,VITAMINE C INJECTION 500MG,Piece,À classer,RESALE,article-resale-provisional-vitaminecinjection500mg
+DEP-04,,VG084,VOAMBOATAVO GM,Piece,Poudre,RESALE,article-resale-voamboatavo-gm
+DEP-04,,VP085,VOAMBOATAVO PM,Piece,Poudre,RESALE,article-resale-voamboatavo-pm

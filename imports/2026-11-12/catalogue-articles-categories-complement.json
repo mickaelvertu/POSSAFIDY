@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "exportedAt": "2026-11-12T12:44:58.879Z",
+  "data": {
+    "articles": [
+      {
+        "id": "article-raw-material-complement-alu-30g",
+        "code": "MP-COMP-001",
+        "name": "ALU 30G",
+        "category_id": "cat-flacons",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      },
+      {
+        "id": "article-raw-material-complement-doypack-baobab",
+        "code": "MP-COMP-003",
+        "name": "DOYPACK BAOBAB",
+        "category_id": "cat-emballages-conditionnements",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      },
+      {
+        "id": "article-raw-material-complement-doypack-ananambo",
+        "code": "MP-COMP-004",
+        "name": "DOYPACK ANANAMBO",
+        "category_id": "cat-emballages-conditionnements",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      },
+      {
+        "id": "article-raw-material-complement-doypack-spiriline",
+        "code": "MP-COMP-005",
+        "name": "DOYPACK SPIRILINE",
+        "category_id": "cat-emballages-conditionnements",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      },
+      {
+        "id": "article-raw-material-complement-bocale-beurre-de-karite",
+        "code": "MP-COMP-006",
+        "name": "BOCALE BEURRE DE KARITE",
+        "category_id": "cat-flacons",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      },
+      {
+        "id": "article-raw-material-complement-pot-alavonto",
+        "code": "MP-COMP-007",
+        "name": "POT ALAVONTO",
+        "category_id": "cat-flacons",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      },
+      {
+        "id": "article-raw-material-complement-sfoi",
+        "code": "MP-COMP-008",
+        "name": "SFOI",
+        "category_id": "cat-emballages-conditionnements",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      },
+      {
+        "id": "article-raw-material-complement-doypack-cataplasme",
+        "code": "MP-COMP-009",
+        "name": "DOYPACK CATAPLASME",
+        "category_id": "cat-emballages-conditionnements",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      },
+      {
+        "id": "article-raw-material-complement-callot",
+        "code": "MP-COMP-010",
+        "name": "CALLOT",
+        "category_id": "cat-consommable-medical",
+        "article_type": "RAW_MATERIAL",
+        "unit": "Piece",
+        "prix_achat": 0,
+        "prix_normal": 0,
+        "prix_revendeur": 0,
+        "min_alert_stock": 0,
+        "is_active": true,
+        "created_at": 1794487220671,
+        "updated_at": 1794487220671
+      }
+    ],
+    "categories": [
+      {
+        "is_active": true,
+        "code": "CM014",
+        "updated_at": 1790744310702,
+        "name": "Consommable Medical",
+        "created_at": 1790744310702,
+        "id": "cat-consommable-medical"
+      },
+      {
+        "created_at": 1735689600000,
+        "code": "EC022",
+        "is_active": true,
+        "name": "Emballages & Conditionnements",
+        "id": "cat-emballages-conditionnements",
+        "updated_at": 1735689600000
+      },
+      {
+        "created_at": 1790744310702,
+        "code": "FL017",
+        "is_active": true,
+        "name": "Flacons",
+        "id": "cat-flacons",
+        "updated_at": 1790744310702
+      }
+    ]
+  }
+}

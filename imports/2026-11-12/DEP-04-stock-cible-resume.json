@@ -1,0 +1,10 @@
+{
+  "store_id": "MAG-046",
+  "store_code": "DEP-04",
+  "source_rows": 406,
+  "import_rows": 81,
+  "blank_rows_ignored": 325,
+  "explicit_zero_rows": 0,
+  "mode": "STOCK_SNAPSHOT",
+  "validation_errors": []
+}
