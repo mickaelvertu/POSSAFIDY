@@ -1,4 +1,6 @@
+import { Recycle } from "lucide-react";
 import type { SalesStoreRow } from "./salesStoreMatrix";
+import { expensePaidAmount, expenseRemainingAmount, expensePaymentLabel } from './expensePayments';
 import type { Store } from "../types";
 import { buildArticleStockRows, type ArticleStockRow } from "./stockByArticle";
 import { ReactNode } from "react";
@@ -87,6 +89,8 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
       const labels = { opening: "Solde avant période", incoming: "Entrées", outgoing: "Sorties", balance: "Reste en fin de période" };
       const columns: ReportColumn<TreasuryReportRow>[] = [
         { key: "owner", label: "Détenteur", value: row => row.owner }, { key: "reference", label: "Référence du fonds", value: row => row.reference },
+        { key: "reseller", label: "Revendeur", value: row => row.reseller },
+        { key: "nature", label: "Nature", value: row => row.nature },
         ...keys.map((key): ReportColumn<TreasuryReportRow> => ({ key, label: labels[key], align: "right", value: row => row[key], render: row => money(row[key]), footer: rows => money(sum(rows.map(row => row[key]))) }))
       ];
       return { columns, rows: ctx.treasuryRows || [], rowKey: row => row.id };
@@ -337,7 +341,7 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
         { key: "store", label: "Atelier", value: p => getStoreName(p.manufacturer_store_id) },
         { key: "consumptions", label: "Matières Consommées", value: p => p.consumptions.map(c =>         `${c.article_name}${c.source === "RECYCLED" ? " (recyclé)" : ""}: ${c.quantity} ${c.unit}`).join(", "), render: p => (
           <ul className="list-disc list-inside text-rose-700 font-medium">
-                    {p.consumptions.map(c => <li key={c.id}>{c.article_name}{c.source === "RECYCLED" ? " ♻" : ""} : <span className="font-mono font-bold">{c.quantity} {c.unit}</span></li>)}
+                    {p.consumptions.map(c => <li key={c.id}>{c.article_name}{c.source === "RECYCLED" && <> <Recycle className="inline size-3.5 align-text-bottom" aria-hidden="true" /> recyclé</>} : <span className="font-mono font-bold">{c.quantity} {c.unit}</span></li>)}
           </ul>
         ) },
         { key: "outputs", label: "Produits Fabriqués (Sortie)", value: p => p.outputs.map(o => `${o.article_name}: ${o.quantity} ${o.unit}`).join(", "), render: p => (
@@ -391,12 +395,14 @@ export function getReportTableConfig(reportType: ReportType, ctx: ReportColumnsC
         { key: "description", label: "Description", value: e => e.description },
         { key: "payee", label: "Bénéficiaire", value: e => e.employee_name || e.payee || "-" },
         { key: "method", label: "Mode de paiement", value: e => PAYMENT_METHOD_LABELS[e.payment_method] || e.payment_method },
-        { key: "paymentStatus", label: "Paiement", value: e => e.payment_status === "PAID" ? "Payé" : "En attente" },
+          { key: "paymentStatus", label: "Paiement", value: expensePaymentLabel },
+          { key: "amountPaid", label: "Déjà réglé", value: expensePaidAmount, render: e => money(expensePaidAmount(e)) },
+          { key: "remaining", label: "Reste à payer", value: e => e.status === 'CANCELLED' ? 0 : expenseRemainingAmount(e), render: e => money(e.status === 'CANCELLED' ? 0 : expenseRemainingAmount(e)) },
         { key: "reference", label: "Référence", value: e => e.reference || "-" },
         { key: "author", label: "Saisi par", value: e => e.created_by_name },
-        { key: "payer", label: "Payée par", value: e => e.paid_by_name || "Non renseigné" },
-        { key: "fund", label: "Fonds utilisé", value: e => e.funding_source === "STORE" ? `Fonds du magasin · ${e.paid_by_name || e.store_name || ""}` : e.treasury_fund_id || "Non renseigné" },
-        { key: "paidAt", label: "Date du règlement", value: e => e.paid_at ? new Date(e.paid_at).toLocaleString("fr-FR") : "" },
+          { key: "payer", label: "Payée par", value: e => e.payments?.length ? [...new Set(e.payments.map(payment => payment.paid_by_name))].join(', ') : e.paid_by_name || "Non renseigné" },
+          { key: "fund", label: "Fonds utilisé", value: e => e.payments?.length ? [...new Set(e.payments.map(payment => payment.fund_name))].join(', ') : e.funding_source === "STORE" ? `Fonds du magasin · ${e.paid_by_name || e.store_name || ""}` : e.treasury_fund_id || "Non renseigné" },
+          { key: "paidAt", label: "Date du règlement", value: e => e.payments?.length ? e.payments.map(payment => `${new Date(payment.paid_at).toLocaleString('fr-FR')} : ${money(payment.amount)}`).join('; ') : e.paid_at ? new Date(e.paid_at).toLocaleString("fr-FR") : "" },
         { key: "status", label: "Statut", value: e => expenseStatus(e) === "CANCELLED" ? "Annulée" : expenseStatus(e) === "DRAFT" ? "Brouillon" : "Validée" },
         { key: "cancelledBy", label: "Annulée par", value: e => e.cancelled_by_name || "" },
         { key: "cancellationReason", label: "Motif d'annulation", value: e => e.cancellation_reason || "" },

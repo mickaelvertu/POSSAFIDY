@@ -20,7 +20,8 @@ import {
   StockMovementType 
 } from "../types";
 import { generateRef, getArticleStock, getQuarantineStock } from "../services/stockService";
-import { 
+import {
+  ArrowRight,
   ArrowRightLeft, 
   Plus, 
   Truck, 
@@ -38,7 +39,7 @@ import {
 } from "lucide-react";
 
 import { canApproveTransfer, isWorkshopTransfer } from "../services/transferApproval";
-import { isAssignedDepotManager } from "../services/transferReceipt";
+import { canAccessTransferDestination, isAssignedDepotManager } from "../services/transferReceipt";
 
 interface TransfersViewProps {
   focusedTransferId?: string;
@@ -625,15 +626,15 @@ export default function TransfersView({
         </div>
         <div className="flex items-center gap-2 text-xs font-mono min-w-max">
           <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">1. Demande</span>
-          <span className="text-slate-500">→</span>
+          <ArrowRight className="size-3.5 shrink-0 text-slate-500" aria-hidden="true" />
           <span className="bg-blue-950 text-blue-300 px-2.5 py-1 rounded-md border border-blue-800">2. Approbation (Admin)</span>
-          <span className="text-slate-500">→</span>
+          <ArrowRight className="size-3.5 shrink-0 text-slate-500" aria-hidden="true" />
           <span className="bg-indigo-950 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-800">3. Expédition (stock source débité)</span>
-          <span className="text-slate-500">→</span>
+          <ArrowRight className="size-3.5 shrink-0 text-slate-500" aria-hidden="true" />
           <span className="bg-amber-950 text-amber-300 px-2.5 py-1 rounded-md border border-amber-800">4. En transit</span>
-          <span className="text-slate-500">→</span>
+          <ArrowRight className="size-3.5 shrink-0 text-slate-500" aria-hidden="true" />
           <span className="bg-purple-950 text-purple-300 px-2.5 py-1 rounded-md border border-purple-800">5. Réception (magasin destinataire)</span>
-          <span className="text-slate-500">→</span>
+          <ArrowRight className="size-3.5 shrink-0 text-slate-500" aria-hidden="true" />
           <span className="bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-800">6. Validé (stock accepté crédité)</span>
           <span className="text-slate-500">/</span>
           <span className="bg-rose-950 text-rose-300 px-2.5 py-1 rounded-md border border-rose-800">Écart à traiter</span>
@@ -748,7 +749,7 @@ export default function TransfersView({
 
             const isCentralDestination = dst?.store_type === "CENTRAL_WAREHOUSE";
             const isDepotManager = isAssignedDepotManager(currentUser, dst);
-            const isReceiver = currentUser.storeIds.includes(t.destination_store_id);
+            const isReceiver = canAccessTransferDestination(currentUser, t.destination_store_id);
             const canConfirmReceipt = t.status === "RECEIVED"
               && canValidate
               && isReceiver
@@ -1016,7 +1017,7 @@ export default function TransfersView({
                     )}
 
                     {t.status === "APPROVED" && t.type === "DIRECT_DEPOSIT" && (
-                      canReceive && currentUser.storeIds.includes(t.destination_store_id) ? (
+                      canReceive && canAccessTransferDestination(currentUser, t.destination_store_id) ? (
                         <button
                           type="button"
                           onClick={() => {

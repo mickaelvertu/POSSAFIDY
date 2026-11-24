@@ -217,10 +217,9 @@ export async function validateInventoryCount(
         charge_assigned_at: now,
       };
     }
-    const adjusted = lines.filter(line => line.variance !== 0);
-    const targets = adjusted.map(line => {
+    const targets = lines.map((line, lineIndex) => ({ line, lineIndex })).filter(({ line }) => line.variance !== 0).map(({ line, lineIndex }) => {
       const known = knownStocks.find(stock => stock.store_id === count.store_id && stock.article_id === line.article_id);
-      return { line, reference: doc(db, STOCKS_COLLECTION, known?.id || `stock-${count.store_id}-${line.article_id}`) };
+      return { line, lineIndex, reference: doc(db, STOCKS_COLLECTION, known?.id || `stock-${count.store_id}-${line.article_id}`) };
     });
     const snapshots = await Promise.all(targets.map(target => transaction.get(target.reference)));
 
@@ -229,6 +228,7 @@ export async function validateInventoryCount(
       const before = current?.quantity || 0;
       const after = Math.max(0, before + target.line.variance);
       const stock: StoreStock = {
+        ...current,
         id: current?.id || target.reference.id,
         store_id: count.store_id,
         article_id: target.line.article_id,
@@ -255,8 +255,18 @@ export async function validateInventoryCount(
       };
       stocks.push(stock);
       movements.push(movement);
-      transaction.set(target.reference, omitUndefined(stock));
-      transaction.set(doc(db, MOVEMENTS_COLLECTION, movement.id), omitUndefined(movement));
+      const movementRef = doc(db, MOVEMENTS_COLLECTION, movement.id);
+      if (current && target.line.variance < 0) {
+        transaction.update(target.reference, {
+          quantity: after,
+          updated_at: now,
+          inventory_adjustment: { count_id: count.id, line_index: target.lineIndex }
+        });
+        transaction.set(movementRef, omitUndefined({ ...movement, inventory_line_index: target.lineIndex }));
+      } else {
+        transaction.set(target.reference, omitUndefined(stock));
+        transaction.set(movementRef, omitUndefined(movement));
+      }
     });
 
     transaction.set(countRef, omitUndefined(validated));

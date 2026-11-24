@@ -148,7 +148,7 @@ export default function ReportViewer({
     reportProductions,
     reportAuditLogs,
     reportPurchases: filteredData.purchases,
-    treasuryRows: buildTreasuryReportRows(treasuryFunds || [], treasuryMovements || [], filters),
+    treasuryRows: buildTreasuryReportRows(treasuryFunds || [], treasuryMovements || [], filters, sales, auditLogs),
     treasuryView: filters.treasuryView,
     reportExpenses,
     reportCashHandovers: filteredData.cashHandovers,
@@ -156,7 +156,7 @@ export default function ReportViewer({
     salesByArticle,
     salesByCategory,
     filteredSalesLines
-  }), [salesStoreMatrix, reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, filteredData.cashHandovers, filteredData.purchases, treasuryFunds, treasuryMovements, filters, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
+  }), [sales, auditLogs, salesStoreMatrix, reportType, reportStocks, reportMovements, reportLedger, reportTransfers, reportSales, reportProductions, reportAuditLogs, reportExpenses, filteredData.cashHandovers, filteredData.purchases, treasuryFunds, treasuryMovements, filters, salesByCustomer, salesByArticle, salesByCategory, filteredSalesLines]);
 
   const hiddenKeys = useMemo(() => new Set(hiddenKeysByReport[reportType] || []), [hiddenKeysByReport, reportType]);
 
@@ -194,7 +194,7 @@ export default function ReportViewer({
     if (filters.expenseScope && filters.expenseScope !== "ALL") parts.push(`Périmètre des dépenses : ${filters.expenseScope === "STORE" ? "Magasin" : "Siège"}`);
     if (reportType === "TREASURY") parts.push(`Trésorerie : ${{ ALL: "Entrées, sorties et reste", IN: "Entrées", OUT: "Sorties", BALANCE: "Reste disponible" }[filters.treasuryView || "ALL"]}`);
     if (filters.startDate || filters.endDate) {
-      parts.push(`Période: ${filters.startDate || "Début"} au ${filters.endDate || "Ce jour"}`);
+      parts.push(`${reportType === "SUPPLIER_PURCHASES" ? "Période de paiement" : "Période"}: ${filters.startDate || "Début"} au ${filters.endDate || "Ce jour"}`);
     } else {
       parts.push("Période: Historique complet");
     }

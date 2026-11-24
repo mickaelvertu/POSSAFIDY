@@ -13,3 +13,23 @@ test('server requires a fresh sign-in after four hours even with a refreshed tok
   const missingAuthTime = { ...claims }; delete missingAuthTime.auth_time;
   assert.equal(await read(jwt(missingAuthTime)), 403);
 });
+
+test('article visibility is assigned by an administrator, including for new accounts', async () => {
+  const uid = 'visibility-profile';
+  const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+  const selfToken = token.split('.')[0] + '.' +
+    Buffer.from(JSON.stringify({ ...claims, sub: uid, user_id: uid })).toString('base64url') + '.';
+  const path = 'users/' + uid;
+  const pending = { uid, email: 'profile@example.test', status: 'PENDING', role: null, permissions: [], assignedStores: [] };
+  const unrestricted = { ...pending, visibleArticleTypes: ['RAW_MATERIAL'] };
+  assert.equal((await commit([write(path, unrestricted)], selfToken)).status, 403);
+  assert.equal((await commit([write(path, pending)], selfToken)).status, 200);
+  assert.equal((await commit([write(path, unrestricted)], selfToken)).status, 403);
+
+  const active = { ...pending, role: 'VENDEUR', status: 'ACTIVE', visibleArticleTypes: ['RESALE'] };
+  assert.equal((await commit([write('users/super', { role: 'SUPER_ADMIN', status: 'ACTIVE' })])).status, 200);
+  assert.equal((await commit([write(path, active)], token)).status, 200);
+  assert.equal((await commit([write(path, { ...active, firstName: 'Test' })], selfToken)).status, 200);
+  assert.equal((await commit([write(path, { ...active, visibleArticleTypes: ['RESALE', 'RAW_MATERIAL'] })], selfToken)).status, 403);
+  assert.equal((await commit([write(path, { ...active, visibleArticleTypes: undefined })], selfToken)).status, 403);
+});

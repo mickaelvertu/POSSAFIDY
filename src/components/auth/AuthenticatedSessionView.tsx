@@ -2,14 +2,16 @@ import { permitsSameStoreTransfer } from '../../services/transferSameStore';
 import ProductionOrdersView from '../ProductionOrdersView';
 import PointOfSaleOrdersView from "../PointOfSaleOrdersView";
 import RawMaterialOrdersView from "../RawMaterialOrdersView";
+import { expensePaidAmount } from '../../services/expensePayments';
 import { cancelPurchase } from "../../services/purchaseCancellationService";
 import { adoptHistoricalHandover } from "../../services/treasuryService";
 import TreasuryView from "../TreasuryView";
 import { useTreasury } from "../../hooks/useTreasury";
 import FeedbackState from "../FeedbackState";
 import SyncFeedback from "../SyncFeedback";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useModuleNavigation } from "../../hooks/useModuleNavigation";
 import { authService, DEFAULT_ARTICLE_VISIBILITY, hasPermission } from "../../services/authService";
 import { AppRoleId, AppUser, Article, AuditLog, Category, CashHandover, CashHandoverDeposit, CreditCustomer, CreditFollowUp, CreditPayment, Employee, Expense, GeneralFilters, Payslip, Purchase, ResellerNotification, ResellerOrder, Sale, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
@@ -69,7 +71,7 @@ import type { StockSyncRow } from "../../services/stockSyncValidation";
 import type { InitialStockImportRow } from "../../services/stockImportValidation";
 import { consumeRawMaterial } from "../../services/operationsService";
 import { canApproveTransfer } from "../../services/transferApproval";
-import { isAssignedDepotManager } from "../../services/transferReceipt";
+import { canAccessTransferDestination, isAssignedDepotManager } from "../../services/transferReceipt";
 import { assertSaleValidationSize } from "../../services/saleValidationLimits";
 const UsersView = lazy(() => import("../UsersView"));
 const SalesView = lazy(() => import("../SalesView"));
@@ -91,14 +93,21 @@ const TransfersView = lazy(() => import("../TransfersView"));
 const UnitsView = lazy(() => import("../UnitsView"));
 const ReportsView = lazy(() => import("../ReportsView"));
 const ReportViewer = lazy(() => import("../ReportViewer"));
-import { 
+import {
+  ArrowLeft,
+  ArrowRightLeft,
+  Boxes,
+  ChevronDown,
+  House,
+  ShoppingCart,
   ShieldCheck, 
   LogOut, 
   User as UserIcon, 
   Mail, 
   Phone, 
   Calendar, 
-  Shield
+  Shield,
+  Ellipsis
 } from "lucide-react";
 
 const APP_ROLES: AppRoleId[] = ["SUPER_ADMIN", "ADMIN", "VENDEUR", "MAGASINIER", "RESPONSABLE_MAGASIN", "CONTROLEUR", "PRODUCTION", "COMPTABLE", "GESTIONNAIRE_CREDIT", "STAFF", "REVENDEUR"];
@@ -152,13 +161,22 @@ function containsHiddenArticleReference(value: unknown, visibleArticleIds: Set<s
 export default function AuthenticatedSessionView() {
   const { user, logout, isProfileFromCache, hasPendingWrites, authorizationError, refreshUser } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
+  const profilePanel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (showProfile) {
+      profilePanel.current?.focus({ preventScroll: true });
+      profilePanel.current?.scrollIntoView({ block: "start" });
+    }
+  }, [showProfile]);
   const [managedUsers, setManagedUsers] = useRecordState<AppUser>();
   const [usersError, setUsersError] = useState<string | null>(null);
   const [auxiliaryErrors, setAuxiliaryErrors] = useState<Record<string, string>>({});
   const [auxiliaryLoading, setAuxiliaryLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [payrollLoadedKey, setPayrollLoadedKey] = useState("");
-  const [activeModule, setActiveModule] = useState<"rawMaterialOrders" | "productionOrders" | "posOrders" | "home" | "sales" | "stocks" | "stores" | "catalog" | "production" | "procurement" | "expenses" | "treasury" | "cashHandovers" | "transfers" | "units" | "staff" | "payroll" | "reports" | "audit" | "credit" | "resellerPortal" | "inventory" | "employeePresentation">(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [activeModule, setActiveModule] = useModuleNavigation(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+  useEffect(() => { setMobileActionsOpen(false); }, [activeModule]);
   const [notificationAction, setNotificationAction] = useState<{ item: ActionNotification; previousModule: typeof activeModule } | null>(null);
   const closeNotificationAction = () => {
     if (notificationAction) setActiveModule(notificationAction.previousModule);
@@ -267,10 +285,13 @@ export default function AuthenticatedSessionView() {
     return () => { active = false; };
   }, [canManageUsers, authScope, synchronization.retryVersion]);
 
-  const movementHistory = useHistoryPages<StockMovement>(authScope,
-    () => user?.status === "ACTIVE" ? scopedQueries("movements", ["store_id"], canManageStores ? undefined : user.assignedStores) : [], setMovements);
-  const auditHistory = useHistoryPages<AuditLog>(authScope,
-    () => user?.status === "ACTIVE" ? [canManageStores ? collectionQuery("auditLogs") : collectionQuery("auditLogs", where("user_id", "==", user.id))] : [], setAuditLogs);
+  const openReportHistory = activeModule === "reports" ? reportHistory(reportRequest?.type || selectedReportType) : null;
+  const needsMovementHistory = activeModule === "stocks" || activeModule === "production" || openReportHistory === "movements";
+  const needsAuditHistory = activeModule === "audit" || activeModule === "procurement" || openReportHistory === "audit";
+  const movementHistory = useHistoryPages<StockMovement>(`${authScope}:${needsMovementHistory}`,
+    () => needsMovementHistory && user?.status === "ACTIVE" ? scopedQueries("movements", ["store_id"], canManageStores ? undefined : user.assignedStores) : [], setMovements);
+  const auditHistory = useHistoryPages<AuditLog>(`${authScope}:${needsAuditHistory}`,
+    () => needsAuditHistory && user?.status === "ACTIVE" ? [canManageStores ? collectionQuery("auditLogs") : collectionQuery("auditLogs", where("user_id", "==", user.id))] : [], setAuditLogs);
   const ledgerReport = useLedgerReport(reportRequest, authScope, canManageStores ? undefined : user?.assignedStores || []);
 
   // Only the selected report's history can delay that report, never the report catalog.
@@ -1285,8 +1306,8 @@ export default function AuthenticatedSessionView() {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.status !== "IN_TRANSIT") return;
     const isAssignedReceiver = Boolean(currentAppUser)
-      && hasPermission(currentAppUser!, "transfers.receive")
-      && currentAppUser!.storeIds.includes(transfer.destination_store_id);
+      && (["ADMIN", "SUPER_ADMIN"].includes(currentAppUser!.roleId) || hasPermission(currentAppUser!, "transfers.receive"))
+      && canAccessTransferDestination(currentAppUser!, transfer.destination_store_id);
     if (!isAssignedReceiver) {
       alert("Un utilisateur autorisé du magasin destinataire doit valider cette réception.");
       return;
@@ -1327,8 +1348,8 @@ export default function AuthenticatedSessionView() {
   const handleReceiveDirectDeposit = async (transferId: string, receiverNote?: string) => {
     const transfer = transfers.find(item => item.id === transferId);
     if (!transfer || transfer.type !== "DIRECT_DEPOSIT" || transfer.status !== "APPROVED" || !currentAppUser) return;
-    if (!hasPermission(currentAppUser, "transfers.receive")
-      || !currentAppUser.storeIds.includes(transfer.destination_store_id)) {
+    if (!(["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) || hasPermission(currentAppUser, "transfers.receive"))
+      || !canAccessTransferDestination(currentAppUser, transfer.destination_store_id)) {
       alert("Un utilisateur autorisé du dépôt doit pouvoir réceptionner ce dépôt.");
       return;
     }
@@ -1396,8 +1417,8 @@ export default function AuthenticatedSessionView() {
     if (!transfer || transfer.status !== "RECEIVED" || !currentAppUser) return;
     const destinationStore = inventoryStores.find(store => store.id === transfer.destination_store_id);
     const isCentralDestination = destinationStore?.store_type === "CENTRAL_WAREHOUSE";
-    const isAssignedConfirmer = hasPermission(currentAppUser, "transfers.validate")
-      && currentAppUser.storeIds.includes(transfer.destination_store_id)
+    const isAssignedConfirmer = (["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) || hasPermission(currentAppUser, "transfers.validate"))
+      && canAccessTransferDestination(currentAppUser, transfer.destination_store_id)
       && (!isCentralDestination || isAssignedDepotManager(currentAppUser, destinationStore) || (
         currentAppUser.uid !== transfer.received_by &&
         currentAppUser.uid !== transfer.requested_by &&
@@ -1512,7 +1533,7 @@ export default function AuthenticatedSessionView() {
     const transfer = transfers.find(item => item.id === transferId);
     if (!currentAppUser || !transfer || transfer.type !== "RECYCLING" || !["VALIDATED", "DISCREPANCY"].includes(transfer.status)) return false;
     const canDecide = (hasPermission(currentAppUser, "production.create") || hasPermission(currentAppUser, "production.validate"))
-      && currentAppUser.storeIds.includes(transfer.destination_store_id);
+      && canAccessTransferDestination(currentAppUser, transfer.destination_store_id);
     if (!canDecide) {
       alert("Seul le magasin de production destinataire peut décider du sort de ces articles.");
       return false;
@@ -2244,7 +2265,7 @@ export default function AuthenticatedSessionView() {
     setAuditLogs(current => [auditLog, ...current]);
   };
 
-  const handleValidateExpense = async (expense: Expense, fundId?: string) => {
+  const handleValidateExpense = async (expense: Expense, fundId?: string, paymentAmount?: number) => {
     if (expensesLoadError) throw new Error(expensesLoadError);
     if (user?.status !== "ACTIVE" || !currentAppUser || !(currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.create")) || ((currentAppUser.roleId !== "SUPER_ADMIN" && expense.created_by !== currentAppUser.uid) || (!["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) && (!expense.store_id || !currentAppUser.storeIds.includes(expense.store_id))))) throw new Error("Vous pouvez uniquement valider vos propres dépenses avec la permission de création.");
     const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
@@ -2291,7 +2312,8 @@ export default function AuthenticatedSessionView() {
       isAdmin,
       salaryAdvance,
       salaryAdvanceAuditLog,
-      fundId
+      fundId,
+      paymentAmount
     );
     setExpenses(current => current.map(item => item.id === updated.id ? updated : item));
     if (salaryAdvance) {
@@ -2305,13 +2327,13 @@ export default function AuthenticatedSessionView() {
       setAuditLogs(current => [{ ...advanceAudit, new_value: createdAdvance }, ...current]);
     }
   };
-  const handlePayExpense = async (expense: Expense, fundId: string) => {
+  const handlePayExpense = async (expense: Expense, fundId: string, amount: number) => {
     if (expensesLoadError) throw new Error(expensesLoadError);
     if (user?.status !== "ACTIVE" || !currentAppUser || !["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId)) {
       throw new Error("Seul un administrateur actif peut régler une dépense depuis la trésorerie.");
     }
     const audit = createAuditLog(currentAppUser, "EXPENSE_PAID", "EXPENSE", expense.id, expense, undefined, expense.store_id);
-    const updated = await payValidatedExpense(expense.id, fundId, currentAppUser.uid, audit);
+    const updated = await payValidatedExpense(expense.id, fundId, currentAppUser.uid, audit, amount, expensePaidAmount(expense));
     setExpenses(current => current.map(item => item.id === updated.id ? updated : item));
     setAuditLogs(current => [{ ...audit, new_value: updated }, ...current]);
   };
@@ -2338,6 +2360,16 @@ export default function AuthenticatedSessionView() {
   };
 
   if (!user) return null;
+
+  const canOpenSales = currentAppUser && (canManageStores || hasPermission(currentAppUser, "sales.view"));
+  const canOpenStocks = currentAppUser && (canManageStores || hasPermission(currentAppUser, "stock.view"));
+  const canOpenTransfers = currentAppUser && (canManageStores || hasPermission(currentAppUser, "transfers.view"));
+  const mobileLinks = [
+    { module: "home", label: "Accueil", icon: House, visible: user.role !== "REVENDEUR" },
+    { module: "sales", label: "Caisse", icon: ShoppingCart, visible: canOpenSales },
+    { module: "stocks", label: "Stock", icon: Boxes, visible: canOpenStocks },
+    { module: "transfers", label: "Transferts", icon: ArrowRightLeft, visible: canOpenTransfers },
+  ] as const;
 
   const actionNotifications = currentAppUser && user.status === "ACTIVE"
     ? buildActionNotifications({
@@ -2387,40 +2419,52 @@ export default function AuthenticatedSessionView() {
                   ? "Vérification des droits…"
                   : "En ligne"}
           </div>
-          <ThemeSwitcher />
+          <div className="hidden lg:block"><ThemeSwitcher /></div>
           <NotificationBell key={currentAppUser?.uid} userId={currentAppUser?.uid || user.id} notifications={actionNotifications} onOpen={item => {
             const current = actionNotifications.find(notification => notification.id === item.id);
             if (!current) return;
             setNotificationAction({ item: current, previousModule: notificationAction?.previousModule || activeModule });
             setActiveModule(current.module);
           }} />
-          {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "expenses.view") || hasPermission(currentAppUser, "expenses.create")) && <button type="button" onClick={() => setActiveModule("expenses")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Dépenses</button>}
-          {canManageStores && user.status === "ACTIVE" && <button type="button" onClick={() => setActiveModule("treasury")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Trésorerie</button>}
-          {currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || ["view", "create", "receive", "deposit"].some(action => hasPermission(currentAppUser, `cash_handover.${action}`))) && <button type="button" onClick={() => setActiveModule("cashHandovers")} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Remises de caisse</button>}
-          <button
-            type="button"
-            onClick={() => setShowProfile(current => !current)}
-            aria-expanded={showProfile}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700"
-          >
-            <UserIcon className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{showProfile ? "Masquer le profil" : "Mon profil"}</span>
+          <button type="button" className="btn btn-ghost btn-sm btn-square lg:hidden" aria-label="Autres actions" aria-expanded={mobileActionsOpen} aria-controls="session-actions" onClick={() => setMobileActionsOpen(open => !open)}>
+            <Ellipsis size={20} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            onClick={() => logout()}
-            aria-label="Déconnexion"
-            title="Déconnexion"
-            className="inline-flex items-center gap-2 rounded-lg bg-rose-500/10 px-2 py-2 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 border border-rose-500/30 cursor-pointer sm:px-3.5 sm:py-1.5"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Déconnexion</span>
-          </button>
+          <div id="session-actions" onKeyDown={event => { if (event.key === "Escape") setMobileActionsOpen(false); }} className={`${mobileActionsOpen ? "grid" : "hidden"} absolute right-4 top-full mt-2 w-40 grid-cols-2 gap-2 rounded-xl border border-base-300 bg-base-100 p-2 text-base-content shadow-lg lg:static lg:mt-0 lg:flex lg:w-auto lg:items-center lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}>
+            <div className="col-span-2 border-b border-base-300 px-1 pb-2 lg:hidden"><ThemeSwitcher /></div>
+            <button
+              type="button"
+              onClick={() => { setShowProfile(current => !current); setMobileActionsOpen(false); }}
+              aria-expanded={showProfile}
+              aria-controls="session-profile"
+              aria-label={showProfile ? "Masquer le profil" : "Mon profil"}
+              title={showProfile ? "Masquer le profil" : "Mon profil"}
+              className={`btn min-h-11 justify-center gap-1 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:min-h-9 ${showProfile ? "btn-primary btn-soft" : "btn-outline border-base-300"}`}
+            >
+              <UserIcon className="size-4 shrink-0" aria-hidden="true" />
+              <ChevronDown className={`size-3.5 shrink-0 motion-safe:transition-transform ${showProfile ? "rotate-180" : ""}`} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              aria-label="Déconnexion"
+              title="Déconnexion"
+              className="btn btn-error btn-ghost min-h-11 min-w-11 justify-center rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error lg:min-h-9 lg:min-w-9"
+            >
+              <LogOut className="size-4 shrink-0" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {mobileLinks.some(link => link.visible) && <nav aria-label="Accès rapides" className="flex flex-wrap gap-2 lg:hidden">
+          {mobileLinks.filter(link => link.visible).map(link => (
+            <a key={link.module} href={`#/${link.module}`} aria-current={activeModule === link.module ? "page" : undefined} className={`btn btn-sm ${activeModule === link.module ? "btn-primary" : "btn-ghost"}`}>
+              <link.icon className="size-4 shrink-0" aria-hidden="true" /> {link.label}
+            </a>
+          ))}
+        </nav>}
         {(authorizationError || usersError || Object.keys(auxiliaryErrors).length > 0 || Object.keys(synchronization.errors).length > 0) && (
           <div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-950/40 p-4 text-sm text-amber-100">
             {authorizationError && <p>Droits utilisateur : {authorizationError}</p>}
@@ -2443,7 +2487,7 @@ export default function AuthenticatedSessionView() {
           <section className="space-y-4">
             {currentAppUser.roleId !== "REVENDEUR" && (
               <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">
-                ← Retour à l'accueil
+                <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
               </button>
             )}
             <ResellerPortalView
@@ -2462,14 +2506,14 @@ export default function AuthenticatedSessionView() {
               onMarkNotificationsRead={handleMarkResellerNotificationsRead}
             />
           </section>
-        ) : activeModule === "sales" && currentAppUser ? (
+        ) : activeModule === "sales" && currentAppUser && canOpenSales ? (
           <section className="space-y-4">
             <button
               type="button"
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <SalesView
               focusedSaleId={notificationAction?.item.module === "sales" ? notificationAction.item.entityId : undefined}
@@ -2492,14 +2536,14 @@ export default function AuthenticatedSessionView() {
               onCancelSale={handleCancelSale}
             />
           </section>
-        ) : activeModule === "stocks" && currentAppUser ? (
+        ) : activeModule === "stocks" && currentAppUser && canOpenStocks ? (
           <section className="space-y-4">
             <button
               type="button"
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <HistoryPaging {...movementHistory} />
             <StocksView
@@ -2516,13 +2560,13 @@ export default function AuthenticatedSessionView() {
           </section>
         ) : activeModule === "employeePresentation" && currentAppUser ? (
           <section className="space-y-4">
-            <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300">← Retour à l’accueil</button>
+            <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300"><ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l’accueil</button>
             <EmployeePresentationView onBack={() => setActiveModule("home")} user={currentAppUser} stores={accessibleStores} employees={employees} />
           </section>
         ) : activeModule === "inventory" && currentAppUser && (canCountInventory || canReviewInventory) ? (
           <section className="space-y-4">
             <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <InventoryControlView
               employees={employees}
@@ -2555,7 +2599,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <StoresView
               stores={inventoryStores}
@@ -2576,7 +2620,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <UnitsView units={units} articles={articles} currentUser={currentAppUser} onCreateUnit={handleCreateUnit} onToggleUnit={handleToggleUnit} onDeleteUnit={handleDeleteUnit} onImportData={handleImportUnits} onResetData={handleResetUnits} />
           </section>
@@ -2587,7 +2631,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <CatalogView
               articles={articles}
@@ -2611,7 +2655,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <TransfersView
               focusedTransferId={notificationAction?.item.module === "transfers" ? notificationAction.item.entityId : undefined}
@@ -2623,8 +2667,8 @@ export default function AuthenticatedSessionView() {
               canCreate={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "transfers.create")}
               canReject={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               canShip={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN" || hasPermission(currentAppUser, "transfers.ship")}
-              canReceive={hasPermission(currentAppUser, "transfers.receive")}
-              canValidate={hasPermission(currentAppUser, "transfers.validate")}
+              canReceive={["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) || hasPermission(currentAppUser, "transfers.receive")}
+              canValidate={["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) || hasPermission(currentAppUser, "transfers.validate")}
               canResolveDiscrepancy={currentAppUser.roleId === "SUPER_ADMIN" || currentAppUser.roleId === "ADMIN"}
               onCreateTransfer={handleCreateTransfer}
               onUpdateTransfer={handleUpdateTransfer}
@@ -2646,7 +2690,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <ReportsView
               isReportReady={isReportReady}
@@ -2714,7 +2758,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <HistoryPaging {...auditHistory} />
             <AuditView
@@ -2731,7 +2775,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <HistoryPaging {...movementHistory} label="Consommations" />
             <ProductionView
@@ -2758,7 +2802,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <ProcurementView
               suppliers={suppliers}
@@ -2790,7 +2834,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <ExpensesView
               key={authScope}
@@ -2814,10 +2858,10 @@ export default function AuthenticatedSessionView() {
             />
           </section>
         ) : activeModule === "treasury" && currentAppUser && user.status === "ACTIVE" && canManageStores ? (
-          <section className="space-y-4"><button type="button" onClick={() => setActiveModule("home")} className="text-sm text-slate-300">← Retour à l’accueil</button><TreasuryView user={currentAppUser} {...treasury} purchases={purchases} expenses={expenses} /></section>
+          <section className="space-y-4"><button type="button" onClick={() => setActiveModule("home")} className="text-sm text-slate-300"><ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l’accueil</button><TreasuryView user={currentAppUser} {...treasury} purchases={purchases} expenses={expenses} /></section>
         ) : activeModule === "cashHandovers" && currentAppUser && user.status === "ACTIVE" && (currentAppUser.roleId === "ADMIN" || ["view", "create", "receive", "deposit"].some(action => hasPermission(currentAppUser, `cash_handover.${action}`))) ? (
           <section className="space-y-4">
-            <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white">← Retour à l'accueil</button>
+            <button type="button" onClick={() => setActiveModule("home")} className="text-sm font-semibold text-slate-300 hover:text-white"><ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil</button>
             <CashHandoverView
               handovers={cashHandovers}
               loadError={cashHandoversError || expensesLoadError}
@@ -2846,7 +2890,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <CreditManagementView
               customers={creditCustomers}
@@ -2867,7 +2911,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("home")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour à l'accueil
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <StaffView users={managedUsers} onLinkAccount={handleLinkEmployee} onOpenUsers={openUserManagement} employees={employees} stores={inventoryStores} expenses={expenses} advances={salaryAdvances} onOpenPayroll={() => setActiveModule("payroll")} onSaveEmployee={handleSaveEmployee} />
           </section>
@@ -2878,7 +2922,7 @@ export default function AuthenticatedSessionView() {
               onClick={() => setActiveModule("staff")}
               className="text-sm font-semibold text-slate-300 hover:text-white"
             >
-              ← Retour au personnel
+              <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour au personnel
             </button>
             <PayrollView
               employees={employees}
@@ -2898,6 +2942,8 @@ export default function AuthenticatedSessionView() {
             stores={inventoryStores}
             sales={visibleSales}
             expenses={expenses}
+            stocks={visibleStocks}
+            transfers={visibleTransfers}
             onOpenUsers={openUserManagement}
             onOpenSales={() => setActiveModule("sales")}
             onOpenStocks={() => setActiveModule("stocks")}
@@ -2906,6 +2952,7 @@ export default function AuthenticatedSessionView() {
             onOpenCatalog={() => setActiveModule("catalog")}
             onOpenProcurement={() => setActiveModule("procurement")}
             onOpenExpenses={() => setActiveModule("expenses")}
+            onOpenTreasury={() => setActiveModule("treasury")}
             onOpenCashHandovers={() => setActiveModule("cashHandovers")}
             onOpenTransfers={() => setActiveModule("transfers")}
             onOpenCredit={() => setActiveModule("credit")}
@@ -2949,7 +2996,7 @@ export default function AuthenticatedSessionView() {
         )}
 
         {showProfile && (
-          <section className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-5" aria-label="Profil utilisateur">
+          <section ref={profilePanel} id="session-profile" tabIndex={-1} className="scroll-mt-24 bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-5" aria-label="Profil utilisateur">
             <div className="flex items-center justify-between border-b border-slate-700/70 pb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <UserIcon className="w-4 h-4 text-emerald-400" />

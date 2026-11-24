@@ -1,4 +1,5 @@
 import { buildSalesStoreMatrix } from "./salesStoreMatrix";
+import { expenseRemainingAmount } from './expensePayments';
 import { buildArticleStockRows } from "./stockByArticle";
 import {
   Purchase, TreasuryFund, TreasuryMovement,
@@ -212,7 +213,8 @@ export function filterReportData(data: ReportData, filters: GeneralFilters): Rep
       handover.payment_method === "MVOLA" ? "MVola" : handover.payment_method === "OTHER" ? "Autre mode de paiement" : "Espèces",
       ...handover.deposits.flatMap(deposit => [deposit.bank_name, deposit.reference]))
   );
-  const purchases = data.purchases?.filter(purchase => matchesStore(purchase.store_id) && isInPeriod(purchase.created_at, filters) &&
+  const purchases = data.purchases?.filter(purchase => matchesStore(purchase.store_id) &&
+    (!(filters.startDate || filters.endDate) || (purchase.payments || []).some(payment => isInPeriod(payment.paid_at, filters))) &&
     matchesStatus(purchase.status || "RECEIVED") && (!filters.supplierId || purchase.supplier_id === filters.supplierId) &&
     (!articleFiltersActive || purchase.lines.some(line => matchesArticle(line.article_id))) &&
     matchesQuery(purchase.purchase_number, purchase.supplier_name, purchase.invoice_number, purchase.notes));
@@ -258,7 +260,7 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
         { label: "Reste à payer", value: money(rows.reduce((sum, row) => sum + Math.max(0, row.total - row.amount_paid), 0)) }];
     }
     case "TREASURY": {
-      const rows = buildTreasuryReportRows(data.treasuryFunds || [], data.treasuryMovements || [], filters);
+      const rows = buildTreasuryReportRows(data.treasuryFunds || [], data.treasuryMovements || [], filters, data.sales, data.auditLogs);
       return [{ label: "Fonds", value: String(rows.length) }, ...(["incoming", "outgoing", "balance"] as const).map((key, index) => ({
         label: ["Entrées de la période", "Sorties de la période", "Reste en fin de période"][index], value: money(rows.reduce((sum, row) => sum + row[key], 0))
       }))];
@@ -375,7 +377,7 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
       return [
         { label: "Dépenses", value: String(expenses.length) },
         { label: "Total validé", value: money(validated.reduce((sum, expense) => sum + expense.amount, 0)) },
-        { label: "En attente de paiement", value: money(validated.filter(expense => expense.payment_status === "PENDING").reduce((sum, expense) => sum + expense.amount, 0)) },
+        { label: "En attente de paiement", value: money(validated.reduce((sum, expense) => sum + expenseRemainingAmount(expense), 0)) },
         { label: "Brouillons", value: String(expenses.filter(expense => expenseStatus(expense) === "DRAFT").length) },
         { label: "Annulées", value: String(expenses.filter(expense => expenseStatus(expense) === "CANCELLED").length) }
       ];
@@ -390,10 +392,11 @@ export function getReportKpis(reportType: ReportType, data: ReportData, categori
   }
 }
 
-export interface TreasuryReportRow { id: string; owner: string; reference: string; opening: number; incoming: number; outgoing: number; balance: number; }
-export function buildTreasuryReportRows(funds: TreasuryFund[], movements: TreasuryMovement[], filters: GeneralFilters): TreasuryReportRow[] {
+export interface TreasuryReportRow { id: string; owner: string; reference: string; reseller: string; nature: string; opening: number; incoming: number; outgoing: number; balance: number; }
+export function buildTreasuryReportRows(funds: TreasuryFund[], movements: TreasuryMovement[], filters: GeneralFilters, sales: Sale[] = [], auditLogs: AuditLog[] = []): TreasuryReportRow[] {
   const start = filters.startDate ? new Date(filters.startDate + "T00:00:00").getTime() : -Infinity;
   const end = filters.endDate ? new Date(filters.endDate + "T23:59:59.999").getTime() : Infinity;
+  const salesByNumber = new Map(sales.map(sale => [sale.sale_number, sale]));
   return funds.filter(fund => fund.created_at <= end && (!filters.treasuryAdminId || fund.owner_id === filters.treasuryAdminId)).map(fund => {
     let incoming = 0, outgoing = 0, after = 0;
     for (const movement of movements) {
@@ -403,7 +406,24 @@ export function buildTreasuryReportRows(funds: TreasuryFund[], movements: Treasu
       else if (movement.created_at >= start) { incoming += credit; outgoing += debit; }
     }
     const balance = fund.balance - after;
-    return { id: fund.id, owner: fund.owner_name, reference: fund.source_reference, opening: balance - incoming + outgoing, incoming, outgoing, balance };
-  }).filter(row => (!filters.searchRef || (row.owner + " " + row.reference).toLocaleLowerCase('fr-FR').includes(filters.searchRef.toLocaleLowerCase('fr-FR'))) &&
+    const reference = fund.source_reference || "";
+    const manual = reference.startsWith("Règlement dette manuelle ");
+    const recovery = reference.startsWith("Règlement revendeur ");
+    let reseller = "—";
+    if (manual || recovery) {
+      const prefix = manual ? "Règlement dette manuelle " : "Règlement revendeur ";
+      const [documentReference, paymentId, ...nameParts] = reference.slice(prefix.length).split(" · ");
+      const savedName = nameParts.join(" · ");
+      if (manual) {
+        const payment = auditLogs.find(log => log.action === "MANUAL_CREDIT_PAYMENT" && log.new_value?.id === paymentId);
+        const debt = auditLogs.find(log => log.action === "MANUAL_CREDIT_CREATED" &&
+          (payment?.new_value?.debt_id ? log.new_value?.id === payment.new_value.debt_id :
+            log.new_value?.reference === documentReference && log.new_value?.payments?.some((item: { id: string }) => item.id === paymentId)));
+        reseller = savedName || debt?.new_value?.customer_name || salesByNumber.get(documentReference)?.customer_name || "Revendeur non renseigné";
+      } else reseller = savedName || salesByNumber.get(documentReference)?.customer_name || "Revendeur non renseigné";
+    }
+    const nature = manual ? "Dette" : recovery ? "Recouvrement" : ({ POS: "Remise de caisse", BANK: "Retrait bancaire", OPENING: "Solde initial", OTHER: "Autre source" }[fund.source] || "Autre source");
+    return { id: fund.id, owner: fund.owner_name, reference, reseller, nature, opening: balance - incoming + outgoing, incoming, outgoing, balance };
+  }).filter(row => (!filters.searchRef || (row.owner + " " + row.reference + " " + row.reseller + " " + row.nature).toLocaleLowerCase('fr-FR').includes(filters.searchRef.toLocaleLowerCase('fr-FR'))) &&
     (filters.treasuryView === "IN" ? row.incoming > 0 : filters.treasuryView === "OUT" ? row.outgoing > 0 : filters.treasuryView === "BALANCE" ? row.balance !== 0 : true));
 }

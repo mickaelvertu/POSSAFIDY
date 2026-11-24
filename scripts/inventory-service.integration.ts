@@ -125,6 +125,34 @@ test('real validation service rejects non-super assignment before changing stock
   await assert.rejects(validateInventoryCount(count, { soap: 'REJECTED' }, { id: 'super', name: 'Admin' }, 'Test', [stock], () => audit('count-audit'), 'employee'), /SUPER_ADMIN/);
   assert.equal((await (await read('stocks/stock')).json()).fields.quantity.integerValue, '10');
 });
+test('validates 26 POS shortages atomically and preserves existing stock fields', async () => {
+  await seed();
+  const lines = Array.from({ length: 26 }, (_, index) => ({
+    ...count.lines[0], article_id: `inventory-article-${index}`,
+  }));
+  const largeCount = { ...count, lines };
+  const rows = lines.map(line => ({
+    ...stock, id: `stock-${line.article_id}`, article_id: line.article_id, quarantine_quantity: 3,
+  }));
+  assert.equal((await commit([
+    write('inventoryCounts/count', largeCount),
+    ...rows.map(row => write(`stocks/${row.id}`, row)),
+    ...lines.map(line => write(`articles/${line.article_id}`, { article_type: 'RESALE' })),
+  ])).status, 200);
+  const legacy = await commit([
+    ...rows.map(row => write(`stocks/${row.id}`, { ...row, quantity: 8 })),
+  ], fixture.token);
+  assert.ok([403, 500].includes(legacy.status), JSON.stringify(legacy));
+  const validated = await validateInventoryCount(largeCount, {}, { id: 'super', name: 'Super' }, '', rows, () => audit('large-count'));
+  assert.equal(validated.count.status, 'VALIDATED');
+  assert.equal(validated.movements.length, 26);
+  for (const row of rows) {
+    const { fields } = await (await read(`stocks/${row.id}`)).json();
+    assert.equal(fields.quantity.integerValue, '8');
+    assert.equal(fields.quarantine_quantity.integerValue, '3');
+  }
+  await assert.rejects(validateInventoryCount(largeCount, {}, { id: 'super', name: 'Super' }, '', rows, () => audit('replay')));
+});
 test('payroll failure leaves the charge pending; successful retry settles both exactly once', async () => {
   await seed();
   const validated = await validateInventoryCount(count, { soap: 'REJECTED' }, { id: 'super', name: 'Super' }, 'Test', [stock], () => audit('count-audit'), 'employee');

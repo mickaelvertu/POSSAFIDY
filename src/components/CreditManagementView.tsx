@@ -1,4 +1,8 @@
 import ManualResellerDebts from './ManualResellerDebts';
+import SupplierPaymentCalendar from './SupplierPaymentCalendar';
+import TreasuryDetailsDialog from './TreasuryDetailsDialog';
+import { resellerCalendarEntries, type ResellerCalendarEntry } from '../services/resellerPaymentCalendar';
+import type { ManualCreditDebt } from '../services/manualCreditCalculation';
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AppUser, CreditCustomer, CreditFollowUp, CreditPayment, PaymentMethod, Sale, UserProfile } from "../types";
 import { Banknote, CalendarClock, CircleAlert, HandCoins, Plus, Search, Users } from "lucide-react";
@@ -47,6 +51,9 @@ export default function CreditManagementView({
   onReversePayment,
   onRecordFollowUp
 }: CreditManagementViewProps) {
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [manualDebts, setManualDebts] = useState<ManualCreditDebt[]>([]);
+  const [calendarDetailId, setCalendarDetailId] = useState('');
   const [search, setSearch] = useState("");
   const [selectedReseller, setSelectedReseller] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<CreditCustomer | null>(null);
@@ -86,6 +93,9 @@ export default function CreditManagementView({
   const resellerKey = (sale: Sale) => sale.credit_customer_id
     ? `id:${sale.credit_customer_id}`
     : `legacy:${JSON.stringify([sale.customer_name.trim().toLocaleLowerCase("fr-FR"), sale.customer_phone || ""])}`;
+  const calendarEntries = useMemo(() => resellerCalendarEntries(sales, canManage ? manualDebts : [], customers), [sales, manualDebts, customers, canManage]);
+  const calendarDetail = calendarEntries.find(entry => entry.id === calendarDetailId);
+  const filteredCalendarEntries = calendarEntries.filter(entry => (!selectedReseller || entry.supplier_id === selectedReseller) && `${entry.supplier_name} ${entry.purchase_number}`.toLocaleLowerCase('fr-FR').includes(search.trim().toLocaleLowerCase('fr-FR')));
   const resellerOptions = useMemo(() => {
     const options = new Map(customers.map(customer => [`id:${customer.id}`, { name: customer.name, phone: customer.phone }]));
     for (const sale of sales) {
@@ -198,7 +208,7 @@ export default function CreditManagementView({
   };
 
   return (
-    <div className="space-y-5 text-slate-900">
+    <div className="treasury-shell space-y-5 text-slate-900">
       <header className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
@@ -207,9 +217,10 @@ export default function CreditManagementView({
           </div>
           <p className="mt-1 text-sm text-slate-500">Gérez les plafonds, suivez les échéances et consignez les relances effectuées.</p>
         </div>
+        <div className="flex flex-wrap gap-2"><button type="button" className="ui-btn gap-2 text-xs" aria-expanded={calendarOpen} aria-controls="reseller-payment-calendar" onClick={() => setCalendarOpen(open => !open)}><CalendarClock className="h-4 w-4" />Calendrier des paiements</button>
         {canManage && <button type="button" onClick={() => openEditor()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-800">
           <Plus className="h-4 w-4" /> Ajouter un revendeur
-        </button>}
+        </button>}</div>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -229,7 +240,16 @@ export default function CreditManagementView({
         <p className="text-xs text-slate-500">S’applique aux échéances et aux ventes récemment encaissées.</p>
       </div>
 
-      {canManage && <ManualResellerDebts customers={customers} currentUser={currentUser} selectedReseller={selectedReseller} search={search} />}
+      {calendarOpen && <SupplierPaymentCalendar purchases={filteredCalendarEntries} reseller onPurchase={(entry: ResellerCalendarEntry) => setCalendarDetailId(entry.id)} />}
+      {calendarDetail && <TreasuryDetailsDialog title={`Crédit de ${calendarDetail.supplier_name}`} onClose={() => setCalendarDetailId('')}>
+        <p className="mt-3 text-sm">{calendarDetail.purchase_number}</p><p className="mt-2 text-sm">Échéance : {new Date(calendarDetail.expected_payment_at).toLocaleDateString('fr-FR')}</p>
+        <dl className="mt-4 space-y-2 text-sm tabular-nums">{[['Payé', Math.min(calendarDetail.total, calendarDetail.amount_paid)], ['Non payé', Math.max(0, calendarDetail.total - calendarDetail.amount_paid)], ['Total', calendarDetail.total]].map(([label, value]) => <div key={label} className="flex justify-between gap-4"><dt>{label}</dt><dd className="font-bold">{money(Number(value))}</dd></div>)}</dl>
+        <h4 className="mt-5 font-semibold">Règlements enregistrés</h4>
+        {(calendarDetail.sale?.credit_payments || calendarDetail.debt?.payments || []).map(payment => <p key={payment.id} className="mt-2 text-sm">{new Date(payment.paid_at).toLocaleDateString('fr-FR')} · {money(payment.amount)} · {paymentMethods.find(item => item.value === payment.method)?.label || payment.method}</p>)}
+        <p className="mt-3 text-xs">Le montant payé inclut les paiements initiaux et tient compte des annulations d’encaissement.</p>
+        {calendarDetail.sale && canManage && calendarDetail.total > calendarDetail.amount_paid && <button type="button" className="ui-btn mt-4" onClick={() => { openPayment(calendarDetail.sale!, true); setCalendarDetailId(''); }}>Encaisser</button>}
+      </TreasuryDetailsDialog>}
+      {canManage && <ManualResellerDebts customers={customers} currentUser={currentUser} selectedReseller={selectedReseller} search={search} onDebtsChange={setManualDebts} />}
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center">

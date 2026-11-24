@@ -18,11 +18,12 @@ import {
   RECYCLING_DECISION_LABELS
 } from "../types";
 import { generateRef, getArticleStock } from "../services/stockService";
-import { 
+import {
+  Recycle,
   Factory, 
   Plus, 
   CheckCircle2, 
-  ArrowRight, 
+  ArrowRight,
   RotateCcw, 
   X, 
   Trash2, 
@@ -454,7 +455,7 @@ export default function ProductionView({
       {recyclingSummary.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
           <h3 className="text-sm font-bold text-slate-900 mb-2">Bilan des retours par motif</h3>
-          <p className="mb-2 text-[11px] text-emerald-700">♻ Recyclé consommé en fabrication : <span className="font-mono font-bold">{recycledConsumedTotal}</span></p>
+          <p className="mb-2 text-[11px] text-emerald-700"><Recycle className="inline size-3.5 align-text-bottom" aria-hidden="true" /> Recyclé consommé en fabrication : <span className="font-mono font-bold">{recycledConsumedTotal}</span></p>
           <table className="w-full text-xs">
             <thead>
               <tr className="text-left text-slate-500 border-b border-slate-100">
@@ -562,7 +563,7 @@ export default function ProductionView({
                 <div className="space-y-1.5">
                   {p.consumptions.map((c) => (
                     <div key={c.id} className="flex justify-between items-center">
-                      <span className="font-medium text-slate-800">[{c.article_code}] {c.article_name}{c.source === "RECYCLED" && <span className="ml-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">♻ recyclé</span>}</span>
+                      <span className="font-medium text-slate-800">[{c.article_code}] {c.article_name}{c.source === "RECYCLED" && <span className="ml-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700"><Recycle className="inline size-3.5 align-text-bottom" aria-hidden="true" /> recyclé</span>}</span>
                       <span className="font-mono font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
                         -{c.quantity} {c.unit}
                       </span>
@@ -684,7 +685,7 @@ export default function ProductionView({
 
                 <div className="mt-3 border-t border-rose-200 pt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-emerald-800">♻ Articles recyclés à consommer (stock à recycler) :</span>
+                    <span className="font-bold text-emerald-800"><Recycle className="inline size-3.5 align-text-bottom" aria-hidden="true" /> Articles recyclés à consommer (stock à recycler) :</span>
                     <button
                       type="button"
                       disabled={recycledArticles.length === 0}

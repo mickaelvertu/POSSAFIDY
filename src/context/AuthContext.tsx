@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { User, AuthState, SignUpPayload, ResellerSignUpPayload, LoginPayload, ApiResponse } from "../types/auth";
 import { authService } from "../services/authService";
 import { auth, db } from "../firebase";
@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authorizationError, setAuthorizationError] = useState<string | null>(null);
   const [authorizationRetry, setAuthorizationRetry] = useState(0);
   const [sessionMessage, setSessionMessage] = useState<string | null>(null);
+  const loginInProgress = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -136,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (expired) return;
       try {
+        if (firebaseUser && loginInProgress.current) return;
         const currentUser = firebaseUser ? await authService.restoreSession() : null;
         if (!isMounted || version !== currentVersion || expired) return;
         setUser(keepStableUser(currentUser));
@@ -169,14 +171,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const handleLogin = async (payload: LoginPayload): Promise<ApiResponse<{ token: string; user: User }>> => {
-    const res = await authService.login(payload);
-    if (res.success && res.data) {
-      setSessionMessage(null);
-      setUser(res.data.user);
-      setToken(res.data.token);
-      setIsProfileFromCache(false);
+    loginInProgress.current = true;
+    try {
+      const res = await authService.login(payload);
+      if (res.success && res.data) {
+        setSessionMessage(null);
+        setUser(res.data.user);
+        setToken(res.data.token);
+        setIsProfileFromCache(false);
+      }
+      return res;
+    } finally {
+      loginInProgress.current = false;
     }
-    return res;
   };
 
   const handleLogout = async (): Promise<void> => {

@@ -1,6 +1,6 @@
 import { storeLabel } from "../services/storeLabel";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
-import { Banknote, Building2, CheckCircle2, ClipboardCheck, Landmark, Plus, ReceiptText } from "lucide-react";
+import { X, Banknote, Building2, CheckCircle2, ClipboardCheck, Landmark, Plus, ReceiptText } from "lucide-react";
 import { AppUser, CashHandover, CashHandoverDeposit, Expense, ResellerReceipt, Sale, Store } from "../types";
 import { scopedQueries, subscribeRows } from "../services/liveDataService";
 import { pendingResellerReceipts, resellerReceiptTotal } from "../services/resellerReceiptCalculation";
@@ -270,7 +270,7 @@ export default function CashHandoverView({
       <form onSubmit={onSubmit} className="w-full max-w-lg space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-900/20 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-lg font-black text-slate-900">{title}</h2>
-          <button type="button" onClick={() => { resetCreateForm(); setReceiptHandover(null); setDepositHandover(null); setFormError(""); }} className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700">✕</button>
+          <button type="button" onClick={() => { resetCreateForm(); setReceiptHandover(null); setDepositHandover(null); setFormError(""); }} aria-label="Fermer" className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"><X className="size-4" aria-hidden="true" /></button>
         </div>
         {children}
         {formError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{formError}</p>}

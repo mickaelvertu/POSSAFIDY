@@ -1,10 +1,27 @@
 import { collection, doc, getDoc, getDocs, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { auth, db, runOnlineTransaction } from "../firebase";
-import { AuditLog, Expense, SalaryAdvance } from "../types";
+import { AuditLog, Expense, ExpensePayment, SalaryAdvance } from "../types";
 import { prepareExpenseRefund, prepareFundDebit } from "./treasuryService";
+import { assertExpensePayment, expensePaidAmount } from './expensePayments';
 
 const EXPENSES_COLLECTION = "expenses";
 export const STORE_EXPENSE_FUNDS = "__STORE__";
+
+async function prepareInstallment(transaction: import('firebase/firestore').Transaction, expense: Expense, fundId: string, userId: string, amount: number, id: string, now: number) {
+  assertExpensePayment(expense, amount);
+  const store = fundId === STORE_EXPENSE_FUNDS ? await storePaymentFields(transaction, expense, userId, now) : null;
+  const debit = store ? null : await prepareFundDebit(transaction, fundId, userId, amount);
+  const payment: ExpensePayment = { id, amount, fund_id: fundId, funding_source: store ? 'STORE' : 'ADMIN_FUND',
+    fund_name: store ? store.paid_by_name : debit!.fund.source_reference, paid_by: userId,
+    paid_by_name: store ? store.paid_by_name : debit!.fund.owner_name, paid_at: now };
+  const paid = expensePaidAmount(expense) + amount;
+  return { fields: { payments: [...(expense.payments || []), payment], amount_paid: paid,
+    treasury_paid_amount: (expense.treasury_paid_amount || 0) + (debit ? amount : 0),
+    payment_status: paid >= expense.amount ? 'PAID' as const : 'PARTIAL' as const }, apply() {
+    if (debit) debit.apply({ id, kind: 'EXPENSE', fund_id: fundId, destination_fund_id: '', from_user: userId,
+      to_user: '', amount, reference: expense.expense_number, purchase_id: '', expense_id: expense.id, created_by: userId, created_at: now });
+  } };
+}
 
 async function storePaymentFields(transaction: import("firebase/firestore").Transaction, expense: Expense, userId: string, timestamp: number) {
   if (!expense.store_id) throw new Error("Sélectionnez un magasin pour utiliser ses fonds.");
@@ -47,7 +64,8 @@ export async function validateExpense(
   isAdmin = false,
   salaryAdvance?: SalaryAdvance,
   salaryAdvanceAuditLog?: AuditLog,
-  treasuryFundId?: string
+  treasuryFundId?: string,
+  paymentAmount?: number
 ): Promise<Expense> {
   return runOnlineTransaction(async transaction => {
     const ref = doc(db, EXPENSES_COLLECTION, expense.id);
@@ -97,6 +115,17 @@ export async function validateExpense(
     }
 
     const validatedAt = Date.now();
+    if (paymentAmount !== undefined && current.category !== 'SALARY_ADVANCE' && isAdmin && current.payment_status === 'PAID') {
+      if (!treasuryFundId) throw new Error('Choisissez la source du règlement.');
+      const installment = await prepareInstallment(transaction, current, treasuryFundId, userId, paymentAmount, `expense-payment-${auditLog.id}`, validatedAt);
+      const fields = { status: 'VALIDATED' as const, validated_by: userId, validated_at: validatedAt, ...installment.fields };
+      installment.apply();
+      transaction.update(ref, fields);
+      const updated = { ...current, ...fields };
+      transaction.set(doc(db, 'auditLogs', auditLog.id), omitUndefined({ ...auditLog, old_value: current, new_value: updated }));
+      return updated;
+    }
+    if (current.category === 'SALARY_ADVANCE' && paymentAmount !== undefined && paymentAmount !== current.amount) throw new Error('Une avance sur salaire doit être réglée intégralement.');
     if (isAdmin && current.payment_status === "PAID" && !treasuryFundId) {
       throw new Error("Choisissez votre fonds de trésorerie pour régler cette dépense.");
     }
@@ -183,6 +212,7 @@ export async function deleteExpense(expense: Expense, auditLog: AuditLog): Promi
     const current = await transaction.get(ref);
     if (!current.exists()) throw new Error("Cette dépense n'existe plus.");
     const value = current.data() as Expense;
+    if ((value.refunded_amount || 0) < (value.treasury_paid_amount || 0)) throw new Error('Terminez les remboursements aux fonds avant de supprimer la dépense.');
     if (value.status !== "DRAFT" && value.status !== "CANCELLED") throw new Error("Annulez cette dépense avant de la supprimer.");
     if (value.treasury_movement_id && !value.treasury_reversal_id) throw new Error("Le paiement doit être annulé avant la suppression.");
     transaction.delete(ref);
@@ -193,7 +223,7 @@ export async function deleteExpense(expense: Expense, auditLog: AuditLog): Promi
 export async function cancelExpense(expenseId: string, reason: string, userName: string, auditLog: AuditLog): Promise<Expense> {
   const userId = auth.currentUser?.uid;
   if (!userId || !reason.trim()) throw new Error("Indiquez le motif de l'annulation.");
-  return runOnlineTransaction(async transaction => {
+  const cancelled = await runOnlineTransaction(async transaction => {
     const ref = doc(db, EXPENSES_COLLECTION, expenseId);
     const [snapshot, profile] = await Promise.all([transaction.get(ref), transaction.get(doc(db, "users", userId))]);
     if (!profile.exists() || profile.data().status !== "ACTIVE" || !["ADMIN", "SUPER_ADMIN"].includes(profile.data().role)) {
@@ -201,7 +231,10 @@ export async function cancelExpense(expenseId: string, reason: string, userName:
     }
     if (!snapshot.exists()) throw new Error("Cette dépense n'existe plus.");
     const current = snapshot.data() as Expense;
-    if (current.status === "CANCELLED") throw new Error("Cette dépense est déjà annulée.");
+    if (current.status === "CANCELLED") {
+      if (current.payments?.length) return current;
+      throw new Error("Cette dépense est déjà annulée.");
+    }
     const advanceRef = current.salary_advance_id ? doc(db, "salaryAdvances", current.salary_advance_id) : null;
     const advance = advanceRef ? await transaction.get(advanceRef) : null;
     if (advance?.exists() && (advance.data().status !== "OUTSTANDING" || (advance.data().amount_deducted ?? 0) !== 0 || advance.data().payslip_id)) {
@@ -221,18 +254,53 @@ export async function cancelExpense(expenseId: string, reason: string, userName:
     transaction.set(doc(db, "auditLogs", auditLog.id), omitUndefined({ ...auditLog, old_value: current, new_value: updated }));
     return updated;
   });
+  // Refund each installment independently. Stable reversal IDs make retries
+  // safe, including after a lost connection partway through cancellation.
+  for (let index = 0; index < (cancelled.payments?.length || 0); index++) {
+    const payment = cancelled.payments![index];
+    if (payment.funding_source !== 'ADMIN_FUND') continue;
+    await runOnlineTransaction(async transaction => {
+      const expenseRef = doc(db, EXPENSES_COLLECTION, expenseId);
+      const reversalId = `expense-refund-${payment.id}`;
+      const [snapshot, existing] = await Promise.all([transaction.get(expenseRef), transaction.get(doc(db, 'treasuryMovements', reversalId))]);
+      const current = snapshot.data() as Expense;
+      if (!current || current.status !== 'CANCELLED') throw new Error('Annulation introuvable.');
+      if (existing.exists()) return;
+      const refund = await prepareExpenseRefund(transaction, { ...current, amount: payment.amount, treasury_fund_id: payment.fund_id, treasury_movement_id: payment.id });
+      const now = Date.now();
+      refund.apply({ id: reversalId, kind: 'EXPENSE_REFUND', fund_id: '', destination_fund_id: payment.fund_id,
+        from_user: '', to_user: refund.fund.owner_id, amount: payment.amount, reference: `${current.expense_number} / ${current.cancellation_reason}`,
+        purchase_id: '', expense_id: expenseId, expense_payment_index: index, created_by: userId, created_at: now });
+      transaction.update(expenseRef, { refunded_amount: (current.refunded_amount || 0) + payment.amount,
+        refunded_payment_ids: [...(current.refunded_payment_ids || []), payment.id] });
+      const refundAudit = { ...auditLog, id: `${auditLog.id}-${index}`, action: 'EXPENSE_PAYMENT_REFUNDED', old_value: current,
+        new_value: { ...current, refunded_amount: (current.refunded_amount || 0) + payment.amount } };
+      transaction.set(doc(db, 'auditLogs', refundAudit.id), omitUndefined(refundAudit));
+    });
+  }
+  return (await getDoc(doc(db, EXPENSES_COLLECTION, expenseId))).data() as Expense;
 }
 
-export async function payValidatedExpense(expenseId: string, fundId: string, userId: string, auditLog: AuditLog): Promise<Expense> {
+export async function payValidatedExpense(expenseId: string, fundId: string, userId: string, auditLog: AuditLog, amount?: number, expectedPaid?: number): Promise<Expense> {
   return runOnlineTransaction(async transaction => {
     const ref = doc(db, EXPENSES_COLLECTION, expenseId);
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists()) throw new Error("Dépense introuvable.");
     const current = snapshot.data() as Expense;
-    if (current.status !== "VALIDATED" || current.payment_status !== "PENDING" || current.treasury_movement_id) {
+    if (current.status !== "VALIDATED" || !['PENDING', 'PARTIAL'].includes(current.payment_status) || current.treasury_movement_id) {
       throw new Error("Cette dépense n'est plus en attente de paiement.");
     }
     const now = Date.now();
+    if (amount !== undefined) {
+      if (expectedPaid !== undefined && expensePaidAmount(current) !== expectedPaid) throw new Error('Les règlements ont changé. Rechargez la dépense avant de réessayer.');
+      const installment = await prepareInstallment(transaction, current, fundId, userId, amount, `expense-payment-${auditLog.id}`, now);
+      installment.apply();
+      transaction.update(ref, installment.fields);
+      const updated = { ...current, ...installment.fields };
+      transaction.set(doc(db, 'auditLogs', auditLog.id), omitUndefined({ ...auditLog, old_value: current, new_value: updated }));
+      return updated;
+    }
+    if (current.payments?.length) throw new Error('Indiquez le montant du règlement restant.');
     const storeFields = fundId === STORE_EXPENSE_FUNDS ? await storePaymentFields(transaction, current, userId, now) : null;
     const debit = storeFields ? null : await prepareFundDebit(transaction, fundId, userId, current.amount);
     const id = `expense-${expenseId}`;

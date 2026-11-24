@@ -53,3 +53,42 @@ test('treasury reconstructs historical closing and opening balances, including t
   assert.deepEqual(rows.map(row => [row.opening, row.incoming, row.outgoing, row.balance]), [[100, 0, 30, 70], [0, 30, 0, 30]]);
   assert.deepEqual(buildTreasuryReportRows(funds, movements, { ...filters, treasuryView: 'OUT' }).map(row => row.id), ['a']);
 });
+
+test('treasury identifies reseller recoveries and manual debts without changing totals', () => {
+  const funds = [
+    { id: 'recovery', source: 'OTHER', source_reference: 'Règlement revendeur VTE-1 · payment-1', created_at: 1, balance: 100 },
+    { id: 'manual', source: 'OTHER', source_reference: 'Règlement dette manuelle OLD-1 · payment-2', created_at: 1, balance: 50 },
+    { id: 'new', source: 'OTHER', source_reference: 'Règlement dette manuelle OLD-2 · payment-3 · Rabe', created_at: 1, balance: 25 },
+    { id: 'unknown', source: 'OTHER', source_reference: 'Règlement revendeur missing · unknown', created_at: 1, balance: 10 }
+  ] as TreasuryFund[];
+  const sales = [{ sale_number: 'VTE-1', customer_name: 'Rakoto' }] as import('../types').Sale[];
+  const logs = [
+    { action: 'MANUAL_CREDIT_PAYMENT', new_value: { id: 'payment-2', debt_id: 'debt-1' } },
+    { action: 'MANUAL_CREDIT_CREATED', new_value: { id: 'debt-1', customer_name: 'Rasoa' } }
+  ] as import('../types').AuditLog[];
+  const rows = buildTreasuryReportRows(funds, [], filters, sales, logs);
+  assert.deepEqual(rows.map(row => [row.reseller, row.nature]), [
+    ['Rakoto', 'Recouvrement'], ['Rasoa', 'Dette'], ['Rabe', 'Dette'], ['Revendeur non renseigné', 'Recouvrement']
+  ]);
+  assert.equal(rows.reduce((sum, row) => sum + row.balance, 0), 185);
+  assert.deepEqual(buildTreasuryReportRows(funds, [], { ...filters, searchRef: 'Rasoa' }, sales, logs).map(row => row.id), ['manual']);
+});
+
+test('supplier purchase period uses actual payments, independently of creation and due dates', () => {
+  const at = (day: string) => new Date(day + 'T12:00:00').getTime();
+  const data = { articles: [], stores: [], stocks: [], transfers: [], movements: [], sales: [], productions: [], auditLogs: [],
+    purchases: [
+      { id: 'old-paid-now', store_id: 's', supplier_id: 'one', created_at: at('2026-01-01'), lines: [], payments: [{ paid_at: at('2026-11-16'), amount: 20 }, { paid_at: at('2026-11-17'), amount: 30 }] },
+      { id: 'new-paid-before', store_id: 's', supplier_id: 'one', created_at: at('2026-11-16'), lines: [], payments: [{ paid_at: at('2026-11-15'), amount: 10 }] },
+      { id: 'unpaid', store_id: 's', supplier_id: 'one', created_at: at('2026-11-16'), expected_payment_at: at('2026-11-16'), lines: [], payments: [] },
+      { id: 'other-supplier', store_id: 's', supplier_id: 'two', created_at: at('2026-01-01'), lines: [], payments: [{ paid_at: at('2026-11-16'), amount: 10 }] }
+    ]
+  } as unknown as ReportData;
+  const rows = (extra: Partial<GeneralFilters>) => filterReportData(data, { ...filters, ...extra }).purchases!;
+  assert.deepEqual(rows({ startDate: '2026-11-16', endDate: '2026-11-16', supplierId: 'one' }).map(row => row.id), ['old-paid-now']);
+  assert.equal(rows({ startDate: '2026-11-16', endDate: '2026-11-16', supplierId: 'one' })[0].payments.length, 2);
+  assert.deepEqual(rows({ endDate: '2026-11-15' }).map(row => row.id), ['new-paid-before']);
+  assert.deepEqual(rows({ startDate: '2026-11-17' }).map(row => row.id), ['old-paid-now']);
+  assert.equal(rows({}).length, 4);
+  assert.equal(rows({ startDate: '2026-11-16', endDate: '2026-11-16', storeIds: ['elsewhere'] }).length, 0);
+});

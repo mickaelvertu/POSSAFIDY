@@ -65,7 +65,7 @@ test('assigned depot manager records and confirms the same receipt', async t => 
   const transfer = { id: 'depot-receipt', source_store_id: 'lab', destination_store_id: 'depot', type: 'MANUFACTURER_TO_CENTRAL', status: 'IN_TRANSIT', requested_by: 'super', approved_by: 'super', created_at: 1, lines: [{ article_id: 'finished', quantity_sent: 5, quantity_received: 0, quantity_accepted: 0, quantity_rejected: 0 }] };
   const received = { ...transfer, status: 'RECEIVED', received_by: 'super', received_by_name: 'Manager', received_at: 2, updated_at: 2, has_discrepancy: false, lines: [{ ...transfer.lines[0], quantity_received: 5, quantity_accepted: 5 }] };
   const confirmed = { ...received, status: 'VALIDATED', validated_by: 'super', validated_by_name: 'Manager', validated_at: 3, updated_at: 3 };
-  const profile = { role: 'RESPONSABLE_MAGASIN', status: 'ACTIVE', permissions: ['transfers.view', 'transfers.receive'], assignedStores: ['depot'] };
+  const profile = { role: 'RESPONSABLE_MAGASIN', status: 'ACTIVE', permissions: [], assignedStores: ['depot'] };
   assert.equal((await commit([
     write('users/super', profile),
     write('stores/lab', { store_type: 'MANUFACTURER', is_active: true }),
@@ -78,8 +78,8 @@ test('assigned depot manager records and confirms the same receipt', async t => 
   for (const [label, change] of [
     ['unassigned manager', { assignedStores: ['other'] }],
     ['disabled manager', { status: 'DISABLED' }],
-    ['manager without receipt permission', { permissions: ['transfers.view'] }],
-    ['warehouse operator confirming own receipt', { role: 'MAGASINIER' }]
+    ['warehouse operator without validation permission', { role: 'MAGASINIER', permissions: ['transfers.receive'] }],
+    ['warehouse operator confirming own receipt', { role: 'MAGASINIER', permissions: ['transfers.validate'] }]
   ]) await t.test('denies ' + label, async () => {
     assert.equal((await commit([write('users/super', { ...profile, ...change })])).status, 200);
     assert.equal((await commit([write('transfers/depot-receipt', confirmed)], token)).status, 403);
@@ -90,4 +90,36 @@ test('assigned depot manager records and confirms the same receipt', async t => 
     assert.equal((await commit([write('transfers/depot-receipt', confirmed)], token)).status, 200);
     assert.equal((await commit([write('transfers/depot-receipt', { ...confirmed, updated_at: 4 })], token)).status, 403);
   });
+});
+
+test('transfer receipt permissions are inherited by role and scoped to the destination', async t => {
+  const transfer = {
+    id: 'role-receipt', source_store_id: 'lab', destination_store_id: 'workshop',
+    type: 'STORE_TO_STORE', status: 'IN_TRANSIT', requested_by: 'requester', approved_by: 'approver', created_at: 1,
+    lines: [{ article_id: 'finished', quantity_sent: 5 }],
+  };
+  const received = {
+    ...transfer, status: 'RECEIVED', received_by: 'super', has_discrepancy: false,
+    lines: [{ ...transfer.lines[0], quantity_received: 5, quantity_accepted: 5 }],
+  };
+  const validated = { ...received, status: 'VALIDATED', validated_by: 'super' };
+  for (const [role, assignedStores, expected] of [
+    ['SUPER_ADMIN', [], 200], ['ADMIN', [], 200],
+    ['RESPONSABLE_MAGASIN', ['workshop'], 200], ['PRODUCTION', ['workshop'], 200],
+    ['RESPONSABLE_MAGASIN', ['lab'], 403], ['PRODUCTION', ['lab'], 403],
+    ['MAGASINIER', ['workshop'], 403],
+  ]) {
+    await t.test(`${role} with assignments [${assignedStores}] returns ${expected}`, async () => {
+      assert.equal((await commit([
+        write('users/super', { role, status: 'ACTIVE', permissions: [], assignedStores }),
+        write('stores/workshop', { store_type: 'MANUFACTURER', is_active: true }),
+        write('transfers/role-receipt', transfer),
+      ])).status, 200);
+      const receipt = await commit([write('transfers/role-receipt', received)], token);
+      assert.equal(receipt.status, expected, JSON.stringify(receipt.body));
+      if (expected === 403) assert.equal((await commit([write('transfers/role-receipt', received)])).status, 200);
+      const validation = await commit([write('transfers/role-receipt', validated)], token);
+      assert.equal(validation.status, expected, JSON.stringify(validation.body));
+    });
+  }
 });

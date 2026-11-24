@@ -39,7 +39,7 @@ export async function prepareResellerReceipt(transaction: Transaction, sale: Sal
     if (receipt.destination === "TREASURY") {
       const id = `reseller-${receipt.id}`;
       treasuryReceipt(transaction, { id, owner_id: receipt.collected_by, owner_name: name,
-        source: "OTHER", source_reference: `Règlement revendeur ${sale.sale_number} · ${receipt.id}`,
+        source: "OTHER", source_reference: `Règlement revendeur ${sale.sale_number} · ${receipt.id} · ${sale.customer_name}`,
         handover_id: "", initial_amount: receipt.amount, balance: receipt.amount,
         created_at: receipt.paid_at, last_movement_id: `receipt-${id}` });
     }

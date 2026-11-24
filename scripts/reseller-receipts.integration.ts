@@ -256,6 +256,38 @@ test('real collector, daily DEP handover and direct treasury receipts', async t 
       assert.equal((await read(`creditCustomers/${id}`)).outstanding_balance, 116500);
       // A standalone reduction of a paid sale is still forbidden.
       assert.equal((await commit([write(`sales/${id}`, { ...paid, amount_paid: 0, payment_status: 'PENDING' })], token)).status, 403);
+      const collectedAgain = await recordCreditPayment(reversed, payment('collect-again', 116500), audit('collect-again'));
+      assert.equal(collectedAgain.payment_status, 'PAID');
+      assert.equal(collectedAgain.amount_paid, 116500);
+      assert.equal(collectedAgain.credit_payment_reversals?.length, 1);
+      assert.equal((await read(`creditCustomers/${id}`)).outstanding_balance, 0);
+      assert.equal((await read('treasuryFunds/reseller-collect-again')).balance, 116500);
+      assert.equal((await read('treasuryFunds/reseller-reverse-me')).balance, 0);
+    });
+    await t.test('467000 Ar invoice can be collected again in partial and final installments after reversal', async () => {
+      const id = 'recollect-467000';
+      const original = { ...sale, id, credit_customer_id: id, sale_number: id, total: 467000, subtotal: 467000,
+        discount: 0, tax: 0, change_returned: 0, customer_name: 'Mr Dafy', seller_name: 'Vendeur',
+        lines: [{ id: 'line', article_id: 'article', quantity: 1, unit_price: 467000, total: 467000 }] } as Sale;
+      await commit([write('users/super', { ...profile('SUPER_ADMIN'), permissions: ALL_PERMISSIONS }),
+        write(`sales/${id}`, original), write(`creditCustomers/${id}`, { id, outstanding_balance: 467000, credit_limit: 1000000, payment_term_days: 15, is_active: true })]);
+      const paid = await recordCreditPayment(original, payment('original-467000', 467000), audit('original-467000'));
+      const reversed = await reverseCreditPayment(id, 'original-467000', 'Correction', audit('cancel-467000'));
+      assert.equal(reversed.amount_paid, 0);
+      await commit([write('users/super', { ...profile('ADMIN'), permissions: ALL_PERMISSIONS })]);
+      const partial = await recordCreditPayment(reversed, payment('recollect-167000', 167000), audit('recollect-167000'));
+      assert.equal(partial.payment_status, 'PARTIAL');
+      assert.equal((await read(`creditCustomers/${id}`)).outstanding_balance, 300000);
+      const settled = await recordCreditPayment(partial, payment('recollect-300000', 300000), audit('recollect-300000'));
+      assert.equal(settled.payment_status, 'PAID');
+      assert.equal(settled.amount_paid, 467000);
+      assert.equal(settled.credit_payment_reversals?.length, 1);
+      assert.equal((await read(`creditCustomers/${id}`)).outstanding_balance, 0);
+      assert.equal((await read('treasuryFunds/reseller-original-467000')).balance, 0);
+      assert.equal((await read('treasuryFunds/reseller-recollect-167000')).balance, 167000);
+      assert.equal((await read('treasuryFunds/reseller-recollect-300000')).balance, 300000);
+      await assert.rejects(() => recordCreditPayment(settled, payment('excess-467000', 1), audit('excess-467000')));
+      await commit([write('users/super', { ...profile('SUPER_ADMIN'), permissions: ALL_PERMISSIONS })]);
     });
     await t.test('used treasury funds and non-admin reversals are rejected', async () => {
       const id = 'reversal-used';

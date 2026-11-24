@@ -5,12 +5,18 @@ export const cashBusinessDate = (timestamp: number) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
+function paidExpenseOnDate(expense: Expense, businessDate: string, storeCashOnly = false) {
+  if (expense.status === 'DRAFT' || expense.status === 'CANCELLED') return 0;
+  if (expense.payments?.length) return expense.payments.filter(payment => cashBusinessDate(payment.paid_at) === businessDate &&
+    (!storeCashOnly || (payment.funding_source === 'STORE' && expense.payment_method === 'CASH'))).reduce((sum, payment) => sum + payment.amount, 0);
+  return expense.payment_status === 'PAID' && cashBusinessDate(expense.expense_date) === businessDate &&
+    (!storeCashOnly || (!expense.treasury_movement_id && expense.payment_method === 'CASH')) ? expense.amount : 0;
+}
+
 export function calculateStoreDailyTotals(sales: Sale[], expenses: Expense[], storeId: string, businessDate: string) {
   const validatedSales = sales.filter(sale => sale.store_id === storeId && sale.status === "VALIDATED" && cashBusinessDate(sale.created_at) === businessDate);
   const salesAmount = validatedSales.reduce((total, sale) => total + sale.total, 0);
-  const expensesAmount = expenses.filter(expense => expense.store_id === storeId && expense.status !== "DRAFT" && expense.status !== "CANCELLED" &&
-    expense.payment_status === "PAID" && cashBusinessDate(expense.expense_date) === businessDate)
-    .reduce((total, expense) => total + expense.amount, 0);
+  const expensesAmount = expenses.filter(expense => expense.store_id === storeId).reduce((total, expense) => total + paidExpenseOnDate(expense, businessDate), 0);
   return { salesAmount, expensesAmount, netAmount: salesAmount - expensesAmount };
 }
 
@@ -29,8 +35,6 @@ export function calculateCashClosing(sales: Sale[], expenses: Expense[], storeId
     salesAmount += initial + later;
     if (initial + later > 0) saleCount++;
   }
-  const expensesAmount = expenses.filter(expense => expense.store_id === storeId && expense.status !== "DRAFT" && expense.status !== "CANCELLED" &&
-    !expense.treasury_movement_id && expense.payment_method === "CASH" && expense.payment_status === "PAID" && cashBusinessDate(expense.expense_date) === businessDate)
-    .reduce((total, expense) => total + expense.amount, 0);
+  const expensesAmount = expenses.filter(expense => expense.store_id === storeId).reduce((total, expense) => total + paidExpenseOnDate(expense, businessDate, true), 0);
   return { salesAmount, expensesAmount, netAmount: salesAmount - expensesAmount, saleCount };
 }

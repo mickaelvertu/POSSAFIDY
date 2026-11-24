@@ -53,7 +53,7 @@ export async function payManualCreditDebt(id: string, paymentId: string, amount:
     tx.set(doc(db,'auditLogs',auditId),{id:auditId,user_id:who.uid,user_name:who.name,action:'MANUAL_CREDIT_PAYMENT',entity_type:'CREDIT_CUSTOMER',entity_id:debt.customer_id,new_value:{debt_id:id,...payment},created_at:now});
     if(method==='CASH'){
       const fundId='manual-credit-'+paymentId;
-      treasuryReceipt(tx,{id:fundId,owner_id:who.uid,owner_name:who.name,source:'OTHER',source_reference:`Règlement dette manuelle ${debt.reference} · ${paymentId}`,handover_id:'',initial_amount:amount,balance:amount,created_at:now,last_movement_id:'receipt-'+fundId});
+      treasuryReceipt(tx,{id:fundId,owner_id:who.uid,owner_name:who.name,source:'OTHER',source_reference:`Règlement dette manuelle ${debt.reference} · ${paymentId} · ${debt.customer_name}`,handover_id:'',initial_amount:amount,balance:amount,created_at:now,last_movement_id:'receipt-'+fundId});
     }
   });
 }

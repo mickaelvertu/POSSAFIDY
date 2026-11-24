@@ -18,3 +18,7 @@ Les anciennes ventes et anciens paiements ne sont pas migrés automatiquement : 
 L'annulation ou la suppression d'une vente ne signifie pas que l'argent a été remboursé : le registre d'encaissement est conservé. Les nouveaux registres sont immuables, hormis leur rattachement à une remise. Aucun remboursement automatique n'est ajouté par cette évolution.
 
 Validation : `npm run test:reseller-receipts` (Java 21 ou plus récent dans le PATH), puis `npm run lint` et `npm run build`. Le test d'intégration utilise uniquement l'émulateur local et le projet fictif `demo-sale-rules`.
+
+Les règles séparent les encaissements des transitions de statut des ventes pour éviter les comparaisons du catalogue complet lors d’un règlement. La vente valide atomiquement le paiement, le justificatif et la réduction de dette ; le justificatif vérifie son rattachement au nouveau paiement sans répéter tous ces contrôles. Les remises DEP réutilisent les justificatifs déjà lus pour vérifier leur somme.
+
+Après l’annulation d’un encaissement, un nouveau paiement conserve l’historique de l’annulation et utilise un nouvel identifiant de justificatif et de fonds. Les tests couvrent le réencaissement intégral et une facture de 467 000 Ar réglée en deux nouveaux versements après annulation.

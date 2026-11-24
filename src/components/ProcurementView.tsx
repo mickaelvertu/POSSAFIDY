@@ -12,6 +12,8 @@ import {
   UserProfile
 } from "../types";
 import {
+  ArrowRight,
+  Trash2,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
@@ -26,6 +28,7 @@ import { canPurchaseArticle } from "../services/purchaseEligibility";
 import DataManagementActions from "./DataManagementActions";
 import { createSequentialId } from "../services/idService";
 import { supplierMonthlyPayments } from "../services/supplierMonthlyPayments";
+import SupplierPaymentCalendar from "./SupplierPaymentCalendar";
 
 interface ProcurementViewProps {
   onBack: () => void;
@@ -106,6 +109,7 @@ export default function ProcurementView({
   onResetData
 }: ProcurementViewProps) {
   const [cancellationMode, setCancellationMode] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
   const [deletionError, setDeletionError] = useState("");
@@ -378,6 +382,7 @@ export default function ProcurementView({
           <p className="mt-1 text-xs text-slate-500">Réceptions en stock, factures fournisseurs et échéances de paiement.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" className="ui-btn min-h-10 gap-2 text-xs" aria-expanded={calendarOpen} aria-controls="supplier-payment-calendar" onClick={() => setCalendarOpen(open => !open)}><CalendarDays className="h-4 w-4" />Calendrier des paiements</button>
           <DataManagementActions
             data={suppliers}
             label="fournisseurs"
@@ -393,6 +398,7 @@ export default function ProcurementView({
           </button>
         </div>
       </header>
+      {calendarOpen && <SupplierPaymentCalendar purchases={purchases} onPurchase={setViewingPurchase} />}
       {(receivingStores.length === 0 || !hasPurchasableArticles || activeSuppliers.length === 0) && (
         <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
           Pour saisir un achat, ajoutez un fournisseur actif et au moins un article actif compatible : matière première vers un dépôt central ou magasin fabricant, produit de revente vers un dépôt central. Le magasin destinataire doit être actif.
@@ -498,31 +504,39 @@ export default function ProcurementView({
       )}
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-4 py-3"><h3 className="text-sm font-bold text-slate-900">Suivi des achats · brouillon → approbation → réception</h3></div>
-        {filteredPurchases.length === 0 ? <p className="px-4 py-6 text-center text-xs text-slate-500">Aucun achat enregistré.</p> : (
+        <div className="space-y-4 border-b border-slate-200 p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><h3 className="text-base font-bold text-slate-900">Suivi des achats</h3><p className="mt-1 text-sm text-slate-600">Brouillon → approbation → réception</p></div>
+            <span role="status" className="text-sm tabular-nums text-slate-600">{filteredPurchases.length} achat(s) affiché(s)</span>
+          </div>
+          <div role="group" aria-label="Filtrer les achats par étape" className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {[
+              { value: "", label: "Tous les achats", Icon: ClipboardList },
+              { value: "DRAFT", label: "Brouillon", Icon: ClipboardList },
+              { value: "APPROVED", label: "À réceptionner", Icon: Truck },
+              { value: "RECEIVED", label: "Réceptionné", Icon: CheckCircle2 },
+              { value: "CANCELLED", label: "Annulé", Icon: X }
+            ].map(({ value, label, Icon }) => <button key={value} type="button" aria-pressed={statusFilter === value} onClick={() => setStatusFilter(value)} className={`ui-btn h-auto min-h-12 justify-start whitespace-normal rounded-xl px-3 py-3 text-left text-xs shadow-none ${statusFilter === value ? "border-emerald-700 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}><Icon aria-hidden="true" className="h-4 w-4 shrink-0" />{label}<span className="ml-auto tabular-nums">{purchases.filter(purchase => !value || (purchase.status || "RECEIVED") === value).length}</span></button>)}
+          </div>
+          <p className="text-xs text-slate-600">Approbation par un autre administrateur, puis réception dans Transferts. Les compteurs indiquent tous les achats accessibles.</p>
+        </div>
+        {filteredPurchases.length === 0 ? <div className="px-5 py-10 text-center"><ClipboardList aria-hidden="true" className="mx-auto mb-3 h-7 w-7 text-slate-400" /><p className="text-sm font-semibold text-slate-800">Aucun achat à afficher</p><p className="mt-1 text-sm text-slate-600">{purchases.length ? "Aucun achat ne correspond aux filtres sélectionnés. Ajustez les filtres ou réinitialisez-les ci-dessus." : "Créez un achat pour commencer le suivi."}</p></div> : (
           <div className="overflow-x-auto">
             <table className="ui-table w-full min-w-[1120px] text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600"><tr><th className="px-4 py-2">Créé le</th><th className="px-4 py-2">Référence</th><th className="px-4 py-2">Fournisseur</th><th className="px-4 py-2">Magasin destinataire</th><th className="px-4 py-2">Lignes</th><th className="px-4 py-2">Échéance</th><th className="px-4 py-2 text-right">Total</th><th className="px-4 py-2">État</th><th className="px-4 py-2">Paiement</th><th className="px-4 py-2">Action</th></tr></thead>
+              <caption className="sr-only">Achats du plus r?cent au plus ancien, avancement et paiements.</caption><thead className="bg-slate-50 text-slate-600"><tr><th scope="col" className="px-4 py-2">Référence</th><th scope="col" className="px-4 py-2">Créé le</th><th scope="col" className="px-4 py-2">Fournisseur</th><th scope="col" className="px-4 py-2">Magasin destinataire</th><th scope="col" className="px-4 py-2">Lignes</th><th scope="col" className="px-4 py-2">Échéance</th><th scope="col" className="px-4 py-2 text-right">Total</th><th scope="col" className="px-4 py-2">État</th><th scope="col" className="px-4 py-2">Paiement</th><th scope="col" className="px-4 py-2">Action</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {[...filteredPurchases].sort((a, b) => b.created_at - a.created_at).map(purchase => <tr
                   key={purchase.id}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Afficher les détails de l'achat ${purchase.purchase_number}`}
                   onClick={() => setViewingPurchase(purchase)}
-                  onKeyDown={event => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setViewingPurchase(purchase);
-                    }
-                  }}
                   className="cursor-pointer hover:bg-slate-50 focus:bg-emerald-50 focus:outline-none"
                 >
-                  <td className="px-4 py-3 text-slate-600">{dateLabel(purchase.created_at)}</td><td className="px-4 py-3 tabular-nums font-bold text-emerald-800">{purchase.purchase_number}<span className="block font-normal text-slate-400">Facture {purchase.invoice_number}</span></td><td className="px-4 py-3 font-semibold text-slate-800">{purchase.supplier_name}</td><td className="px-4 py-3 text-slate-600">{stores.find(store => store.id === purchase.store_id)?.name || "Magasin supprimé"}</td><td className="px-4 py-3 text-slate-600">{purchase.lines.length} article(s)</td><td className="px-4 py-3 text-slate-600">{dateLabel(purchase.expected_payment_at)}</td><td className="px-4 py-3 text-right tabular-nums font-bold text-slate-900">{money(purchase.total)}</td><td className="px-4 py-3 font-semibold text-slate-700">{purchaseStatusLabel(purchase)}</td><td className="px-4 py-3"><span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${purchase.payment_status === "PAID" ? "bg-emerald-50 text-emerald-700" : purchase.payment_status === "PARTIAL" ? "bg-amber-50 text-amber-800" : "bg-rose-50 text-rose-700"}`}>{purchase.payment_status === "PAID" ? "Payé" : purchase.payment_status === "PARTIAL" ? `Partiel · reste ${money(purchase.total - purchase.amount_paid)}` : "Non payé"}</span></td><td className="px-4 py-3">{purchase.status === "DRAFT" && <button type="button" onClick={event => { event.stopPropagation(); void onApprovePurchase(purchase).catch(error => window.alert(error instanceof Error ? error.message : "Impossible d'approuver l'achat.")); }} className="whitespace-nowrap rounded bg-emerald-600 px-2 py-1.5 font-bold text-white hover:bg-emerald-700">Approuver & envoyer</button>}{purchase.status === "APPROVED" && <span className="text-[10px] font-semibold text-amber-700">À réceptionner dans Transferts</span>}{currentUser.role === "SUPER_ADMIN" && <>
-                    <button type="button" className="ui-btn ui-btn-sm ui-btn-error ml-2" disabled={deletingPurchaseId !== null || !!purchaseDeletionReason(purchase)} aria-describedby={purchaseDeletionReason(purchase) ? "delete-reason-" + purchase.id : undefined} onKeyDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); setCancellationMode(false); setDeletionError(""); setPurchaseToDelete(purchase); }}>{deletingPurchaseId === purchase.id ? "Suppression..." : "Supprimer"}</button>
+                  <td className="px-4 py-3 tabular-nums font-bold text-emerald-800"><button type="button" aria-label={`Afficher les d?tails de l?achat ${purchase.purchase_number}`} onClick={event => { event.stopPropagation(); setViewingPurchase(purchase); }} className="rounded text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-emerald-700">{purchase.purchase_number}</button><span className="block font-normal text-slate-500">Facture {purchase.invoice_number}</span>
+                    {purchase.status === "DRAFT" && <button type="button" onClick={event => { event.stopPropagation(); void onApprovePurchase(purchase).catch(error => window.alert(error instanceof Error ? error.message : "Impossible d'approuver l'achat.")); }} className="ui-btn mt-2 h-auto min-h-10 whitespace-nowrap rounded-lg border-emerald-700 bg-emerald-700 px-3 py-2 text-sm font-bold text-white shadow-none hover:bg-emerald-800">Approuver & envoyer</button>}
+                  </td><td className="px-4 py-3 text-slate-600">{dateLabel(purchase.created_at)}</td><td className="px-4 py-3 font-semibold text-slate-800">{purchase.supplier_name}</td><td className="px-4 py-3 text-slate-600">{stores.find(store => store.id === purchase.store_id)?.name || "Magasin supprimé"}</td><td className="px-4 py-3 text-slate-600">{purchase.lines.length} article(s)</td><td className="px-4 py-3 text-slate-600">{dateLabel(purchase.expected_payment_at)}</td><td className="px-4 py-3 text-right tabular-nums font-bold text-slate-900">{money(purchase.total)}</td><td className="px-4 py-3"><span className={`inline-block rounded-md px-2.5 py-1.5 font-semibold ${purchase.status === "DRAFT" ? "bg-slate-100 text-slate-700" : purchase.status === "APPROVED" ? "bg-amber-50 text-amber-900" : purchase.status === "CANCELLED" ? "bg-rose-50 text-rose-800" : "bg-emerald-50 text-emerald-800"}`}>{purchaseStatusLabel(purchase)}</span></td><td className="px-4 py-3"><span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${purchase.payment_status === "PAID" ? "bg-emerald-50 text-emerald-700" : purchase.payment_status === "PARTIAL" ? "bg-amber-50 text-amber-800" : "bg-rose-50 text-rose-700"}`}>{purchase.payment_status === "PAID" ? "Payé" : purchase.payment_status === "PARTIAL" ? `Partiel · reste ${money(purchase.total - purchase.amount_paid)}` : "Non payé"}</span></td><td className="px-4 py-3"><div className="flex w-56 flex-wrap items-start gap-2">{purchase.status === "APPROVED" && <span className="text-[10px] font-semibold text-amber-700">À réceptionner dans Transferts</span>}{currentUser.role === "SUPER_ADMIN" && <>
+                    <button type="button" className="ui-btn ui-btn-sm ui-btn-error min-h-10" disabled={deletingPurchaseId !== null || !!purchaseDeletionReason(purchase)} aria-describedby={purchaseDeletionReason(purchase) ? "delete-reason-" + purchase.id : undefined} onKeyDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); setCancellationMode(false); setDeletionError(""); setPurchaseToDelete(purchase); }}>{deletingPurchaseId === purchase.id ? "Suppression..." : "Supprimer"}</button>
                     {purchaseDeletionReason(purchase) && <p id={"delete-reason-" + purchase.id} className="mt-2 max-w-56 text-xs text-base-content">{purchaseDeletionReason(purchase)}</p>}
-                    {purchase.status !== "CANCELLED" && <button type="button" className="ui-btn ui-btn-sm ml-2" onKeyDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); setCancellationMode(true); setCancellationReason(""); setDeletionError(""); setPurchaseToDelete(purchase); }}>Annuler l'achat</button>}
-                  </>}</td>
+                    {purchase.status !== "CANCELLED" && <button type="button" className="ui-btn ui-btn-sm min-h-10" onKeyDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); setCancellationMode(true); setCancellationReason(""); setDeletionError(""); setPurchaseToDelete(purchase); }}>Annuler l'achat</button>}
+                  </>}</div></td>
                 </tr>)}
               </tbody>
             </table>
@@ -559,7 +573,7 @@ export default function ProcurementView({
                   <div className="flex flex-wrap justify-between gap-2"><strong>{purchase.purchase_number} · Facture {purchase.invoice_number}</strong><span>{purchaseStatusLabel(purchase)} · {purchase.payment_status === "PAID" ? "Réglé" : purchase.payment_status === "PARTIAL" ? "Partiellement réglé" : "Non réglé"}</span></div>
                   <p className="mt-2 text-slate-600">Créé le {dateLabel(purchase.created_at)} · Échéance {dateLabel(purchase.expected_payment_at)}</p>
                   <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1"><span>Total : <strong>{money(purchase.total)}</strong></span><span>Payé : <strong>{money(purchase.amount_paid)}</strong></span><span>Reste dû : <strong>{money(purchase.total - purchase.amount_paid)}</strong></span>{supplierPurchaseFilter === "MONTH" && <span>Payé ce mois : <strong>{money(supplierMonthlyPayments([purchase], paymentMonth).get(supplierDetails.id)?.total ?? 0)}</strong></span>}</div>
-                  <span className="mt-2 block font-bold text-emerald-800">Afficher les détails →</span>
+                  <span className="mt-2 block font-bold text-emerald-800">Afficher les détails <ArrowRight className="inline size-4 align-text-bottom" aria-hidden="true" /></span>
                 </button>);
               })()}
             </div>
@@ -663,7 +677,7 @@ const p = viewingPurchase; setEditingPurchase(p); setPurchaseSupplierId(p.suppli
               <div className="overflow-x-auto rounded-lg border border-slate-200">
                 <table className="ui-table w-full min-w-[620px] text-left"><thead className="bg-slate-50 text-slate-600"><tr><th className="px-3 py-2">Matière première</th><th className="px-3 py-2">Stock actuel</th><th className="px-3 py-2">Quantité commandée</th><th className="px-3 py-2">Prix unitaire</th><th className="px-3 py-2 text-right">Total</th><th className="px-2 py-2" /></tr></thead><tbody className="divide-y divide-slate-100">{draftLines.map((line, index) => {
                   const article = articles.find(item => item.id === line.articleId);
-                  return <tr key={index}><td className="px-3 py-2"><input list="purchase-articles" value={line.articleQuery} onChange={event => { const value = event.target.value; const selected = activeArticles.find(item => articleOptionLabel(item) === value); updateDraftLine(index, { articleQuery: value, articleId: selected?.id || "", unitCost: selected?.prix_achat ?? line.unitCost }); }} placeholder="Matière première ou produit de revente..." className="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 placeholder:text-slate-400" /></td><td className="px-3 py-2 text-center tabular-nums text-slate-600">{getStockQuantity(purchaseStoreId, line.articleId)}</td><td className="px-3 py-2"><input min="1" type="number" value={line.quantity} onChange={event => updateDraftLine(index, { quantity: Number(event.target.value) })} className="w-24 rounded border border-slate-300 bg-white p-2 text-right text-slate-900" /></td><td className="px-3 py-2"><input min="0" type="number" value={line.unitCost} onChange={event => updateDraftLine(index, { unitCost: Number(event.target.value) })} className="w-32 rounded border border-slate-300 bg-white p-2 text-right text-slate-900" /></td><td className="px-3 py-2 text-right tabular-nums font-bold text-slate-900">{money(line.quantity * line.unitCost)}</td><td className="px-2 py-2"><button type="button" disabled={draftLines.length === 1} onClick={() => setDraftLines(current => current.filter((_, lineIndex) => lineIndex !== index))} aria-label="Retirer la ligne" className="px-2 font-bold text-rose-700 disabled:opacity-30">×</button></td></tr>;
+                  return <tr key={index}><td className="px-3 py-2"><input list="purchase-articles" value={line.articleQuery} onChange={event => { const value = event.target.value; const selected = activeArticles.find(item => articleOptionLabel(item) === value); updateDraftLine(index, { articleQuery: value, articleId: selected?.id || "", unitCost: selected?.prix_achat ?? line.unitCost }); }} placeholder="Matière première ou produit de revente..." className="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 placeholder:text-slate-400" /></td><td className="px-3 py-2 text-center tabular-nums text-slate-600">{getStockQuantity(purchaseStoreId, line.articleId)}</td><td className="px-3 py-2"><input min="1" type="number" value={line.quantity} onChange={event => updateDraftLine(index, { quantity: Number(event.target.value) })} className="w-24 rounded border border-slate-300 bg-white p-2 text-right text-slate-900" /></td><td className="px-3 py-2"><input min="0" type="number" value={line.unitCost} onChange={event => updateDraftLine(index, { unitCost: Number(event.target.value) })} className="w-32 rounded border border-slate-300 bg-white p-2 text-right text-slate-900" /></td><td className="px-3 py-2 text-right tabular-nums font-bold text-slate-900">{money(line.quantity * line.unitCost)}</td><td className="px-2 py-2"><button type="button" disabled={draftLines.length === 1} onClick={() => setDraftLines(current => current.filter((_, lineIndex) => lineIndex !== index))} aria-label="Retirer la ligne" className="px-2 font-bold text-rose-700 disabled:opacity-30"><Trash2 className="size-4" aria-hidden="true" /></button></td></tr>;
                 })}</tbody></table>
               </div>
               <button type="button" disabled={draftLines.length >= 100} onClick={() => setDraftLines(current => [...current, { articleId: "", articleQuery: "", quantity: 1, unitCost: 0 }])} className="font-bold text-emerald-800 hover:underline disabled:opacity-50">+ Ajouter une ligne</button>

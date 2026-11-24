@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { StockMovement, StockTransfer } from "../types";
-import { canConfirmReceiptActors, isAssignedDepotManager, posReceiptProof } from "./transferReceipt";
+import { canAccessTransferDestination, canConfirmReceiptActors, isAssignedDepotManager, posReceiptProof } from "./transferReceipt";
 
 test("POS confirmation permits the receiver while central confirmation separates actors", () => {
   const transfer = { received_by: "receiver", requested_by: "requester", approved_by: "approver" };
@@ -63,4 +63,11 @@ test("shipping, repeated receipts, cancellations and other routes keep normal au
   assert.deepEqual(posReceiptProof(current, { ...updated, status: "CANCELLED" }, movement), {});
   assert.deepEqual(posReceiptProof(current, { ...updated, id: "other" }, movement), {});
   assert.deepEqual(posReceiptProof({ ...current, type: "STORE_RETURN" }, updated, movement), {});
+});
+
+ test("administrators can receive across stores while other roles remain assigned", () => {
+  assert.equal(canAccessTransferDestination({roleId: "ADMIN", storeIds: []}, "POS-1"), true);
+  assert.equal(canAccessTransferDestination({roleId: "SUPER_ADMIN", storeIds: []}, "POS-1"), true);
+  assert.equal(canAccessTransferDestination({roleId: "MAGASINIER", storeIds: []}, "POS-1"), false);
+  assert.equal(canAccessTransferDestination({roleId: "MAGASINIER", storeIds: ["POS-1"]}, "POS-1"), true);
 });

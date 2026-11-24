@@ -1,7 +1,8 @@
 import { FormEvent, useMemo, useState } from "react";
-import { AlertCircle, CalendarDays, CheckCircle2, CircleDollarSign, ClipboardList, Clock3, HandCoins, LoaderCircle, Pencil, Plus, ReceiptText, RotateCcw, Search, Trash2 } from "lucide-react";
+import { X, AlertCircle, CalendarDays, CheckCircle2, CircleDollarSign, ClipboardList, Clock3, HandCoins, LoaderCircle, Pencil, Plus, ReceiptText, RotateCcw, Search, Trash2 } from "lucide-react";
 import { Employee, Expense, ExpenseCategory, PaymentMethod, Store, TreasuryFund, UserProfile } from "../types";
 import { STORE_EXPENSE_FUNDS } from "../services/expenseService";
+import { expensePaidAmount, expenseRemainingAmount, expensePaymentLabel } from '../services/expensePayments';
 
 interface ExpensesViewProps {
   expenses: Expense[];
@@ -15,9 +16,9 @@ interface ExpensesViewProps {
   onRetry?: () => void;
   treasuryFunds?: TreasuryFund[];
   treasuryReady?: boolean;
-  onPayExpense?: (expense: Expense, fundId: string) => Promise<void>;
+  onPayExpense?: (expense: Expense, fundId: string, amount: number) => Promise<void>;
   onCancelExpense?: (expense: Expense, reason: string) => Promise<void>;
-  onValidateExpense: (expense: Expense, fundId?: string) => Promise<void>;
+  onValidateExpense: (expense: Expense, fundId?: string, amount?: number) => Promise<void>;
   onDeleteExpense: (expense: Expense) => Promise<void>;
   onCreateExpense: (expense: Expense) => Promise<void>;
   onUpdateExpense: (original: Expense, updated: Expense) => Promise<void>;
@@ -88,25 +89,31 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   const [busyId, setBusyId] = useState<string | null>(null);
   const [paymentExpense, setPaymentExpense] = useState<{ expense: Expense; action: "validate" | "pay" } | null>(null);
   const [fundId, setFundId] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentError, setPaymentError] = useState("");
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(currentUser.roleId);
   const ownFunds = treasuryFunds.filter(fund => fund.owner_id === currentUser.uid && fund.balance > 0);
   const openPayment = (expense: Expense, action: "validate" | "pay") => {
+    setPaymentAmount(String(expenseRemainingAmount(expense)));
     setFundId(expense.store_id ? STORE_EXPENSE_FUNDS : ""); setPaymentError(""); setPaymentExpense({ expense, action });
   };
   const submitPayment = async (event: FormEvent) => {
     event.preventDefault();
     if (!paymentExpense || busyId || (fundId !== STORE_EXPENSE_FUNDS && !treasuryReady)) return;
     const selectedFund = ownFunds.find(fund => fund.id === fundId);
-    if (fundId !== STORE_EXPENSE_FUNDS && (!selectedFund || selectedFund.balance < paymentExpense.expense.amount)) {
+    const amount = Number(paymentAmount);
+    if (!Number.isSafeInteger(amount) || amount <= 0 || amount > expenseRemainingAmount(paymentExpense.expense)) {
+      setPaymentError('Indiquez un montant entier positif, inférieur ou égal au reste à payer.'); return;
+    }
+    if (fundId !== STORE_EXPENSE_FUNDS && (!selectedFund || selectedFund.balance < amount)) {
       setPaymentError("Choisissez un fonds personnel disposant du montant nécessaire."); return;
     }
     setBusyId(paymentExpense.expense.id); setPaymentError("");
     try {
-      if (paymentExpense.action === "validate") await onValidateExpense(paymentExpense.expense, fundId);
+      if (paymentExpense.action === "validate") await onValidateExpense(paymentExpense.expense, fundId, amount);
       else {
         if (!onPayExpense) throw new Error("Le règlement n'est pas disponible dans cet écran.");
-        await onPayExpense(paymentExpense.expense, fundId);
+        await onPayExpense(paymentExpense.expense, fundId, amount);
       }
       setPaymentExpense(null);
     } catch (error) { setPaymentError(error instanceof Error ? error.message : "Impossible d'enregistrer le paiement."); }
@@ -188,7 +195,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
     return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
   });
   const monthTotal = currentMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const pendingTotal = expenses.filter(expense => expense.status !== "DRAFT" && expense.status !== "CANCELLED" && expense.payment_status === "PENDING").reduce((sum, expense) => sum + expense.amount, 0);
+  const pendingTotal = expenses.filter(expense => expense.status !== "DRAFT" && expense.status !== "CANCELLED").reduce((sum, expense) => sum + expenseRemainingAmount(expense), 0);
   const draftCount = expenses.filter(expense => expense.status === "DRAFT").length;
   const cancelledCount = expenses.filter(expense => expense.status === "CANCELLED").length;
   const hasFilters = Boolean(search || monthFilter || statusFilter !== "ALL");
@@ -203,7 +210,8 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
     <div className="flex flex-wrap items-center gap-2">
       {canEditExpense(expense) && <button type="button" disabled={busyId !== null} onClick={() => openEditForm(expense)} className={`${softButtonClass} gap-1.5`}><Pencil className="h-3 w-3" /> Modifier</button>}
       {canValidate && (canDelete || canEditExpense(expense)) && expense.status === "DRAFT" && <button type="button" disabled={busyId !== null} onClick={() => runAction(expense, "validate")} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-2 text-[11px] font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">{busyId === expense.id ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Valider</button>}
-      {isAdmin && onPayExpense && expense.status === "VALIDATED" && expense.payment_status === "PENDING" && <button type="button" disabled={busyId !== null} onClick={() => openPayment(expense, "pay")} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50">Régler</button>}
+      {isAdmin && onPayExpense && expense.status === "VALIDATED" && expenseRemainingAmount(expense) > 0 && <button type="button" disabled={busyId !== null} onClick={() => openPayment(expense, "pay")} className="ui-btn ui-btn-sm rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50">{expense.payment_status === 'PARTIAL' ? 'Compléter le règlement' : 'Régler'}</button>}
+      {isAdmin && onCancelExpense && expense.status === 'CANCELLED' && (expense.refunded_amount || 0) < (expense.treasury_paid_amount || 0) && <button type="button" className="ui-btn ui-btn-sm" onClick={() => { setCancelTarget(expense); setCancelReason(expense.cancellation_reason || ''); setCancelError(''); }}>Terminer les remboursements</button>}
       {isAdmin && onCancelExpense && expense.status !== "CANCELLED" && <button type="button" disabled={busyId !== null} onClick={() => { setCancelTarget(expense); setCancelReason(""); setCancelError(""); }} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50">Annuler la dépense</button>}
       {canDelete && (expense.status === "DRAFT" || expense.status === "CANCELLED") && <button type="button" aria-label={`Supprimer ${expense.expense_number}`} title="Supprimer la dépense" disabled={busyId !== null} onClick={() => runAction(expense, "delete")} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /></button>}
     </div>
@@ -293,7 +301,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
   );
 
   return (
-    <div className="space-y-5 text-slate-900">
+    <div className="treasury-shell space-y-5 text-slate-900">
       <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-700 p-5 text-white shadow-lg shadow-emerald-900/20">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
@@ -368,10 +376,11 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
                       <p className="break-words text-sm font-bold text-slate-900">{expense.description || categoryLabel(expense.category)}</p>
                       <p className="mt-1 break-words text-[11px] text-slate-500">{expense.expense_number} · {dateLabel(expense.expense_date)}</p>
                       <p className="mt-1 break-words text-[11px] text-slate-500">{categoryLabel(expense.category)} · {expense.store_name || "Tous magasins"}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">{validationBadge(expense)}<span className={expense.payment_status === "PAID" ? "text-[11px] font-semibold text-emerald-700" : "text-[11px] font-semibold text-amber-700"}>{expense.status === "CANCELLED" ? "Paiement annulé" : expense.payment_status === "PAID" ? "Payée" : "À payer"}</span></div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">{validationBadge(expense)}<span className={expense.payment_status === "PAID" ? "text-[11px] font-semibold text-emerald-700" : "text-[11px] font-semibold text-amber-700"}>{expense.status === "CANCELLED" ? "Paiement annulé" : expensePaymentLabel(expense)}</span></div>
                     </div>
                     <div className="ml-auto text-right">
                       <p className="break-words text-base font-black tabular-nums text-slate-900">{money(expense.amount)}</p>
+                      {expense.status !== 'DRAFT' && expense.status !== 'CANCELLED' && <p className="mt-1 text-xs text-slate-600">Réglé : {money(expensePaidAmount(expense))} · Reste : {money(expenseRemainingAmount(expense))}</p>}
                       <span className="mt-2 block text-[11px] font-bold text-slate-600"><span className="group-open:hidden">Voir les détails +</span><span className="hidden group-open:inline">Masquer les détails −</span></span>
                     </div>
                   </summary>
@@ -383,16 +392,18 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
                         ["Date de la dépense", dateLabel(expense.expense_date)],
                         ["Catégorie", categoryLabel(expense.category)],
                         ["Montant", money(expense.amount)],
+                        ['Déjà réglé', money(expensePaidAmount(expense))],
+                        ['Reste à payer', expense.status === 'CANCELLED' ? 'Annulé' : money(expenseRemainingAmount(expense))],
                         ["Magasin", expense.store_name || "Tous magasins / siège"],
                         ["Bénéficiaire / fournisseur", expense.payee || expense.employee_name || "Non renseigné"],
                         ["Employé bénéficiaire", expense.employee_name || "Non renseigné"],
                         ["Mode de paiement", PAYMENT_METHODS.find(method => method.value === expense.payment_method)?.label || expense.payment_method],
-                        ["Statut du paiement", expense.status === "CANCELLED" ? "Annulé" : expense.payment_status === "PAID" ? "Payée" : "À payer"],
+                        ["Statut du paiement", expense.status === "CANCELLED" ? "Annulé" : expensePaymentLabel(expense)],
                         ["N° facture / référence", expense.reference || "Sans référence"],
                         ["Créée par", expense.created_by_name || "Non renseigné"],
                         ...(expense.status === "CANCELLED" ? [["Annulée par", expense.cancelled_by_name || "Non renseigné"], ["Motif de l'annulation", expense.cancellation_reason || ""], ["Date d'annulation", expense.cancelled_at ? new Date(expense.cancelled_at).toLocaleString("fr-FR") : ""], ["Remboursement au fonds d'origine", expense.treasury_reversal_id ? "Effectué" : "Aucun paiement de trésorerie à recréditer"]] : []),
-                        ["Payée par", expense.paid_by_name || (expense.payment_status === "PAID" && expense.status !== "DRAFT" ? "Non renseigné (ancien suivi / caisse magasin)" : "À déterminer au règlement")],
-                        ["Fonds utilisé", expense.funding_source === "STORE" ? `Fonds du magasin · ${expense.paid_by_name || expense.store_name || ""}` : treasuryFunds.find(fund => fund.id === expense.treasury_fund_id)?.source_reference || (expense.treasury_fund_id ? "Fonds de trésorerie" : "Non renseigné")],
+                        ["Payée par", expense.payments?.length ? [...new Set(expense.payments.map(payment => payment.paid_by_name))].join(', ') : expense.paid_by_name || (expense.payment_status === "PAID" && expense.status !== "DRAFT" ? "Non renseigné (ancien suivi / caisse magasin)" : "À déterminer au règlement")],
+                        ["Fonds utilisé", expense.payments?.length ? [...new Set(expense.payments.map(payment => payment.fund_name))].join(', ') : expense.funding_source === "STORE" ? `Fonds du magasin · ${expense.paid_by_name || expense.store_name || ""}` : treasuryFunds.find(fund => fund.id === expense.treasury_fund_id)?.source_reference || (expense.treasury_fund_id ? "Fonds de trésorerie" : "Non renseigné")],
                         ...(expense.paid_at ? [["Date du règlement", new Date(expense.paid_at).toLocaleString("fr-FR")]] : []),
                         ["Date de création", new Date(expense.created_at).toLocaleString("fr-FR")],
                         ...(expense.validated_at ? [["Date de validation", new Date(expense.validated_at).toLocaleString("fr-FR")]] : [])
@@ -400,6 +411,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
                       <div className="min-w-0 sm:col-span-2 xl:col-span-3"><dt className="text-xs text-slate-500">Motif / description</dt><dd className="mt-1 whitespace-pre-wrap break-words">{expense.description || "Non renseigné"}</dd></div>
                       <div className="min-w-0 sm:col-span-2 xl:col-span-3"><dt className="text-xs text-slate-500">Notes</dt><dd className="mt-1 whitespace-pre-wrap break-words">{expense.notes || "Aucune note"}</dd></div>
                     </dl>
+                    {!!expense.payments?.length && <div className="mt-5"><h4 className="text-sm font-bold">Historique des règlements</h4><ul className="mt-2 divide-y divide-slate-200">{expense.payments.map(payment => <li key={payment.id} className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:justify-between"><span>{payment.fund_name} · {payment.paid_by_name}<span className="block text-xs text-slate-500">{new Date(payment.paid_at).toLocaleString('fr-FR')}{expense.refunded_payment_ids?.includes(payment.id) ? ' · Remboursé' : ''}</span></span><strong className="tabular-nums">{money(payment.amount)}</strong></li>)}</ul></div>}
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">{validationBadge(expense)}{expenseActions(expense)}</div>
                   </div>
                 </details>
@@ -419,19 +431,26 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
       }}>
         <h3 id="expense-cancel-title" className="font-bold">Annuler {cancelTarget.expense_number}</h3>
         <p className="text-sm">La dépense sera exclue des totaux. Son historique restera consultable.</p>
-        {cancelTarget.treasury_movement_id && <label className="flex items-start gap-2 rounded bg-amber-50 p-3 text-sm"><input required type="checkbox" />Je confirme que les {money(cancelTarget.amount)} ont été récupérés. Ils seront recrédités au fonds du payeur d'origine.</label>}
+        {(cancelTarget.treasury_movement_id || (cancelTarget.treasury_paid_amount || 0) > 0) && <label className="flex items-start gap-2 rounded bg-amber-50 p-3 text-sm"><input required type="checkbox" />Je confirme que les {money(cancelTarget.treasury_paid_amount ?? cancelTarget.amount)} ont été récupérés. Chaque versement sera recrédité à son fonds d'origine.</label>}
         <label className="block text-sm font-semibold">Motif de l'annulation<textarea required value={cancelReason} onChange={event => setCancelReason(event.target.value)} className={inputClass} /></label>
         {cancelError && <p role="alert" className="text-sm text-rose-700">{cancelError}</p>}
         <div className="flex justify-end gap-2"><button type="button" disabled={busyId !== null} onClick={() => setCancelTarget(null)} className="rounded border px-3 py-2">Fermer</button><button disabled={busyId !== null || !cancelReason.trim()} className="rounded bg-amber-700 px-3 py-2 text-white disabled:opacity-50">{busyId ? "Annulation…" : "Confirmer l'annulation"}</button></div>
       </form></div>}
       {paymentExpense && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-          <form onSubmit={submitPayment} role="dialog" aria-modal="true" aria-labelledby="expense-payment-title" className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 text-slate-900 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4">
+          <form onSubmit={submitPayment} role="dialog" aria-modal="true" aria-labelledby="expense-payment-title" className="my-auto w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 text-slate-900 shadow-xl">
             <h3 id="expense-payment-title" className="font-bold">{paymentExpense.action === "validate" ? "Valider et régler la dépense" : "Régler la dépense"}</h3>
             <p>{paymentExpense.expense.expense_number} · <strong>{money(paymentExpense.expense.amount)}</strong></p>
+            <p className="text-sm">Déjà réglé : <strong>{money(expensePaidAmount(paymentExpense.expense))}</strong> · Reste à payer : <strong>{money(expenseRemainingAmount(paymentExpense.expense))}</strong></p>
             <p className="text-sm text-slate-600">Charge : {paymentExpense.expense.store_name || "Tous magasins / siège"}. Le déclarant et la source du paiement sont distincts.</p>
-            <label className="block text-sm font-semibold">Prise en charge<select required disabled={busyId !== null} className={inputClass} value={fundId} onChange={event => setFundId(event.target.value)}><option value="">Choisir la source du paiement</option>{paymentExpense.expense.store_id && <option value={STORE_EXPENSE_FUNDS}>Fonds du magasin · {paymentExpense.expense.store_name || paymentExpense.expense.store_id}</option>}<optgroup label={`Fonds personnels · ${currentUser.displayName}`}>{ownFunds.map(fund => <option disabled={!treasuryReady} key={fund.id} value={fund.id}>{fund.source_reference} · {money(fund.balance)}</option>)}</optgroup></select></label>
-            <p className="text-xs text-slate-500">{fundId === STORE_EXPENSE_FUNDS ? "Le magasin prend en charge le paiement. Aucun fonds personnel ne sera débité. Un paiement en espèces est pris en compte dans la clôture de sa caisse POS." : "Le fonds personnel choisi sera débité une seule fois. Si nécessaire, enregistrez une réception ou recevez un transfert dans la trésorerie."}</p>
+            <label className="block text-sm font-semibold">Prise en charge<select required disabled={busyId !== null} className={`ui-select ${inputClass}`} value={fundId} onChange={event => {
+              const id = event.target.value; setFundId(id);
+              const fund = ownFunds.find(item => item.id === id);
+              if (paymentExpense.expense.category !== 'SALARY_ADVANCE') setPaymentAmount(String(fund ? Math.min(fund.balance, expenseRemainingAmount(paymentExpense.expense)) : expenseRemainingAmount(paymentExpense.expense)));
+            }}><option value="">Choisir la source du paiement</option>{paymentExpense.expense.store_id && <option value={STORE_EXPENSE_FUNDS}>Fonds du magasin · {paymentExpense.expense.store_name || paymentExpense.expense.store_id}</option>}<optgroup label={`Fonds personnels · ${currentUser.displayName}`}>{ownFunds.map(fund => <option disabled={!treasuryReady} key={fund.id} value={fund.id}>{fund.source_reference} · {money(fund.balance)}</option>)}</optgroup></select></label>
+            <label className="block text-sm font-semibold">Montant de ce règlement (Ar)<input required type="number" min="1" step="1" max={expenseRemainingAmount(paymentExpense.expense)} disabled={busyId !== null || paymentExpense.expense.category === 'SALARY_ADVANCE'} value={paymentAmount} onChange={event => setPaymentAmount(event.target.value)} className={inputClass} /></label>
+            {paymentExpense.expense.category !== 'SALARY_ADVANCE' && <p className="text-sm text-slate-600">Après ce versement, reste à payer : <strong>{money(Math.max(0, expenseRemainingAmount(paymentExpense.expense) - (Number(paymentAmount) || 0)))}</strong>. Vous pourrez compléter avec un autre fonds.</p>}
+            <p className="text-xs text-slate-500">{fundId === STORE_EXPENSE_FUNDS ? "Le magasin prend en charge ce versement. Un paiement en espèces est pris en compte dans la clôture de sa caisse POS." : "Seul le montant de ce versement sera débité du fonds choisi."}</p>
             {paymentError && <p role="alert" className="text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-2"><button type="button" disabled={busyId !== null} onClick={() => setPaymentExpense(null)} className="rounded border px-3 py-2">Annuler</button><button disabled={(fundId !== STORE_EXPENSE_FUNDS && !treasuryReady) || !fundId || busyId !== null} className="rounded bg-emerald-700 px-3 py-2 font-semibold text-white disabled:opacity-50">{busyId ? "Enregistrement…" : "Confirmer le règlement"}</button></div>
           </form>
@@ -440,7 +459,7 @@ export default function ExpensesView({ expenses, employees, stores, currentUser,
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setIsFormOpen(false); }}>
           <form onSubmit={handleCreateExpense} className="my-auto w-full max-w-2xl space-y-4 rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
-            <div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-bold text-slate-900">{editingExpense ? "Modifier le brouillon de dépense" : "Nouvelle dépense"}</h3><p className="mt-1 text-xs text-slate-500">La dépense sera enregistrée en brouillon et prise en compte après votre validation.</p></div><button type="button" onClick={() => setIsFormOpen(false)} aria-label="Fermer" className="rounded-md px-2 py-1 text-lg text-slate-500 hover:bg-slate-100">×</button></div>
+            <div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-bold text-slate-900">{editingExpense ? "Modifier le brouillon de dépense" : "Nouvelle dépense"}</h3><p className="mt-1 text-xs text-slate-500">La dépense sera enregistrée en brouillon et prise en compte après votre validation.</p></div><button type="button" onClick={() => setIsFormOpen(false)} aria-label="Fermer" className="rounded-md px-2 py-1 text-lg text-slate-500 hover:bg-slate-100"><X className="size-4" aria-hidden="true" /></button></div>
             {isAdmin && <p className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-900">Le magasin indique à qui la charge est affectée. À la validation, choisissez une prise en charge par le magasin ou par un fonds personnel. Aucun débit n'est effectué pendant la saisie du brouillon.</p>}
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-xs font-semibold text-slate-700">Catégorie<select value={category} onChange={event => {

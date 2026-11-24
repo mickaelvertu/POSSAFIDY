@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
-import { getDatabase } from "firebase/database";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, runTransaction, type Firestore, type Transaction } from "firebase/firestore";
 import firebaseConfig from "../firebase-applet-config.json";
 import { assertOnlineForTransaction } from "./services/offlineSupport";
@@ -9,7 +8,6 @@ import { assertOnlineForTransaction } from "./services/offlineSupport";
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const realtimeDb = getDatabase(app);
 let firestore: Firestore;
 
 try {

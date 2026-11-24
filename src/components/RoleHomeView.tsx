@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppUser, Expense, Sale, Store } from "../types";
+import { AppUser, Expense, Sale, StockTransfer, Store, StoreStock } from "../types";
 import { hasPermission } from "../services/authService";
 import MyInfoView from "./MyInfoView";
 import {
@@ -19,6 +19,7 @@ import {
   Truck,
   UserRound,
   Users,
+  Wallet,
   X
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ interface RoleHomeViewProps {
   onOpenCatalog: () => void;
   onOpenProcurement: () => void;
   onOpenExpenses: () => void;
+  onOpenTreasury: () => void;
   onOpenCashHandovers: () => void;
   onOpenTransfers: () => void;
   onOpenCredit: () => void;
@@ -49,6 +51,8 @@ interface RoleHomeViewProps {
   stores: Store[];
   sales: Sale[];
   expenses: Expense[];
+  stocks: StoreStock[];
+  transfers: StockTransfer[];
 }
 
 const roleLabels: Record<string, string> = {
@@ -98,6 +102,7 @@ const accessCards = [
   { permission: "catalog.manage", title: "Articles & catégories", description: "Gérer les articles et leur classification", icon: PackageCheck, accent: "indigo" },
   { permission: "procurement.manage", title: "Achats & fournisseurs", description: "Réceptionner les achats et suivre les échéances", icon: Truck, accent: "emerald" },
   { permission: "expenses.view", title: "Dépenses & frais", description: "Suivre les loyers, factures et autres charges", icon: HandCoins, accent: "amber" },
+  { permission: "treasury.manage", title: "Trésorerie", description: "Consulter les soldes et les mouvements de trésorerie", icon: Wallet, accent: "emerald", adminOnly: true },
   { permission: "cash_handover.view", title: "Remises de caisse", description: "Déclarer les remises POS et DEP, confirmer les réceptions et suivre les dépôts bancaires", icon: Landmark, accent: "teal" },
   { permission: "units.manage", title: "Unités de mesure", description: "Administrer les unités du catalogue", icon: Ruler, accent: "emerald" },
   { permission: "staff.manage", title: "Personnel", description: "Gérer les employés, affectations et contrats", icon: UserRound, accent: "violet" }
@@ -113,7 +118,7 @@ const accentClasses: Record<string, string> = {
   teal: "bg-teal-50 text-teal-700 border-teal-200"
 };
 
-export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenCashHandovers, onOpenTransfers, onOpenCredit, onOpenResellerOrders, onOpenProductionOrders, onOpenPosOrders, onOpenRawMaterialOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenEmployeePresentation, onOpenInventory, stores, sales, expenses }: RoleHomeViewProps) {
+export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenStocks, onOpenProduction, onOpenStores, onOpenCatalog, onOpenProcurement, onOpenExpenses, onOpenTreasury, onOpenCashHandovers, onOpenTransfers, onOpenCredit, onOpenResellerOrders, onOpenProductionOrders, onOpenPosOrders, onOpenRawMaterialOrders, pendingResellerOrders, onOpenUnits, onOpenStaff, onOpenReports, onOpenAudit, onOpenEmployeePresentation, onOpenInventory, stores, sales, expenses, stocks, transfers }: RoleHomeViewProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const role = user.role || "UNASSIGNED";
@@ -127,6 +132,34 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
     return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
   };
   const money = (amount: number) => `${amount.toLocaleString("fr-FR")} Ar`;
+  const dailyByStore = new Map(pointOfSales.map(store => [store.id, {
+    revenue: 0, sales: 0, expenses: 0, unavailable: new Set<string>(), incoming: 0,
+  }]));
+  if (isAdmin) {
+    for (const sale of sales) {
+      const summary = dailyByStore.get(sale.store_id);
+      if (summary && sale.status === "VALIDATED" && isToday(sale.created_at)) {
+        summary.revenue += sale.total;
+        summary.sales++;
+      }
+    }
+    for (const expense of expenses) {
+      const summary = dailyByStore.get(expense.store_id);
+      if (summary && expense.status !== "DRAFT" && expense.status !== "CANCELLED" && isToday(expense.expense_date)) {
+        summary.expenses += expense.amount;
+      }
+    }
+    for (const stock of stocks) {
+      if (stock.quantity <= (stock.reserved_quantity || 0)) {
+        dailyByStore.get(stock.store_id)?.unavailable.add(stock.article_id);
+      }
+    }
+    for (const transfer of transfers) {
+      const summary = dailyByStore.get(transfer.destination_store_id);
+      if (summary && ["SHIPPED", "IN_TRANSIT", "RECEIVED"].includes(transfer.status)) summary.incoming++;
+    }
+  }
+  const networkRevenue = [...dailyByStore.values()].reduce((total, summary) => total + summary.revenue, 0);
   const storeTypeLabel = (store: Store) => store.store_type === "POS"
     ? "Point de vente"
     : store.store_type === "RESELLER"
@@ -225,18 +258,13 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Performance du jour par point de vente</h2>
-              <p className="text-xs text-slate-500">Chiffre d’affaires validé, dépenses enregistrées et solde net.</p>
+              <p className="text-xs text-slate-500">Chiffre d’affaires validé du réseau · {money(networkRevenue)}</p>
             </div>
             <span className="hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:block">Défiler horizontalement</span>
           </div>
           <div className="flex snap-x gap-3 overflow-x-auto pb-2">
             {pointOfSales.map(store => {
-              const dailySales = sales
-                .filter(sale => sale.store_id === store.id && sale.status === "VALIDATED" && isToday(sale.created_at))
-                .reduce((total, sale) => total + sale.total, 0);
-              const dailyExpenses = expenses
-                .filter(expense => expense.status !== "DRAFT" && expense.status !== "CANCELLED" && expense.store_id === store.id && isToday(expense.expense_date))
-                .reduce((total, expense) => total + expense.amount, 0);
+              const { revenue: dailySales, expenses: dailyExpenses, sales: saleCount, unavailable, incoming } = dailyByStore.get(store.id)!;
               return (
                 <article
                   key={store.id}
@@ -261,6 +289,9 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
                   </div>
                   <dl className="mt-3 space-y-2 text-xs">
                     <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">CA du jour</dt><dd className="font-bold text-emerald-700">{money(dailySales)}</dd></div>
+                    <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Ventes validées</dt><dd className="font-semibold text-slate-900">{saleCount}</dd></div>
+                    <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Articles suivis indisponibles</dt><dd className="font-semibold text-slate-900">{unavailable.size}</dd></div>
+                    <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Transferts entrants à finaliser</dt><dd className="font-semibold text-slate-900">{incoming}</dd></div>
                     <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Dépenses du jour</dt><dd className="font-bold text-rose-600">{money(dailyExpenses)}</dd></div>
                     <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2"><dt className="font-bold text-slate-700">CA - dépenses</dt><dd className={`font-black ${dailySales - dailyExpenses >= 0 ? "text-blue-700" : "text-rose-700"}`}>{money(dailySales - dailyExpenses)}</dd></div>
                   </dl>
@@ -341,6 +372,7 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isCatalogCard = card.permission === "catalog.manage";
               const isProcurementCard = card.permission === "procurement.manage";
               const isExpensesCard = card.permission === "expenses.view";
+              const isTreasuryCard = card.permission === "treasury.manage";
               const isCashHandoverCard = card.permission === "cash_handover.view";
               const isTransfersCard = card.permission === "transfers.view";
               const isCreditCard = card.permission === "credit.manage";
@@ -354,12 +386,12 @@ export default function RoleHomeView({ user, onOpenUsers, onOpenSales, onOpenSto
               const isResellerOrdersCard = card.permission === "reseller.orders";
               const isInventoryCard = card.permission === "inventory.control";
               const isEmployeePresentationCard = card.permission === "employee_presentation.control";
-              const isActionable = isRawMaterialOrdersCard || isProductionOrdersCard || isPosOrdersCard || isEmployeePresentationCard || isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isCashHandoverCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
+              const isActionable = isRawMaterialOrdersCard || isProductionOrdersCard || isPosOrdersCard || isEmployeePresentationCard || isInventoryCard || isResellerOrdersCard || isUsersCard || isSalesCard || isStockCard || isProductionCard || isStoresCard || isCatalogCard || isProcurementCard || isExpensesCard || isTreasuryCard || isCashHandoverCard || isTransfersCard || isCreditCard || isUnitsCard || isStaffCard || isReportsCard || isAuditCard;
               return (
                 <button
                   key={card.title}
                   type="button"
-                  onClick={isRawMaterialOrdersCard ? onOpenRawMaterialOrders : isProductionOrdersCard ? onOpenProductionOrders : isPosOrdersCard ? onOpenPosOrders : isEmployeePresentationCard ? onOpenEmployeePresentation : isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isCashHandoverCard ? onOpenCashHandovers : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
+                  onClick={isRawMaterialOrdersCard ? onOpenRawMaterialOrders : isProductionOrdersCard ? onOpenProductionOrders : isPosOrdersCard ? onOpenPosOrders : isEmployeePresentationCard ? onOpenEmployeePresentation : isInventoryCard ? onOpenInventory : isResellerOrdersCard ? onOpenResellerOrders : isUsersCard ? onOpenUsers : isSalesCard ? onOpenSales : isStockCard ? onOpenStocks : isProductionCard ? onOpenProduction : isStoresCard ? onOpenStores : isCatalogCard ? onOpenCatalog : isProcurementCard ? onOpenProcurement : isExpensesCard ? onOpenExpenses : isTreasuryCard ? onOpenTreasury : isCashHandoverCard ? onOpenCashHandovers : isTransfersCard ? onOpenTransfers : isCreditCard ? onOpenCredit : isUnitsCard ? onOpenUnits : isStaffCard ? onOpenStaff : isReportsCard ? onOpenReports : isAuditCard ? onOpenAudit : undefined}
                   disabled={!isActionable}
                   className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-slate-300 enabled:hover:shadow-md disabled:cursor-default"
                 >

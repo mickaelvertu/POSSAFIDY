@@ -21,7 +21,8 @@ import {
   ArticleTypeCode
 } from "../types";
 import { EXPENSE_CATEGORY_LABELS, filterReportData, getReportKpis, RESELLER_PAYMENT_LABELS } from "../services/reportService";
-import { 
+import {
+  ArrowLeft,
   FileText, 
   Printer, 
   Filter, 
@@ -298,7 +299,7 @@ color: "text-emerald-600 bg-emerald-50 border-emerald-200"
   };
 
 
-  if (showUserAudit && userAuditReport) return <div className="space-y-4"><button type="button" className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 print:hidden" onClick={() => setShowUserAudit(false)}>← Tous les rapports</button>{userAuditReport}</div>;
+  if (showUserAudit && userAuditReport) return <div className="space-y-4"><button type="button" className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 print:hidden" onClick={() => setShowUserAudit(false)}><ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Tous les rapports</button>{userAuditReport}</div>;
 
   return (
     <div className="space-y-7">

@@ -1,0 +1,83 @@
+name: Verify release
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish_staging_rules:
+        description: Check the compiled Firestore rules by releasing them to staging
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: Run all Firestore integration suites
+        run: npm exec --yes --package=firebase-tools@15.32.1 -- npm run test:rules:release
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gileada-pos-build-${{ github.sha }}
+          path: |
+            dist/
+            firebase.json
+            .firebaserc
+            database.rules.json
+            firestore.rules
+            firestore.indexes.json
+          include-hidden-files: true
+          if-no-files-found: error
+
+  staging-rules:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_staging_rules
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check staging project
+        env:
+          STAGING_PROJECT: ${{ vars.FIREBASE_STAGING_PROJECT }}
+        run: test -n "$STAGING_PROJECT" && test "$STAGING_PROJECT" != stockgileada
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.FIREBASE_STAGING_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.FIREBASE_STAGING_SERVICE_ACCOUNT }}
+      - name: Release rules to staging
+        env:
+          STAGING_PROJECT: ${{ vars.FIREBASE_STAGING_PROJECT }}
+        run: npx --yes firebase-tools@15.32.1 deploy --only firestore:rules --project "$STAGING_PROJECT" --non-interactive
+      - uses: actions/download-artifact@v4
+        with:
+          name: gileada-pos-build-${{ github.sha }}
+          path: release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gileada-pos-release-${{ github.sha }}
+          path: release/
+          include-hidden-files: true
+          if-no-files-found: error

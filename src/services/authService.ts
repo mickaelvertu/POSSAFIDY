@@ -14,6 +14,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocFromServer,
   getDocs,
   query,
   setDoc,
@@ -46,7 +47,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleId, AppPermission[]> = {
   MAGASINIER: ["dashboard.view", "products.view", "stock.view", "stock.edit", "stock.adjust", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive"],
   RESPONSABLE_MAGASIN: ["dashboard.view", "products.view", "stock.view", "stock.edit", "sales.view", "sales.create", "sales.validate", "credit.sales", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive", "transfers.validate", "procurement.manage", "reports.view", "inventory.count", "employee_presentation.control", "cash_handover.view", "cash_handover.create"],
   CONTROLEUR: ["dashboard.view", "products.view", "stock.view", "reports.view", "inventory.count", "employee_presentation.control"],
-  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive", "procurement.manage", "reports.view"],
+  PRODUCTION: ["dashboard.view", "products.view", "stock.view", "production.view", "production.create", "production.validate", "transfers.view", "transfers.create", "transfers.ship", "transfers.receive", "transfers.validate", "procurement.manage", "reports.view"],
   COMPTABLE: ["dashboard.view", "sales.view", "reports.view", "reports.export", "expenses.view", "expenses.create", "cash_handover.view", "procurement.manage"],
   GESTIONNAIRE_CREDIT: ["dashboard.view", "credit.sales", "credit.manage"],
   STAFF: ["dashboard.view"],
@@ -108,8 +109,15 @@ export const PERMISSION_GROUPS = [
   { id: "users", label: "Utilisateurs", description: "Administration des accès", permissions: ALL_PERMISSIONS.filter(permission => permission.startsWith("users.")) }
 ].map(group => ({ ...group, permissions: group.permissions.map(permissionDefinition) }));
 
+const TRANSFER_RECEIPT_PERMISSIONS: AppPermission[] = ["transfers.receive", "transfers.validate"];
+
+function hasTransferReceiptRole(role: unknown): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN" || role === "RESPONSABLE_MAGASIN" || role === "PRODUCTION";
+}
+
 export function hasPermission(user: AppUser, permission: AppPermission): boolean {
-  return user.roleId === "SUPER_ADMIN" || user.permissions.includes(permission);
+  return user.roleId === "SUPER_ADMIN" || user.permissions.includes(permission) ||
+    (hasTransferReceiptRole(user.roleId) && TRANSFER_RECEIPT_PERMISSIONS.includes(permission));
 }
 
 export async function syncUserToFirestore(user: AppUser): Promise<void> {
@@ -169,6 +177,7 @@ export class AuthService {
       role: profile.role || null,
       permissions: [...new Set([
         ...(Array.isArray(profile.permissions) ? profile.permissions : []),
+        ...(hasTransferReceiptRole(profile.role) ? TRANSFER_RECEIPT_PERMISSIONS : []),
         ...(profile.role === "PRODUCTION" ? ["reports.view"] : [])
       ])],
       visibleArticleTypes: Array.isArray(profile.visibleArticleTypes)
@@ -298,7 +307,18 @@ export class AuthService {
   async login(payload: LoginPayload): Promise<ApiResponse<{ token: string; user: User }>> {
     try {
       const credential = await signInWithEmailAndPassword(auth, payload.email.trim(), payload.password);
-      const user = await this.mapFirebaseUser(credential.user);
+      const profile = await this.withTimeout(getDocFromServer(doc(db, "users", credential.user.uid)))
+        .catch(error => {
+          console.warn("Unable to verify the Firebase profile at sign-in:", error);
+          return null;
+        });
+      if (!profile?.exists()) {
+        await this.logout();
+        return profile
+          ? { success: false, code: "PROFILE_NOT_FOUND", message: "Profil utilisateur introuvable. Contactez un administrateur." }
+          : { success: false, code: "PROFILE_UNAVAILABLE", message: "Impossible de vérifier votre profil. Réessayez." };
+      }
+      const user = this.userFromProfile(credential.user, profile.data());
       if (user.status === "PENDING" || user.status === "DISABLED") {
         await signOut(auth);
         return {

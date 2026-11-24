@@ -168,6 +168,7 @@ export interface TreasuryFund {
 }
 
 export interface TreasuryMovement {
+  expense_payment_index?: number;
   id: string;
   kind: "RECEIPT" | "TRANSFER" | "PURCHASE" | "EXPENSE" | "EXPENSE_REFUND" | "DEPOSIT" | "RECEIPT_REVERSAL";
   fund_id: string;
@@ -196,7 +197,23 @@ export interface SupplierPayment {
 
 export type ExpenseCategory = "RENT" | "ELECTRICITY" | "FUEL" | "TRANSPORT" | "MAINTENANCE" | "SUPPLIES" | "COMMUNICATION" | "FOOD" | "SALARY_ADVANCE" | "OTHER";
 
+export interface ExpensePayment {
+  id: string;
+  amount: number;
+  fund_id: string;
+  funding_source: "STORE" | "ADMIN_FUND";
+  fund_name: string;
+  paid_by: string;
+  paid_by_name: string;
+  paid_at: number;
+}
+
 export interface Expense {
+  amount_paid?: number;
+  payments?: ExpensePayment[];
+  treasury_paid_amount?: number;
+  refunded_amount?: number;
+  refunded_payment_ids?: string[];
   funding_source?: "STORE" | "ADMIN_FUND";
   payment_recorded_by?: string;
   cancelled_by?: string;
@@ -225,7 +242,7 @@ export interface Expense {
   employee_name?: string;
   salary_advance_id?: string;
   payment_method: PaymentMethod;
-  payment_status: "PAID" | "PENDING";
+  payment_status: "PAID" | "PARTIAL" | "PENDING";
   reference?: string;
   notes?: string;
   created_by: string;

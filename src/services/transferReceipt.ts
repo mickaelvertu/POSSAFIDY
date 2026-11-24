@@ -1,5 +1,9 @@
 import type { StockMovement, StockTransfer, Store, UserProfile } from "../types";
 
+export function canAccessTransferDestination(user: Pick<UserProfile, "roleId" | "storeIds">, storeId: string) {
+  return user.roleId === "ADMIN" || user.roleId === "SUPER_ADMIN" || user.storeIds.includes(storeId);
+}
+
 export function isAssignedDepotManager(user: Pick<UserProfile, "roleId" | "storeIds">, store: Pick<Store, "id" | "store_type"> | undefined) {
   return user.roleId === "RESPONSABLE_MAGASIN" && store?.store_type === "CENTRAL_WAREHOUSE"
     && user.storeIds.includes(store.id);

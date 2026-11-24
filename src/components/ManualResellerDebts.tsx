@@ -8,8 +8,9 @@ import TreasuryDetailsDialog from './TreasuryDetailsDialog';
 const money=(n:number)=>`${n.toLocaleString('fr-FR')} Ar`;
 const field='mt-1 block w-full rounded-lg border border-slate-300 p-2.5 text-sm';
 const methods: [CreditPayment['method'],string][]=[['CASH','Espèces'],['BANK_TRANSFER','Virement bancaire'],['MVOLA','MVola'],['AIRTEL_MONEY','Airtel Money'],['ORANGE_MONEY','Orange Money'],['CHECK','Chèque']];
-export default function ManualResellerDebts({customers,currentUser,selectedReseller,search}:{customers:CreditCustomer[];currentUser:UserProfile;selectedReseller:string;search:string}){
+export default function ManualResellerDebts({customers,currentUser,selectedReseller,search,onDebtsChange}:{customers:CreditCustomer[];currentUser:UserProfile;selectedReseller:string;search:string;onDebtsChange?:(debts:ManualCreditDebt[])=>void}){
   const [debts,setDebts]=useState<ManualCreditDebt[]>([]),[loaded,setLoaded]=useState(false),[loadError,setLoadError]=useState('');
+  useEffect(()=>{onDebtsChange?.(debts);},[debts,onDebtsChange]);
   const [creating,setCreating]=useState(false),[detailId,setDetailId]=useState(''),[payId,setPayId]=useState('');
   const [customerId,setCustomerId]=useState(''),[amount,setAmount]=useState(''),[due,setDue]=useState(''),[reference,setReference]=useState(''),[note,setNote]=useState('');
   const [payAmount,setPayAmount]=useState(''),[method,setMethod]=useState<CreditPayment['method']>('BANK_TRANSFER'),[paymentReference,setPaymentReference]=useState('');

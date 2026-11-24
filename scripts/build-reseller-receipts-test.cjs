@@ -11,7 +11,7 @@ esbuild.build({
       const app = initializeApp({ projectId: 'demo-sale-rules', apiKey: 'test-only' });
       export const db = initializeFirestore(app, { localCache: memoryLocalCache() });
       export const auth = { currentUser: { uid: 'super' } };
-      connectFirestoreEmulator(db, '127.0.0.1', 8189, { mockUserToken: { sub: 'super', user_id: 'super' } });
+      connectFirestoreEmulator(db, '127.0.0.1', 8189, { mockUserToken: { sub: 'super', user_id: 'super', auth_time: Math.floor(Date.now() / 1000) } });
       export const runOnlineTransaction = operation => runTransaction(db, operation);
     ` }));
   } }],
