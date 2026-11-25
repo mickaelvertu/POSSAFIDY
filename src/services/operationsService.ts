@@ -559,19 +559,15 @@ export async function validateSale(
     stockTargets.forEach((target, index) => {
       const current = snapshots[index].exists() ? snapshots[index].data() as StoreStock : undefined;
       const before = current?.quantity || 0;
-      if (target.quantity <= 0 || before < target.quantity) {
+      if (!current || target.quantity <= 0 || before < target.quantity) {
         throw new Error(`Stock insuffisant pour l'article ${target.articleId}. Disponible : ${before}.`);
       }
-      const stock: StoreStock = {
-        id: current?.id || target.reference.id,
-        store_id: sale.store_id,
-        article_id: target.articleId,
+      const stockUpdate = {
         quantity: before - target.quantity,
-        reserved_quantity: current?.reserved_quantity || 0,
         ...(checks.has(target.articleId) ? { sale_check: checks.get(target.articleId)! } : {}),
-        updated_at: timestamp,
-        ...(current?.quarantine_quantity !== undefined ? { quarantine_quantity: current.quarantine_quantity } : {})
+        updated_at: timestamp
       };
+      const stock: StoreStock = { ...current, ...stockUpdate };
       const movement: StockMovement = {
         id: `movement-${sale.id}-${target.articleId}`,
         store_id: sale.store_id,
@@ -590,7 +586,7 @@ export async function validateSale(
       };
       updatedStocks.push(stock);
       movements.push(movement);
-      transaction.set(target.reference, stock);
+      transaction.update(target.reference, stockUpdate);
       transaction.set(doc(db, MOVEMENTS, movement.id), movement);
     });
     transaction.set(saleRef, clean(updatedSale));
