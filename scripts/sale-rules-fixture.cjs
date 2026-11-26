@@ -37,10 +37,10 @@ async function run(count, storeType = 'POS', options = {}) {
   }
   if (options.stale) assert.equal((await commit([write('sales/sale', { ...sale, lines: sale.lines.map((line, i) => i === 0 ? { ...line, quantity: 2 } : line) })])).status, 200);
   const result = await commit([
-    ...stocks.flatMap(stock => [
+    ...(options.statusOnly ? [] : stocks.flatMap(stock => [
       write(`stocks/${stock.id}`, { ...stock, ...checks.get(stock.article_id), quantity: 99, updated_at: 2 }),
       write(`movements/movement-sale-${stock.article_id}`, { id: `movement-sale-${stock.article_id}`, ...checks.get(stock.article_id), store_id: 'store', article_id: stock.article_id, movement_type: 'SALE', quantity: -1, reference_type: 'SALE', reference_id: 'sale', reference_number: 'TEST-SALE', before_quantity: 100, after_quantity: 99, created_by: 'super', created_at: 2 }),
-    ]),
+    ])),
     write('sales/sale', { ...sale, status: 'VALIDATED', validated_by: 'super', validated_at: 2 }),
     write('auditLogs/test', { user_id: 'super', action: 'SALE_VALIDATED', entity_type: 'SALE', entity_id: 'sale', created_at: 2 }),
   ], token);

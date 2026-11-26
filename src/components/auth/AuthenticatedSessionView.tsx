@@ -911,6 +911,11 @@ export default function AuthenticatedSessionView() {
   const handleValidateSale = async (saleId: string) => {
     const sale = sales.find(item => item.id === saleId);
     if (!sale || !currentAppUser) return;
+    const isAdmin = currentAppUser.roleId === "ADMIN" || currentAppUser.roleId === "SUPER_ADMIN";
+    if (!isAdmin && (!hasPermission(currentAppUser, "sales.validate") || !currentAppUser.storeIds.includes(sale.store_id))) {
+      alert("Vous n'avez pas l'autorisation de valider une vente pour ce magasin.");
+      return;
+    }
     if (sale.customer_type === "REVENDEUR" && sale.status !== "APPROVED") {
       alert("La demande revendeur doit d'abord être approuvée par un administrateur.");
       return;

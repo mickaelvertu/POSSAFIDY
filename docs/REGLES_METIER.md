@@ -1,342 +1,45 @@
-# Règles métier de l'application
-
-## 1. Objet
-
-Ce document décrit les règles métier de l'application de gestion commerciale et de stock. Il sert de référence pour les usages fonctionnels, les contrôles de cohérence et les validations de flux.
-
-## 2. Périmètre fonctionnel
-
-L'application gère :
-
-- les utilisateurs et leurs permissions,
-- les rôles et accès par magasin,
-- le catalogue des articles et fournisseurs,
-- les stocks par article et par magasin,
-- les ventes, les transferts et les productions,
-- les achats fournisseurs et leurs réceptions,
-- les dépenses, avances sur salaire et trésorerie,
-- les inventaires, import initial de stock et audit,
-- les rapports et contrôles de performance.
-
-## 3. Rôles et droits
-
-### 3.1 Rôles supportés
-
-Les rôles principaux sont :
-
-- SUPER_ADMIN
-- ADMIN
-- VENDEUR
-- MAGASINIER
-- RESPONSABLE_MAGASIN
-- CONTROLEUR
-- PRODUCTION
-- COMPTABLE
-- GESTIONNAIRE_CREDIT
-- STAFF
-- REVENDEUR
-
-### 3.2 Règles de base
-
-- Un utilisateur n'a accès qu'aux données autorisées par son rôle et sa portée de magasins.
-- La portée est calculée à partir des droits attribués et des magasins actifs.
-- Les changements de droits ou de magasins mettent à jour immédiatement la portée effective de la session active.
-- Un compte désactivé garde son historique mais ne conserve plus les permissions actives.
-- Un profil Firestore absent ne doit pas être recréé automatiquement comme compte actif.
-- Les rôles ADMIN et SUPER_ADMIN ne sont pas traités comme équivalents dans les règles Firestore.
-
-### 3.3 Visibilité des articles
-
-La visibilité des articles est filtrée par type :
-
-- matières premières,
-- produits de revente,
-- les deux types,
-- aucun type.
-
-Les droits de visibilité conditionnent :
-
-- les catalogues consultés,
-- les données de stock,
-- les ventes,
-- les productions,
-- les transferts,
-- les achats,
-- les rapports,
-- le journal d'audit.
-
-## 4. Gestion des utilisateurs
-
-- Chaque utilisateur a un profil métier avec nom, prénom, email, téléphone, magasin(s) et statut.
-- Un utilisateur peut être en statut `PENDING`, `ACTIVE` ou `DISABLED`.
-- La suppression n'est pas une suppression pure : c'est une désactivation.
-- L'historique de l'utilisateur est conservé.
-- Une réinitialisation du mot de passe par email est disponible depuis la page de connexion.
-- Les comptes de test ne doivent pas être affichés sur la page de connexion.
-
-## 5. Catalogue et articles
-
-### 5.1 Articles
-
-Un article comporte :
-
-- un identifiant technique,
-- un code métier unique,
-- un nom,
-- une catégorie,
-- un type (`RESALE` ou `RAW_MATERIAL`),
-- une unité de mesure,
-- des prix d'achat et de vente,
-- une quantité minimale d'alerte,
-- un statut actif/inactif.
-
-### 5.2 Règles métier
-
-- Un code article doit être unique.
-- Un article doit appartenir à une catégorie valide.
-- Un article doit avoir une unité de mesure connue.
-- Le prix d'achat et prix de vente doivent rester cohérents avec la logique commerciale de l'entreprise.
-- Un article inactif n'est plus utilisé dans les opérations courantes.
-- Les articles ne visibles pour l'utilisateur ne doivent pas apparaître dans les écrans ou rapports restreints.
-
-### 5.3 Catégories et unités
-
-- Une catégorie a un code unique et un libellé.
-- Une unité est un libellé de mesure actif ou non.
-- Les catégories et unités peuvent être modifiées administrativement.
-- Toute modification de catalogue est tracée dans le journal d'audit.
-
-## 6. Gestion des magasins
-
-- Un magasin possède un identifiant, un code, un nom, un type et un statut actif.
-- Les types de magasin incluent : `CENTRAL_WAREHOUSE`, `POS`, `RESELLER`, `MANUFACTURER`.
-- La portée d'un utilisateur est calculée selon ses magasins autorisés.
-- La réinitialisation globale des magasins est désactivée.
-
-## 7. Stock
-
-### 7.1 Principe général
-
-Les stocks sont gérés par article, par magasin et par période. Les mouvements de stock doivent être cohérents et traçables.
-
-### 7.2 Mouvements autorisés
-
-Le stock peut évoluer à partir des opérations suivantes :
-
-- vente,
-- production,
-- transfert,
-- réception fournisseur,
-- inventaire,
-- import initial,
-- ajustement manuel,
-- correction ou écart de stock.
-
-### 7.3 Règles de cohérence
-
-- Une vente validée ne doit pas réduire le stock au-delà du stock disponible.
-- Une production ne doit consommer ou produire que dans les quantités prévues par le processus métier.
-- Une réception fournisseur ne crédite le stock que pour les quantités acceptées.
-- Le stock est mis à jour dans la même transaction que les écritures d'audit associées.
-- Les transactions Firestore doivent garantir l'atomicité lors des écritures de stock.
-
-### 7.4 Contrôles
-
-- Le système refuse une opération si la quantité disponible n'est pas suffisante.
-- Les écarts de stock doivent être signalés et documentés.
-- Les changements de stock sont enregistrés dans le journal d'audit.
-
-## 8. Ventes
-
-### 8.1 Cycle de vente
-
-Une vente suit généralement ce chemin :
-
-1. création d'un brouillon ou d'une vente,
-2. ajout d'articles,
-3. calcul du total,
-4. validation ou refus,
-5. mise à jour du stock,
-6. enregistrement de l'audit.
-
-### 8.2 Règles de validation
-
-- Une vente ne peut être validée que si le stock le permet.
-- Une vente doit respecter les droits du rôle de l'utilisateur.
-- Une vente est refusée si elle dépasse les limites de validation ou de quantité autorisées.
-- En POS / revendeur, une vente est limitée à un nombre défini d'articles distincts dans le cadre des validations multi-articles.
-- Au-delà de cette limite, l'application remplace le refus générique par un message explicite.
-- Les ventes finalisées sont bloquées hors connexion.
-
-### 8.3 Journal d'audit
-
-- Toute vente validée doit générer une trace d'audit.
-- Les informations des mouvements de stock sont associées à la vente concernée.
-
-## 9. Production
-
-### 9.1 Principe
-
-La production relie la consommation des matières premières à la création d'articles finis ou intermédiaires.
-
-### 9.2 Règles métier
-
-- La production ne peut être exécutée que par un rôle autorisé.
-- Les matières premières consommées doivent être disponibles dans le magasin concerné.
-- La production doit écrire des mouvements de stock cohérents.
-- Les résultats de production sont enregistrés dans le journal d'audit.
-- Les écarts entre quantités prévues et quantité réelle doivent être détectés.
-
-## 10. Transferts
-
-### 10.1 Cycle de transfert
-
-Un transfert suit le schéma suivant :
-
-1. création du transfert,
-2. approbation,
-3. expédition,
-4. réception dans le magasin destinataire,
-5. contrôle des écarts et validation finale.
-
-### 10.2 Règles métier
-
-- Un transfert doit être approuvé par un utilisateur autorisé.
-- Le magasin source doit disposer des quantités transférées.
-- Le magasin destinataire reçoit les produits après validation de la réception.
-- Les écarts entre la quantité expédiée et la quantité reçue doivent être signalés.
-- Les transferts exécutés et les mouvements associés sont enregistrés dans l'audit.
-- Les brouillons de transfert peuvent être sauvegardés localement en mode hors ligne, mais leur synchronisation dépend des droits et des règles Firestore.
-
-## 11. Achats fournisseurs
-
-### 11.1 Cycle d'achat
-
-Le cycle d'achat suit généralement :
-
-- brouillon d'achat,
-- approbation par un autre administrateur,
-- livraison visible dans les transferts / réceptions,
-- réception par l'utilisateur autorisé,
-- crédit du stock sur les quantités acceptées,
-- enregistrement d'audit.
-
-### 11.2 Règles métier
-
-- Un achat en brouillon ne peut pas être directement livré comme validé.
-- L'approbation doit être faite par un autre administrateur.
-- La réception ne crédite le stock que sur les quantités acceptées.
-- La même transaction inclut la réception et l'écriture correspondante dans le journal d'audit.
-- Les paiements fournisseurs sont associés à la trésorerie et au suivi financier.
-
-## 12. Dépenses, avances et trésorerie
-
-### 12.1 Dépenses
-
-- Les dépenses sont classées par catégorie.
-- Une dépense peut être en statut `DRAFT`, `VALIDATED` ou `CANCELLED`.
-- Les dépenses peuvent être associées à un magasin ou à un fond de trésorerie.
-- Les dépenses payées sont suivies avec référence de paiement et utilisateur concerné.
-
-### 12.2 Avances sur salaire
-
-- Les avances sur salaire sont enregistrées comme dépenses payées en brouillon.
-- Une validation crée atomiquement une avance déductible en paie et une trace d'audit.
-- Cette opération est réservée aux administrateurs.
-
-### 12.3 Trésorerie
-
-- La trésorerie suit les fonds de caisse, banque et autres sources.
-- Les mouvements financiers sont associés aux utilisateurs et références concernées.
-- Le solde est calculé sur la base des mouvements enregistrés.
-- Les paiements fournisseurs et autres sorties sont répercutés dans les balances.
-
-## 13. Inventaire et import initial
-
-### 13.1 Import initial de stock
-
-- L'import initial de stock est réservé aux administrateurs.
-- Le fichier doit être marqué `review.ready_to_apply: true` avant application.
-- Le système affiche un aperçu des lignes avant validation.
-- Les lignes invalides sont refusées.
-- Les mouvements de stock et l'audit sont générés ligne par ligne.
-- Les lots sont limités pour respecter les contraintes techniques Firestore.
-- Un import interrompu peut être repris avec le même fichier.
-
-### 13.2 Inventaires physiques
-
-- Un inventaire permet d'aligner le stock réel avec le stock théorique.
-- Les écarts sont signalés et doivent être traités ou validés.
-- Les contrôles de stock sont liés à la gestion des mouvements et de l'audit.
-
-## 14. Audit et traçabilité
-
-- Toutes les mutations métier importantes doivent laisser une trace dans le journal d'audit.
-- Les écritures métier et les événements d'audit sont regroupés lorsqu'une mutation est effectuée directement depuis l'application.
-- Chaque utilisateur ne consulte que ses propres événements d'audit, sauf les administrateurs qui peuvent voir l'ensemble.
-- Les références métier contiennent la date, l'heure et un suffixe aléatoire pour limiter les doublons entre appareils.
-
-## 15. Rapports et analyses
-
-Les rapports sont générés à partir des données métier et des mouvements enregistrés :
-
-- ventes,
-- stock,
-- transferts,
-- achats,
-- productions,
-- mouvements financiers,
-- dépenses,
-- audit,
-- inventaires.
-
-Les rapports de mouvements ou d'audit peuvent dépendre de l'historique complet et peuvent donc être chargés par pages. Les autres rapports ne dépendent pas de cet historique complet.
-
-## 16. Hors ligne et PWA
-
-- L'application peut être installée comme PWA.
-- Le shell statique est mis en cache pour démarrer sans réseau après une première visite.
-- Les données Firestore peuvent être mises en cache localement.
-- Les brouillons peuvent être sauvegardés localement.
-- Les écritures transactionnelles sont bloquées hors connexion.
-- Les opérations non encore validées sont signalées par un indicateur d'état.
-
-## 17. Sécurité et intégrité des données
-
-- Les règles Firestore filtrent les accès selon le rôle et le magasin.
-- Les droits affichés hors ligne ne sont pas revalidés avant le retour du réseau.
-- Les changements de nom ne rechargent pas les données.
-- Les changements de droits ou de magasins détachent les anciens abonnements et réinitialisent leur portée.
-- Les erreurs de lecture restent isolées à leur source et affichent une commande pour réessayer.
-- Les refus d'accès ne sont pas affichés comme des pannes réseau.
-
-## 18. Règles d'intégrité métier
-
-- Un compte ne peut pas avoir accès à des données hors de sa portée.
-- Une opération commerciale ne peut pas créer un stock négatif sans validation métier explicite.
-- Les sorties de stock doivent correspondre à des événements validés et traçables.
-- Les écritures de trésorerie, d'audit et de stock doivent être cohérentes entre elles.
-- Les mouvements ne doivent pas être dupliqués entre appareils.
-
-## 19. Règles de synthèse
-
-En résumé, l'application impose que :
-
-1. chaque action soit conforme au rôle et à la portée de l'utilisateur ;
-2. chaque mouvement de stock soit traçable et cohérent ;
-3. chaque validation commerciale ou financière soit documentée ;
-4. chaque écriture puisse être auditable ;
-5. chaque donnée soit filtrée selon les règles de sécurité et de magasin ;
-6. les opérations critiques restent atomiques et ne peuvent être validées hors connexion.
-
-## 20. Points de vigilance
-
-Avant mise en production, les éléments suivants doivent être vérifiés :
-
-- validation des imports de catalogue,
-- import du stock initial réel,
-- test des règles sur l'émulateur Firestore,
-- validation des sept rôles et parcours critiques,
-- vérification des emails Firebase et domaines autorisés,
-- plan de sauvegarde / restauration,
-- pilotage dans un magasin avant déploiement général.
+# Règles métier de Gileada POS
+
+Revue du 25 novembre 2026, sur le code du dépôt au commit `7f36b87`. Les règles de la base Firestore par défaut en production (`stockgileada`) correspondent au fichier du dépôt. Les comportements ci-dessous décrivent les parcours de l’application et, lorsque la distinction est importante, les conditions contrôlées par Firestore. Le tableau final indique les écarts et les décisions métier à prendre.
+
+## Règles actuellement appliquées
+
+| Domaine | Fonctionnement actuel | Références |
+| --- | --- | --- |
+| Authentification et rôles | Les profils sont `PENDING`, `ACTIVE` ou `DISABLED`. L’accès métier exige un profil actif. Les sessions expirent quatre heures après la connexion. Les rôles sont Super Admin, Admin, Vendeur, Magasinier, Responsable magasin, Contrôleur, Production, Comptable, Gestionnaire crédit, Staff et Revendeur. Les permissions et magasins attribués déterminent généralement l’accès, avec des exceptions par flux. Les administrateurs ont les permissions générales et une portée multi-magasins. Certaines actions restent réservées au Super Admin. | [Authentification](../src/services/authService.ts), [sessions](sessions-authentification.md), [Firestore](../firestore.rules#L25) |
+| Catalogue, fournisseurs et magasins | Les articles sont de type `RESALE` ou `RAW_MATERIAL`. L’administration gère les articles, catégories et unités. La lecture des articles dépend du type visible pour le profil. La gestion des fournisseurs suit ses propres droits. Les types de magasin sont dépôt central, POS, revendeur et production. En POS et magasin revendeur, les opérations normales de stock sont limitées aux produits de revente. | [Catalogue et fournisseurs](../firestore.rules#L490), [compatibilité article–magasin](../firestore.rules#L293), [magasins](../firestore.rules#L1551) |
+| Stock | Une ligne de stock représente un article dans un magasin. La quantité normale, les réservations et la quarantaine sont suivies séparément. Les ventes, transferts, réceptions, productions, inventaires et ajustements génèrent des mouvements. Le stock et les mouvements d’une validation de vente sont enregistrés avec son audit dans la transaction finale. Les règles de disponibilité diffèrent selon l’opération, notamment pour les réservations. | [Stock et mouvements](../src/services/stockService.ts), [ventes et production](../src/services/operationsService.ts), [règles de stock](../firestore.rules#L2070) |
+| Ventes et caisse | Le parcours courant suit `DRAFT → CHECKING → VERIFIED → VALIDATED`. Une demande revendeur suit en plus `VERIFIED → APPROVED → VALIDATED`, avec approbation administrative. Les services ne débitent pas le stock. Les lignes d’un même produit sont cumulées pour le débit. La validation en POS ou magasin revendeur est plafonnée à 100 articles distincts hors services et contrôle leur type `RESALE`. Le stock est relu avant débit. L’annulation de vente est réservée au Super Admin, avec reprise du stock pour une vente déjà validée selon le circuit d’annulation. Les encaissements revendeurs déjà enregistrés gardent leur historique. Firestore prévoit également un cas de création administrative de vente revendeur déjà validée, sous les autres conditions de création. | [Interface ventes](../src/components/SalesView.tsx), [service](../src/services/operationsService.ts#L345), [limite](../src/services/saleValidationLimits.ts), [règles des ventes](../firestore.rules#L1344) |
+| Crédits et encaissements revendeurs | Les ventes à crédit alimentent l’encours. Un règlement réduit le reste dû et l’encours dans la même transaction. L’encaisseur s’identifie par son compte connecté. Les espèces reçues par un administrateur alimentent son fonds de trésorerie. Pour un responsable de dépôt habilité, elles restent à remettre par cet encaisseur. Les paiements hors espèces restent au registre et hors des remises d’espèces. Les dettes manuelles suivent leur propre registre et s’ajoutent à l’encours sous plafond, sans mouvement de stock ni chiffre d’affaires. | [Encaissements](encaissements-revendeurs.md), [dettes manuelles](credits-manuels.md), [annulations d’encaissement](../src/services/creditPaymentReversalService.ts) |
+| Remises POS et DEP | Le déclarant remet les fonds selon le circuit de son magasin. Pour un DEP, une remise réunit jusqu’à cinq encaissements en espèces identifiés pour le même encaisseur, magasin et jour de paiement. Un encaissement ne peut être repris dans deux remises. Une autre personne confirme la réception. Les anciennes sommes sans encaisseur identifié restent à rapprocher. Les dépenses DEP suivent leur propre circuit. | [Remises DEP](encaissements-revendeurs.md), [service des remises](../src/services/cashHandoverService.ts), [règles des remises](../firestore.rules#L562) |
+| Transferts | Le circuit couvre brouillon, approbation, expédition, réception puis validation ou constat d’écart. Les droits dépendent de l’étape et du magasin source ou destinataire. Le magasin destinataire est crédité selon les quantités acceptées. Les retours et le recyclage ont des règles propres, avec traitement distinct de la quarantaine. | [Service transferts](../src/services/inventoryService.ts#L125), [contrôle de réception](../src/services/transferReceipt.ts), [règles Firestore](../firestore.rules#L2132) |
+| Achats fournisseurs | Un achat démarre en brouillon. L’approbation d’un brouillon exige `procurement.manage` et l’accès au magasin, puis crée une livraison `IN_TRANSIT` dans la même transaction. La réception crédite les quantités acceptées. Un règlement peut utiliser jusqu’à trois fonds distincts du payeur, dont deux remises POS ou DEP au maximum. L’annulation par le Super Admin conserve l’historique et tient compte du stock réservé. Un montant déjà versé devient une somme à récupérer auprès du fournisseur. Le remboursement doit être constaté séparément. | [Circuit achat](../src/services/inventoryService.ts#L446), [annulation](../src/services/purchaseCancellationService.ts), [paiements fournisseurs](tresorerie.md#paiement-fournisseur-avec-plusieurs-fonds) |
+| Commandes POS et commandes DEP | Le responsable commande pour un magasin actif qui lui est attribué. L’administration analyse, ajuste ou refuse avec motif. La conversion POS crée un transfert brouillon depuis un dépôt central. La conversion DEP de matières premières crée un achat brouillon. La conversion conserve la demande initiale, se fait dans une transaction et ne déplace aucun stock. | [Commandes POS](commandes-point-de-vente.md), [commandes DEP](commandes-matieres-premieres.md) |
+| Commandes de production et fabrication | La commande de production calcule la demande à partir des ventes validées, selon leur date de création et une période civile en heure de Nairobi. Elle retient les produits de revente actifs et exclut les services. Une commande publiée est figée et ne modifie aucun stock. La fabrication suit un circuit distinct, `DRAFT → COMPLETED`, avec la permission `production.validate`, contrôle des quantités relues, mouvements de consommation et de production, et audit. | [Commandes de production](commandes-production.md), [fabrication](../src/services/operationsService.ts#L598), [règles de fabrication](../firestore.rules#L1510) |
+| Dépenses, avances et paie | Une dépense peut être brouillon, validée ou annulée. Son état de règlement peut être partiel. Le règlement est enregistré en ariary entiers et limité au reste dû et au solde du fonds. L’annulation rembourse chaque versement de trésorerie à son fonds d’origine, avec reprise possible des remboursements manquants. Une avance sur salaire conserve un règlement intégral et une écriture déductible en paie. Les retenues d’inventaire suivent leur propre circuit de règlement. | [Règlements partiels](reglements-partiels-depenses.md), [paie](../src/services/payrollService.ts), [inventaires](../src/services/inventoryCountService.ts#L50) |
+| Trésorerie | Les fonds sont rattachés à leur détenteur. Les administrateurs ordinaires opèrent sur leurs fonds. Le Super Admin peut transférer un fonds positif vers un administrateur actif avec référence et traçabilité. Les contrôles physiques enregistrent le comptage et les écarts sans modifier le solde des fonds. | [Trésorerie](tresorerie.md), [service](../src/services/treasuryService.ts) |
+| Inventaires et import initial | Le comptage suit `DRAFT`, éventuellement `AWAITING_SIGNATURE`, puis `SUBMITTED` et une décision `VALIDATED` ou `REJECTED`. L’auteur ne peut pas approuver son propre comptage. La validation traite les écarts, ajuste le stock selon le dossier et enregistre les mouvements. L’import initial est administratif, avec aperçu, fichier marqué `review.ready_to_apply: true` et reprise possible avec le même fichier. | [Inventaires](../src/services/inventoryCountService.ts), [règles d’inventaire](../firestore.rules#L1608), [import](../src/services/stockImportService.ts) |
+| Contrôle de présentation du personnel | Un contrôle soumis peut être examiné par un autre administrateur. L’examen valide les points ou demande une correction. | [Service](../src/services/employeePresentationService.ts), [règles](../firestore.rules#L1567) |
+| Audit, rapports et hors ligne | Les administrateurs consultent l’ensemble du journal d’audit. Les autres utilisateurs consultent leurs propres événements. Les rapports dépendent des données et périmètres chargés, avec pagination pour certains historiques. L’application peut s’ouvrir depuis son cache et certains brouillons peuvent être sauvegardés hors ligne. Les opérations transactionnelles exigent le réseau. | [Audit](../firestore.rules#L1542), [rapports](../src/services/reportService.ts), [mode hors ligne](../src/services/offlineSupport.ts) |
+
+## Ajustements à traiter
+
+| Priorité | Constat vérifié | Ajustement proposé et critère de validation |
+| --- | --- | --- |
+| Haute | **Une vente ordinaire peut franchir la transition finale dans Firestore sur la base de `sales.edit`.** La branche commune accepte `sales.edit` ou `sales.validate`. La branche `VERIFIED → VALIDATED` hors revendeur ne répète ni l’exigence de `sales.validate` ni la portée magasin. Les écritures de stock ont leurs propres contrôles. La transition de statut et ces écritures doivent exprimer la même règle métier. [Règle des transitions](../firestore.rules#L1434) | Réserver la finalisation à `sales.validate` et au magasin autorisé, tout en conservant les droits voulus sur les étapes de préparation. Vérifier sur l’émulateur le refus d’une finalisation avec `sales.edit` seul ou hors magasin, et le succès d’une validation légitime en POS et en dépôt. Examiner aussi comment garantir que le statut final et les écritures requises restent liés, en couvrant séparément les ventes composées uniquement de services. |
+| Haute | **Les réservations ne sont pas traitées de la même façon dans tous les flux.** La validation des ventes compare la demande à `quantity`. L’annulation d’achat et l’annulation de transfert vérifient aussi le plancher `reserved_quantity`. [Validation de vente](../src/services/operationsService.ts#L559), [annulation de transfert](../src/services/inventoryService.ts#L64), [annulation d’achat](tresorerie.md#annulation-des-achats-fournisseurs) | Décider si une vente doit pouvoir consommer un stock réservé et, le cas échéant, à quelle réservation elle doit être liée. Si le stock réservé est protégé, appliquer la même définition du disponible à la caisse et à la transaction, puis tester une vente avec stock physique suffisant et stock libre insuffisant. |
+| Haute | **Plusieurs écritures de stock reconstruisent encore le document.** La validation de vente préserve ses champs depuis le correctif de POS-11. La production, l’annulation de vente, le transfert et l’inventaire comportent encore des écritures qui reconstruisent certains documents de stock. Le risque de perte de métadonnées ou de refus doit être vérifié pour chaque flux. [Opérations](../src/services/operationsService.ts), [transferts](../src/services/inventoryService.ts#L330), [inventaires](../src/services/inventoryCountService.ts#L225) | Définir les champs qu’un flux possède et les marqueurs qui doivent être conservés ou explicitement remplacés. Ajouter un test d’intégration avec des stocks ayant déjà fait l’objet d’un inventaire, d’un transfert ou d’une vente. Vérifier le résultat du mouvement, la conservation des champs et le comportement du prochain flux qui réutilise le stock. |
+| Haute | **La séparation des responsabilités pour les achats n’est pas imposée.** L’interface annonce « Approbation par un autre administrateur », alors que l’action et les règles vérifient `procurement.manage` et le magasin sans comparer l’approbateur à l’auteur. [Interface achats](../src/components/ProcurementView.tsx#L521), [action](../src/components/auth/AuthenticatedSessionView.tsx#L2007), [règles](../firestore.rules#L1046) | Confirmer si une seconde personne est obligatoire et si les délégations sont permises. Aligner le libellé, l’action et les règles, puis tester les cas auteur, collègue habilité et approbateur hors magasin. |
+| Moyenne | **L’interface peut proposer une action que Firestore refuse.** « Valider Caisse & Stock » est conditionné au statut et au type de client. Le bouton d’expédition revendeur est également conditionné au statut. Les refus sont ensuite présentés avec le message générique renvoyé par Firebase. [Boutons de vente](../src/components/SalesView.tsx#L676), [gestion du refus](../src/components/auth/AuthenticatedSessionView.tsx#L911) | Aligner l’affichage sur le droit effectif et le magasin. Distinguer dans le retour utilisateur les cas connus, tels que stock insuffisant, état modifié et incapacité à valider pour ce magasin. Conserver un message générique avec la référence de vente quand la cause exacte reste inconnue. |
+| Moyenne | **La lecture des ventes par `credit.manage` constitue une exception à la portée magasin.** La règle de lecture autorise ce droit sans condition de magasin ni de type client. [Règle de lecture](../firestore.rules#L1344) | Confirmer le périmètre requis par la gestion du crédit. S’il est limité aux revendeurs, aligner les règles et les requêtes sur ce périmètre et vérifier que les règlements et rapports restent consultables. |
+| Moyenne | **Le catalogue ne garantit pas toutes les contraintes annoncées dans l’ancienne documentation.** Les règles d’écriture d’articles et de catégories contrôlent le rôle administratif. Elles n’imposent pas à elles seules l’unicité du code ni la validité des références de catégorie et d’unité. L’éligibilité POS à la validation vérifie le type `RESALE` et pas le statut actif. [Catalogue](../firestore.rules#L490), [éligibilité POS](../firestore.rules#L373) | Décider si une vente déjà préparée peut être validée après désactivation d’un produit. Définir les règles d’unicité et de références applicables à la création, à l’import et à la mise à jour, avec prise en charge des données existantes. |
+| Moyenne | **Le rapprochement des anciens encaissements et le remboursement effectif restent manuels.** Ces situations suivent des circuits distincts des annulations et des remises courantes. [Encaissements](encaissements-revendeurs.md), [annulations d’achat](tresorerie.md#annulation-des-achats-fournisseurs) | Confirmer qui peut rapprocher un ancien encaissement ou constater un remboursement fournisseur. Si le circuit manuel est conservé, préciser le responsable, le justificatif et l’impact attendu dans les rapports. |
+
+## Vérifications
+
+- Règles Firestore en production comparées au dépôt le 25 novembre 2026. La version active est `02e1f23f-1706-4309-b859-5c3c1d96322f`.
+- `npm.cmd run lint` et `npm.cmd test` réussis. Les 142 tests unitaires de la commande standard passent.
+- Les règles de présence Realtime Database ont été relues dans le dépôt. La lecture de la version active en production a été refusée, donc sa conformité reste à confirmer.
+- `npm.cmd run test:rules:release` réussi avec Java 21. Les 167 tests et sous-tests d’intégration Firestore passent sur l’émulateur.
+
+Les tests automatisés couvrent les scénarios présents dans le dépôt. Les ajustements proposés ci-dessus définissent les vérifications supplémentaires à ajouter au moment de modifier les règles.

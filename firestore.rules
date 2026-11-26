@@ -1112,15 +1112,35 @@ service cloud.firestore {
     function hasValidSalaryAdvanceDetails(data) {
       return ('employee_id' in data) &&
         data.employee_id is string &&
-        exists(/databases/$(database)/documents/employees/$(data.employee_id)) &&
-        ('employee_name' in data) &&
-        data.employee_name == get(/databases/$(database)/documents/employees/$(data.employee_id)).data.first_name + ' ' +
-          get(/databases/$(database)/documents/employees/$(data.employee_id)).data.last_name &&
-        ('salary_advance_id' in data) &&
-        data.salary_advance_id == 'advance-' + data.id &&
+        matchesSalaryAdvanceEmployee(data, get(/databases/$(database)/documents/employees/$(data.employee_id)).data) &&
+        data.get('salary_advance_id', '') == 'advance-' + data.id &&
         data.payment_status == 'PAID' &&
         data.description is string &&
         data.description.size() > 0;
+    }
+
+    function matchesSalaryAdvanceEmployee(data, employee) {
+      return employee != null &&
+        ('employee_name' in data) &&
+        data.employee_name == employee.first_name + ' ' + employee.last_name;
+    }
+
+    function matchesValidatedSalaryAdvance(expense, expenseId) {
+      let advance = getAfter(/databases/$(database)/documents/salaryAdvances/$(expense.salary_advance_id)).data;
+      return advance != null &&
+        advance.id == expense.salary_advance_id &&
+        advance.expense_id == expenseId &&
+        advance.employee_id == expense.employee_id &&
+        advance.amount == expense.amount &&
+        advance.advance_date == expense.expense_date &&
+        advance.payment_method == expense.payment_method &&
+        advance.reason == expense.description &&
+        advance.status == 'OUTSTANDING';
+    }
+
+    function validFullExpensePayment() {
+      return request.resource.data.get('funding_source', '') == 'STORE'
+        ? validStoreExpensePayment() : validExpenseTreasuryPayment();
     }
 
     function hasExpensePaymentFields(data) {
@@ -1252,25 +1272,17 @@ service cloud.firestore {
           (
             isAdmin() &&
             hasValidSalaryAdvanceDetails(resource.data) &&
-            existsAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)) &&
-            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.id == resource.data.salary_advance_id &&
-            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.expense_id == expenseId &&
-            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.employee_id == resource.data.employee_id &&
-            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.amount == resource.data.amount &&
-            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.advance_date == resource.data.expense_date &&
-            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.payment_method == resource.data.payment_method &&
-            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.reason == resource.data.description &&
-            getAfter(/databases/$(database)/documents/salaryAdvances/$(resource.data.salary_advance_id)).data.status == 'OUTSTANDING'
+            matchesValidatedSalaryAdvance(resource.data, expenseId)
           )
         ) &&
-        ((isAdmin() && resource.data.payment_status == 'PAID' && (validExpenseTreasuryPayment() || validStoreExpensePayment())) ||
+        ((isAdmin() && resource.data.payment_status == 'PAID' && validFullExpensePayment()) ||
           ((!isAdmin() || resource.data.payment_status != 'PAID') && !hasExpensePaymentFields(request.resource.data))) &&
         changesOnly([
           'status', 'validated_by', 'validated_at', 'treasury_fund_id', 'treasury_movement_id', 'paid_by', 'paid_by_name', 'paid_at', 'funding_source', 'payment_recorded_by'
         ])
       ));
       allow update: if request.resource.data.get('payments', []).size() == 0 && isAdmin() && resource.data.status == 'VALIDATED' && resource.data.payment_status == 'PENDING' &&
-        !hasExpensePaymentFields(resource.data) && (validExpenseTreasuryPayment() || validStoreExpensePayment()) &&
+        !hasExpensePaymentFields(resource.data) && validFullExpensePayment() &&
         changesOnly([
           'payment_status', 'treasury_fund_id', 'treasury_movement_id', 'paid_by', 'paid_by_name', 'paid_at', 'funding_source', 'payment_recorded_by'
         ]);
@@ -1453,7 +1465,11 @@ service cloud.firestore {
           (resource.data.status == 'VERIFIED' && request.resource.data.status == 'CANCELLED' && isSuperAdmin()) ||
           (resource.data.status == 'VALIDATED' && request.resource.data.status == 'CANCELLED' && isSuperAdmin() &&
             changesOnly(['status'])) ||
-          (resource.data.status == 'VERIFIED' && request.resource.data.status == 'VALIDATED' && resource.data.customer_type != 'REVENDEUR') ||
+          (
+            resource.data.status == 'VERIFIED' && request.resource.data.status == 'VALIDATED' &&
+            resource.data.customer_type != 'REVENDEUR' &&
+            hasPermission('sales.validate') && hasStoreAccess(resource.data.store_id)
+          ) ||
           (
             resource.data.status == 'VERIFIED' && request.resource.data.status == 'APPROVED' &&
             resource.data.customer_type == 'REVENDEUR' && isAdmin() &&

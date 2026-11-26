@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { doc, getDoc, collection, getDocs, terminate } from 'firebase/firestore';
 import { db } from '../src/firebase';
 import { validateExpense, payValidatedExpense, cancelExpense, deleteExpense, STORE_EXPENSE_FUNDS } from '../src/services/expenseService';
-import type { AuditLog, Expense } from '../src/types';
+import type { AuditLog, Expense, SalaryAdvance } from '../src/types';
 const { commit, write, origin, root, project, token } = require('../scripts/sale-rules-fixture.cjs');
 const read = async (path: string) => (await getDoc(doc(db, path))).data()!;
 const audit = (id: string) => ({ id, user_id: 'super', action: 'TEST', entity_type: 'EXPENSE', entity_id: 'e', created_at: Date.now() } as AuditLog);
@@ -21,6 +21,33 @@ test('partial expense payments and security rules', async t => {
       write('expenses/mixed', draft('mixed')), write('expenses/resume', draft('resume', 100))
     ])).status, 200);
 
+    for (const fundId of [STORE_EXPENSE_FUNDS, 'salary-fund']) await t.test(`an admin validates a salary advance funded by ${fundId}`, async () => {
+      const expenseId = fundId === STORE_EXPENSE_FUNDS ? 'salary-store' : 'salary-personal';
+      const advanceId = `advance-${expenseId}`;
+      const expense: Expense = { ...draft(expenseId, 100), category: 'SALARY_ADVANCE', employee_id: 'employee',
+        employee_name: 'Test Employee', salary_advance_id: advanceId };
+      const advance: SalaryAdvance = { id: advanceId, employee_id: 'employee', employee_name: 'Test Employee',
+        expense_id: expense.id, amount: expense.amount, advance_date: expense.expense_date, reason: expense.description,
+        payment_method: expense.payment_method, status: 'OUTSTANDING', created_by: 'super', created_at: 1, updated_at: 1 };
+      const profile = { status: 'ACTIVE', assignedStores: [], permissions: [] };
+      assert.equal((await commit([
+        write('users/super', { ...profile, role: 'ADMIN' }),
+        write('employees/employee', { first_name: 'Test', last_name: 'Employee', is_active: true }),
+        write(`expenses/${expenseId}`, expense),
+        write('treasuryFunds/salary-fund', { id: 'salary-fund', owner_id: 'super', owner_name: 'Admin',
+          source: 'OTHER', source_reference: 'salary', initial_amount: 100, balance: 100, handover_id: '',
+          last_movement_id: 'initial', created_at: 1 })
+      ])).status, 200);
+      try {
+        const validated = await validateExpense(expense, 'super', audit(expenseId), false, true, advance,
+          audit(advanceId), fundId, 100);
+        assert.equal(validated.status, 'VALIDATED');
+        assert.equal((await read(`salaryAdvances/${advanceId}`)).amount, 100);
+        assert.equal((await read('treasuryFunds/salary-fund')).balance, fundId === STORE_EXPENSE_FUNDS ? 100 : 0);
+      } finally {
+        assert.equal((await commit([write('users/super', { ...profile, role: 'SUPER_ADMIN' })])).status, 200);
+      }
+    });
     await t.test('validation can pay only the available amount and preserve the remainder', async () => {
       const expense = await validateExpense(draft('e'), 'super', audit('first'), true, true, undefined, undefined, 'a', 300);
       assert.equal(expense.payment_status, 'PARTIAL'); assert.equal(expense.amount_paid, 300);

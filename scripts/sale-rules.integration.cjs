@@ -45,6 +45,16 @@ test('sale validation honors roles, store scope, and rule limits atomically', as
     const response = await fetch(`${origin}/v1/${root}/sales/sale`, { headers: { Authorization: 'Bearer owner' } });
     assert.equal((await response.json()).fields.status.stringValue, 'VERIFIED');
   });
+  await t.test('sale finalization rejects edit-only and out-of-store users before stock writes', async () => {
+    assert.equal(await run(1, 'POS', {
+      statusOnly: true, role: 'VENDEUR', permissions: ['sales.view', 'sales.edit'], stores: ['store']
+    }), 403);
+    assert.equal(await run(1, 'POS', {
+      statusOnly: true, role: 'RESPONSABLE_MAGASIN', permissions: ['sales.view', 'sales.validate'], stores: ['other']
+    }), 403);
+    const response = await fetch(`${origin}/v1/${root}/sales/sale`, { headers: { Authorization: 'Bearer owner' } });
+    assert.equal((await response.json()).fields.status.stringValue, 'VERIFIED');
+  });
   await t.test('even a super admin cannot sell raw materials from a POS store', async () => {
     assert.equal(await run(1, 'POS', { articleType: 'RAW_MATERIAL' }), 403);
   });
