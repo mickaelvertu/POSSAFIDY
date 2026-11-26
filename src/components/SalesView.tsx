@@ -39,6 +39,7 @@ import {
 import SaleDeliveryNote from "./SaleDeliveryNote";
 
 interface SalesViewProps {
+  newSale?: { storeId: string };
   focusedSaleId?: string;
   sales: Sale[];
   stores: Store[];
@@ -57,6 +58,7 @@ interface SalesViewProps {
 }
 
 export default function SalesView({
+  newSale,
   focusedSaleId,
   sales,
   stores,
@@ -76,7 +78,7 @@ export default function SalesView({
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [filterStoreId, setFilterStoreId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(() => Boolean(newSale));
   const [isSaving, setIsSaving] = useState(false);
   const isSavingRef = useRef(false);
   const pendingSaleRef = useRef<{ id: string; number: string } | null>(null);
@@ -89,7 +91,9 @@ export default function SalesView({
   // Sales are made from POS and reseller stores; the central warehouse only appears for the reseller-request flow.
   const eligibleStores = stores.filter(s => s.store_type === "POS" || s.store_type === "RESELLER" || (canCreateResellerSale && s.store_type === "CENTRAL_WAREHOUSE"));
   const saleArticles = articles.filter(article => article.is_active && article.article_type === "RESALE");
-  const [selectedStoreId, setSelectedStoreId] = useState(eligibleStores[0]?.id || stores[0]?.id || "");
+  const [selectedStoreId, setSelectedStoreId] = useState(
+    () => eligibleStores.find(store => store.id === newSale?.storeId)?.id || eligibleStores[0]?.id || stores[0]?.id || "",
+  );
   const [customerName, setCustomerName] = useState("Client Comptoir");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerType, setCustomerType] = useState<"PARTICULIER" | "REVENDEUR" | "ENTREPRISE">("PARTICULIER");

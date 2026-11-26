@@ -23,6 +23,7 @@
     "@capacitor/core": "^8.5.2",
     "@google/genai": "^2.4.0",
     "@openai/codex-sdk": "^0.163.0",
+    "@radix-ui/react-dialog": "^1.3.1",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",

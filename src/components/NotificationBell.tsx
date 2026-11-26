@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell } from "lucide-react";
+import * as Sheet from "@radix-ui/react-dialog";
+import { Bell, X } from "lucide-react";
 import { ActionNotification } from "../services/notificationService";
 
 interface NotificationBellProps {
@@ -11,7 +12,6 @@ interface NotificationBellProps {
 
 export default function NotificationBell({ userId, notifications, onOpen }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const storageKey = `action-alerts:${userId}`;
   const [enabled, setEnabled] = useState(() => {
     try { return localStorage.getItem(storageKey) === "on"; } catch { return false; }
@@ -150,24 +150,14 @@ export default function NotificationBell({ userId, notifications, onOpen }: Noti
     setEnabled(next);
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [open]);
-
   return (
-    <div className="relative" ref={ref}>
-      <button
+    <Sheet.Root open={open} onOpenChange={setOpen}>
+      <Sheet.Trigger
         type="button"
-        onClick={() => setOpen(current => !current)}
         aria-label={`Notifications (${notifications.length})`}
         aria-expanded={open}
         title="Actions en attente"
-        className="relative rounded-lg border border-slate-600 bg-slate-800 p-2 text-slate-200 transition hover:bg-slate-700"
+        className="relative inline-grid min-h-11 min-w-11 shrink-0 place-items-center rounded-lg border border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mobile-accent"
       >
         <Bell className="h-4 w-4" />
         {notifications.length > 0 && (
@@ -175,36 +165,43 @@ export default function NotificationBell({ userId, notifications, onOpen }: Noti
             {notifications.length > 99 ? "99+" : notifications.length}
           </span>
         )}
-      </button>
-      {open && (
-        <div className="absolute right-0 mt-2 w-72 max-h-96 overflow-y-auto rounded-xl border border-slate-700 bg-slate-800 shadow-xl z-40">
-          <div className="border-b border-slate-700 p-3">
-            <button type="button" onClick={() => void toggleAlerts()} aria-pressed={enabled} className="text-xs font-semibold text-blue-300 hover:text-blue-200">
+      </Sheet.Trigger>
+      <Sheet.Portal>
+        <Sheet.Overlay className="fixed inset-0 z-[55] bg-slate-950/60" />
+        <Sheet.Content className="mobile-surface fixed inset-x-0 bottom-0 z-[56] flex max-h-[85dvh] flex-col rounded-t-2xl border border-mobile-border bg-mobile-panel pb-[env(safe-area-inset-bottom)] text-mobile-ink shadow-xl lg:inset-y-0 lg:left-auto lg:max-h-none lg:w-full lg:max-w-md lg:rounded-none">
+          <div className="border-b border-mobile-border px-4 pb-4 pt-2 sm:px-6">
+            <div className="flex items-center justify-between gap-3">
+              <Sheet.Title className="text-lg font-semibold">Notifications</Sheet.Title>
+              <Sheet.Close aria-label="Fermer les notifications" className="ui-btn ui-btn-ghost ui-btn-square min-h-11 min-w-11">
+                <X className="size-5" aria-hidden="true" />
+              </Sheet.Close>
+            </div>
+            <button type="button" onClick={() => void toggleAlerts()} aria-pressed={enabled} className="ui-btn ui-btn-outline min-h-11">
               {enabled ? "Désactiver les alertes sonores" : "Activer les alertes sonores"}
             </button>
-            <p className="mt-1 text-[11px] text-slate-400">Alertes lorsque l’application est ouverte. Touchez une notification pour afficher les actions.</p>
-            {message && <p role="status" className="mt-1 text-[11px] text-amber-300">{message}</p>}
+            <Sheet.Description className="mt-2 text-sm text-mobile-ink/75">Touchez une notification pour ouvrir l’action correspondante.</Sheet.Description>
+            {message && <p role="status" className="mt-2 text-sm text-mobile-ink">{message}</p>}
           </div>
           {notifications.length === 0 ? (
-            <p className="p-4 text-center text-xs text-slate-400">Aucune action en attente.</p>
+            <p className="p-4 text-sm text-mobile-ink/75 sm:px-6">Aucune action en attente.</p>
           ) : (
-            <ul className="divide-y divide-slate-700">
+            <ul className="min-h-0 overflow-y-auto divide-y divide-mobile-border">
               {notifications.map(item => (
                 <li key={item.id}>
                   <button
                     type="button"
                     onClick={() => { setOpen(false); onOpen(item); }}
-                    className="block w-full px-4 py-3 text-left hover:bg-slate-700"
+                    className="block min-h-11 w-full break-words px-4 py-3 text-left hover:bg-mobile-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mobile-accent sm:px-6"
                   >
-                    <span className="block text-xs font-semibold text-white">{item.title}</span>
-                    <span className="block text-[11px] text-slate-400">{item.detail}</span>
+                    <span className="block text-sm font-semibold">{item.title}</span>
+                    <span className="mt-0.5 block text-sm text-mobile-ink/75">{item.detail}</span>
                   </button>
                 </li>
               ))}
             </ul>
           )}
-        </div>
-      )}
-    </div>
+        </Sheet.Content>
+      </Sheet.Portal>
+    </Sheet.Root>
   );
 }

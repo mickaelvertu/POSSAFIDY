@@ -140,6 +140,30 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@theme inline {
+  --color-mobile-panel: var(--mobile-panel);
+  --color-mobile-muted: var(--mobile-muted);
+  --color-mobile-border: var(--mobile-border);
+  --color-mobile-ink: var(--mobile-ink);
+  --color-mobile-accent: var(--mobile-accent);
+}
+
+.mobile-surface {
+  --mobile-panel: #ffffff;
+  --mobile-muted: #f1f5f3;
+  --mobile-border: #d6e0da;
+  --mobile-ink: #172b25;
+  --mobile-accent: #047857;
+  --color-base-100: var(--mobile-panel);
+  --color-base-200: var(--mobile-muted);
+  --color-base-300: var(--mobile-border);
+  --color-base-content: var(--mobile-ink);
+  --radius-field: 0.5rem;
+  --size-field: 0.25rem;
+  --depth: 0;
+  color-scheme: light;
+}
+
 @layer base {
   :root {
     color-scheme: dark;

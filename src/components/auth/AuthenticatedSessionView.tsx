@@ -16,6 +16,7 @@ import { authService, DEFAULT_ARTICLE_VISIBILITY, hasPermission } from "../../se
 import { AppRoleId, AppUser, Article, AuditLog, Category, CashHandover, CashHandoverDeposit, CreditCustomer, CreditFollowUp, CreditPayment, Employee, Expense, GeneralFilters, Payslip, Purchase, ResellerNotification, ResellerOrder, Sale, SalaryAdvance, ReportType, StockTransferLine, Supplier, SupplierPayment, UnitOfMeasure } from "../../types";
 import { User } from "../../types/auth";
 import RoleHomeView from "../RoleHomeView";
+import MobileStoreHome from "../MobileStoreHome";
 import { Production, RECYCLING_DECISION_LABELS, RETURN_REASON_LABELS, RecyclingDecision, StockMovement, StockTransfer, Store, StoreStock } from "../../types";
 import { generateRef, getArticleStock, updateQuarantineQuantity, updateStockQuantity } from "../../services/stockService";
 import {
@@ -175,6 +176,11 @@ export default function AuthenticatedSessionView() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [payrollLoadedKey, setPayrollLoadedKey] = useState("");
   const [activeModule, setActiveModule] = useModuleNavigation(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
+  const [mobileStoreSelection, setMobileStoreSelection] = useState("");
+  const [newSale, setNewSale] = useState<{ storeId: string }>();
+  useEffect(() => {
+    if (activeModule !== "sales") setNewSale(undefined);
+  }, [activeModule]);
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   useEffect(() => { setMobileActionsOpen(false); }, [activeModule]);
   const [notificationAction, setNotificationAction] = useState<{ item: ActionNotification; previousModule: typeof activeModule } | null>(null);
@@ -2393,6 +2399,35 @@ export default function AuthenticatedSessionView() {
       })
     : [];
 
+  const mobileStores = accessibleStores.filter(store => store.is_active);
+  const mobileStoreId = mobileStores.length === 1
+    ? mobileStores[0].id
+    : mobileStores.find(store => store.id === mobileStoreSelection)?.id ?? "";
+  const mobileTasks = mobileStoreId ? actionNotifications.filter(item => {
+    switch (item.module) {
+      case "sales":
+        return visibleSales.some(sale => sale.id === item.entityId && sale.store_id === mobileStoreId);
+      case "transfers":
+        return visibleTransfers.some(transfer => transfer.id === item.entityId
+          && (transfer.source_store_id === mobileStoreId || transfer.destination_store_id === mobileStoreId));
+      case "inventory":
+        return inventoryCounts.some(count => count.id === item.entityId && count.store_id === mobileStoreId);
+      default:
+        return false;
+    }
+  }) : actionNotifications;
+  const mobileSaleStore = mobileStores.find(store => (!mobileStoreId || store.id === mobileStoreId)
+    && (store.store_type === "POS" || store.store_type === "RESELLER"));
+  const canStartMobileSale = user.status === "ACTIVE" && canOpenSales && currentAppUser
+    && (canManageStores || hasPermission(currentAppUser, "sales.create"))
+    && mobileSaleStore && articles.some(article => article.is_active && article.article_type === "RESALE");
+  const openActionNotification = (item: ActionNotification) => {
+    const current = actionNotifications.find(notification => notification.id === item.id);
+    if (!current) return;
+    setNotificationAction({ item: current, previousModule: notificationAction?.previousModule || activeModule });
+    setActiveModule(current.module);
+  };
+
   return (
     <div className="theme-app min-h-screen bg-slate-900 text-slate-100 flex flex-col">
       {/* Top Application Bar */}
@@ -2407,14 +2442,14 @@ export default function AuthenticatedSessionView() {
         </div>
 
         {/* User preview and Logout button */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           <div
-            className={`inline-flex max-w-[130px] sm:max-w-none truncate items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${isOnline && !isProfileFromCache && !hasPendingWrites ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}
+            className={`inline-flex min-w-0 max-w-[130px] sm:max-w-none items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] font-semibold ${isOnline && !isProfileFromCache && !hasPendingWrites ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}
             role="status"
             title={!isOnline ? "Hors connexion · les droits ne sont pas vérifiés" : hasPendingWrites ? "Synchronisation en attente" : isProfileFromCache ? "Vérification des droits" : "En ligne"}
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${isOnline && !isProfileFromCache && !hasPendingWrites ? "bg-emerald-400" : "bg-amber-400"}`} />
-            {!isOnline
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isOnline && !isProfileFromCache && !hasPendingWrites ? "bg-emerald-400" : "bg-amber-400"}`} />
+            <span className="truncate">{!isOnline
               ? hasPendingWrites
                 ? "Hors ligne · écritures en attente"
                 : "Hors ligne · cache, droits non vérifiés"
@@ -2422,16 +2457,11 @@ export default function AuthenticatedSessionView() {
                 ? "Synchronisation en attente"
                 : isProfileFromCache
                   ? "Vérification des droits…"
-                  : "En ligne"}
+                  : "En ligne"}</span>
           </div>
           <div className="hidden lg:block"><ThemeSwitcher /></div>
-          <NotificationBell key={currentAppUser?.uid} userId={currentAppUser?.uid || user.id} notifications={actionNotifications} onOpen={item => {
-            const current = actionNotifications.find(notification => notification.id === item.id);
-            if (!current) return;
-            setNotificationAction({ item: current, previousModule: notificationAction?.previousModule || activeModule });
-            setActiveModule(current.module);
-          }} />
-          <button type="button" className="btn btn-ghost btn-sm btn-square lg:hidden" aria-label="Autres actions" aria-expanded={mobileActionsOpen} aria-controls="session-actions" onClick={() => setMobileActionsOpen(open => !open)}>
+          <NotificationBell key={currentAppUser?.uid} userId={currentAppUser?.uid || user.id} notifications={actionNotifications} onOpen={openActionNotification} />
+          <button type="button" className="btn btn-ghost btn-square min-h-11 min-w-11 shrink-0 lg:hidden" aria-label="Autres actions" aria-expanded={mobileActionsOpen} aria-controls="session-actions" onClick={() => setMobileActionsOpen(open => !open)}>
             <Ellipsis size={20} aria-hidden="true" />
           </button>
           <div id="session-actions" onKeyDown={event => { if (event.key === "Escape") setMobileActionsOpen(false); }} className={`${mobileActionsOpen ? "grid" : "hidden"} absolute right-4 top-full mt-2 w-40 grid-cols-2 gap-2 rounded-xl border border-base-300 bg-base-100 p-2 text-base-content shadow-lg lg:static lg:mt-0 lg:flex lg:w-auto lg:items-center lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}>
@@ -2461,15 +2491,16 @@ export default function AuthenticatedSessionView() {
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {mobileLinks.some(link => link.visible) && <nav aria-label="Accès rapides" className="flex flex-wrap gap-2 lg:hidden">
+      {mobileLinks.some(link => link.visible) && notificationAction?.item.module !== activeModule && (
+        <nav aria-label="Navigation principale" className="mobile-surface fixed inset-x-0 bottom-0 z-30 flex border-t border-mobile-border bg-mobile-panel px-2 pb-[env(safe-area-inset-bottom)] text-mobile-ink print:hidden lg:hidden">
           {mobileLinks.filter(link => link.visible).map(link => (
-            <a key={link.module} href={`#/${link.module}`} aria-current={activeModule === link.module ? "page" : undefined} className={`btn btn-sm ${activeModule === link.module ? "btn-primary" : "btn-ghost"}`}>
+            <a key={link.module} href={`#/${link.module}`} onClick={() => setNotificationAction(null)} aria-current={activeModule === link.module ? "page" : undefined} className="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-xs font-semibold hover:bg-mobile-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mobile-accent aria-[current=page]:bg-mobile-accent/10 aria-[current=page]:text-mobile-accent">
               <link.icon className="size-4 shrink-0" aria-hidden="true" /> {link.label}
             </a>
           ))}
-        </nav>}
+        </nav>
+      )}
+      <main className={`mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-5 sm:px-6 lg:py-8 ${mobileLinks.some(link => link.visible) ? "max-lg:pb-[calc(4.75rem+env(safe-area-inset-bottom))]" : ""}`}>
         {(authorizationError || usersError || Object.keys(auxiliaryErrors).length > 0 || Object.keys(synchronization.errors).length > 0) && (
           <div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-950/40 p-4 text-sm text-amber-100">
             {authorizationError && <p>Droits utilisateur : {authorizationError}</p>}
@@ -2480,6 +2511,19 @@ export default function AuthenticatedSessionView() {
           </div>
         )}
         <SyncFeedback online={isOnline} status={synchronization.status} />
+        {activeModule === "home" && user.status === "ACTIVE" && user.role !== "REVENDEUR" && (
+          <MobileStoreHome
+            stores={mobileStores}
+            storeId={mobileStoreId}
+            onStoreChange={setMobileStoreSelection}
+            onStartSale={canStartMobileSale ? () => {
+              setNewSale({ storeId: mobileSaleStore.id });
+              setActiveModule("sales");
+            } : undefined}
+            notifications={mobileTasks}
+            onOpenTask={openActionNotification}
+          />
+        )}
         <NotificationActionWindow active={!!notificationAction && activeModule === notificationAction.item.module} title={notificationAction?.item.title || "Action en attente"} onClose={closeNotificationAction}>
         <Suspense fallback={<FeedbackState kind="loading" title="Chargement de la page" />}>
         {activeModule === "rawMaterialOrders" && currentAppUser && ["ADMIN", "SUPER_ADMIN", "RESPONSABLE_MAGASIN"].includes(currentAppUser.roleId) ? <RawMaterialOrdersView user={currentAppUser} articles={articles} stores={inventoryStores} suppliers={suppliers} onBack={() => setActiveModule("home")} onPurchases={() => setActiveModule("procurement")} /> : activeModule === "productionOrders" && currentAppUser ? <ProductionOrdersView user={currentAppUser} stores={inventoryStores} articles={articles} stocks={stocks} transfers={transfers} productions={productions} stockStatus={synchronization.status["Stocks"]} transfersStatus={synchronization.status["Transferts"]} productionsStatus={synchronization.status["Productions"]} onBack={() => setActiveModule("home")} /> : activeModule === "posOrders" && currentAppUser && ["ADMIN", "SUPER_ADMIN", "RESPONSABLE_MAGASIN"].includes(currentAppUser.roleId) ? (
@@ -2521,6 +2565,7 @@ export default function AuthenticatedSessionView() {
               <ArrowLeft className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" /> Retour à l'accueil
             </button>
             <SalesView
+              newSale={newSale}
               focusedSaleId={notificationAction?.item.module === "sales" ? notificationAction.item.entityId : undefined}
               sales={visibleSales}
               creditCustomers={creditCustomers}
