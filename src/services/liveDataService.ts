@@ -11,11 +11,20 @@ export function scopedQueries(collectionName: string, fields: string[], storeIds
 
 export function subscribeRows<T extends { id: string }>(
   queries: Query<DocumentData>[], receive: (rows: T[]) => void,
-  fail: (error: unknown) => void, ready?: (fromCache: boolean) => void,
+  fail: (error: unknown) => void, ready?: (fromCache: boolean) => void, observeServerDocuments?: (count: number) => void,
 ): () => void {
-  return subscribeSources<Query<DocumentData>, T>(queries, (source, next, error) => onSnapshot(source, { includeMetadataChanges: true }, snapshot => {
-    next(snapshot.docs.map(document => ({ ...document.data(), id: document.id }) as T), snapshot.metadata.fromCache);
-  }, error), receive, fail, ready);
+  return subscribeSources<Query<DocumentData>, T>(queries, (source, next, error) => {
+    let firstServerSnapshot = true;
+    return onSnapshot(source, { includeMetadataChanges: true }, snapshot => {
+      if (observeServerDocuments && !snapshot.metadata.fromCache && !snapshot.metadata.hasPendingWrites) {
+        const count = firstServerSnapshot ? snapshot.size
+          : snapshot.docChanges().filter(change => change.type !== "removed").length;
+        firstServerSnapshot = false;
+        if (count) observeServerDocuments(count);
+      }
+      next(snapshot.docs.map(document => ({ ...document.data(), id: document.id }) as T), snapshot.metadata.fromCache);
+    }, error);
+  }, receive, fail, ready);
 }
 
 export function collectionQuery(name: string, ...constraints: QueryConstraint[]) {

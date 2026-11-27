@@ -1,10 +1,12 @@
-import { ArrowRight, Bell, ChevronRight, MapPin, Plus } from "lucide-react";
+import { ArrowRight, Bell, ChevronRight, Plus } from "lucide-react";
 import type { ActionNotification } from "../services/notificationService";
 import { storeLabel } from "../services/storeLabel";
+import ShopSwitcher from "./ShopSwitcher";
 import type { Store } from "../types";
 
 interface MobileStoreHomeProps {
   stores: Store[];
+  userId: string;
   storeId: string;
   onStoreChange: (storeId: string) => void;
   onStartSale?: () => void;
@@ -13,25 +15,13 @@ interface MobileStoreHomeProps {
 }
 
 export default function MobileStoreHome({
-  stores, storeId, onStoreChange, onStartSale, notifications, onOpenTask,
+  stores, userId, storeId, onStoreChange, onStartSale, notifications, onOpenTask,
 }: MobileStoreHomeProps) {
   return (
     <section aria-label="Accueil du magasin" className="mobile-surface mb-6 space-y-6 lg:hidden">
       <div className="rounded-2xl bg-emerald-950 p-5 text-emerald-50">
-        <div className="flex items-center gap-2 text-sm font-medium text-emerald-200">
-          <MapPin className="size-4" aria-hidden="true" />
-          <label htmlFor={stores.length > 1 ? "mobile-home-store" : undefined}>Magasin</label>
-        </div>
         {stores.length > 1 ? (
-          <select
-            id="mobile-home-store"
-            className="ui-select mt-2 min-h-11 w-full border-emerald-700 bg-emerald-900 text-base font-semibold text-emerald-50 focus-visible:outline-emerald-200"
-            value={storeId}
-            onChange={event => onStoreChange(event.target.value)}
-          >
-            <option value="">Tous les magasins</option>
-            {stores.map(store => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}
-          </select>
+          <div className="treasury-shell"><ShopSwitcher userId={userId} stores={stores} storeId={storeId} onChange={onStoreChange} /></div>
         ) : (
           <p className="mt-1 break-words text-xl font-semibold">{stores[0] ? storeLabel(stores[0]) : "Aucun magasin attribué"}</p>
         )}

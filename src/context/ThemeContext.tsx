@@ -5,7 +5,8 @@ export type AppTheme = "aurora" | "graphite" | "ocean" | "sandstone";
 export const THEME_OPTIONS: Array<{ id: AppTheme; label: string; accent: string }> = [
   { id: "sandstone", label: "Jour", accent: "Safran" },
   { id: "graphite", label: "Nuit", accent: "Cuivre" },
-  { id: "aurora", label: "Aurora", accent: "Émeraude" }
+  { id: "aurora", label: "Aurora", accent: "Émeraude" },
+  { id: "ocean", label: "Océan", accent: "Lagon" }
 ];
 
 interface ThemeContextValue {

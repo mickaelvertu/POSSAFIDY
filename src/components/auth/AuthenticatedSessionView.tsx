@@ -9,6 +9,7 @@ import TreasuryView from "../TreasuryView";
 import { useTreasury } from "../../hooks/useTreasury";
 import FeedbackState from "../FeedbackState";
 import SyncFeedback from "../SyncFeedback";
+import SyncCenter, { type SyncAttempt } from "../SyncCenter";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useModuleNavigation } from "../../hooks/useModuleNavigation";
@@ -56,7 +57,7 @@ import { where } from "firebase/firestore";
 import { authorizationKey, describeReadError } from "../../services/dataSyncPolicy";
 import { collectionQuery, scopedQueries, subscribeRows } from "../../services/liveDataService";
 import { useRecordState } from "../../hooks/useRecordState";
-import { useSessionSync } from "../../hooks/useSessionSync";
+import { overviewSources, useSessionSync } from "../../hooks/useSessionSync";
 import { useHistoryPages } from "../../hooks/useHistoryPages";
 import { useLedgerReport } from "../../hooks/useLedgerReport";
 import HistoryPaging from "../HistoryPaging";
@@ -75,6 +76,7 @@ import { canApproveTransfer } from "../../services/transferApproval";
 import { canAccessTransferDestination, isAssignedDepotManager } from "../../services/transferReceipt";
 import { assertSaleValidationSize } from "../../services/saleValidationLimits";
 const UsersView = lazy(() => import("../UsersView"));
+const OverviewView = lazy(() => import("../OverviewView"));
 const SalesView = lazy(() => import("../SalesView"));
 const StocksView = lazy(() => import("../StocksView"));
 const EmployeePresentationView = lazy(() => import("../EmployeePresentationView"));
@@ -177,6 +179,26 @@ export default function AuthenticatedSessionView() {
   const [payrollLoadedKey, setPayrollLoadedKey] = useState("");
   const [activeModule, setActiveModule] = useModuleNavigation(user?.role === "REVENDEUR" ? "resellerPortal" : "home");
   const [mobileStoreSelection, setMobileStoreSelection] = useState("");
+  const [syncAttempts, setSyncAttempts] = useState<SyncAttempt[]>([]);
+
+  async function trackWrite<T>(owner: string, label: string, save: () => Promise<T>): Promise<T> {
+    const id = crypto.randomUUID();
+    setSyncAttempts(current => [{ id, owner, label, status: "pending" }, ...current.filter(entry => entry.owner === owner)]);
+    function finish(status: "confirmed" | "failed") {
+      setSyncAttempts(current => {
+        const updated = current.map(entry => entry.id === id ? { ...entry, status } : entry);
+        return [...updated.filter(entry => entry.status === "pending"), ...updated.filter(entry => entry.status !== "pending").slice(0, 8)];
+      });
+    }
+    try {
+      const result = await save();
+      finish("confirmed");
+      return result;
+    } catch (error) {
+      finish("failed");
+      throw error;
+    }
+  }
   const [newSale, setNewSale] = useState<{ storeId: string }>();
   useEffect(() => {
     if (activeModule !== "sales") setNewSale(undefined);
@@ -626,7 +648,7 @@ export default function AuthenticatedSessionView() {
         throw new Error("Vous n'êtes pas autorisé à enregistrer une vente à crédit.");
       }
       const entry = createAuditLog(currentAppUser, "SALE_CREATED", "SALE", sale.id, undefined, sale, sale.store_id);
-      sale = await createCreditSale(sale, entry);
+      sale = await trackWrite(currentAppUser.uid, "Vente " + sale.sale_number, () => createCreditSale(sale, entry));
       setSales(current => [sale, ...current]);
       setAuditLogs(current => [entry, ...current]);
       if (sale.credit_customer_id && sale.total > sale.amount_paid) {
@@ -1138,7 +1160,7 @@ export default function AuthenticatedSessionView() {
     try {
       const auditLog = createAuditLog(currentAppUser, originalTransfer ? "TRANSFER_DRAFT_UPDATED" : "TRANSFER_CREATED", "TRANSFER", transfer.id, originalTransfer, transfer, transfer.source_store_id);
       if (originalTransfer) await updateDraftTransfer(originalTransfer, transfer, auditLog);
-      else await saveTransfer(transfer, auditLog);
+      else await trackWrite(currentAppUser.uid, "Transfert " + transfer.transfer_number, () => saveTransfer(transfer, auditLog));
       setTransfers(current => originalTransfer
         ? current.map(item => item.id === transfer.id ? transfer : item)
         : [transfer, ...current]);
@@ -1430,7 +1452,7 @@ export default function AuthenticatedSessionView() {
     const isCentralDestination = destinationStore?.store_type === "CENTRAL_WAREHOUSE";
     const isAssignedConfirmer = (["ADMIN", "SUPER_ADMIN"].includes(currentAppUser.roleId) || hasPermission(currentAppUser, "transfers.validate"))
       && canAccessTransferDestination(currentAppUser, transfer.destination_store_id)
-      && (!isCentralDestination || isAssignedDepotManager(currentAppUser, destinationStore) || (
+      && (!isCentralDestination || currentAppUser.roleId === "SUPER_ADMIN" || isAssignedDepotManager(currentAppUser, destinationStore) || (
         currentAppUser.uid !== transfer.received_by &&
         currentAppUser.uid !== transfer.requested_by &&
         currentAppUser.uid !== transfer.approved_by
@@ -1448,11 +1470,12 @@ export default function AuthenticatedSessionView() {
       alert("Les quantités enregistrées sont invalides. Rechargez les données et vérifiez la réception.");
       return;
     }
-
+    const { type } = transfer;
+    if (type === "DIRECT_DEPOSIT") return;
     let updatedStocks = stocks;
     const movements: StockMovement[] = [];
     const receiveIntoQuarantine = transfer.type === "STORE_RETURN" || transfer.type === "RECYCLING";
-    const isSupplierDelivery = transfer.type === "SUPPLIER_TO_STORE";
+    const isSupplierDelivery = type === "SUPPLIER_TO_STORE";
     transfer.lines.forEach(line => {
       if (line.quantity_accepted <= 0) return;
       const { newStocks, beforeQty, afterQty } = (receiveIntoQuarantine ? updateQuarantineQuantity : updateStockQuantity)(
@@ -1466,7 +1489,7 @@ export default function AuthenticatedSessionView() {
         id: `movement-${transfer.id}-receive-${line.article_id}`,
         store_id: transfer.destination_store_id,
         article_id: line.article_id,
-        movement_type: isSupplierDelivery ? "PURCHASE" : transfer.type,
+        movement_type: isSupplierDelivery ? "PURCHASE" : type,
         ...(receiveIntoQuarantine ? { stock_bucket: "QUARANTINE" as const } : {}),
         quantity: line.quantity_accepted,
         reference_type: isSupplierDelivery ? "PURCHASE" : "TRANSFER",
@@ -1511,7 +1534,7 @@ export default function AuthenticatedSessionView() {
       setStocks(current => current.map(stock => result.stocks.find(updated => updated.id === stock.id) || stock)
         .concat(result.stocks.filter(updated => !current.some(stock => stock.id === updated.id))));
       setMovements(current => [...result.movements, ...current]);
-      setTransfers(current => current.map(item => item.id === transferId ? confirmedTransfer : item));
+      setTransfers(current => current.map(item => item.id === transfer.id ? confirmedTransfer : item));
       setAuditLogs(current => [auditLog, ...(purchaseAuditLog ? [purchaseAuditLog] : []), ...current]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Impossible de confirmer cette entrée de stock.");
@@ -2375,6 +2398,9 @@ export default function AuthenticatedSessionView() {
   const canOpenSales = currentAppUser && (canManageStores || hasPermission(currentAppUser, "sales.view"));
   const canOpenStocks = currentAppUser && (canManageStores || hasPermission(currentAppUser, "stock.view"));
   const canOpenTransfers = currentAppUser && (canManageStores || hasPermission(currentAppUser, "transfers.view"));
+  const canOpenOverview = user.role === "SUPER_ADMIN" && user.status === "ACTIVE" && !isProfileFromCache && !authorizationError;
+  const overviewUnavailable = overviewSources.some(source => synchronization.status[source] === "error");
+  const overviewReady = overviewSources.every(source => synchronization.status[source] === "ready");
   const mobileLinks = [
     { module: "home", label: "Accueil", icon: House, visible: user.role !== "REVENDEUR" },
     { module: "sales", label: "Caisse", icon: ShoppingCart, visible: canOpenSales },
@@ -2429,9 +2455,9 @@ export default function AuthenticatedSessionView() {
   };
 
   return (
-    <div className="theme-app min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+    <div className="theme-app flex min-h-screen flex-col">
       {/* Top Application Bar */}
-      <header className="bg-slate-800/90 border-b border-slate-700/80 backdrop-blur sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b px-4 backdrop-blur sm:px-6">
         <div className="flex items-center gap-3">
           <img src="/branding/gileada-icon.png" alt="" className="h-9 w-9 rounded-lg bg-white p-1 object-contain" />
           <div>
@@ -2444,7 +2470,7 @@ export default function AuthenticatedSessionView() {
         {/* User preview and Logout button */}
         <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           <div
-            className={`inline-flex min-w-0 max-w-[130px] sm:max-w-none items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] font-semibold ${isOnline && !isProfileFromCache && !hasPendingWrites ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}
+            className={`inline-flex min-w-0 max-w-[130px] sm:max-w-none items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold ${isOnline && !isProfileFromCache && !hasPendingWrites ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}
             role="status"
             title={!isOnline ? "Hors connexion · les droits ne sont pas vérifiés" : hasPendingWrites ? "Synchronisation en attente" : isProfileFromCache ? "Vérification des droits" : "En ligne"}
           >
@@ -2512,7 +2538,18 @@ export default function AuthenticatedSessionView() {
         )}
         <SyncFeedback online={isOnline} status={synchronization.status} />
         {activeModule === "home" && user.status === "ACTIVE" && user.role !== "REVENDEUR" && (
+          <SyncCenter online={isOnline} status={synchronization.status} errors={synchronization.errors} attempts={syncAttempts.filter(attempt => attempt.owner === user.id)} onRetry={synchronization.retry} />
+        )}
+        {activeModule === "home" && canOpenOverview && (
+          <div className="treasury-shell">
+            <button type="button" className="ui-btn min-h-11 border-[var(--theme-border)] bg-[var(--theme-panel)] text-[var(--theme-accent)]" onClick={() => setActiveModule("overview")}>
+              Vue d’ensemble
+            </button>
+          </div>
+        )}
+        {activeModule === "home" && user.status === "ACTIVE" && user.role !== "REVENDEUR" && (
           <MobileStoreHome
+            userId={user.id}
             stores={mobileStores}
             storeId={mobileStoreId}
             onStoreChange={setMobileStoreSelection}
@@ -2526,7 +2563,22 @@ export default function AuthenticatedSessionView() {
         )}
         <NotificationActionWindow active={!!notificationAction && activeModule === notificationAction.item.module} title={notificationAction?.item.title || "Action en attente"} onClose={closeNotificationAction}>
         <Suspense fallback={<FeedbackState kind="loading" title="Chargement de la page" />}>
-        {activeModule === "rawMaterialOrders" && currentAppUser && ["ADMIN", "SUPER_ADMIN", "RESPONSABLE_MAGASIN"].includes(currentAppUser.roleId) ? <RawMaterialOrdersView user={currentAppUser} articles={articles} stores={inventoryStores} suppliers={suppliers} onBack={() => setActiveModule("home")} onPurchases={() => setActiveModule("procurement")} /> : activeModule === "productionOrders" && currentAppUser ? <ProductionOrdersView user={currentAppUser} stores={inventoryStores} articles={articles} stocks={stocks} transfers={transfers} productions={productions} stockStatus={synchronization.status["Stocks"]} transfersStatus={synchronization.status["Transferts"]} productionsStatus={synchronization.status["Productions"]} onBack={() => setActiveModule("home")} /> : activeModule === "posOrders" && currentAppUser && ["ADMIN", "SUPER_ADMIN", "RESPONSABLE_MAGASIN"].includes(currentAppUser.roleId) ? (
+        {activeModule === "overview" && canOpenOverview ? (
+          <>
+            <div className="treasury-shell">
+              <button type="button" className="ui-btn ui-btn-ghost min-h-11" onClick={() => setActiveModule("home")}>Retour à l’accueil</button>
+            </div>
+            {overviewReady ? (
+              <OverviewView stores={inventoryStores} articles={articles} sales={sales} stocks={stocks} transfers={transfers} userId={user.id} selection={mobileStoreSelection} onShopChange={setMobileStoreSelection} serverDocuments={synchronization.serverDocuments} onOpen={setActiveModule} />
+            ) : (
+              <FeedbackState
+                kind={overviewUnavailable || !isOnline ? "error" : "loading"}
+                title={overviewUnavailable || !isOnline ? "Vue d’ensemble indisponible" : "Chargement de la vue d’ensemble"}
+                description={overviewUnavailable || !isOnline ? "Les données doivent être confirmées par le serveur avant de calculer les indicateurs." : undefined}
+              />
+            )}
+          </>
+        ) : activeModule === "rawMaterialOrders" && currentAppUser && ["ADMIN", "SUPER_ADMIN", "RESPONSABLE_MAGASIN"].includes(currentAppUser.roleId) ? <RawMaterialOrdersView user={currentAppUser} articles={articles} stores={inventoryStores} suppliers={suppliers} onBack={() => setActiveModule("home")} onPurchases={() => setActiveModule("procurement")} /> : activeModule === "productionOrders" && currentAppUser ? <ProductionOrdersView user={currentAppUser} stores={inventoryStores} articles={articles} stocks={stocks} transfers={transfers} productions={productions} stockStatus={synchronization.status["Stocks"]} transfersStatus={synchronization.status["Transferts"]} productionsStatus={synchronization.status["Productions"]} onBack={() => setActiveModule("home")} /> : activeModule === "posOrders" && currentAppUser && ["ADMIN", "SUPER_ADMIN", "RESPONSABLE_MAGASIN"].includes(currentAppUser.roleId) ? (
 <PointOfSaleOrdersView user={currentAppUser} articles={articles} stores={inventoryStores} onBack={() => setActiveModule("home")} onTransfers={() => setActiveModule("transfers")} />
 ) : activeModule === "resellerPortal" && currentAppUser && (
           currentAppUser.roleId === "REVENDEUR" ||

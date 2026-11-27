@@ -4,7 +4,7 @@ import { terminate } from 'firebase/firestore';
 import { db } from '../src/firebase';
 import { validateInventoryCount } from '../src/services/inventoryCountService';
 import { savePayslip } from '../src/services/payrollService';
-import { saveTransferWithStockEffects } from '../src/services/inventoryService';
+import { recordTransferReceipt, saveTransferWithStockEffects } from '../src/services/inventoryService';
 import { validateSale } from '../src/services/operationsService';
 import type { Sale } from '../src/types';
 import type { StockTransfer, StockMovement } from '../src/types';
@@ -42,6 +42,51 @@ test('manager ships 60 POS return lines atomically; wrong quantities and replay 
   await assert.rejects(saveTransferWithStockEffects(shipped, rows, movements, audit('replay')));
 });
 after(() => terminate(db));
+
+test('super admin records and confirms their own depot receipt with one stock credit', async () => {
+  await seed();
+  for (const status of ['IN_TRANSIT', 'RECEIVED'] as const) {
+    const id = `depot-receipt-${status}`;
+    const sentLine = {
+      id: 'line', transfer_id: id, article_id: 'receipt-test', article_code: 'TEST',
+      article_name: 'Test article', unit: 'pcs', quantity_sent: 3,
+      quantity_received: 0, quantity_accepted: 0, quantity_rejected: 0,
+    };
+    const receivedLine = { ...sentLine, quantity_received: 2, quantity_accepted: 2 };
+    const transfer = {
+      id, status, type: 'STORE_TO_STORE', source_store_id: 'shop', destination_store_id: 'central',
+      requested_by: 'super', approved_by: 'super', updated_at: 1,
+      lines: status === 'RECEIVED' ? [receivedLine] : [sentLine],
+      ...(status === 'RECEIVED' ? { received_by: 'super' } : {}),
+    } as StockTransfer;
+    assert.equal((await commit([
+      write('users/super', { role: 'SUPER_ADMIN', status: 'ACTIVE' }),
+      write('stores/central', { store_type: 'CENTRAL_WAREHOUSE', is_active: true }),
+      write(`transfers/${id}`, transfer),
+    ])).status, 200);
+    const confirmed: StockTransfer = {
+      ...transfer, status: 'DISCREPANCY', has_discrepancy: true, lines: [receivedLine],
+      received_by: 'super', validated_by: 'super', validated_at: 2, updated_at: 2,
+    };
+    const movement = {
+      id: `movement-${id}`, store_id: 'central', article_id: sentLine.article_id,
+      reference_type: 'TRANSFER', reference_id: id, quantity: 2, created_by: 'super', created_at: 2,
+    } as StockMovement;
+    if (status === 'IN_TRANSIT') {
+      await recordTransferReceipt({
+        ...transfer, status: 'RECEIVED', lines: [receivedLine], received_by: 'super',
+      }, audit('receipt-recorded'));
+      assert.equal((await read('stocks/stock-central-receipt-test')).status, 404);
+    }
+    const confirm = () => saveTransferWithStockEffects(confirmed, [], [movement], audit(id));
+    const result = await confirm();
+    const quantity = status === 'IN_TRANSIT' ? 2 : 4;
+    assert.equal(result.stocks[0].quantity, quantity);
+    await assert.rejects(confirm());
+    const stock = await (await read('stocks/stock-central-receipt-test')).json();
+    assert.equal(Number(stock.fields.quantity.integerValue), quantity);
+  }
+});
 
 test('manager confirms 17 received central-to-POS lines atomically without double credit', async () => {
   await seed();

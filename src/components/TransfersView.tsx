@@ -2,6 +2,7 @@ import { permitsSameStoreTransfer } from '../services/transferSameStore';
 import { productionTransferAllowed } from "../services/productionTransferRoute";
 import { useListWindow } from "../hooks/useListWindow";
 import ListWindowMore from "./ListWindowMore";
+import { restockPriorities } from "../services/restockPriority";
 import { storeLabel } from "../services/storeLabel";
 import { useState, FormEvent } from "react";
 import DeliveryNote from "./DeliveryNote";
@@ -124,7 +125,7 @@ export default function TransfersView({
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [dateOrder, setDateOrder] = useState<"DESC" | "ASC">("DESC");
+  const [dateOrder, setDateOrder] = useState<"DESC" | "ASC" | "PRIORITY">("DESC");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<StockTransfer | null>(null);
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
@@ -320,6 +321,7 @@ export default function TransfersView({
         return rows;
       }, {})
   );
+  const priority = dateOrder === "PRIORITY" ? restockPriorities(transfers, stocks) : null;
   const filteredTransfers = transfers.filter(t => {
     if (focusedTransferId) return t.id === focusedTransferId;
     if (filterStatus !== "ALL" && t.status !== filterStatus) return false;
@@ -334,9 +336,11 @@ export default function TransfersView({
       if (!matchNum && !matchSrc && !matchDst) return false;
     }
     return true;
-  }).sort((left, right) => dateOrder === "ASC"
-    ? left.created_at - right.created_at
-    : right.created_at - left.created_at);
+  }).sort((left, right) => {
+    const priorityDelta = (priority?.get(right.id) ?? 0) - (priority?.get(left.id) ?? 0);
+    if (priorityDelta) return priorityDelta;
+    return dateOrder === "DESC" ? right.created_at - left.created_at : left.created_at - right.created_at;
+  });
 
   const manufacturerStores = stores.filter(store => store.store_type === "MANUFACTURER" && store.is_active);
   const changeTransferKind = (kind: TransferKind) => {
@@ -701,9 +705,10 @@ export default function TransfersView({
           <input type="date" value={dateTo} min={dateFrom || undefined} onChange={event => setDateTo(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800" />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-          Ordre des dates
-          <select value={dateOrder} onChange={event => setDateOrder(event.target.value as "ASC" | "DESC")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800">
+          Tri
+          <select value={dateOrder} onChange={event => setDateOrder(event.target.value as "ASC" | "DESC" | "PRIORITY")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800">
             <option value="DESC">Plus récent d’abord</option>
+            <option value="PRIORITY">Priorité de réapprovisionnement</option>
             <option value="ASC">Plus ancien d’abord</option>
           </select>
         </label>
@@ -753,7 +758,7 @@ export default function TransfersView({
             const canConfirmReceipt = t.status === "RECEIVED"
               && canValidate
               && isReceiver
-              && (!isCentralDestination || isDepotManager || (
+              && (!isCentralDestination || currentUser.roleId === "SUPER_ADMIN" || isDepotManager || (
                 currentUser.uid !== t.received_by &&
                 currentUser.uid !== t.requested_by &&
                 currentUser.uid !== t.approved_by
@@ -798,6 +803,12 @@ export default function TransfersView({
                       Demandeur : {t.requested_by_name}
                     </span>
                   </div>
+
+                  {(priority?.get(t.id) ?? 0) > 1 && (
+                    <span className="rounded-full border border-[var(--theme-border)] bg-[var(--theme-accent-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--theme-accent)]">
+                      {priority?.get(t.id) === 4 ? "Urgent · rupture à destination" : priority?.get(t.id) === 3 ? "Urgent" : "Rupture à destination"}
+                    </span>
+                  )}
 
                   {/* Status Badge */}
                   <div className="flex items-center gap-2">
@@ -1046,7 +1057,7 @@ export default function TransfersView({
                         {isCentralDestination ? "Saisir la réception" : "Saisir les quantités reçues"}
                       </button>
                     )}
-                    {t.status === "RECEIVED" && (
+                    {t.status === "RECEIVED" && currentUser.roleId !== "SUPER_ADMIN" && (
                       <div className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                         Réception saisie par <strong>{t.received_by_name || "un utilisateur"}</strong>. Le stock reste en attente jusqu'à confirmation par un utilisateur ayant le droit transfers.validate.
                       </div>

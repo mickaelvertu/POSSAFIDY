@@ -1,14 +1,14 @@
-import { Sparkles, Sun, Moon } from "lucide-react";
+import { Sparkles, Sun, Moon, Waves } from "lucide-react";
 import { THEME_OPTIONS, useTheme } from "../context/ThemeContext";
 
 export default function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
-  const icons = { sandstone: Sun, graphite: Moon, aurora: Sparkles } as const;
+  const icons = { sandstone: Sun, graphite: Moon, aurora: Sparkles, ocean: Waves } as const;
 
   return (
     <div className="theme-switcher inline-flex items-center gap-0.5 rounded-xl border p-1 transition-colors" aria-label="Choisir le thème visuel">
       {THEME_OPTIONS.map(option => {
-        const Icon = icons[option.id as keyof typeof icons];
+        const Icon = icons[option.id];
         const isSelected = theme === option.id;
         return (
           <button

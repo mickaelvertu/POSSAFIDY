@@ -250,7 +250,10 @@ export async function saveTransferWithStockEffects(
       const profile = profileSnapshot.data();
       const depotManagerConfirmation = profile?.status === "ACTIVE" &&
         isAssignedDepotManager({ roleId: profile.role, storeIds: profile.assignedStores || [] }, destinationSnapshot.data() as Store | undefined);
-      receiptActorsAllowed = canConfirmReceiptActors(currentTransfer, transfer.validated_by, destinationSnapshot.data() as Store | undefined, depotManagerConfirmation);
+      receiptActorsAllowed = canConfirmReceiptActors(
+        currentTransfer, transfer.validated_by, destinationSnapshot.data() as Store | undefined,
+        depotManagerConfirmation || (profile?.status === "ACTIVE" && profile.role === "SUPER_ADMIN")
+      );
     }
     const validTransition = options.recyclingDecision
       ? currentTransfer.type === "RECYCLING"

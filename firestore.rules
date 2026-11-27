@@ -1,6 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // This grant applies alongside collection rules and covers nested documents.
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
     function fundBefore(id) {
       return get(/databases/$(database)/documents/treasuryFunds/$(id)).data;
     }

@@ -15,14 +15,19 @@ interface Data {
 }
 type Setters = { [K in keyof Data]: (rows: Data[K]) => void };
 
+export const overviewSources = ["Magasins", "Articles", "Ventes", "Stocks", "Transferts"];
+
 export function useSessionSync(user: User | null, setters: Setters, initializeUnits?: (articles: Article[]) => Promise<unknown>) {
   const scope = authorizationKey(user);
   const [retryVersion, setRetryVersion] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Record<string, string>>({});
 
+  const [serverDocuments, setServerDocuments] = useState(0);
+
   // Clear data only when authorization changes, never for an ordinary retry or name edit.
   useEffect(() => {
+    setServerDocuments(0);
     Object.values(setters).forEach(setter => setter([]));
     setErrors({});
     setStatus({});
@@ -54,7 +59,10 @@ export function useSessionSync(user: User | null, setters: Setters, initializeUn
     };
     const watch = <T extends { id: string }>(label: string, queries: Query<DocumentData>[], setter: (rows: T[]) => void) => {
       state(label, "loading");
-      stops.push(subscribeRows<T>(queries, rows => { if (active) setter(rows); }, error => fail(label, error), cached => ready(label, cached)));
+      const observe = user.role === "SUPER_ADMIN" && overviewSources.includes(label)
+        ? (count: number) => { if (active) setServerDocuments(current => current + count); }
+        : undefined;
+      stops.push(subscribeRows<T>(queries, rows => { if (active) setter(rows); }, error => fail(label, error), cached => ready(label, cached), observe));
     };
     const read = <T,>(label: string, task: () => Promise<T>, receive: (value: T) => void, attempt = 0) => {
       state(label, "loading");
@@ -132,5 +140,5 @@ export function useSessionSync(user: User | null, setters: Setters, initializeUn
     return () => { active = false; stops.forEach(stop => stop()); timers.forEach(timer => window.clearTimeout(timer)); };
   }, [scope, retryVersion]);
 
-  return { errors, status, retry: () => setRetryVersion(version => version + 1), retryVersion, scope };
+  return { errors, status, serverDocuments, retry: () => setRetryVersion(version => version + 1), retryVersion, scope };
 }

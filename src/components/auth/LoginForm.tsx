@@ -198,7 +198,7 @@ export default function LoginForm({ onSwitchToSignUp, onSwitchToReseller, prefil
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-sm rounded-lg shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          className="auth-submit ui-btn min-h-11 w-full gap-2 rounded-[10px] text-sm"
         >
           {loading ? (
             <>
@@ -228,7 +228,7 @@ export default function LoginForm({ onSwitchToSignUp, onSwitchToReseller, prefil
           <button
             type="button"
             onClick={onSwitchToReseller}
-            className="font-semibold text-orange-700 hover:text-orange-800 underline underline-offset-2"
+            className="font-semibold text-emerald-700 hover:text-emerald-800 underline underline-offset-2"
           >
             Demander un compte revendeur
           </button>

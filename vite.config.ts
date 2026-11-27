@@ -103,16 +103,6 @@ export default defineConfig(() => {
     build: {
       // The Firebase SDK alone is ~825 kB and cannot be split further.
       chunkSizeWarningLimit: 900,
-      rollupOptions: {
-        output: {
-          manualChunks(id: string) {
-            if (!id.includes('node_modules')) return undefined;
-            if (id.includes('firebase') || id.includes('@firebase')) return 'firebase';
-            if (id.includes('react') || id.includes('scheduler')) return 'react-vendor';
-            return 'vendor';
-          },
-        },
-      },
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

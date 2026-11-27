@@ -2,6 +2,31 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { commit, write, token, origin, root } = require('./sale-rules-fixture.cjs');
 
+test('only active super admins have full access to otherwise unmatched documents', async () => {
+  const path = 'adminRuleTest/example/nested/document';
+  const url = `${origin}/v1/${root}/${path}`;
+  const read = () => fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const setRole = (role, status) => commit([write('users/super', { role, status })]);
+
+  assert.equal((await setRole('SUPER_ADMIN', 'ACTIVE')).status, 200);
+  assert.equal((await commit([write(path, { value: 1 })], token)).status, 200);
+  assert.equal((await commit([write(path, { value: 2 })], token)).status, 200);
+  assert.equal((await read()).status, 200);
+  assert.equal((await fetch(url.slice(0, url.lastIndexOf('/')), {
+    headers: { Authorization: `Bearer ${token}` },
+  })).status, 200);
+
+  for (const [role, status] of [['ADMIN', 'ACTIVE'], ['SUPER_ADMIN', 'DISABLED']]) {
+    assert.equal((await setRole(role, status)).status, 200);
+    assert.equal((await read()).status, 403);
+    assert.equal((await commit([write(path, { value: 3 })], token)).status, 403);
+  }
+
+  assert.equal((await setRole('SUPER_ADMIN', 'ACTIVE')).status, 200);
+  assert.equal((await commit([{ delete: `${root}/${path}` }], token)).status, 200);
+  assert.equal((await read()).status, 404);
+});
+
 test('server requires a fresh sign-in after four hours even with a refreshed token', async () => {
   assert.equal((await commit([write('users/super', { role: 'SUPER_ADMIN', status: 'ACTIVE' })])).status, 200);
   const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
